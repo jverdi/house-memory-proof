@@ -428,7 +428,7 @@ import Vision
           documentary: documentary, imageOrientation: orientation,
           referenceObservations: referencePoses,codedDetections:coded.isEmpty ? nil:coded)
         try repo.journalCapture(projectID: houseID, observation: obs)
-        try repo.stageCapture(obs,projectID:houseID,room:room,stage:stage,segment:segment)
+        try repo.stageCapture(obs,projectID:houseID,room:room,stage:stage,segment:segment,references:project.references)
         try repo.finishCaptureJournal(obs.id)
         Task { @MainActor in
           guard let self else { return }

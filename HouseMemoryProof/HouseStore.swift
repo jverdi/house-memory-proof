@@ -205,10 +205,14 @@ final class Repository: EvidenceAssetReader {
     }
     guard status==SQLITE_DONE else{throw HouseError.message("Could not read durable capture records.")};return result
   }
-  func stageCapture(_ observation:Observation,projectID:UUID,room:Room,stage:Stage,segment:Segment)throws {
+  func stageCapture(_ observation:Observation,projectID:UUID,room:Room,stage:Stage,segment:Segment,references:[ReferenceBoard]=[])throws {
     lock.lock();defer{lock.unlock()}
     var validation=House(name:"Capture admission");validation.rooms=[room];validation.stages=[stage]
     var frame=segment;frame.poseSolution=nil;frame.registrationLink=nil
+    // This admission object contains one room only. Validate reference identity
+    // and pixel provenance against the actual inventory; room assignment is
+    // validated on the complete saved project, not this temporary subset.
+    validation.references=references.map{board in var local=board;local.roomID=nil;return local}
     validation.segments=[frame];validation.observations=[observation];try validation.validate()
     let bytes=try JSONEncoder().encode(observation)
     guard bytes.count<=1000000 else{throw HouseError.message("Capture metadata exceeds its admission budget.")}

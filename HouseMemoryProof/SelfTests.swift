@@ -777,7 +777,10 @@ extension SelfTests {
         }
         house.segments[0].referencePoses=measured.values.sorted{$0.boardID.uuidString<$1.boardID.uuidString}
         try house.validate()
-        let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(house));try restored.validate()
+        var checkpoint=house;checkpoint.observations=[];try repo.save(checkpoint)
+        for o in house.observations {try repo.stageCapture(o,projectID:house.id,room:house.rooms[0],stage:house.stages[0],segment:house.segments[0],references:house.references)}
+        guard let recovered=try Repository(root:repo.root).all().first(where:{$0.id==house.id}),recovered.observations==house.observations else{throw HouseError.message("Coded capture rows did not preserve corner and pose evidence after reopening.")}
+        let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(recovered));try restored.validate()
         let map=CodedReferences.build(house:restored,segment:restored.segments[0])
         guard map.boards.count==6 else{throw HouseError.message("Translated source-corner evidence did not qualify the saved board geometry.")}
         var conflictedHouse=restored,changed=restored.observations[0];changed.id=UUID()
