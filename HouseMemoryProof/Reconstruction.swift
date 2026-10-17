@@ -1,8 +1,8 @@
 import Foundation
 
-@MainActor enum Reconstruction {
+enum Reconstruction {
   static func fuse(
-    house: House, segment: Segment, repo: Repository, progress: @escaping (Double) -> Void
+    house: House, segment: Segment, repo: Repository, progress: @escaping @MainActor (Double) -> Void
   ) async throws -> Feature {
     let raw = Array(
       house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && !$0.documentary }
@@ -55,7 +55,7 @@ import Foundation
         }
       }
       _ = samples.withUnsafeBufferPointer { hx_add(core, $0.baseAddress, UInt32($0.count)) }
-      progress(Double(frame + 1) / Double(observations.count))
+      await progress(Double(frame + 1) / Double(observations.count))
       await Task.yield()
     }
     guard hx_dropped(core) == 0 else {

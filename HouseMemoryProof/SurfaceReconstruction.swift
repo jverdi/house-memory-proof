@@ -1,8 +1,8 @@
 import Foundation
 
-@MainActor enum SurfaceReconstruction {
+enum SurfaceReconstruction {
   static func build(
-    house: House, segment: Segment, repo: Repository, progress: @escaping (Double) -> Void
+    house: House, segment: Segment, repo: Repository, progress: @escaping @MainActor (Double) -> Void
   ) async throws -> Feature {
     let raw = Array(
       house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && !$0.documentary }
@@ -47,7 +47,7 @@ import Foundation
           "Surface fusion reached its bounded volume or rejected a frame. Split the capture into smaller sessions; originals are preserved."
         )
       }
-      progress(Double(frame + 1) / Double(observations.count) * 0.85)
+      await progress(Double(frame + 1) / Double(observations.count) * 0.85)
       await Task.yield()
     }
     let count = Int(hx_surface_mesh(core, nil, 0, 3))
@@ -62,7 +62,7 @@ import Foundation
       hx_surface_mesh(core, $0.baseAddress, UInt32(count), 3)
     }
     guard copied == count else { throw HouseError.message("Surface candidate was incomplete.") }
-    progress(1)
+    await progress(1)
     return Feature(
       name: "Reconstructed depth surface", trade: .unknown, roomID: segment.roomID,
       stageID: segment.stageID, kind: house.isDemo ? .synthetic : .observed,

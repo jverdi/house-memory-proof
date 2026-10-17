@@ -10,7 +10,7 @@ struct VisualMapsPage:View {
     Button("Build visual reference"){
       guard let repo=model.repository,let s=house.segments.first(where:{$0.id==selected}) else{return}
       model.perform("Building local visual reference"){
-        let map=try await Task.detached(priority:.userInitiated){try VisualMapping.build(house:house,segment:s,repo:repo)}.value
+        let map=try await LocalWorker.run {try VisualMapping.build(house:house,segment:s,repo:repo)}
         guard let current=model.house,current.id==house.id,let segment=current.segments.first(where:{$0.id==s.id}),try VisualMapping.fingerprint(house:current,segment:segment)==map.fingerprint else{throw HouseError.message("Capture inputs changed. Rebuild the reference from the latest originals.")}
         let key=try repo.put(JSONEncoder().encode(map),ext:"vmap")
         model.edit{$0.visualMaps.removeAll{$0.segmentID==s.id};$0.visualMaps.append(VisualMapReference(segmentID:s.id,roomID:s.roomID,stageID:s.stageID,asset:key,fingerprint:map.fingerprint))}

@@ -31,6 +31,7 @@ enum StreamingArchive {
     var crc: UInt32 = 0xffff_ffff
     var sha = SHA256()
     while remaining > 0 {
+      try Task.checkCancellation()
       let bytes = try f.read(upToCount: Int(min(UInt64(block), remaining))) ?? Data()
       if bytes.isEmpty { break }
       for b in bytes { crc = StoredZip.crcTable[Int((crc ^ UInt32(b)) & 255)] ^ (crc >> 8) }
@@ -60,6 +61,7 @@ enum StreamingArchive {
     var hashes: [String: String] = [:]
     var offset: UInt64 = 0
     for item in items {
+      try Task.checkCancellation()
       let d = try digest(item.url)
       let name = Data(item.name.utf8)
       guard name.count < 65535, d.size < UInt64(512) * 1024 * 1024 * 1024 else {

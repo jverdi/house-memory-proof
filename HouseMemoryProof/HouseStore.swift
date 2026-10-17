@@ -208,6 +208,7 @@ final class Repository: EvidenceAssetReader {
   @Published var progress: Double = 0
   @Published var status = ""
   @Published var shareURL: URL?
+  private var operationTask: Task<Void, Never>?
   let repository: Repository?
   init(root: URL? = nil) {
     do {
@@ -267,17 +268,22 @@ final class Repository: EvidenceAssetReader {
       }
     } catch { self.error = error.localizedDescription }
   }
+  func cancelOperation() { operationTask?.cancel(); status = "Stopping at the next safe boundary…" }
   func perform(_ label: String, operation: @escaping () async throws -> URL?) {
     guard !busy else { return }
     busy = true
     progress = 0
     status = label
-    Task {
-      defer { busy = false }
+    operationTask = Task {
+      defer { busy = false; operationTask = nil }
       do {
-        shareURL = try await operation()
+        let result = try await operation()
+        try Task.checkCancellation()
+        shareURL = result
         progress = 1
         status = "Complete"
+      } catch is CancellationError {
+        status = "Cancelled; originals preserved"
       } catch {
         self.error = error.localizedDescription
         status = "Stopped; original project preserved"

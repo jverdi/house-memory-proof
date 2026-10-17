@@ -62,9 +62,11 @@ enum TextureBuilder {
     }
     var output: [Feature] = []
     for f in input {
+      try Task.checkCancellation()
       var patches: [Int: (Mesh, [UV])] = [:]
       var remainder = Mesh()
       for i in stride(from: 0, to: f.mesh.triangles.count, by: 3) {
+        if i % 3000 == 0 { try Task.checkCancellation() }
         let vertices = (0..<3).map { f.mesh.vertices[Int(f.mesh.triangles[i + $0])] }
         var winner: Int?
         var coordinates: [UV] = []

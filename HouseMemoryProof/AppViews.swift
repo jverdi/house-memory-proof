@@ -83,7 +83,7 @@ struct RootView: View {
     .overlay(alignment: .top) {
       if model.busy {
         VStack(alignment: .leading) {
-          Text(model.status).font(.caption)
+          HStack { Text(model.status).font(.caption); Spacer(); Button("Cancel") { model.cancelOperation() }.font(.caption) }
           ProgressView(value: model.progress)
         }.padding().background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16)).padding(
           .horizontal

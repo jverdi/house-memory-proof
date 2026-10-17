@@ -159,7 +159,7 @@ struct ToolsPage: View {
     }
   }
   func export(_ label: String, _ work: @escaping () throws -> URL) {
-    model.perform(label) { try await Task.detached(priority: .userInitiated) { try work() }.value }
+    model.perform(label) { try await LocalWorker.run { try work() } }
   }
   func importFile(_ url: URL) {
     guard let repo = model.repository else { return }
@@ -482,6 +482,7 @@ struct ReconstructionPage: View {
               let feature = try await Reconstruction.fuse(house: house, segment: s, repo: repo) {
                 model.progress = $0
               }
+              try Task.checkCancellation()
               guard model.house?.id == house.id, model.house?.revision == revision else {
                 throw HouseError.message(
                   "Project changed while processing. Candidate was not published; retry.")
@@ -507,6 +508,7 @@ struct ReconstructionPage: View {
               let surface = try await SurfaceReconstruction.build(
                 house: house, segment: s, repo: repo
               ) { model.progress = $0 }
+              try Task.checkCancellation()
               guard model.house?.id == house.id, model.house?.revision == revision else {
                 throw HouseError.message("Project changed; surface candidate not published.")
               }
@@ -529,9 +531,10 @@ struct ReconstructionPage: View {
             guard let repo = model.repository else { return }
             let revision = house.revision
             model.perform("Projecting original photographs") {
-              let features = try await Task.detached(priority: .userInitiated) {
+              let features = try await LocalWorker.run {
                 try TextureBuilder.build(house: house, segment: s, repo: repo)
-              }.value
+              }
+              try Task.checkCancellation()
               guard model.house?.id == house.id, model.house?.revision == revision else {
                 throw HouseError.message("Project changed; texture candidate not published.")
               }
