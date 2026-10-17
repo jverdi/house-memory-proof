@@ -52,12 +52,12 @@ struct SpatialClearance {
   private(set) var complete = true
   private(set) var coverageCentre: V3?
   private var coverageRadius = 0.0
-  var primitiveCount: Int { items.count }
+  var primitiveCount: Int { items.count+floors.triangles.count }
   init(features: [Feature], limit: Int = 500000) {
     for f in features {
       let m = f.mesh
       let required = m.triangles.isEmpty ? m.vertices.count : m.triangles.count / 3
-      guard required <= limit - items.count else {
+      guard required <= limit - primitiveCount else {
         complete = false
         items = []
         return
@@ -69,7 +69,7 @@ struct SpatialClearance {
           let a = m.vertices[Int(m.triangles[i])]
           let b = m.vertices[Int(m.triangles[i + 1])]
           let c = m.vertices[Int(m.triangles[i + 2])]
-          if f.trade == .floor {floors.append(a,b,c)}
+          if f.trade == .floor,floors.append(a,b,c) {continue}
           items.append(
             Bounds(low: a, high: a).union(Bounds(low: b, high: b)).union(Bounds(low: c, high: c)))
         }
@@ -92,14 +92,14 @@ struct SpatialClearance {
       let mesh=index.features[tile.feature].mesh
       for (offset,primitive) in tile.primitives.enumerated() {
         if offset%4096==0 { try Task.checkCancellation() }
-        guard items.count < limit else { complete=false; items=[]; return }
+        guard primitiveCount < limit else { complete=false; items=[]; return }
         if mesh.triangles.isEmpty {
           let p=mesh.vertices[primitive]; items.append(Bounds(low:p,high:p))
         } else {
           let a=mesh.vertices[Int(mesh.triangles[primitive*3])]
           let b=mesh.vertices[Int(mesh.triangles[primitive*3+1])]
           let c=mesh.vertices[Int(mesh.triangles[primitive*3+2])]
-          if index.features[tile.feature].trade == .floor {floors.append(a,b,c)}
+          if index.features[tile.feature].trade == .floor,floors.append(a,b,c) {continue}
           items.append(Bounds(low:a,high:a).union(Bounds(low:b,high:b)).union(Bounds(low:c,high:c)))
         }
       }
@@ -183,6 +183,7 @@ struct SpatialClearance {
         guard (end+V3(x,y,z)-centre).length<=coverageRadius else{return false}
       }}}}
     }
+    guard !floors.intersects(from:a,to:b,below:below,above:above,radius:radius) else{return false}
     guard !nodes.isEmpty else { return true }
     var stack = [0]
     while let index = stack.popLast() {
@@ -208,11 +209,12 @@ private struct FloorSupport {
   var triangles:[Triangle]=[]
   var nodes:[SpatialClearance.Node]=[]
   var isEmpty:Bool {triangles.isEmpty}
-  mutating func append(_ a:V3,_ b:V3,_ c:V3) {
+  mutating func append(_ a:V3,_ b:V3,_ c:V3)->Bool {
     let u=b-a,v=c-a,n=V3(u.y*v.z-u.z*v.y,u.z*v.x-u.x*v.z,u.x*v.y-u.y*v.x)
-    guard n.finite,n.length>1e-10,abs(n.z)/n.length>=0.707 else{return}
+    guard n.finite,n.length>1e-10,abs(n.z)/n.length>=0.707 else{return false}
     let bounds=SpatialClearance.Bounds(low:a,high:a).union(.init(low:b,high:b)).union(.init(low:c,high:c))
     triangles.append(Triangle(a:a,b:b,c:c,bounds:bounds))
+    return true
   }
   mutating func finish(){if !triangles.isEmpty {_=build(0,triangles.count)}}
   private mutating func build(_ start:Int,_ end:Int)->Int {
@@ -247,4 +249,50 @@ private struct FloorSupport {
     }
     return highest
   }
+  // A sloping floor's bounding box contains empty space above its low end.
+  // Use continuous triangle/axis-aligned-box SAT after BVH pruning, retaining
+  // exact floor geometry for collision as well as for support. No display LOD
+  // or hidden-layer state participates in this check.
+  func intersects(from a:V3,to b:V3,below:Double,above:Double,radius:Double)->Bool {
+    guard !nodes.isEmpty else{return false}
+    var stack=[0]
+    while let index=stack.popLast() {
+      let node=nodes[index]
+      guard node.bounds.intersects(a,b,below:below,above:above,radius:radius) else{continue}
+      if node.count==0 {stack.append(node.left);stack.append(node.right);continue}
+      for i in node.start..<(node.start+node.count) {
+        let triangle=triangles[i]
+        guard triangle.bounds.intersects(a,b,below:below,above:above,radius:radius) else{continue}
+        if triangle.intersects(from:a,to:b,below:below,above:above,radius:radius){return true}
+      }
+    }
+    return false
+  }
 }
+
+private extension FloorSupport.Triangle {
+  func intersects(from start:V3,to end:V3,below:Double,above:Double,radius:Double)->Bool {
+    func dot(_ u:V3,_ v:V3)->Double {u.x*v.x+u.y*v.y+u.z*v.z}
+    func cross(_ u:V3,_ v:V3)->V3 {V3(u.y*v.z-u.z*v.y,u.z*v.x-u.x*v.z,u.x*v.y-u.y*v.x)}
+    let centre=start+V3(0,0,(above-below)/2),motion=end-start
+    let vertices=[a-centre,b-centre,c-centre],edges=[b-a,c-b,a-c]
+    let basis=[V3(1,0,0),V3(0,1,0),V3(0,0,1)]
+    var axes=basis+[cross(edges[0],edges[1])]
+    for edge in edges {for axis in basis {axes.append(cross(edge,axis))}}
+    var enter=0.0,exit=1.0
+    for raw in axes {
+      let length=raw.length;guard length>1e-12 else{continue}
+      let axis=raw*(1/length),extent=(abs(axis.x)+abs(axis.y))*radius+abs(axis.z)*(below+above)/2
+      let projected=vertices.map{dot($0,axis)}
+      let low=projected.min()!-extent-1e-9,high=projected.max()!+extent+1e-9,speed=dot(motion,axis)
+      if abs(speed)<1e-12 {if low>0 || high<0 {return false}}
+      else {
+        let first=low/speed,last=high/speed
+        enter=max(enter,min(first,last));exit=min(exit,max(first,last))
+        if enter>exit{return false}
+      }
+    }
+    return true
+  }
+}
+

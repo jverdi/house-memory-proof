@@ -673,6 +673,32 @@ import Darwin
                 let local=try SpatialClearance(index:SpatialDisplayIndex(features:[ground]),camera:low,radius:1)
                 return local.walkingDestination(from:low,toward:target)==nil
             }
+            await check("Observed ramps use exact swept floors and keep stacked levels distinct") {
+                func surface(_ x0:Double,_ x1:Double,_ z0:Double,_ z1:Double)->Feature {
+                    Feature(name:"Observed ramp fixture",trade:.floor,roomID:UUID(),stageID:UUID(),kind:.synthetic,
+                      mesh:Mesh(vertices:[V3(x0,-1,z0),V3(x1,-1,z1),V3(x1,1,z1),V3(x0,1,z0)],triangles:[0,1,2,0,2,3]))
+                }
+                let features=[surface(-2,0,0,0),surface(0,2,0,0.5),surface(2,4,0.5,0.5),surface(-2,4,3,3)]
+                let clearance=SpatialClearance(features:features),start=V3(-0.5,0,1.3)
+                guard clearance.primitiveCount==8,
+                  let middle=clearance.walkingDestination(from:start,toward:V3(1.5,0,1.3)),
+                  let top=clearance.walkingDestination(from:middle.position,toward:V3(2.8,0,1.3),eyeHeight:middle.eyeHeight),
+                  abs(top.position.z-1.8)<1e-8,
+                  let back=clearance.walkingDestination(from:top.position,toward:V3(1,0,1.3),eyeHeight:top.eyeHeight),
+                  let bottom=clearance.walkingDestination(from:back.position,toward:start,eyeHeight:back.eyeHeight),
+                  (bottom.position-start).length<1e-8 else{return false}
+                // A request above the next level cannot teleport through its
+                // floor; walking remains attached to the observed lower one.
+                guard let lower=clearance.walkingDestination(from:start,toward:V3(-0.4,0,4.3)),lower.position.z<2 else{return false}
+                guard !clearance.isClear(from:V3(1,0,1),to:V3(1,0,-1),radius:0.1),
+                  clearance.isClear(from:V3(0.3,0,0.6),to:V3(0.6,0,0.6),radius:0.1) else{return false}
+                let lowCeiling=SpatialClearance(features:features+[surface(0,2,1.7,2.2)])
+                guard lowCeiling.walkingDestination(from:start,toward:V3(1.5,0,1.3))==nil else{return false}
+                let local=try SpatialClearance(index:SpatialDisplayIndex(features:features),camera:V3(1,0,1.5),radius:4)
+                guard local.primitiveCount==8,let indexed=local.walkingDestination(from:start,toward:V3(1.5,0,1.3)),(indexed.position-middle.position).length<1e-8 else{return false}
+                let limited=SpatialClearance(features:features,limit:7)
+                return !limited.complete && limited.walkingDestination(from:start,toward:V3(0,0,1.3))==nil
+            }
             await check("Tour path rejects observed wall and accepts supported camera corridor"){
                 var h=House.empty("Path test");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
                 for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}
