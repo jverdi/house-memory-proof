@@ -269,3 +269,10 @@ The frozen AKAZE candidate at `bf7e1b99`, run 39055638533, passes the unchanged 
 Production now uses the exact tested AKAZE/256-bit descriptor extraction with the same feature-count, mutual matching, source-consensus and geometric acceptance limits. The visual fingerprint moves to `visual-v11-akaze-mldb256`, invalidating old descriptor maps, camera solutions and dependent derived geometry through the existing dependency checks; saved source photographs remain the rebuild input. Experimental workflows become manual-only and check out their frozen baselines so later reruns cannot silently apply an old patch to the new extractor.
 
 Fresh native and standard host integration checks are required after adoption. The two natural-feature finished-stage fixtures still reject all eight nominal finished views each. Their failure is retained, and the successful coded-reference workflow does not erase it. No TestFlight release or physical precision profile is enabled.
+
+
+### Full movie workflow and frozen rendered reference
+
+The full `ffab99e3` workflow passed both UI flows, all three SIGKILL recovery modes, 50 portable cases, independent GLB/USDZ/ZIP64 readers and the offline viewer. Its complete artifact was downloaded and SHA-256 verified (`72db6af2d934d9640423c167f0b954139d55b93392aa1462d48711cc8b08b080`). Inspection of the decoded 1080p movie frame confirms readable, upright, unclipped title and provenance lines. Retained validation reports extend `docs/evidence/native-ffab/`.
+
+After adopting AKAZE, source `ffa44947`, run 39057607285, passes the frozen Blender/Cycles replay: 3/3 nominal views, one unrelated query rejected, maximum position error 8.100 mm. The fixture uses the verified original bytes rather than regenerated pixels. Reports and verified artifact provenance are retained under `docs/evidence/rendered-ffa449/`. This small rendered reference remains separate from the broader analytic and complete-house gates. Native adoption checks are still pending.

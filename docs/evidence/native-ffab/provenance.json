@@ -6,5 +6,9 @@
   "nativeChecks": 93,
   "nativePassed": true,
   "captionFrameVisuallyInspected": true,
-  "fullWorkflowStillPending": true
+  "fullWorkflowStillPending": false,
+  "fullArtifactID": 12109289569,
+  "fullArtifactVerifiedSHA256": "72db6af2d934d9640423c167f0b954139d55b93392aa1462d48711cc8b08b080",
+  "tourFrameVisuallyInspected": true,
+  "tourFrameSHA256": "006ef0036952a969dcfa7679594ebdbbec139826bedf817fd777d248d1d10493"
 }
