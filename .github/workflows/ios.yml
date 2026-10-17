@@ -53,12 +53,15 @@ jobs:
         timeout-minutes: 30
         run: bash ci/simulator.sh prepare
       - name: Compile iOS source
+        id: compile
         timeout-minutes: 12
         run: bash ci/simulator.sh compile
       - name: Run native diagnostics, recovery and UI workflows
         timeout-minutes: 15
         run: bash ci/simulator.sh exercise
       - name: Verify portable core and independent export readers
+        if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/test.glb') != ''
+        timeout-minutes: 10
         run: |
           python3 tooling/hm test
           npm install --prefix build/validation --ignore-scripts gltf-validator@2.0.0-dev.3.10 playwright@1.56.1
