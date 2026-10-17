@@ -2,6 +2,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
+export HOUSE_RELEASE_REVISION="$(git rev-parse --short=10 HEAD)"
+export HOUSE_RELEASE_BUILD="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
+python3 ci/upload_preflight.py
+if python3 -c 'import json,sys;sys.exit(0 if not json.load(open("build/evidence/upload-preflight.json"))["upload_needed"] else 1)'; then
+  echo 'This exact build number already exists in Apple; readiness polling will verify processing and owner access.'
+  exit 0
+fi
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
@@ -40,8 +47,8 @@ umask 077
 printf '%s\n' "$ASC_PRIVATE_KEY_P8" > "$key_path"
 unset ASC_PRIVATE_KEY_P8
 auth=( -allowProvisioningUpdates -authenticationKeyPath "$key_path" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" )
-revision="$(git rev-parse --short=10 HEAD)"
-build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
+revision="$HOUSE_RELEASE_REVISION"
+build_number="$HOUSE_RELEASE_BUILD"
 xcodebuild -version | tee build/evidence/xcode-version.txt
 
 # Redact before tee: GitHub's console masking does not sanitize artifact files.

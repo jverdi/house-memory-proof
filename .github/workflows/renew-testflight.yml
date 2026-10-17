@@ -1,7 +1,10 @@
 name: Check personal beta renewal
 on:
+  push:
+    branches: [main]
+    paths: [ci/renewal.py, ci/test_renewal.py, ci/upload_preflight.py, ci/test_upload_preflight.py, .github/workflows/renew-testflight.yml]
   schedule:
-    - cron: '17 8 * * 1'
+    - cron: '17 8 * * *'
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,6 +18,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: Verify refresh, retry and expiry policy
+        run: python3 -m unittest discover -s ci -p 'test_*.py'
       - name: Inspect expiry without creating a build
         id: expiry
         env:
