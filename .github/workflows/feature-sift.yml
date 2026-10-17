@@ -53,17 +53,18 @@ jobs:
           # count as independent geometric votes in the existing pose gates.
           s=s.replace(beforeLoop,beforeLoop+'\n  if(!uniqueLocations.emplace(keys[i].pt.x,keys[i].pt.y).second)continue;')
           p.write_text(s)
-          for name in ['HouseMemoryProof/VisualMapping.swift','packages/visual-core/hx_vision_test.cpp']:
+          for name in ['HouseMemoryProof/VisualMapping.swift','HouseMemoryProof/PoseGraph.swift','packages/visual-core/hx_vision_test.cpp']:
               p=pathlib.Path(name);s=p.read_text();assert re.search(r'\b32\b',s)
               s=re.sub(r'\b32\b','128',s)
               if name.endswith('.swift'):
                   s=s.replace('visual-v12-camera-pixel-centres','isolated-sift128-precise-v1')
               p.write_text(s)
+          assert '*32' not in pathlib.Path('HouseMemoryProof/PoseGraph.swift').read_text()
           p=pathlib.Path('packages/visual-core/hx_vision.h');s=p.read_text()
           p.write_text(s.replace('32 descriptor bytes per point','128 SIFT descriptor bytes per point (isolated candidate)'))
           PY
           mkdir -p build/vision-evaluation
-          git diff -- packages/visual-core HouseMemoryProof/VisualMapping.swift > build/vision-evaluation/candidate.diff
+          git diff -- packages/visual-core HouseMemoryProof/VisualMapping.swift HouseMemoryProof/PoseGraph.swift > build/vision-evaluation/candidate.diff
           bash tooling/opencv/build-host.sh
           python3 -m venv build/vision-env
           build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
