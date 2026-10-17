@@ -4,15 +4,18 @@ import SQLite3
 import SwiftUI
 
 final class Repository: EvidenceAssetReader {
+  static var defaultRoot:URL {
+    let legacy=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("HouseXray",isDirectory:true)
+    // Preserve any prior beta store in place; fresh installs expose originals in Files.
+    if FileManager.default.fileExists(atPath:legacy.appendingPathComponent("house.sqlite").path){return legacy}
+    return FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("HouseXray",isDirectory:true)
+  }
   let root: URL
   private(set) var recoveryWarnings: [String] = []
   private var db: OpaquePointer?
   private let lock = NSRecursiveLock()
   init(root: URL? = nil) throws {
-    self.root =
-      root
-      ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent("HouseXray", isDirectory: true)
+    self.root = root ?? Self.defaultRoot
     try FileManager.default.createDirectory(
       at: self.root.appendingPathComponent("assets"), withIntermediateDirectories: true)
     guard

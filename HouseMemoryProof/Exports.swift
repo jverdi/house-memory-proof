@@ -230,9 +230,7 @@ enum Exporter {
       ])
       if let key = f.texture, attributes["TEXCOORD_0"] != nil {
         if textureIDs[key] == nil {
-          let root = FileManager.default.urls(
-            for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent(
-              "HouseXray/assets")
+          let root = Repository.defaultRoot.appendingPathComponent("assets")
           if let bytes = try? Data(contentsOf: root.appendingPathComponent(key)),
             bytes.count < 25_000_000
           {
@@ -354,9 +352,7 @@ enum Exporter {
         "color3f[] primvars:displayColor = [(\(Double((c>>16)&255)/255), \(Double((c>>8)&255)/255), \(Double(c&255)/255))]\ncustom string houseXray:id = \"\(f.id)\"\n"
       var texture: String?
       if let key = f.texture, let uv = f.uv, uv.count == f.mesh.vertices.count {
-        let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[
-          0
-        ].appendingPathComponent("HouseXray/assets")
+        let root = Repository.defaultRoot.appendingPathComponent("assets")
         if let bytes = try? Data(contentsOf: root.appendingPathComponent(key)),
           bytes.count < 25_000_000
         {

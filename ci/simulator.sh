@@ -54,21 +54,23 @@ Path('build/evidence/simulator-result.json').write_text(json.dumps({
 PY
 
 app_data="$(xcrun simctl get_app_container "$device_id" com.example.HouseMemoryProof data)"
+app_root="$app_data/Documents/HouseXray"
+if [ -f "$app_data/Library/Application Support/HouseXray/house.sqlite" ]; then app_root="$app_data/Library/Application Support/HouseXray"; fi
 for attempt in $(seq 1 150); do
-  if [ -f "$app_data/Library/Application Support/HouseXray/self-test.json" ]; then break; fi
+  if [ -f "$app_root/self-test.json" ]; then break; fi
   sleep 2
 done
-cp "$app_data/Library/Application Support/HouseXray/self-test.json" build/evidence/native-self-test.json
-cp "$app_data/Library/Application Support/HouseXray/test.hxray" build/evidence/test.hxray
-cp "$app_data/Library/Application Support/HouseXray/house-surface.glb" build/evidence/house-surface.glb
-cp "$app_data/Library/Application Support/HouseXray/points.glb" build/evidence/points.glb
-cp "$app_data/Library/Application Support/HouseXray/points.usdz" build/evidence/points.usdz
-cp "$app_data/Library/Application Support/HouseXray/textured.usdz" build/evidence/textured.usdz
-cp "$app_data/Library/Application Support/HouseXray/textured.glb" build/evidence/textured.glb
-cp "$app_data/Library/Application Support/HouseXray/test.glb" build/evidence/test.glb
-cp "$app_data/Library/Application Support/HouseXray/test.usdz" build/evidence/test.usdz
-cp "$app_data/Library/Application Support/HouseXray/test-render.png" build/evidence/test-render.png
-cp "$app_data/Library/Application Support/HouseXray/test-tour.mp4" build/evidence/test-tour.mp4
+cp "$app_root/self-test.json" build/evidence/native-self-test.json
+cp "$app_root/test.hxray" build/evidence/test.hxray
+cp "$app_root/house-surface.glb" build/evidence/house-surface.glb
+cp "$app_root/points.glb" build/evidence/points.glb
+cp "$app_root/points.usdz" build/evidence/points.usdz
+cp "$app_root/textured.usdz" build/evidence/textured.usdz
+cp "$app_root/textured.glb" build/evidence/textured.glb
+cp "$app_root/test.glb" build/evidence/test.glb
+cp "$app_root/test.usdz" build/evidence/test.usdz
+cp "$app_root/test-render.png" build/evidence/test-render.png
+cp "$app_root/test-tour.mp4" build/evidence/test-tour.mp4
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
 python3 - <<'PYTEST'
 import json

@@ -117,9 +117,7 @@ enum SceneBuilder {
         m.writesToDepthBuffer = false
       }
       if let key = f.texture {
-        let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[
-          0
-        ].appendingPathComponent("HouseXray/assets")
+        let root = Repository.defaultRoot.appendingPathComponent("assets")
         if textureCache[key] == nil,
           let source = CGImageSourceCreateWithURL(root.appendingPathComponent(key) as CFURL, nil),
           let cg = CGImageSourceCreateThumbnailAtIndex(
