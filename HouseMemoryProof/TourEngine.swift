@@ -4,7 +4,7 @@ import AVFoundation
 import UIKit
 import CryptoKit
 
-struct TourShot:Codable {var roomID:UUID;var position:V3;var yaw:Double;var pitch:Double;var caption:String;var duration:Double;var startPhase=0.0;var endPhase=1.0}
+struct TourShot:Codable {var roomID:UUID;var position:V3;var yaw:Double;var pitch:Double;var caption:String;var duration:Double;var startPhase=0.0;var endPhase=1.0;var endPosition:V3?=nil;var endYaw:Double?=nil;var endPitch:Double?=nil}
 struct TourPlan:Codable {var schema=1;var sourceRevision:Int;var synthetic:Bool;var shots:[TourShot];var excluded:[String];var fps=30;var width=1920;var height=1080}
 enum TourDirector {
     static func plan(_ h:House,duration:Double=20,options:SceneOptions=SceneOptions())->TourPlan {
@@ -15,10 +15,26 @@ enum TourDirector {
             if h.isDemo && h.observations.isEmpty {
                 shots.append(TourShot(roomID:r.id,position:r.origin+V3(r.size.x/2,r.size.y/2,1.6),yaw:0,pitch:0.08,caption:r.name+" · SYNTHETIC DEMONSTRATION",duration:5))
             }else if let obs=h.observations.last(where:{$0.roomID==r.id && !$0.documentary && stages.contains($0.stageID) && (unregistered==nil || $0.segmentID==unregistered)}) {
-                let m=obs.camera;var position=V3(m[3],-m[11],m[7]);var forward=V3(-m[2],m[10],-m[6])
-                if let registration=h.segments.first(where:{$0.id==obs.segmentID})?.registration {forward=registration.apply(forward)-registration.apply(V3());position=registration.apply(position)}
-                let yaw=atan2(-forward.x,forward.y)
-                shots.append(TourShot(roomID:r.id,position:position,yaw:yaw,pitch:asin(max(-1,min(1,forward.normalized.z))),caption:r.name+" · approximate captured geometry",duration:5))
+                let samples=h.observations.filter{$0.roomID==r.id && $0.segmentID==obs.segmentID && !$0.documentary}.sorted{$0.timestamp<$1.timestamp}
+                let scene=SceneBuilder.scene(h,options:scope)
+                var moves:[TourShot]=[]
+                if samples.count>=2 {
+                    for i in 1..<samples.count {
+                        let a=samples[i-1],b=samples[i]
+                        guard b.timestamp>a.timestamp,b.timestamp-a.timestamp<5 else{continue}
+                        let start=pose(a,house:h),end=pose(b,house:h)
+                        guard clearPath(start.0,end.0,house:h,options:scope,scene:scene) else{continue}
+                        moves.append(TourShot(roomID:r.id,position:start.0,yaw:start.1,pitch:start.2,caption:r.name+" · approximate captured path",duration:5,endPosition:end.0,endYaw:end.1,endPitch:end.2))
+                    }
+                }
+                // Select separated candidates deterministically; cuts between them are explicit.
+                if !moves.isEmpty {
+                    let count=min(3,moves.count)
+                    for i in 0..<count {shots.append(moves[i*moves.count/count])}
+                }else {
+                    let p=pose(obs,house:h)
+                    shots.append(TourShot(roomID:r.id,position:p.0,yaw:p.1,pitch:p.2,caption:r.name+" · approximate captured geometry",duration:5))
+                }
             }else {excluded.append(r.name+": no captured camera viewpoint")}
         }
         let length=max(5,min(60,duration))/Double(max(1,shots.count));for i in shots.indices{shots[i].duration=length}
@@ -28,12 +44,37 @@ enum TourDirector {
         }
         return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunks,excluded:excluded)
     }
+    static func pose(_ observation:Observation,house:House)->(V3,Double,Double) {
+        let m=observation.camera
+        var p=V3(m[3],-m[11],m[7]),f=V3(-m[2],m[10],-m[6])
+        if let t=house.segments.first(where:{$0.id==observation.segmentID})?.registration{p=t.apply(p);f=t.apply(f)-t.apply(V3())}
+        return (p,atan2(-f.x,f.y),asin(max(-1,min(1,f.normalized.z))))
+    }
+    static func clearPath(_ a:V3,_ b:V3,house:House,options:SceneOptions,scene:SCNScene)->Bool {
+        let distance=(b-a).length
+        guard distance>=0.08,distance<=1,abs(a.z-b.z)<0.25 else{return false}
+        for i in 0...10 {
+            guard NavigationGeometry.observed(a+(b-a)*(Double(i)/10),house:house,options:options) else{return false}
+        }
+        // Conservative camera clearance against observed geometry; no claim about unseen obstacles.
+        for offset in [V3(),V3(0.15,0,0),V3(-0.15,0,0),V3(0,0.15,0),V3(0,-0.15,0),V3(0,0,0.15),V3(0,0,-0.15)] {
+            if !scene.rootNode.hitTestWithSegment(from:SCNVector3((a+offset).render),to:SCNVector3((b+offset).render),options:[SCNHitTestOption.searchMode.rawValue:SCNHitTestSearchMode.closest.rawValue]).isEmpty{return false}
+        }
+        return true
+    }
+    static func camera(_ shot:TourShot,phase:Double)->(V3,Double,Double) {
+        let t=max(0,min(1,phase)),smooth=t*t*(3-2*t)
+        guard let end=shot.endPosition else{return (shot.position,shot.yaw+sin(t*Double.pi)*0.65,shot.pitch)}
+        let delta=atan2(sin((shot.endYaw ?? shot.yaw)-shot.yaw),cos((shot.endYaw ?? shot.yaw)-shot.yaw))
+        return (shot.position+(end-shot.position)*smooth,shot.yaw+delta*smooth,shot.pitch+((shot.endPitch ?? shot.pitch)-shot.pitch)*smooth)
+    }
+
 }
 @MainActor enum MovieExporter {
     static func cacheKey(house:House,plan:TourPlan,options:SceneOptions) throws ->String {
         let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
         var data=try encoder.encode(house);data.append(try encoder.encode(plan))
-        let selection=["renderer-v2",options.mode.rawValue,options.trades.map{$0.rawValue}.sorted().joined(separator:","),String(options.ceilings),options.room?.uuidString ?? "all",options.stage?.uuidString ?? "all"].joined(separator:"|")
+        let selection=["renderer-v3",options.mode.rawValue,options.trades.map{$0.rawValue}.sorted().joined(separator:","),String(options.ceilings),options.room?.uuidString ?? "all",options.stage?.uuidString ?? "all"].joined(separator:"|")
         data.append(Data(selection.utf8));return SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
     }
     // Compatibility adapter: AVAssetWriter's pixel buffer adaptor remains available
@@ -69,7 +110,8 @@ enum TourDirector {
                     try Task.checkCancellation()
                     guard UIApplication.shared.applicationState != .background,ProcessInfo.processInfo.thermalState != .critical else{throw HouseError.message("Movie checkpoint saved. Keep the app open and cool, then export again to resume.")}
                     while !input.isReadyForMoreMediaData {guard writer.status == .writing else{throw writer.error ?? HouseError.message("Movie encoder stopped.")};try await Task.sleep(nanoseconds:10_000_000)}
-                    camera.eulerAngles.y=Float(shot.yaw+sin((shot.startPhase+(shot.endPhase-shot.startPhase)*Double(frame)/Double(max(1,frames-1)))*Double.pi)*0.65)
+                    let phase=shot.startPhase+(shot.endPhase-shot.startPhase)*Double(frame)/Double(max(1,frames-1))
+                    let pose=TourDirector.camera(shot,phase:phase);camera.simdPosition=pose.0.render;camera.eulerAngles=SCNVector3(Float(pose.2),Float(pose.1),0)
                     let image=renderer.snapshot(atTime:Double(frame)/30,with:CGSize(width:width,height:height),antialiasingMode:.none)
                     try autoreleasepool {
                         var buffer:CVPixelBuffer?;let status=CVPixelBufferCreate(kCFAllocatorDefault,width,height,kCVPixelFormatType_32ARGB,[kCVPixelBufferCGImageCompatibilityKey:true,kCVPixelBufferCGBitmapContextCompatibilityKey:true] as CFDictionary,&buffer)

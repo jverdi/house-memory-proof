@@ -58,7 +58,7 @@ struct DrawingAlignmentPage: View {
                     .frame(height: 320).background(.white)
                 Text("Page \(page + 1) · \(points.count)/4 points, in tap order")
                 ForEach(Array(points.enumerated()), id: \.offset) { i, p in
-                    Text("\(i + 1): \(p.x.formatted(.number.precision(.fractionLength(1)))), \(p.y.formatted(.number.precision(.fractionLength(1)))) PDF points")
+                    Text("\(i + 1): \(Double(p.x).formatted(.number.precision(.fractionLength(1)))), \(Double(p.y).formatted(.number.precision(.fractionLength(1)))) PDF points")
                         .font(.caption.monospacedDigit())
                 }
                 Button("Reset sheet points") { points = [] }
