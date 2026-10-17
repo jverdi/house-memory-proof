@@ -11,12 +11,21 @@ import Darwin
     static func run(model:AppModel,includeMovie:Bool=false) async {
         guard let mainRepo=model.repository else{return}
         var results:[[String:Any]]=[]
+        let wasBusy=model.busy;model.busy=true
+        defer{model.busy=wasBusy}
         let runStarted=ProcessInfo.processInfo.systemUptime
-        func check(_ name:String,_ body:()throws->Bool){let started=ProcessInfo.processInfo.systemUptime;do{let ok=try body();results.append(["test":name,"passed":ok,"seconds":ProcessInfo.processInfo.systemUptime-started])}catch{results.append(["test":name,"passed":false,"error":error.localizedDescription,"seconds":ProcessInfo.processInfo.systemUptime-started])}}
+        func check(_ name:String,_ body:()throws->Bool) async {
+            model.status=name
+            // Let the progress panel paint between bounded native checks.
+            try? await Task.sleep(nanoseconds:20_000_000)
+            let started=ProcessInfo.processInfo.systemUptime
+            do{try Task.checkCancellation();let ok=try body();results.append(["test":name,"passed":ok,"seconds":ProcessInfo.processInfo.systemUptime-started])}
+            catch{results.append(["test":name,"passed":false,"error":error.localizedDescription,"seconds":ProcessInfo.processInfo.systemUptime-started])}
+        }
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
-            check("Durable capture rows recover without rewriting the project and survive a stale checkpoint") {
+            await check("Durable capture rows recover without rewriting the project and survive a stale checkpoint") {
                 let repo=try Repository(root:folder.appendingPathComponent("capture-rows"))
                 var h=try SimulatedCapture.make(repo:repo);let original=h.observations;h.observations=[];try repo.save(h)
                 let room=h.rooms[0],stage=h.stages.first{$0.id==h.segments[0].stageID}!,segment=h.segments[0]
@@ -32,7 +41,7 @@ import Darwin
                 var conflicting=original[2];conflicting.note="Conflicting record"
                 do {try repo.stageCapture(conflicting,projectID:h.id,room:room,stage:stage,segment:segment);return false}catch{return true}
             }
-            check("Reveal clips crossing triangles and rejects opposite wall and viewpoint") {
+            await check("Reveal clips crossing triangles and rejects opposite wall and viewpoint") {
                 let b=RevealBoundary(name:"Test",segmentID:UUID(),origin:V3(),horizontal:V3(1,0,0),vertical:V3(0,1,0),width:1,height:1,depth:0.2,finishOffset:0.01,sourceFingerprint:"test")
                 var f=house.features[0];f.mesh=Mesh(vertices:[V3(-1,0.2,0.1),V3(2,0.2,0.1),V3(0.5,2,0.1)],triangles:[0,1,2]);f.uv=[UV(u:0,v:0),UV(u:1,v:0),UV(u:0.5,v:1)]
                 let clipped=try RevealVolumes.clip(f,to:b)
@@ -40,7 +49,7 @@ import Darwin
                 let opposite=try RevealVolumes.clip(f,to:b)
                 return b.valid && clipped.mesh.valid && !clipped.mesh.triangles.isEmpty && clipped.uv?.count==clipped.mesh.vertices.count && clipped.mesh.vertices.allSatisfy{let q=b.coordinates($0);return q.x >= -1e-9 && q.x<=1+1e-9 && q.y>=(-1e-9) && q.y<=1+1e-9 && q.z<=0.2} && opposite.mesh.vertices.isEmpty && b.viewedFromFront(V3(0,0,-1)) && !b.viewedFromFront(V3(0,0,1))
             }
-            check("Shared reference registration checks third board and invalidates dependencies") {
+            await check("Shared reference registration checks third board and invalidates dependencies") {
                 var h=House.empty("Registration test");var anchor=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);anchor.registration=Rigid()
                 var source=Segment(roomID:h.rooms[0].id,stageID:h.stages[1].id)
                 for i in 0..<3 {let board=ReferenceBoard(name:"Board",image:"test.png",pdf:"test.pdf");h.references.append(board);var a=Rigid();a.values[3]=Double(i)*0.6;a.values[7]=1;a.values[11] = -2-Double(i)*0.2;var b=a;b.values[3]-=1;anchor.referencePoses.append(ReferencePose(boardID:board.id,matrix:a.values));source.referencePoses.append(ReferencePose(boardID:board.id,matrix:b.values))}
@@ -57,13 +66,13 @@ import Darwin
                 source.referencePoses[index].matrix[3]+=0.1
                 do {_=try ReferenceRegistration.fit(source:source,anchor:anchor,house:h);return false}catch{return true}
             }
-            check("Display reduction stays bounded and preserves source triangles and UVs") {
+            await check("Display reduction stays bounded and preserves source triangles and UVs") {
                 let mesh=Mesh.box(center:V3(),size:V3(2,3,4)),uv=mesh.vertices.map{UV(u:$0.x,v:$0.y)}
                 let reduced=DisplayGeometry.reduce(mesh,uv:uv,budget:9)
                 guard reduced.0.valid,reduced.0.vertices.count<=9,reduced.0.triangles.count<=9,reduced.1?.count==reduced.0.vertices.count else{return false}
                 return zip(reduced.0.vertices,reduced.1!).allSatisfy{mesh.vertices.contains($0.0) && $0.1.u==$0.0.x && $0.1.v==$0.0.y} && mesh.vertices.count==8
             }
-            check("Spatial display tiles preserve source primitives, UVs, budgets and room movement") {
+            await check("Spatial display tiles preserve source primitives, UVs, budgets and room movement") {
                 var features:[Feature]=[]
                 for i in 0..<80 {
                     var f=house.features[0];f.id=UUID();f.mesh = .box(center:V3(Double(i)-40,Double(i%4),0),size:V3(1,1,2))
@@ -83,7 +92,7 @@ import Darwin
                 }
                 do {_=try SpatialDisplayIndex(features:features,primitiveLimit:10);return false}catch{return true}
             }
-            check("Traced annotation loses eligibility when source revision or registration changes") {
+            await check("Traced annotation loses eligibility when source revision or registration changes") {
                 var h=House.empty("Annotation inputs");var segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);segment.registration=Rigid();h.segments=[segment]
                 var source=Feature(name:"Wall",trade:.structure,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.observed,mesh:.box(center:V3(),size:V3(2,0.1,3)),segmentID:segment.id)
                 var annotation=source;annotation.id=UUID();annotation.name="Traced service";annotation.segmentID=nil
@@ -99,7 +108,7 @@ import Darwin
                 h=restored;h.features[0].artifactValid=false
                 return !DerivedEvidence.currentIDs(h).contains(annotation.id)
             }
-            check("Capture face labels preserve every triangle and isolate ceiling layers") {
+            await check("Capture face labels preserve every triangle and isolate ceiling layers") {
                 var h=House.empty("Face labels");let room=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:room.id,stageID:stage.id);h.segments=[segment]
                 let mesh=Mesh(vertices:[V3(),V3(1,0,0),V3(0,1,0),V3(0,0,1)],triangles:[0,1,2,0,2,3,1,2,3])
                 let anchor=UUID(),parts=MeshSemantics.partition(mesh,labels:["floor","ceiling","unsupported"],anchor:anchor,roomID:room.id,stage:stage,segmentID:segment.id)
@@ -108,7 +117,7 @@ import Darwin
                 guard !SceneBuilder.features(h,options:SceneOptions()).contains(where:{$0.trade == .ceiling}),SceneBuilder.features(h,options:SceneOptions(ceilings:true)).contains(where:{$0.trade == .ceiling}) else{return false}
                 return MeshSemantics.partition(mesh,labels:["floor","ceiling","unsupported"],anchor:anchor,roomID:room.id,stage:stage,segmentID:segment.id).map{$0.id}==parts.map{$0.id}
             }
-            check("Field evidence separates validation, preserves abstentions and never enables precision") {
+            await check("Field evidence separates validation, preserves abstentions and never enables precision") {
                 var h=House.empty("Field record")
                 let dimension=Dimension(name:"Fixture width",a:V3(),b:V3(1.01,0,0),roomID:h.rooms[0].id,sourceRevision:1)
                 let check=FieldCheck(split:.validation,kind:.distance,fixture:"Independent region",session:"Later session",conditions:"Fixture",device:"Synthetic test device",sourceBuild:"test",cameraMode:"synthetic",truthUncertainty:0.002,cameraDistance:1.5,measurement:dimension,referenceDistance:1,referencePoint:nil)
@@ -119,16 +128,16 @@ import Darwin
                 guard restored.fieldChecks==h.fieldChecks,summary.attempts==2,summary.accepted==1,abs((summary.p95Metres ?? 1)-0.01)<1e-9,!summary.precisionProfileEnabled else{return false}
                 var invalid=check;invalid.referenceDistance = -1;return !invalid.valid
             }
-            check("Construction category survives arbitrary stage names") {
+            await check("Construction category survives arbitrary stage names") {
                 var h=house;h.stages[0].name="After inspection";h.stages[0].phase = .rough;h.stages[1].name="Ready to paint";h.stages[1].phase = .finished
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))
                 return SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.rough))==[h.stages[0].id] && SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.finished))==[h.stages[1].id]
             }
-            check("Ceres joint solver checks derivatives and rejects corrupt or disconnected evidence") {
+            await check("Ceres joint solver checks derivatives and rejects corrupt or disconnected evidence") {
                 var error=0.0;let status=hx_bundle_selftest(&error)
                 guard status==1 else{throw HouseError.message("Joint solver diagnostic failed at gate \(status).")};return error<0.003
             }
-            check("Image-track joint refinement survives save/reload without changing raw cameras") {
+            await check("Image-track joint refinement survives save/reload without changing raw cameras") {
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
                 let original=capture.observations
@@ -138,7 +147,7 @@ import Darwin
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(capture));try decoded.validate()
                 return decoded.observations==original && decoded.segments[0].poseSolution==result.solution && (result.solution.bundleCheckRMS ?? 100)<2 && DerivedEvidence.currentIDs(decoded).contains(result.feature.id)
             }
-            check("RGB-only multi-view triangulation retains independent point provenance") {
+            await check("RGB-only multi-view triangulation retains independent point provenance") {
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
                 for i in capture.observations.indices {capture.observations[i].depth=nil;capture.observations[i].confidence=nil}
@@ -146,7 +155,7 @@ import Darwin
                 capture.features=[result];try capture.validate()
                 return result.mesh.vertices.count>=20 && result.pointTracks?.count==result.mesh.vertices.count && result.pointTracks!.allSatisfy{$0.controls.count>=3}
             }
-            check("Incremental snapshots deduplicate originals and reject partial or corrupt restore") {
+            await check("Incremental snapshots deduplicate originals and reject partial or corrupt restore") {
                 let folder=repo.root.appendingPathComponent("incremental-test"),restoredRepo=try Repository(root:repo.root.appendingPathComponent("incremental-restore"))
                 var h=House.empty("Snapshot test");let key=try repo.put(Data("original bytes".utf8),ext:"jpg");h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)]
                 let first=try IncrementalSnapshots.write(house:h,repo:repo,folder:folder);h.revision+=1;h.notes="Later note";_=try IncrementalSnapshots.write(house:h,repo:repo,folder:folder)
@@ -156,7 +165,7 @@ import Darwin
                 try Data("corrupt".utf8).write(to:assets[0],options:.atomic)
                 do{_=try IncrementalSnapshots.restore(first,repo:restoredRepo,folder:folder);return false}catch{return true}
             }
-            check("Boundary coverage counts unseen and occluded nominal patches") {
+            await check("Boundary coverage counts unseen and occluded nominal patches") {
                 var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
                 // Narrow-FOV planar depth diagnostic; RGB pixels are not consumed by coverage.
                 for i in h.observations.indices {h.observations[i].intrinsics[0]*=2;h.observations[i].intrinsics[4]*=2;h.observations[i].sharpness=0.1}
@@ -169,7 +178,7 @@ import Darwin
                 let unknown=try BoundaryCoverage.analyze(house:h,boundary:unseen,repo:repo)
                 return supported.supported>0 && blocked.supported==0 && blocked.states.contains(3) && unknown.states.allSatisfy{$0==0}
             }
-            check("Disconnected photograph is excluded without inventing camera corrections") {
+            await check("Disconnected photograph is excluded without inventing camera corrections") {
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
                 capture.observations[0].image=try repo.put(Data(contentsOf:resources.appendingPathComponent("vision-query-3.jpg")),ext:"jpg")
@@ -180,43 +189,43 @@ import Darwin
                 guard capture.segments[0].poseSolution==solution else{return false}
                 return PoseGraph.selected(capture.observations,segment:capture.segments[0],house:capture)?.count==solution.cameras.count
             }
-            check("Recorded path follows stair height without jumping to another floor") {
+            await check("Recorded path follows stair height without jumping to another floor") {
                 let edge=NavigationGeometry.PathEdge(a:V3(0,0,1.6),b:V3(1,0,2.1))
                 guard let point=NavigationGeometry.followedHeight(from:V3(0,0,1.6),to:V3(0.1,0,1.6),paths:[edge]) else{return false}
                 let upper=NavigationGeometry.PathEdge(a:V3(0,0,4.6),b:V3(1,0,4.6))
                 return abs(point.z-1.65)<1e-9 && NavigationGeometry.followedHeight(from:V3(0,0,1.6),to:V3(0.1,0,1.6),paths:[upper])==nil
             }
-            check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
-            check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
-            check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}
-            check("Reject reflected transform"){var t=Rigid();t.values[0] = -1;return !t.valid}
-            check("Reference fit and held-out point"){let a=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,2)],b=a.map{V3(-$0.y+3,$0.x+4,$0.z+2)};guard let(t,e)=Rigid.register(source:Array(a.prefix(3)),target:Array(b.prefix(3))) else{return false};return e<1e-10 && (t.apply(a[3])-b[3]).length<1e-10}
-            check("Reject collinear controls"){Rigid.register(source:[V3(),V3(1),V3(2)],target:[V3(),V3(1),V3(2)])==nil}
-            check("Checked registration rejects distorted fit despite matching held-out point"){
+            await check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
+            await check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
+            await check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}
+            await check("Reject reflected transform"){var t=Rigid();t.values[0] = -1;return !t.valid}
+            await check("Reference fit and held-out point"){let a=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,2)],b=a.map{V3(-$0.y+3,$0.x+4,$0.z+2)};guard let(t,e)=Rigid.register(source:Array(a.prefix(3)),target:Array(b.prefix(3))) else{return false};return e<1e-10 && (t.apply(a[3])-b[3]).length<1e-10}
+            await check("Reject collinear controls"){Rigid.register(source:[V3(),V3(1),V3(2)],target:[V3(),V3(1),V3(2)])==nil}
+            await check("Checked registration rejects distorted fit despite matching held-out point"){
                 let a=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,0)]
                 var b=a;b[1]=V3(2,0,0)
                 do{_=try CheckedRegistration.fit(source:a,target:b);return false}catch{return true}
             }
-            check("Drawing controls fit translated vertical plane and reject malformed coordinates"){
+            await check("Drawing controls fit translated vertical plane and reject malformed coordinates"){
                 let a=[V3(),V3(2,0,0),V3(0,3,0),V3(2,3,0)],b=a.map{V3($0.x+4,6,$0.y+1)}
                 let(t,f,c)=try CheckedRegistration.fit(source:a,target:b)
                 guard f<1e-10,c<1e-10,(t.apply(V3(1,2,0))-V3(5,6,3)).length<1e-10 else{return false}
                 do{_=try CheckedRegistration.coordinates("1,garbage,2,3");return false}catch{return true}
             }
-            check("Visual pose converts canonical saved frame into live AR frame"){
+            await check("Visual pose converts canonical saved frame into live AR frame"){
                 var live=Rigid();live.values[3]=5;live.values[7]=6;live.values[11]=7
                 let saved=Rigid(values:[1,0,0,2, 0,0,-1,-4, 0,1,0,3, 0,0,0,1])
                 guard let overlay=VisualMapping.overlay(liveCamera:live,savedCanonicalCamera:saved) else{return false}
                 return (overlay.apply(V3(2,3,4))-V3(5,6,7)).length<1e-10 && !VisualMapping.agree(live,saved)
             }
-            check("Visual grayscale retains raw top-to-bottom camera rows"){
+            await check("Visual grayscale retains raw top-to-bottom camera rows"){
                 var pixels=Data(repeating:0,count:128*128);for y in 0..<64{for x in 0..<128{pixels[y*128+x]=255}}
                 let cg=CGImage(width:128,height:128,bitsPerComponent:8,bitsPerPixel:8,bytesPerRow:128,space:CGColorSpaceCreateDeviceGray(),bitmapInfo:CGBitmapInfo(rawValue:0),provider:CGDataProvider(data:pixels as CFData)!,decode:nil,shouldInterpolate:false,intent:.defaultIntent)!
                 let encoded=NSMutableData();let destination=CGImageDestinationCreateWithData(encoded as CFMutableData,"public.png" as CFString,1,nil)!;CGImageDestinationAddImage(destination,cg,nil);CGImageDestinationFinalize(destination)
                 let(gray,w,h)=try VisualMapping.image(encoded as Data)
                 return w==128 && h==128 && gray[0]>240 && gray[127*128]<10
             }
-            check("Rendered corner images localize held query viewpoints without pose input"){
+            await check("Rendered corner images localize held query viewpoints without pose input"){
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 let capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
                 let map=try VisualMapping.build(house:capture,segment:capture.segments[0],repo:repo)
@@ -233,7 +242,7 @@ import Darwin
                 guard matched>=2,worst<0.03 else{throw HouseError.message("Image localization: \(matched)/3 held views, worst accepted position error \(worst) m, \(map.points.count) map features.")}
                 return true
             }
-            check("Derived surfaces are excluded when camera inputs change"){
+            await check("Derived surfaces are excluded when camera inputs change"){
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
                 let segment=capture.segments[0]
@@ -243,7 +252,7 @@ import Darwin
                 capture.observations[0].camera[3]+=0.01
                 return !DerivedEvidence.currentIDs(capture).contains(feature.id) && capture.features[0].mesh==feature.mesh
             }
-            check("Image depth graph removes injected camera translation drift"){
+            await check("Image depth graph removes injected camera translation drift"){
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
                 let original=capture.observations
@@ -257,20 +266,20 @@ import Darwin
                 capture.observations[0].note += " changed input"
                 return PoseGraph.selected(capture.observations,segment:capture.segments[0],house:capture)==nil
             }
-            check("Metric feature alignment and 120-camera pose graph closure"){
+            await check("Metric feature alignment and 120-camera pose graph closure"){
                 var error=0.0;let status=hx_graph_selftest(&error)
                 guard status==1 else{throw HouseError.message("Pose graph diagnostic failed at gate \(status).")};return error<0.0001
             }
-            check("Native visual feature matching and robust PnP diagnostics"){
+            await check("Native visual feature matching and robust PnP diagnostics"){
                 var error=0.0;var falseAccepts:UInt32=0
                 let status=hx_vision_selftest(&error,&falseAccepts)
                 guard status==1 else{throw HouseError.message("Vision diagnostic failed at gate \(status), max position error \(error), false accepts \(falseAccepts).")}
                 return error<=0.02 && falseAccepts==0
             }
-            check("Fixture has three independent rooms and paired stages"){try house.validate();return house.rooms.count==3 && house.stages.count==2 && house.features.allSatisfy{$0.kind == .synthetic}}
-            check("Finish switch preserves stable geometry"){let rough=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.rough))},finish=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.finished,ceilings:true))};return !rough.isEmpty && !finish.isEmpty && rough.allSatisfy{$0.trade != .finish} && finish.contains{$0.trade == .ceiling}}
+            await check("Fixture has three independent rooms and paired stages"){try house.validate();return house.rooms.count==3 && house.stages.count==2 && house.features.allSatisfy{$0.kind == .synthetic}}
+            await check("Finish switch preserves stable geometry"){let rough=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.rough))},finish=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.finished,ceilings:true))};return !rough.isEmpty && !finish.isEmpty && rough.allSatisfy{$0.trade != .finish} && finish.contains{$0.trade == .ceiling}}
             #if DEBUG
-            check("Store migration rollback, verified snapshot and future-version refusal") {
+            await check("Store migration rollback, verified snapshot and future-version refusal") {
                 let root=folder.appendingPathComponent("migration-check"),id=try StoreMigrationDiagnostics.legacyFixture(at:root)
                 do{_=try Repository(root:root,migrationCheckpoint:{throw HouseError.message("Injected migration interruption")});return false}catch{}
                 let interrupted=try StoreMigrationDiagnostics.state(at:root)
@@ -289,32 +298,32 @@ import Darwin
                 return try StoreMigrationDiagnostics.state(at:root).0==999
             }
             #endif
-            check("Additive schema migration preserves original identity"){let data=try JSONEncoder().encode(house);var json=try JSONSerialization.jsonObject(with:data) as! [String:Any];json.removeValue(forKey:"references");let old=try JSONSerialization.data(withJSONObject:json);let decoded=try JSONDecoder().decode(House.self,from:old);return decoded.id==house.id && decoded.references.isEmpty && decoded.features==house.features}
-            check("Stage composition isolates unfinished and finished session frames"){
+            await check("Additive schema migration preserves original identity"){let data=try JSONEncoder().encode(house);var json=try JSONSerialization.jsonObject(with:data) as! [String:Any];json.removeValue(forKey:"references");let old=try JSONSerialization.data(withJSONObject:json);let decoded=try JSONDecoder().decode(House.self,from:old);return decoded.id==house.id && decoded.references.isEmpty && decoded.features==house.features}
+            await check("Stage composition isolates unfinished and finished session frames"){
                 var h=House.empty("Stages");let a=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id),b=Segment(roomID:h.rooms[0].id,stageID:h.stages[1].id);h.segments=[a,b]
                 for segment in h.segments{h.features.append(Feature(name:"Surface",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:.observed,mesh:.box(center:V3(),size:V3(1,1,1)),segmentID:segment.id))}
                 return SceneBuilder.features(h,options:SceneOptions(mode:.rough)).map{$0.segmentID}==[a.id] && SceneBuilder.features(h,options:SceneOptions(mode:.finished)).map{$0.segmentID}==[b.id] && SceneBuilder.features(h,options:SceneOptions(mode:.ghost)).count==1
             }
-            check("Observation provenance rejects a different segment stage"){
+            await check("Observation provenance rejects a different segment stage"){
                 var h=House.empty("Provenance");let segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments=[segment]
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 let capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
                 var o=capture.observations[0];o.roomID=h.rooms[0].id;o.segmentID=segment.id;o.stageID=h.stages[1].id;h.observations=[o]
                 do{try h.validate();return false}catch{return true}
             }
-            check("Local store roundtrip"){try repo.save(house);return try repo.all().first==house}
-            check("Revision recovery"){let original=house;house.revision+=1;house.name="Edited";try repo.save(house);return try repo.previous(house.id)==original}
-            check("Failed candidate does not replace committed evidence"){
+            await check("Local store roundtrip"){try repo.save(house);return try repo.all().first==house}
+            await check("Revision recovery"){let original=house;house.revision+=1;house.name="Edited";try repo.save(house);return try repo.previous(house.id)==original}
+            await check("Failed candidate does not replace committed evidence"){
                 let before=try repo.all().first;var bad=house;bad.features[0].mesh.triangles=[0,1,Int32.max]
                 do{try repo.save(bad);return false}catch{return try repo.all().first==before}
             }
-            check("Corrupt project is isolated without hiding healthy projects"){
+            await check("Corrupt project is isolated without hiding healthy projects"){
                 let isolated=try Repository(root:folder.appendingPathComponent("corrupt-row"));let good=House.empty("Healthy"),bad=House.empty("Corrupt");try isolated.save(good);try isolated.save(bad)
                 var db:OpaquePointer?;guard sqlite3_open(isolated.root.appendingPathComponent("house.sqlite").path,&db)==SQLITE_OK else{return false};defer{sqlite3_close(db)}
                 guard sqlite3_exec(db,"UPDATE projects SET json='broken' WHERE id='\(bad.id.uuidString)'",nil,nil,nil)==SQLITE_OK else{return false}
                 let remaining=try isolated.all();return remaining.map{$0.id}==[good.id] && isolated.recoveryWarnings.count==1 && FileManager.default.fileExists(atPath:isolated.root.appendingPathComponent("recovery/"+bad.id.uuidString+".json").path)
             }
-            check("Capture journal replays before commit and is idempotent after commit"){
+            await check("Capture journal replays before commit and is idempotent after commit"){
                 let store=try Repository(root:folder.appendingPathComponent("journal"));var h=House.empty("Recovery")
                 let segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments=[segment];try store.save(h)
                 let key=try store.put(Data("original camera bytes".utf8),ext:"jpg")
@@ -327,25 +336,25 @@ import Darwin
                 let bad=store.captureJournal.appendingPathComponent("broken.json");try Data("broken".utf8).write(to:bad)
                 return try !store.recoverPendingCaptures().isEmpty && FileManager.default.fileExists(atPath:bad.path)
             }
-            check("Background capture save targets its original project without switching selection"){
+            await check("Background capture save targets its original project without switching selection"){
                 let app=AppModel(root:folder.appendingPathComponent("project-routing"));let a=House.empty("A"),b=House.empty("B")
                 guard app.commit(a),app.commit(b),app.selected==b.id,app.edit(projectID:a.id,{$0.notes="capture belongs to A"}) else{return false}
                 return app.selected==b.id && app.houses.first(where:{$0.id==a.id})?.notes=="capture belongs to A" && app.house?.notes==""
             }
-            check("Asset hash identity"){let a=try repo.put(Data("original".utf8),ext:"txt"),b=try repo.put(Data("original".utf8),ext:"txt");let read=try repo.read(a);return a==b && read==Data("original".utf8)}
-            check("Unsafe paths rejected"){do{_=try repo.assetURL("../escape");return false}catch{return true}}
-            check("Invalid mesh indices rejected"){!Mesh(vertices:[V3()],triangles:[0,1,2]).valid}
-            check("Empty routes remain empty without invalid ranges"){Mesh.route([],radius:0.01).vertices.isEmpty && Mesh.route([V3()],radius:0.01).vertices.isEmpty}
-            check("Reject nonfinite mesh"){!Mesh(vertices:[V3(.nan,0,0)],triangles:[]).valid}
-            check("Archive metadata and original roundtrip"){let key=try repo.put(Data("source drawing".utf8),ext:"txt");house.drawings.append(Drawing(name:"source.txt",asset:key));let url=try Exporter.archive(house,repo:repo);try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("test.hxray"));try FileManager.default.copyItem(at:url,to:mainRepo.root.appendingPathComponent("test.hxray"));let fresh=try Repository(root:folder.appendingPathComponent("restore"));let restored=try Exporter.restore(url,repo:fresh);let verified=try fresh.integrity(restored);return restored.id != house.id && restored.features==house.features && restored.assets==house.assets && verified==1}
-            check("Coordinated folder snapshot is independently restorable"){
+            await check("Asset hash identity"){let a=try repo.put(Data("original".utf8),ext:"txt"),b=try repo.put(Data("original".utf8),ext:"txt");let read=try repo.read(a);return a==b && read==Data("original".utf8)}
+            await check("Unsafe paths rejected"){do{_=try repo.assetURL("../escape");return false}catch{return true}}
+            await check("Invalid mesh indices rejected"){!Mesh(vertices:[V3()],triangles:[0,1,2]).valid}
+            await check("Empty routes remain empty without invalid ranges"){Mesh.route([],radius:0.01).vertices.isEmpty && Mesh.route([V3()],radius:0.01).vertices.isEmpty}
+            await check("Reject nonfinite mesh"){!Mesh(vertices:[V3(.nan,0,0)],triangles:[]).valid}
+            await check("Archive metadata and original roundtrip"){let key=try repo.put(Data("source drawing".utf8),ext:"txt");house.drawings.append(Drawing(name:"source.txt",asset:key));let url=try Exporter.archive(house,repo:repo);try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("test.hxray"));try FileManager.default.copyItem(at:url,to:mainRepo.root.appendingPathComponent("test.hxray"));let fresh=try Repository(root:folder.appendingPathComponent("restore"));let restored=try Exporter.restore(url,repo:fresh);let verified=try fresh.integrity(restored);return restored.id != house.id && restored.features==house.features && restored.assets==house.assets && verified==1}
+            await check("Coordinated folder snapshot is independently restorable"){
                 let folder=repo.root.appendingPathComponent("snapshots",isDirectory:true);try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
                 _=try SnapshotStorage.write(house:house,repo:repo,folder:folder);let files=try FileManager.default.contentsOfDirectory(at:folder,includingPropertiesForKeys:nil);guard let archive=files.first(where:{$0.pathExtension=="hxray"}),!files.contains(where:{$0.pathExtension=="partial"}) else{return false}
                 let restored=try Exporter.restore(archive,repo:repo);return restored.assets==house.assets && restored.features==house.features
             }
-            check("Corrupt archive rejected"){let url=try Exporter.archive(house,repo:repo);var bytes=try Data(contentsOf:url);bytes[60]^=0xff;let broken=folder.appendingPathComponent("broken.hxray");try bytes.write(to:broken);do{_=try Exporter.restore(broken,repo:repo);return false}catch{return true}}
-            check("GLB framing and length"){let url=try Exporter.glb(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.glb"));return d.uint32(0)==0x46546c67 && d.uint32(4)==2 && Int(d.uint32(8))==d.count}
-            check("Model export admits unique texture bytes and rejects missing, corrupt or oversized selections") {
+            await check("Corrupt archive rejected"){let url=try Exporter.archive(house,repo:repo);var bytes=try Data(contentsOf:url);bytes[60]^=0xff;let broken=folder.appendingPathComponent("broken.hxray");try bytes.write(to:broken);do{_=try Exporter.restore(broken,repo:repo);return false}catch{return true}}
+            await check("GLB framing and length"){let url=try Exporter.glb(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.glb"));return d.uint32(0)==0x46546c67 && d.uint32(4)==2 && Int(d.uint32(8))==d.count}
+            await check("Model export admits unique texture bytes and rejects missing, corrupt or oversized selections") {
                 let bytes=Data([137,80,78,71,1,2,3]),key=try repo.put(bytes,ext:"png")
                 var feature=house.features[0];feature.texture=key;feature.uv=feature.mesh.vertices.map{_ in UV(u:0,v:0)}
                 let root=repo.root.appendingPathComponent("assets")
@@ -359,10 +368,10 @@ import Darwin
                 try bytes.write(to:original)
                 return true
             }
-            check("PLY independent parser roundtrip"){let url=try Exporter.meshText(house,options:SceneOptions(),ply:true);let mesh=try PLYReader.read(Data(contentsOf:url));return mesh.valid && mesh.vertices.count==Exporter.canonicalFeatures(house,options:SceneOptions()).reduce(0){$0+$1.mesh.vertices.count}}
-            check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
-            check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}
-            check("Before-after and service tours retain stage identity and exact frame timeline") {
+            await check("PLY independent parser roundtrip"){let url=try Exporter.meshText(house,options:SceneOptions(),ply:true);let mesh=try PLYReader.read(Data(contentsOf:url));return mesh.valid && mesh.vertices.count==Exporter.canonicalFeatures(house,options:SceneOptions()).reduce(0){$0+$1.mesh.vertices.count}}
+            await check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
+            await check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}
+            await check("Before-after and service tours retain stage identity and exact frame timeline") {
                 for preset in [TourPreset.beforeAfter,.services] {
                     let plan=TourDirector.plan(house,duration:10,preset:preset)
                     guard !plan.shots.isEmpty,plan.shots.allSatisfy({$0.duration<=5 && $0.layerMode != nil && $0.tradeNames != nil}),plan.shots.reduce(0,{ $0+Int(($1.duration*30).rounded()) })==300 else{return false}
@@ -370,14 +379,14 @@ import Darwin
                 }
                 return true
             }
-            check("Deterministic tour source revision"){let a=try JSONEncoder().encode(TourDirector.plan(house)),b=try JSONEncoder().encode(TourDirector.plan(house));let p=try JSONDecoder().decode(TourPlan.self,from:a),q=try JSONDecoder().decode(TourPlan.self,from:b);return Set(p.shots.map{$0.roomID}).count==3 && p.shots.allSatisfy{$0.duration<=5} && p.sourceRevision==q.sourceRevision && p.shots.map{$0.position}==q.shots.map{$0.position}}
-            check("Clearance handles parallel rays and rejects incomplete indexes"){
+            await check("Deterministic tour source revision"){let a=try JSONEncoder().encode(TourDirector.plan(house)),b=try JSONEncoder().encode(TourDirector.plan(house));let p=try JSONDecoder().decode(TourPlan.self,from:a),q=try JSONDecoder().decode(TourPlan.self,from:b);return Set(p.shots.map{$0.roomID}).count==3 && p.shots.allSatisfy{$0.duration<=5} && p.sourceRevision==q.sourceRevision && p.shots.map{$0.position}==q.shots.map{$0.position}}
+            await check("Clearance handles parallel rays and rejects incomplete indexes"){
                 let box=SpatialClearance.Bounds(low:V3(),high:V3(1,1,1))
                 let f=Feature(name:"wall",trade:.structure,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:V3(),size:V3(1,1,1)))
                 let limited=SpatialClearance(features:[f],limit:1)
                 return box.intersects(V3(-1,0.5,0.5),V3(2,0.5,0.5),radius:0) && !box.intersects(V3(-1,2,0.5),V3(2,2,0.5),radius:0) && !limited.complete && !limited.isClear(from:V3(5),to:V3(6),radius:0.15)
             }
-            check("Tour path rejects observed wall and accepts supported camera corridor"){
+            await check("Tour path rejects observed wall and accepts supported camera corridor"){
                 var h=House.empty("Path test");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
                 for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}
                 h.features=[Feature(name:"Captured floor",trade:.floor,roomID:r.id,stageID:stage.id,kind:.synthetic,mesh:.box(center:V3(0,0,-0.1),size:V3(3,3,0.1)),segmentID:segment.id)]
@@ -386,15 +395,15 @@ import Darwin
                 h.features=[Feature(name:"Blocking wall",trade:.structure,roomID:r.id,stageID:stage.id,kind:.synthetic,mesh:.box(center:V3(0.25,0,1.6),size:V3(0.1,2,2)),segmentID:segment.id)]
                 return !TourDirector.clearPath(a,b,house:h,options:options,clearance:SpatialClearance(features:Exporter.canonicalFeatures(h,options:options))) && TourDirector.plan(h).shots.allSatisfy{$0.endPosition==nil}
             }
-            check("Moving tour uses short-angle interpolation and endpoint continuity"){
+            await check("Moving tour uses short-angle interpolation and endpoint continuity"){
                 let shot=TourShot(roomID:UUID(),position:V3(),yaw:179*Double.pi/180,pitch:0,caption:"test",duration:5,endPosition:V3(1,0,0),endYaw: -179*Double.pi/180,endPitch:0.2)
                 let a=TourDirector.camera(shot,phase:0),m=TourDirector.camera(shot,phase:0.5),b=TourDirector.camera(shot,phase:1)
                 return a.0==V3() && b.0==V3(1,0,0) && abs(m.0.x-0.5)<1e-10 && abs(m.1-Double.pi)<1e-10 && abs(m.2-0.1)<1e-10
             }
-            check("Tour cache separates layers and projects"){let plan=TourDirector.plan(house);let a=try MovieExporter.cacheKey(house:house,plan:plan,options:SceneOptions());let b=try MovieExporter.cacheKey(house:house,plan:plan,options:SceneOptions(mode:.finished));var other=house;other.id=UUID();let c=try MovieExporter.cacheKey(house:other,plan:plan,options:SceneOptions());return a != b && a != c}
-            check("Walk collision and explicit doorway"){NavigationGeometry.allowed(V3(3,2,1.6),house:house) && !NavigationGeometry.allowed(V3(3,-0.1,1.6),house:house) && NavigationGeometry.allowed(V3(6.1,2.2,1.6),house:house) && !NavigationGeometry.allowed(V3(6.1,1,1.6),house:house)}
-            check("SceneKit offscreen render"){let scene=SceneBuilder.scene(house,options:SceneOptions());let camera=SceneBuilder.camera(at:V3(13,-12,12));camera.look(at:SCNVector3(4,1,-2));scene.rootNode.addChildNode(camera);let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene;renderer.pointOfView=camera;let image=renderer.snapshot(atTime:0,with:CGSize(width:480,height:320),antialiasingMode:.none);try image.pngData()?.write(to:mainRepo.root.appendingPathComponent("test-render.png"));return image.cgImage.map{CaptureController.sharpness($0)>0.002} ?? false}
-            check("Two-reference drift correction and inconsistent-board rejection"){
+            await check("Tour cache separates layers and projects"){let plan=TourDirector.plan(house);let a=try MovieExporter.cacheKey(house:house,plan:plan,options:SceneOptions());let b=try MovieExporter.cacheKey(house:house,plan:plan,options:SceneOptions(mode:.finished));var other=house;other.id=UUID();let c=try MovieExporter.cacheKey(house:other,plan:plan,options:SceneOptions());return a != b && a != c}
+            await check("Walk collision and explicit doorway"){NavigationGeometry.allowed(V3(3,2,1.6),house:house) && !NavigationGeometry.allowed(V3(3,-0.1,1.6),house:house) && NavigationGeometry.allowed(V3(6.1,2.2,1.6),house:house) && !NavigationGeometry.allowed(V3(6.1,1,1.6),house:house)}
+            await check("SceneKit offscreen render"){let scene=SceneBuilder.scene(house,options:SceneOptions());let camera=SceneBuilder.camera(at:V3(13,-12,12));camera.look(at:SCNVector3(4,1,-2));scene.rootNode.addChildNode(camera);let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene;renderer.pointOfView=camera;let image=renderer.snapshot(atTime:0,with:CGSize(width:480,height:320),antialiasingMode:.none);try image.pngData()?.write(to:mainRepo.root.appendingPathComponent("test-render.png"));return image.cgImage.map{CaptureController.sharpness($0)>0.002} ?? false}
+            await check("Two-reference drift correction and inconsistent-board rejection"){
                 var h=House.empty("Reference checks");let a=ReferenceBoard(name:"A",image:"a.png",pdf:"a.pdf",width:0.18),b=ReferenceBoard(name:"B",image:"b.png",pdf:"b.pdf",width:0.18);h.references=[a,b]
                 var fixedA=Rigid().values,fixedB=Rigid().values;fixedA[3] = -0.5;fixedB[3]=0.5
                 var s=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);s.referencePoses=[ReferencePose(boardID:a.id,matrix:fixedA),ReferencePose(boardID:b.id,matrix:fixedB)]
@@ -404,7 +413,7 @@ import Darwin
                 movedB[3]+=0.2;o.referenceObservations=[ReferencePose(boardID:a.id,matrix:movedA),ReferencePose(boardID:b.id,matrix:movedB)]
                 return PoseRefinement.refine(o,segment:s,house:h)==nil
             }
-            check("Reference correction preserves nontrivial camera rotation"){
+            await check("Reference correction preserves nontrivial camera rotation"){
                 var h=House.empty("Rotated controls");let a=ReferenceBoard(name:"A",image:"a.png",pdf:"a.pdf",width:0.18),b=ReferenceBoard(name:"B",image:"b.png",pdf:"b.pdf",width:0.18);h.references=[a,b]
                 let angle=0.07,c=cos(angle),sn=sin(angle);let drift=PoseRefinement.matrix([c,-sn,0,0.1,sn,c,0,-0.05,0,0,1,0.02,0,0,0,1])!
                 let truth=[cos(0.3),0,sin(0.3),1,0,1,0,0.3,-sin(0.3),0,cos(0.3),2,0,0,0,1.0]
@@ -415,7 +424,7 @@ import Darwin
                 let error=zip(corrected.observation.camera,truth).map{abs($0-$1)}.max() ?? .infinity;h.references[1].valid=false
                 return error<1e-9 && PoseRefinement.refine(o,segment:s,house:h)==nil
             }
-            check("Projection and occlusion rejection"){
+            await check("Projection and occlusion rejection"){
                 var depth=Data();for _ in 0..<64*64{depth.float(1)}
                 let o=Observation(roomID:house.rooms[0].id,stageID:house.stages[0].id,segmentID:UUID(),timestamp:0,image:"fixture.jpg",width:64,height:64,camera:Rigid().values,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"normal",light:1000,sharpness:0.1)
                 guard let (uv,z)=TextureBuilder.project(V3(0,1,0),through:o) else{return false}
@@ -436,7 +445,7 @@ import Darwin
             }catch{results.append(["test":"Bundled IFC2x3 conversion and axes","passed":false,"error":error.localizedDescription])}
             do {
                 let fixture=try SimulatedCapture.make(repo:mainRepo)
-                check("Photo triangulation uses an independent third view and rejects disagreement"){
+                await check("Photo triangulation uses an independent third view and rejects disagreement"){
                     let expected=V3(0,2,1.1)
                     var controls=try [0,4,8].map {index -> PhotoControl in
                         let o=fixture.observations[index];guard let projected=TextureBuilder.project(expected,through:o) else{throw HouseError.message("Synthetic point outside image.")}

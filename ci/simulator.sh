@@ -85,7 +85,8 @@ for media in test-tour.mp4 test-tour-frame.png; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
-python3 - <<'PYTEST'
+native_failed=0
+python3 - <<'PYTEST' || native_failed=1
 import json
 r=json.load(open('build/evidence/native-self-test.json'))
 assert r['passed'], r
@@ -127,3 +128,4 @@ cp -R HouseMemoryProof HouseXrayUITests build/formatted-source/
 rm -rf build/formatted-source/HouseMemoryProof/IFC build/formatted-source/HouseMemoryProof/Assets.xcassets
 xcrun swift-format format --in-place --recursive build/formatted-source
 tar -czf build/evidence/formatted-source.tgz -C build/formatted-source .
+exit "$native_failed"
