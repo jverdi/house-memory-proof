@@ -18,20 +18,20 @@ for runtime, devices in sorted(inventory['devices'].items(), reverse=True):
 raise SystemExit('No available iPhone simulator. Update the managed runner image.')
 PY
 )"
+revision="$(git rev-parse --short=10 HEAD)"
+build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
+xcodebuild build \
+  -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
+  -configuration Debug -destination "generic/platform=iOS Simulator" \
+  -derivedDataPath build/DerivedData \
+  CODE_SIGNING_ALLOWED=NO \
+  CURRENT_PROJECT_VERSION="$build_number" PROOF_SOURCE_REVISION="$revision" \
+  2>&1 | tee build/evidence/simulator-build.log
 # Fresh hosted runners usually have no booted simulator. Handle an existing one too.
 if ! xcrun simctl list devices booted | grep -Fq "$device_id"; then
   xcrun simctl boot "$device_id"
 fi
 xcrun simctl bootstatus "$device_id" -b
-revision="$(git rev-parse --short=10 HEAD)"
-build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
-xcodebuild build \
-  -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
-  -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
-  -derivedDataPath build/DerivedData \
-  CODE_SIGNING_ALLOWED=NO \
-  CURRENT_PROJECT_VERSION="$build_number" PROOF_SOURCE_REVISION="$revision" \
-  2>&1 | tee build/evidence/simulator-build.log
 xcrun simctl install "$device_id" build/DerivedData/Build/Products/Debug-iphonesimulator/HouseMemoryProof.app
 xcrun simctl launch "$device_id" com.example.HouseMemoryProof --demo --self-test --video-test | tee build/evidence/launch.log
 # Allow the first SwiftUI frame to render before recording CI evidence.

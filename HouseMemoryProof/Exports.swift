@@ -49,13 +49,14 @@ enum Exporter {
     static func canonicalFeatures(_ h:House,options:SceneOptions)->[Feature] {h.features.filter{SceneBuilder.visible($0,options)}.map{f in var f=f;if let sid=f.segmentID,let t=h.segments.first(where:{$0.id==sid})?.registration {f.mesh.vertices=f.mesh.vertices.map{t.apply($0)}};return f}}
     static func glb(_ h:House,options:SceneOptions)throws->URL {
         let features=canonicalFeatures(h,options:options);var bin=Data(),views:[[String:Any]]=[],accessors:[[String:Any]]=[],meshes:[[String:Any]]=[],nodes:[[String:Any]]=[],materials:[[String:Any]]=[]
-        for f in features where !f.mesh.vertices.isEmpty && !f.mesh.triangles.isEmpty {
+        for f in features where !f.mesh.vertices.isEmpty {
             let posOffset=bin.count;var lo=[Double](repeating:Double.infinity,count:3),hi=[Double](repeating:-Double.infinity,count:3)
             for p in f.mesh.vertices {let v=[p.x,p.z,-p.y];for j in 0..<3{bin.float(Float(v[j]));lo[j]=min(lo[j],v[j]);hi[j]=max(hi[j],v[j])}}
             views.append(["buffer":0,"byteOffset":posOffset,"byteLength":bin.count-posOffset,"target":34962]);let pi=accessors.count;accessors.append(["bufferView":views.count-1,"componentType":5126,"count":f.mesh.vertices.count,"type":"VEC3","min":lo,"max":hi])
-            let idxOffset=bin.count;for i in f.mesh.triangles{bin.le(UInt32(i))};views.append(["buffer":0,"byteOffset":idxOffset,"byteLength":bin.count-idxOffset,"target":34963]);let ii=accessors.count;accessors.append(["bufferView":views.count-1,"componentType":5125,"count":f.mesh.triangles.count,"type":"SCALAR"])
+            let indices=f.mesh.triangles.isEmpty ? Array(0..<Int32(f.mesh.vertices.count)):f.mesh.triangles
+            let idxOffset=bin.count;for i in indices{bin.le(UInt32(i))};views.append(["buffer":0,"byteOffset":idxOffset,"byteLength":bin.count-idxOffset,"target":34963]);let ii=accessors.count;accessors.append(["bufferView":views.count-1,"componentType":5125,"count":indices.count,"type":"SCALAR"])
             let c=f.trade.hex;materials.append(["name":f.trade.rawValue,"doubleSided":true,"pbrMetallicRoughness":["baseColorFactor":[Double((c>>16)&255)/255,Double((c>>8)&255)/255,Double(c&255)/255,1],"metallicFactor":0,"roughnessFactor":0.8]])
-            meshes.append(["primitives":[["attributes":["POSITION":pi],"indices":ii,"material":materials.count-1]]])
+            meshes.append(["primitives":[["attributes":["POSITION":pi],"indices":ii,"material":materials.count-1,"mode":f.mesh.triangles.isEmpty ? 0:4]]])
             nodes.append(["name":f.name,"mesh":meshes.count-1,"extras":["id":f.id.uuidString,"room":f.roomID.uuidString,"stage":f.stageID.uuidString,"evidence":f.kind.rawValue,"trade":f.trade.rawValue,"notes":f.notes]])
         }
         guard !meshes.isEmpty else{throw HouseError.message("No geometry in the selected layers.")}

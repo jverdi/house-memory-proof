@@ -85,7 +85,7 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
         guard simd_length(delta)>0 else{return};let from=camera.simdPosition,to=from+delta
         if flying{camera.simdPosition=to;return}
         let direction=simd_normalize(delta),ahead=to+direction*0.23
-        let hits=view.scene?.rootNode.hitTestWithSegment(from:SCNVector3(from),to:SCNVector3(ahead),options:[SCNHitTestOption.searchMode:SCNHitTestSearchMode.closest.rawValue]) ?? []
+        let hits=view.scene?.rootNode.hitTestWithSegment(from:SCNVector3(from),to:SCNVector3(ahead),options:[SCNHitTestOption.searchMode.rawValue:SCNHitTestSearchMode.closest.rawValue]) ?? []
         if hits.isEmpty {camera.simdPosition=to}
     }
 }

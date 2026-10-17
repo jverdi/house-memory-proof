@@ -43,7 +43,8 @@ final class Repository {
     func assetURL(_ key:String)throws->URL {guard !key.contains("/"),!key.contains("\\"),!key.contains(".."),key.count<100 else{throw HouseError.message("Invalid asset path.")};return root.appendingPathComponent("assets").appendingPathComponent(key)}
     func put(_ bytes:Data,ext:String)throws->String {
         guard bytes.count<=512*1024*1024 else{throw HouseError.message("This individual asset is larger than the current 512 MB admission limit.")}
-        let hash=SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined();let key=hash+"."+ext
+        let clean=ext.filter{$0.isLetter || $0.isNumber};let suffix=clean.isEmpty ? "bin":String(clean.prefix(12))
+        let hash=SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined();let key=hash+"."+suffix
         let url=try assetURL(key)
         if !FileManager.default.fileExists(atPath:url.path){try bytes.write(to:url,options:.atomic)}
         return key
@@ -64,7 +65,7 @@ final class Repository {
     @Published var shareURL:URL?
     let repository:Repository?
     init(root:URL?=nil) {
-        do {let r=try Repository(root:root);repository=r;houses=try r.all();selected=houses.first?.id}
+        do {let r=try Repository(root:root);let loaded=try r.all();repository=r;houses=loaded;selected=houses.first?.id}
         catch {repository=nil;self.error=error.localizedDescription}
     }
     var house:House? {houses.first{$0.id==selected}}
