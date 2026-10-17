@@ -172,6 +172,9 @@ enum Exporter {
     var images: [[String: Any]] = []
     var textures: [[String: Any]] = []
     var textureIDs: [String: Int] = [:]
+    var featureNodes:[UUID:[UUID:[Int]]]=[:]
+    let estimatedBytes=features.reduce(Int64(0)){total,f in total+Int64(f.mesh.vertices.count)*20+Int64(max(f.mesh.triangles.count,f.mesh.vertices.count))*4}
+    guard estimatedBytes<=300_000_000 else{throw HouseError.message("This model exceeds the GLB export memory budget. Select one room or stage and export again.")}
     for f in features where !f.mesh.vertices.isEmpty {
       let posOffset = bin.count
       var lo = [Double](repeating: Double.infinity, count: 3)
@@ -261,6 +264,7 @@ enum Exporter {
           ]
         ]
       ])
+      featureNodes[f.roomID,default:[:]][f.stageID,default:[]].append(nodes.count)
       nodes.append([
         "name": f.name, "mesh": meshes.count - 1,
         "extras": [
@@ -268,19 +272,76 @@ enum Exporter {
           "evidence": f.kind.rawValue, "trade": f.trade.rawValue, "notes": f.notes,
           "endpoint": f.endpoint, "reviewed": f.reviewed,
           "sourceObservations": f.sourceIDs.map { $0.uuidString },
+          "sourceGeometry": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.annotationSources ?? [])),
+          "sourceRevision": f.revision,
         ],
       ])
     }
     guard !meshes.isEmpty else { throw HouseError.message("No geometry in the selected layers.") }
+    // Identity hierarchy only: vertices already use the exported world frame.
+    // Explicit parents make levels, rooms and dated stages reusable in editors.
+    var levels:[Int:[Int]]=[:]
+    for room in h.rooms {
+      guard let byStage=featureNodes[room.id] else{continue}
+      var stageNodes:[Int]=[]
+      for stage in h.stages {
+        guard let children=byStage[stage.id],!children.isEmpty else{continue}
+        stageNodes.append(nodes.count)
+        nodes.append(["name":stage.name,"children":children,"extras":["type":"stage","id":stage.id.uuidString,"phase":stage.category.rawValue,"evidence":stage.kind.rawValue,"capturedAt":ISO8601DateFormatter().string(from:stage.date)]])
+      }
+      levels[room.level,default:[]].append(nodes.count)
+      nodes.append(["name":room.name,"children":stageNodes,"extras":["type":"room","id":room.id.uuidString,"level":room.level]])
+    }
+    var sceneRoots:[Int]=[]
+    for level in levels.keys.sorted() {
+      sceneRoots.append(nodes.count)
+      nodes.append(["name":"Level \(level)","children":levels[level]!,"extras":["type":"level","level":level]])
+    }
+    var tour=TourDirector.plan(h,options:options)
+    let exportedRooms=Set(features.map{$0.roomID})
+    tour.shots.removeAll{!exportedRooms.contains($0.roomID)}
+    var cameras:[[String:Any]]=[],animations:[[String:Any]]=[],cameraNodes:[Int]=[]
+    func appendFloats(_ values:[Float],type:String,count:Int,min:[Float]?=nil,max:[Float]?=nil)->Int {
+      let offset=bin.count;for value in values{bin.float(value)}
+      views.append(["buffer":0,"byteOffset":offset,"byteLength":bin.count-offset])
+      var accessor:[String:Any]=["bufferView":views.count-1,"componentType":5126,"count":count,"type":type]
+      if let min{accessor["min"]=min};if let max{accessor["max"]=max}
+      let index=accessors.count;accessors.append(accessor);return index
+    }
+    // Each cut is a separate clip. Editors must not interpolate a camera
+    // through unknown space between independently admitted room viewpoints.
+    for (index,shot) in tour.shots.enumerated() {
+      let frames=max(1,Int((shot.duration*30).rounded()))
+      var times:[Float]=[],positions:[Float]=[],rotations:[Float]=[]
+      var previous:SIMD4<Float>?
+      for frame in 0...frames {
+        let t=Double(frame)/Double(frames)
+        let (position,yaw,pitch)=TourDirector.camera(shot,phase:shot.startPhase+t*(shot.endPhase-shot.startPhase))
+        let camera=SceneBuilder.camera(at:position,yaw:yaw,pitch:pitch)
+        var q=camera.simdOrientation.vector
+        if let previous,simd_dot(previous,q)<0{q = -q};previous=q
+        times.append(Float(t*shot.duration));positions += [Float(position.x),Float(position.z),Float(-position.y)];rotations += [q.x,q.y,q.z,q.w]
+      }
+      let time=appendFloats(times,type:"SCALAR",count:frames+1,min:[0],max:[Float(shot.duration)])
+      let translation=appendFloats(positions,type:"VEC3",count:frames+1),rotation=appendFloats(rotations,type:"VEC4",count:frames+1)
+      let node=nodes.count;cameraNodes.append(node)
+      nodes.append(["name":"Tour shot \(index+1)","camera":cameras.count,"translation":Array(positions.prefix(3)),"rotation":Array(rotations.prefix(4)),"extras":["type":"tourCamera","room":shot.roomID.uuidString,"caption":shot.caption,"cut":index]])
+      cameras.append(["type":"perspective","perspective":["aspectRatio":16.0/9.0,"yfov":65.0*Double.pi/180.0,"znear":0.03,"zfar":150.0]])
+      animations.append(["name":"Shot \(index+1) · \(shot.caption)","samplers":[["input":time,"output":translation,"interpolation":"LINEAR"],["input":time,"output":rotation,"interpolation":"LINEAR"]],"channels":[["sampler":0,"target":["node":node,"path":"translation"]],["sampler":1,"target":["node":node,"path":"rotation"]]],"extras":["cut":index,"durationSeconds":shot.duration]])
+    }
+    if !cameraNodes.isEmpty {sceneRoots.append(nodes.count);nodes.append(["name":"Automatic tour","children":cameraNodes])}
     var json: [String: Any] = [
       "asset": [
         "version": "2.0", "generator": "House Xray",
         "extras": ["units": "metres", "sourceRevision": h.revision, "accuracy": "Uncalibrated"],
-      ], "scene": 0, "scenes": [["nodes": Array(nodes.indices)]], "nodes": nodes, "meshes": meshes,
+      ], "scene": 0, "scenes": [["nodes": sceneRoots]], "nodes": nodes, "meshes": meshes,
       "materials": materials, "images": images, "textures": textures,
       "buffers": [["byteLength": bin.count]], "bufferViews": views, "accessors": accessors,
     ]
+    if !cameras.isEmpty {json["cameras"]=cameras;json["animations"]=animations}
     json["extras"] = [
+      "tour":try JSONSerialization.jsonObject(with:JSONEncoder().encode(tour)),
+      "sourceCoordinateSystem":"metres Z-up; geometry and cameras converted to glTF Y-up",
       "connections": try JSONSerialization.jsonObject(with: JSONEncoder().encode(h.connections)),
       "measurements": try JSONSerialization.jsonObject(with: JSONEncoder().encode(h.dimensions)),
     ]

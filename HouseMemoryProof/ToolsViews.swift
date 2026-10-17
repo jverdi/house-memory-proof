@@ -9,8 +9,10 @@ struct ToolsPage: View {
   @State private var mode: ViewMode = .rough
   @State private var ceilings = true
   @State private var duration = 20.0
+  @State private var exportRoom:UUID?
+  @State private var exportStage:UUID?
   @State private var diagnostics = ""
-  var options: SceneOptions { SceneOptions(mode: mode, ceilings: ceilings) }
+  var options: SceneOptions { SceneOptions(mode: mode, ceilings: ceilings,room:exportRoom,stage:exportStage) }
   var body: some View {
     NavigationStack {
       Form {
@@ -40,6 +42,14 @@ struct ToolsPage: View {
           NavigationLink("Reconstruct saved depth") { ReconstructionPage(house: house) }
         }
         Section("Export scope") {
+          Picker("Room",selection:$exportRoom) {
+            Text("All registered rooms").tag(Optional<UUID>.none)
+            ForEach(house.rooms){Text("Level \($0.level) · \($0.name)").tag(Optional($0.id))}
+          }
+          Picker("Stage",selection:$exportStage) {
+            Text("Selected layer stages").tag(Optional<UUID>.none)
+            ForEach(house.stages){Text($0.name).tag(Optional($0.id))}
+          }
           Picker("Layers", selection: $mode) {
             ForEach(ViewMode.allCases) { Text($0.rawValue).tag($0) }
           }
@@ -64,6 +74,7 @@ struct ToolsPage: View {
           ).font(.footnote).foregroundStyle(.secondary)
         }
         Section("Reusable 3D") {
+          Text("GLB includes level, room and stage groups, source identities and automatic tour camera clips.").font(.caption)
           Button("Export GLB") {
             export("Writing GLB") { try Exporter.glb(house, options: options) }
           }
