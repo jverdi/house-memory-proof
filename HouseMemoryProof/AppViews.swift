@@ -732,6 +732,13 @@ struct EvidencePage: View {
   @State private var search = ""
   @State private var selection: Observation?
   @State private var feature: Feature?
+  @State private var searchIndex:EvidenceSearch.Index?
+  @State private var results=EvidenceSearch.Result()
+  @State private var resultLimit=200
+  @State private var searching=true
+  @State private var searchRequest=UUID()
+  private var datasetKey:String {"\(house.id)-\(house.revision)"}
+  private var searchKey:String {"\(datasetKey)-\(searchIndex?.id.uuidString ?? "none")-\(resultLimit)-\(search)"}
   var body: some View {
     NavigationStack {
       List {
@@ -744,11 +751,8 @@ struct EvidencePage: View {
             Text("No captured photographs yet. Sample geometry is not photographic evidence.")
               .foregroundStyle(.secondary)
           }
-          ForEach(
-            house.observations.reversed().filter {
-              search.isEmpty || $0.note.localizedCaseInsensitiveContains(search)
-            }
-          ) { o in
+          if searching {ProgressView("Searching saved evidence…")}
+          ForEach(results.observations) { o in
             Button {
               selection = o
             } label: {
@@ -768,13 +772,7 @@ struct EvidencePage: View {
           }
         }
         Section("Systems and objects") {
-          ForEach(
-            house.features.filter {
-              search.isEmpty
-                || ($0.name + " " + $0.notes + " " + $0.endpoint + " " + $0.trade.rawValue)
-                  .localizedCaseInsensitiveContains(search)
-            }.prefix(150)
-          ) { f in
+          ForEach(results.features) { f in
             Button {
               feature = f
             } label: {
@@ -791,7 +789,34 @@ struct EvidencePage: View {
             }
           }
         }
-      }.navigationTitle("Evidence").searchable(text: $search, prompt: "Room, system, port, notes")
+        if !searching {
+          Text("\(results.observationCount) \(results.observationCount==1 ? "photograph":"photographs") · \(results.featureCount) \(results.featureCount==1 ? "object":"objects")").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("evidence-result-count")
+          if results.observations.count<results.observationCount || results.features.count<results.featureCount {
+            Button("Show more results") {resultLimit=min(50000,resultLimit+200)}
+          }
+        }
+      }.navigationTitle("Evidence").searchable(text: $search, prompt: "Room, stage, system, port, notes")
+        .onChange(of:search){_,_ in resultLimit=200}
+        .task(id:datasetKey) {
+          let snapshot=house
+          do {
+            let prepared=try await LocalWorker.run{try EvidenceSearch.Index(house:snapshot)}
+            guard !Task.isCancelled else{return}
+            searchIndex=prepared
+          }catch is CancellationError{}catch{model.error=error.localizedDescription}
+        }
+        .task(id:searchKey) {
+          let request=UUID();searchRequest=request;searching=true
+          guard let index=searchIndex,index.houseID==house.id,index.revision==house.revision else{results=EvidenceSearch.Result();return}
+          let query=search,limit=resultLimit
+          do {
+            let found=try await LocalWorker.run{try index.find(query,limit:limit)}
+            guard !Task.isCancelled,request==searchRequest else{return}
+            results=found;searching=false
+          }catch is CancellationError{}catch{
+            if request==searchRequest {searching=false;model.error=error.localizedDescription}
+          }
+        }
         .sheet(item: $selection) { PhotoDetail(observation: $0) }.sheet(item: $feature) {
           FeatureEditor(feature: $0)
         }

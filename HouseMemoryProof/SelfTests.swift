@@ -342,6 +342,9 @@ import Darwin
             await check("Reject reflected transform"){var t=Rigid();t.values[0] = -1;return !t.valid}
             await check("Reference fit and held-out point"){let a=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,2)],b=a.map{V3(-$0.y+3,$0.x+4,$0.z+2)};guard let(t,e)=Rigid.register(source:Array(a.prefix(3)),target:Array(b.prefix(3))) else{return false};return e<1e-10 && (t.apply(a[3])-b[3]).length<1e-10}
             await check("Reject collinear controls"){Rigid.register(source:[V3(),V3(1),V3(2)],target:[V3(),V3(1),V3(2)])==nil}
+            mark("Fifty-thousand photograph metadata search")
+            do {results.append(try evidenceSearchReport())}
+            catch {results.append(["test":"Fifty-thousand photograph metadata search","passed":false,"error":error.localizedDescription])}
             await check("Drawing overlays and dependent annotations follow exact sheet revisions") {
                 var h=House.empty("Drawing provenance")
                 let controls=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,0)]
@@ -1100,6 +1103,32 @@ extension SelfTests {
     }
     // Read the process footprint, not total installed device RAM. This is a
     // sampled observation; the kernel's resident peak also includes earlier work.
+    static func evidenceSearchReport()throws->[String:Any] {
+        var house=House.empty("Search workload");house.rooms[0].name="Café kitchen"
+        let room=house.rooms[0].id,stage=house.stages[1].id,segment=Segment(roomID:house.rooms[0].id,stageID:house.stages[1].id)
+        house.segments=[segment]
+        let base=Observation(roomID:room,stageID:stage,segmentID:segment.id,timestamp:0,image:"search-fixture.jpg",width:64,height:64,camera:Rigid().values,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic metadata",light:500,sharpness:0.1)
+        var expected=Set<UUID>()
+        for i in 0..<50000 {
+            var o=base;o.id=UUID();o.timestamp=Double(i);o.note=i%1000==0 ? "Supply valve":"Electrical outlet"
+            if i%1000==0 {expected.insert(o.id)}
+            house.observations.append(o)
+        }
+        house.features=[Feature(name:"Panel A",trade:.electrical,roomID:room,stageID:stage,kind:.observed,mesh:Mesh())]
+        let start=ProcessInfo.processInfo.systemUptime,index=try EvidenceSearch.Index(house:house)
+        let build=(ProcessInfo.processInfo.systemUptime-start)*1000
+        let first=try index.find("",limit:200),valves=try index.find("CAFE valve"),panel=try index.find("café panel")
+        guard first.observationCount==50000,first.observations.count==200,first.observations.first?.id==house.observations.last?.id,
+          valves.observationCount==50,Set(valves.observations.map{$0.id})==expected,panel.featureCount==1,panel.observationCount==0 else{throw HouseError.message("Search lost room metadata, word matching, ordering or result pagination.")}
+        var times:[Double]=[]
+        for query in ["cafe valve","finished","electrical outlet","absent result","panel a","café kitchen"]+Array(repeating:"cafe valve",count:6) {
+            let time=ProcessInfo.processInfo.systemUptime
+            _ = try index.find(query)
+            times.append((ProcessInfo.processInfo.systemUptime-time)*1000)
+        }
+        times.sort();let p95=times[Int(ceil(Double(times.count)*0.95))-1]
+        return ["test":"Fifty-thousand photograph metadata search","passed":p95<=300,"photographs":50000,"defaultPageSize":200,"indexBuildMilliseconds":build,"queryP95Milliseconds":p95,"queries":times.count,"imageFilesRead":0,"limitations":"Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone."]
+    }
     nonisolated static func memorySample()->[String:UInt64] {
         var info=task_vm_info_data_t()
         var count=mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size/MemoryLayout<integer_t>.size)

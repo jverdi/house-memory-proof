@@ -169,3 +169,53 @@ struct CaptureProcessingReport:Codable,Identifiable,Equatable {
   var valid:Bool {sourceRevision>=0 && seconds.isFinite && seconds>=0 && steps.count<=12 && steps.allSatisfy{$0.name.count<=200 && $0.detail.count<=10000}}
 }
 
+
+// Search immutable metadata off the UI thread. Raster assets are never loaded.
+enum EvidenceSearch {
+  struct Result {
+    var observations:[Observation]=[];var features:[Feature]=[]
+    var observationCount=0;var featureCount=0
+  }
+  struct Index {
+    struct Photo {var value:Observation;var text:String}
+    struct Object {var value:Feature;var text:String}
+    let id=UUID();var houseID:UUID;var revision:Int
+    private var photos:[Photo]=[],objects:[Object]=[]
+    init(house:House)throws {
+      houseID=house.id;revision=house.revision
+      let rooms=Dictionary(house.rooms.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
+      let stages=Dictionary(house.stages.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
+      for (index,o) in house.observations.reversed().enumerated() {
+        if index%256==0 {try Task.checkCancellation()}
+        photos.append(Photo(value:o,text:EvidenceSearch.normalized(o.note)+" "+(rooms[o.roomID] ?? "")+" "+(stages[o.stageID] ?? "")))
+      }
+      for (index,f) in house.features.enumerated() {
+        if index%256==0 {try Task.checkCancellation()}
+        objects.append(Object(value:f,text:EvidenceSearch.normalized(f.name+" "+f.notes+" "+f.endpoint+" "+f.trade.rawValue+" "+f.kind.rawValue)+" "+(rooms[f.roomID] ?? "")+" "+(stages[f.stageID] ?? "")))
+      }
+    }
+    func find(_ query:String,limit:Int=200)throws->Result {
+      guard (1...50000).contains(limit) else{throw HouseError.message("Search result limit is outside the supported range.")}
+      let terms=EvidenceSearch.normalized(String(query.prefix(500))).split(whereSeparator:{$0.isWhitespace}).map(String.init)
+      var result=Result()
+      for (index,row) in photos.enumerated() {
+        if index%256==0 {try Task.checkCancellation()}
+        if terms.allSatisfy({row.text.contains($0)}) {
+          result.observationCount+=1
+          if result.observations.count<limit {result.observations.append(row.value)}
+        }
+      }
+      for (index,row) in objects.enumerated() {
+        if index%256==0 {try Task.checkCancellation()}
+        if terms.allSatisfy({row.text.contains($0)}) {
+          result.featureCount+=1
+          if result.features.count<limit {result.features.append(row.value)}
+        }
+      }
+      return result
+    }
+  }
+  static func normalized(_ text:String)->String {
+    text.folding(options:[.caseInsensitive,.diacriticInsensitive],locale:Locale(identifier:"en_US_POSIX"))
+  }
+}

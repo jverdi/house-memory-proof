@@ -100,6 +100,21 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(app.buttons["Finished"].isSelected)
     screenshot("11-portrait-after-rotation")
   }
+  @MainActor func testEvidenceSearchMatchesRoomAndSystemTogether() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
+    defer {app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:20));app.tabBars.buttons["Evidence"].tap()
+    app.swipeDown()
+    let search=app.searchFields.firstMatch
+    XCTAssertTrue(search.waitForExistence(timeout:10));search.tap();search.typeText("kitchen speaker")
+    let count=app.staticTexts["evidence-result-count"]
+    let found=expectation(for:NSPredicate(format:"label == %@","0 photographs · 1 object"),evaluatedWith:count)
+    wait(for:[found],timeout:10)
+    XCTAssertTrue(app.staticTexts["Speaker prewire"].firstMatch.isHittable)
+    XCTAssertFalse(app.staticTexts["Outlet circuit"].firstMatch.exists)
+    screenshot("12-evidence-room-and-system-search")
+  }
   func screenshot(_ name: String) {
     let a = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
     a.name = name
