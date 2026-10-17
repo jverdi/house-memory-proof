@@ -1,0 +1,19 @@
+{
+  "source": "70f4d8e6db6d248d8fe8ab2fca877c88dc92a7e8",
+  "run": 39009362626,
+  "artifact": 12092063425,
+  "artifactSHA256": "97a7474193589f0034342f3a57b99afad4770f4c21804a59af518ed00ee69047",
+  "candidateBinarySHA256": "7bae4102ab9cc25b5e16072d445a2d148a530fb641d230f2caa35404cdc9e66a",
+  "positiveAccepted": 13,
+  "positiveQueries": 15,
+  "falseAccepts": 0,
+  "negativeQueries": 5,
+  "oracleReadDenied": true,
+  "productionQualified": false,
+  "limitations": [
+    "Five development cases from one analytic room family",
+    "86.7% positive-query availability",
+    "Not protected full-house qualification",
+    "Not calibrated iPhone sensor model"
+  ]
+}

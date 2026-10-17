@@ -1,0 +1,11 @@
+{
+  "source": "fbebf976c203cdb700e91c2aea50a92ab6afadef",
+  "run": 39009513936,
+  "artifact": 12092199055,
+  "artifactSHA256": "12df9bd83eeedf8c6bd922255c1331e54587a1b58c64e45dfddd8460218d80b6",
+  "nativeTests": 57,
+  "uiTests": 2,
+  "integratedWorkflow": "passed",
+  "testflightUploaded": false,
+  "physicalQualification": false
+}

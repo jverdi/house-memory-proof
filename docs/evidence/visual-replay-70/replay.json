@@ -1,0 +1,134 @@
+{
+  "candidateFingerprint": "ba0dcb3222613be9e12e5e50975e4a1b347204e4cbdb72e7d57e1424ca6459f0",
+  "mapFeatures": 7069,
+  "mapViews": 6,
+  "optimizedCameras": {},
+  "queries": [
+    {
+      "accepted": true,
+      "image": "vision-query-0.jpg",
+      "inliers": 414,
+      "queryFeatures": 1175,
+      "rmsPixels": 0.9226038192394743,
+      "seconds": 0.11823201179504395,
+      "sourceIDs": [
+        "7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF",
+        "686D829B-39AE-5266-8661-56BC26A8AB54",
+        "394A6AC3-2B61-57F8-BFE9-15C8D9790A5C",
+        "1A67FF35-57FC-5859-8A2D-EFD9FDC8557F",
+        "935F4E49-2C26-5EB7-A52B-26C18B844A53",
+        "94BB9A91-3B2D-5994-9077-F775CBB113AD"
+      ],
+      "worldFromARCamera": [
+        0.7310836000466626,
+        0.0009318061793180399,
+        -0.6822872573044697,
+        -0.10614000293824487,
+        -0.6822878295534871,
+        0.0005651825204242289,
+        -0.7310834413470945,
+        0.10671463207242532,
+        -0.00029561123650767573,
+        0.9999994061528051,
+        0.001048955687366654,
+        0.0018400910095176895,
+        0,
+        0,
+        0,
+        1
+      ],
+      "evaluatorPositionErrorMetres": 0.0019524625725793204
+    },
+    {
+      "accepted": true,
+      "image": "vision-query-1.jpg",
+      "inliers": 387,
+      "queryFeatures": 1178,
+      "rmsPixels": 1.0517125577326554,
+      "seconds": 0.1012880802154541,
+      "sourceIDs": [
+        "7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF",
+        "686D829B-39AE-5266-8661-56BC26A8AB54",
+        "394A6AC3-2B61-57F8-BFE9-15C8D9790A5C",
+        "1A67FF35-57FC-5859-8A2D-EFD9FDC8557F",
+        "935F4E49-2C26-5EB7-A52B-26C18B844A53",
+        "94BB9A91-3B2D-5994-9077-F775CBB113AD"
+      ],
+      "worldFromARCamera": [
+        0.6939093938197946,
+        1.8751707434205844e-05,
+        -0.7200623256475918,
+        0.034007973372807955,
+        -0.7200623208288444,
+        -0.00010051445811637416,
+        -0.6939093917936419,
+        -0.03253337076009917,
+        -8.538866037327564e-05,
+        0.9999999947726086,
+        -5.624552872707245e-05,
+        0.07904079708137304,
+        0,
+        0,
+        0,
+        1
+      ],
+      "evaluatorPositionErrorMetres": 0.0032709279438962514
+    },
+    {
+      "accepted": true,
+      "image": "vision-query-2.jpg",
+      "inliers": 366,
+      "queryFeatures": 1180,
+      "rmsPixels": 1.0204767636674699,
+      "seconds": 0.1014089584350586,
+      "sourceIDs": [
+        "7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF",
+        "686D829B-39AE-5266-8661-56BC26A8AB54",
+        "394A6AC3-2B61-57F8-BFE9-15C8D9790A5C",
+        "1A67FF35-57FC-5859-8A2D-EFD9FDC8557F",
+        "935F4E49-2C26-5EB7-A52B-26C18B844A53",
+        "94BB9A91-3B2D-5994-9077-F775CBB113AD"
+      ],
+      "worldFromARCamera": [
+        0.6697465574047077,
+        0.0026099737691639424,
+        -0.7425851714661872,
+        0.17691311178132918,
+        -0.7425897407356596,
+        0.0021376570042263288,
+        -0.669743165233269,
+        -0.17859571767632917,
+        -0.00016061970031644446,
+        0.9999943092135357,
+        0.0033698281640630046,
+        -0.054843574585730234,
+        0,
+        0,
+        0,
+        1
+      ],
+      "evaluatorPositionErrorMetres": 0.005469568075090059
+    },
+    {
+      "accepted": false,
+      "image": "vision-query-3.jpg",
+      "queryFeatures": 1185,
+      "seconds": 0.1015850305557251
+    }
+  ],
+  "oracleReadDenied": true,
+  "candidateBinarySHA256": "7bae4102ab9cc25b5e16072d445a2d148a530fb641d230f2caa35404cdc9e66a",
+  "positiveAccepted": 3,
+  "positiveQueries": 3,
+  "falseAccepts": 0,
+  "negativeQueries": 1,
+  "worstAcceptedPositionErrorMetres": 0.005469568075090059,
+  "passed": true,
+  "productionQualified": false,
+  "limitations": [
+    "One textured-corner fixture",
+    "Perfectly synchronized analytic rendering",
+    "Not an iPhone sensor model",
+    "Does not qualify wrong-room rejection or field accuracy"
+  ]
+}
