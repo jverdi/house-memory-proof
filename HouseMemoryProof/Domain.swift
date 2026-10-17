@@ -48,7 +48,7 @@ enum Trade: String, Codable, CaseIterable, Identifiable {
 enum EvidenceKind: String,Codable,CaseIterable { case synthetic, observed, planned, documentary }
 struct Mesh: Codable, Equatable {
     var vertices:[V3]=[];var triangles:[Int32]=[]
-    var valid:Bool { vertices.count<=500_000 && triangles.count<=3_000_000 && triangles.count%3==0 && vertices.allSatisfy{$0.finite} && triangles.allSatisfy{$0>=0 && Int($0)<vertices.count} }
+    var valid:Bool { vertices.count<=500_000 && triangles.count<=3_000_000 && triangles.count%3==0 && vertices.allSatisfy{$0.finite && max(abs($0.x),abs($0.y),abs($0.z))<=100000} && triangles.allSatisfy{$0>=0 && Int($0)<vertices.count} }
     static func box(center c:V3,size s:V3)->Mesh {
         let v=[V3(-1,-1,-1),V3(1,-1,-1),V3(1,1,-1),V3(-1,1,-1),V3(-1,-1,1),V3(1,-1,1),V3(1,1,1),V3(-1,1,1)].map{c+V3($0.x*s.x/2,$0.y*s.y/2,$0.z*s.z/2)}
         return Mesh(vertices:v,triangles:[0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7])
@@ -111,7 +111,9 @@ struct House:Codable,Identifiable,Equatable {
         let segmentIDs=Set(segments.map{$0.id})
         for f in features {if let sid=f.segmentID,!segmentIDs.contains(sid){throw HouseError.message("Feature references an absent capture session.")};if let uv=f.uv {guard uv.count==f.mesh.vertices.count,uv.allSatisfy({$0.u.isFinite && $0.v.isFinite}) else{throw HouseError.message("Invalid texture coordinates.")}}}
         for s in segments {guard roomIDs.contains(s.roomID),stageIDs.contains(s.stageID) else{throw HouseError.message("Capture session references an absent space or stage.")};if let t=s.registration, !t.valid {throw HouseError.message("Invalid segment registration.")}}
-        for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentIDs.contains(o.segmentID),o.camera.count==16,o.intrinsics.count==9,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.height>0 else{throw HouseError.message("Invalid observation metadata.")}}
+        for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentIDs.contains(o.segmentID),o.camera.count==16,Rigid(values:o.camera).valid,o.intrinsics.count==9,o.intrinsics[0]>0,o.intrinsics[4]>0,o.timestamp.isFinite,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.height>0 else{throw HouseError.message("Invalid observation metadata.")}}
+        for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID) else{throw HouseError.message("Invalid measurement reference.")}}
+        for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}
         for a in assets {guard a.count<100,!a.contains("/"),!a.contains("\\"),!a.contains("..") else{throw HouseError.message("Unsafe asset reference.")}}
     }
     static func empty(_ name:String)->House {

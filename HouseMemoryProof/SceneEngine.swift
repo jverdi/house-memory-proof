@@ -77,6 +77,7 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
     let view=SCNView(frame:.zero,options:[SCNView.Option.preferredRenderingAPI.rawValue:SCNRenderingAPI.metal.rawValue])
     @Published var selection:UUID?
     @Published var points:[V3]=[]
+    var pointRoomID:UUID?
     @Published var tool="Inspect"
     @Published var flying=false
     @Published var orbit=false
@@ -106,8 +107,8 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
     }
     func bookmark(_ b:Bookmark){camera.simdPosition=b.position.render;yaw=Float(b.yaw);pitch=Float(b.pitch);camera.eulerAngles=SCNVector3(pitch,yaw,0)}
     @objc func pan(_ g:UIPanGestureRecognizer){guard !orbit else{return};let p=g.translation(in:view);if g.state == .began {panStart=p};yaw-=Float(p.x-panStart.x)*0.004;pitch=max(-1.35,min(1.35,pitch-Float(p.y-panStart.y)*0.004));panStart=p;camera.eulerAngles=SCNVector3(pitch,yaw,0)}
-    @objc func tap(_ g:UITapGestureRecognizer){let p=g.location(in:view);guard let hit=view.hitTest(p,options:[.searchMode:SCNHitTestSearchMode.closest.rawValue]).first else{return};selection=hit.node.name.flatMap(UUID.init(uuidString:));let v=V3(ar:SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z));if tool != "Inspect" {if tool=="Measure" && points.count>=2{points=[]};points.append(v);drawPoints()}}
-    func clear(){points=[];drawPoints()}
+    @objc func tap(_ g:UITapGestureRecognizer){let p=g.location(in:view);guard let hit=view.hitTest(p,options:[.searchMode:SCNHitTestSearchMode.closest.rawValue]).first else{return};selection=hit.node.name.flatMap(UUID.init(uuidString:));let v=V3(ar:SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z));if tool != "Inspect" {if points.isEmpty{pointRoomID=house?.features.first(where:{$0.id==selection})?.roomID};if tool=="Measure" && points.count>=2{points=[]};points.append(v);drawPoints()}}
+    func clear(){points=[];pointRoomID=nil;drawPoints()}
     func drawPoints(){view.scene?.rootNode.childNode(withName:"selection-points",recursively:false)?.removeFromParentNode();let group=SCNNode();group.name="selection-points";for p in points {let n=SCNNode(geometry:SCNSphere(radius:0.025));n.geometry?.firstMaterial?.diffuse.contents=UIColor.white;n.simdPosition=p.render;group.addChildNode(n)};view.scene?.rootNode.addChildNode(group)}
     @objc func tick(_ link:CADisplayLink){let dt=Float(lastTime==0 ? 0:min(0.05,link.timestamp-lastTime));lastTime=link.timestamp
         if let pad=GCController.current?.extendedGamepad {hadController=true;move=SIMD2(pad.leftThumbstick.xAxis.value,pad.leftThumbstick.yAxis.value);yaw-=pad.rightThumbstick.xAxis.value*dt*1.8;pitch=max(-1.35,min(1.35,pitch+pad.rightThumbstick.yAxis.value*dt*1.2));camera.eulerAngles=SCNVector3(pitch,yaw,0)}else if hadController{move = .zero;hadController=false}
