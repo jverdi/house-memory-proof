@@ -152,7 +152,9 @@ jobs:
           python3 ci/run_bounded.py 660 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/house-staggered --output build/vision-evaluation/house-staggered.json --refine --bundle --house
       - name: Enforce the coded-image qualification result
         if: always() && !cancelled()
-        run: test "${{ steps.coded.outcome }}" = success
+        run: |
+          test "${{ steps.coded.outcome }}" = success
+          python3 -c 'import json; r=json.load(open("build/vision-evaluation/coded-regions.json")); assert r["passed"] is True, "Coded image qualification failed"'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

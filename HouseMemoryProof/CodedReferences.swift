@@ -5,7 +5,7 @@ import simd
 // Metric code geometry and camera/board estimates remain separate evidence.
 // Pixel fitting never promotes a board estimate to a physically surveyed reference.
 enum CodedReferences {
-  struct Board {var id:UUID;var code:UInt32;var corners:[V3]}
+  struct Board {var id:UUID;var code:UInt32;var corners:[V3];var pose:ReferencePose}
   struct Map {var boards:[Board];var known:[ReferenceBoard]}
   struct Result {var pose:Rigid?;var conflict:Bool}
   static func gray(_ buffer:CVPixelBuffer)throws->(Data,Int,Int,Int) {
@@ -73,6 +73,34 @@ enum CodedReferences {
     }
     return rejected
   }
+  static func refine(board:ReferenceBoard,initial:ReferencePose,sources:[Observation])->ReferencePose? {
+    guard sources.count>=2 else{return nil}
+    // Bound optimizer memory while preserving a translated pair. Every source,
+    // including those outside this fitting sample, is checked by build below.
+    func centre(_ o:Observation)->V3 {V3(o.camera[3],o.camera[7],o.camera[11])}
+    let origin=centre(sources[0])
+    let farthest=sources.indices.max{(centre(sources[$0])-origin).length<(centre(sources[$1])-origin).length}!
+    var indices=[0,farthest]
+    for i in 0..<min(62,sources.count) {
+      let index=i*max(1,sources.count-1)/max(1,min(62,sources.count)-1)
+      if !indices.contains(index) {indices.append(index)}
+    }
+    let selected=indices.sorted().map{sources[$0]}
+    var cameras:[Double]=[],calibration:[Double]=[],pixels:[Double]=[]
+    for o in selected {
+      guard Rigid(values:o.camera).valid,o.intrinsics.count==9,
+        let detection=o.codedDetections?.first(where:{$0.boardID==board.id && $0.tagID==board.tagID}),detection.valid else{return nil}
+      cameras += o.camera
+      calibration += [o.intrinsics[0],o.intrinsics[4],o.intrinsics[2],o.intrinsics[5],Double(o.width),Double(o.height)]
+      pixels += detection.corners.flatMap{[$0.u*Double(o.width),$0.v*Double(o.height)]}
+    }
+    var output=[Double](repeating:0,count:16),quality=HXBoardFitQuality()
+    let accepted=cameras.withUnsafeBufferPointer{camera in calibration.withUnsafeBufferPointer{k in pixels.withUnsafeBufferPointer{xy in initial.matrix.withUnsafeBufferPointer{seed in output.withUnsafeMutableBufferPointer{pose in
+      hx_reference_refine_board(camera.baseAddress,k.baseAddress,xy.baseAddress,UInt32(selected.count),board.width*0.8,seed.baseAddress,pose.baseAddress,&quality)
+    }}}}}
+    guard accepted==1,Rigid(values:output).valid else{return nil}
+    return ReferencePose(boardID:board.id,matrix:output,observed:sources.map{$0.date}.max() ?? initial.observed,method:"coded-corners",imageFitRMS:quality.rms_pixels)
+  }
   static func build(house:House,segment:Segment)->Map {
     let known=house.references.filter{$0.valid && $0.tagID != nil}
     let captures=house.observations.filter{$0.segmentID==segment.id && !$0.documentary && $0.codedDetections?.isEmpty==false}
@@ -91,7 +119,7 @@ enum CodedReferences {
         let detection=source.codedDetections!.first{$0.boardID==board.id && $0.tagID==board.tagID}!
         if let pose=measure([detection],camera:source.camera,intrinsics:source.intrinsics,width:source.width,height:source.height,boards:[board]).first {estimate=pose;break}
       }
-      guard let pose=estimate else{continue}
+      guard let initial=estimate,let pose=refine(board:board,initial:initial,sources:candidates) else{continue}
       let points=corners(board:board,pose:pose);guard points.count==4 else{continue}
       var supported:[V3]=[],conflicted=false
       for observation in captures {
@@ -103,7 +131,7 @@ enum CodedReferences {
         supported.append(V3(observation.camera[3],-observation.camera[11],observation.camera[7]))
       }
       guard !conflicted,supported.count>=2,supported.contains(where:{a in supported.contains{($0-a).length>=0.15}}) else{continue}
-      boards.append(Board(id:board.id,code:UInt32(board.tagID!),corners:points))
+      boards.append(Board(id:board.id,code:UInt32(board.tagID!),corners:points,pose:pose))
     }
     // A large reference inventory needs scoped capture; never search a prefix.
     return Map(boards:boards.count<=16 ? boards:[],known:known)

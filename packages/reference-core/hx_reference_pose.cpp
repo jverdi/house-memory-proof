@@ -1,6 +1,9 @@
 #include "hx_reference_pose.h"
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
+#include <ceres/ceres.h>
+#include <ceres/rotation.h>
+#include <array>
 #include <algorithm>
 #include <cmath>
 #include <set>
@@ -76,6 +79,72 @@ extern "C" int32_t hx_reference_pose(const double* xyz,const double* xy,const ui
   return 1;
 } catch(...){return -2;}
 
+namespace {
+struct BoardPixel {
+  std::array<double,16> camera;std::array<double,4> k;double x,z,u,v;
+  template<class T>bool operator()(const T* board,T* residual)const {
+    T local[3]={T(x),T(0),T(z)},world[3];ceres::AngleAxisRotatePoint(board,local,world);
+    for(int i=0;i<3;i++)world[i]+=board[i+3]-T(camera[i*4+3]);
+    T cx=T(camera[0])*world[0]+T(camera[4])*world[1]+T(camera[8])*world[2];
+    T cy=T(camera[1])*world[0]+T(camera[5])*world[1]+T(camera[9])*world[2];
+    T cz=T(camera[2])*world[0]+T(camera[6])*world[1]+T(camera[10])*world[2];
+    residual[0]=T(k[0])*cx/(-cz)+T(k[2])-T(u);
+    residual[1]=T(k[1])*cy/cz+T(k[3])-T(v);return true;
+  }
+};
+bool rigidMatrix(const double* matrix) {
+  for(int i=0;i<16;i++)if(!std::isfinite(matrix[i])||std::abs(matrix[i])>100000)return false;
+  if(std::abs(matrix[12])+std::abs(matrix[13])+std::abs(matrix[14])+std::abs(matrix[15]-1)>1e-6)return false;
+  cv::Mat R(3,3,CV_64F);for(int r=0;r<3;r++)for(int c=0;c<3;c++)R.at<double>(r,c)=matrix[r*4+c];
+  return cv::norm(R.t()*R-cv::Mat::eye(3,3,CV_64F))<1e-5&&std::abs(cv::determinant(R)-1)<1e-5;
+}
+}
+extern "C" int32_t hx_reference_refine_board(const double* cameras,const double* calibration,const double* xy,
+ uint32_t views,double width,const double* initial,double* pose,HXBoardFitQuality* quality) try {
+  if(!cameras||!calibration||!xy||!initial||!pose||!quality||views<2||views>64||!std::isfinite(width)||width<.024||width>1.6||!rigidMatrix(initial))return -1;
+  *quality={};quality->views=views;auto reject=[&](uint32_t reason){quality->rejection=reason;return 0;};
+  double baseline=0;std::vector<BoardPixel> factors;
+  const double sign[4][2]={{-1,1},{1,1},{1,-1},{-1,-1}};
+  for(uint32_t i=0;i<views;i++) {
+    const double* m=cameras+i*16;const double* k=calibration+i*6;
+    if(!rigidMatrix(m))return -1;
+    for(int j=0;j<6;j++)if(!std::isfinite(k[j]))return -1;
+    if(k[0]<1||k[1]<1||k[0]>100000||k[1]>100000||k[4]<64||k[5]<64||k[4]>4096||k[5]>4096)return -1;
+    for(uint32_t j=0;j<i;j++){double distance=0;for(int axis=0;axis<3;axis++)distance+=std::pow(m[axis*4+3]-cameras[j*16+axis*4+3],2);baseline=std::max(baseline,std::sqrt(distance));}
+    for(int c=0;c<4;c++) {
+      double u=xy[i*8+c*2],v=xy[i*8+c*2+1];if(!std::isfinite(u)||!std::isfinite(v)||u<2||v<2||u>=k[4]-2||v>=k[5]-2)return -1;
+      const int next=(c+1)%4;if(std::hypot(u-xy[i*8+next*2],v-xy[i*8+next*2+1])<24)return reject(1);
+      BoardPixel factor{};std::copy(m,m+16,factor.camera.begin());std::copy(k,k+4,factor.k.begin());
+      factor.x=sign[c][0]*width/2;factor.z=sign[c][1]*width/2;factor.u=u;factor.v=v;factors.push_back(factor);
+    }
+  }
+  if(baseline<.15)return reject(2);
+  cv::Mat R(3,3,CV_64F),angle;for(int r=0;r<3;r++)for(int c=0;c<3;c++)R.at<double>(r,c)=initial[r*4+c];cv::Rodrigues(R,angle);
+  double parameters[6];for(int i=0;i<3;i++){parameters[i]=angle.at<double>(i);parameters[i+3]=initial[i*4+3];}
+  ceres::Problem problem;
+  // No robust outlier loss: an inconsistent observed board must not disappear
+  // from the objective to make a convenient subset look trustworthy.
+  for(auto factor:factors)problem.AddResidualBlock(new ceres::AutoDiffCostFunction<BoardPixel,2,6>(new BoardPixel(factor)),nullptr,parameters);
+  ceres::Solver::Options options;options.linear_solver_type=ceres::DENSE_QR;options.max_num_iterations=40;options.max_solver_time_in_seconds=1;options.num_threads=1;options.logging_type=ceres::SILENT;
+  ceres::Solver::Summary summary;ceres::Solve(options,&problem,&summary);if(!summary.IsSolutionUsable())return reject(3);
+  cv::Mat fittedAngle(3,1,CV_64F,parameters),fittedR;cv::Rodrigues(fittedAngle,fittedR);
+  double distance=0;for(int i=0;i<3;i++)distance+=std::pow(parameters[i+3]-initial[i*4+3],2);
+  cv::Mat delta=fittedR*R.t();double rotation=std::acos(std::max(-1.,std::min(1.,(cv::trace(delta)[0]-1)*.5)));
+  if(std::sqrt(distance)>.10||rotation>10*CV_PI/180)return reject(4);
+  double squared=0;
+  for(const auto& f:factors) {
+    double local[3]={f.x,0,f.z},world[3];ceres::AngleAxisRotatePoint(parameters,local,world);
+    for(int i=0;i<3;i++)world[i]+=parameters[i+3]-f.camera[i*4+3];
+    double depth=-(f.camera[2]*world[0]+f.camera[6]*world[1]+f.camera[10]*world[2]);
+    if(!std::isfinite(depth)||depth<.15||depth>5)return reject(5);
+    double residual[2];f(parameters,residual);double error=std::hypot(residual[0],residual[1]);
+    if(!std::isfinite(error))return reject(6);squared+=error*error;quality->maximum_pixels=std::max(quality->maximum_pixels,error);
+  }
+  quality->rms_pixels=std::sqrt(squared/factors.size());if(quality->rms_pixels>1||quality->maximum_pixels>2.5)return reject(7);
+  std::copy(initial,initial+16,pose);for(int r=0;r<3;r++){for(int c=0;c<3;c++)pose[r*4+c]=fittedR.at<double>(r,c);pose[r*4+3]=parameters[r+3];}
+  return rigidMatrix(pose)?1:reject(8);
+}catch(...){return -2;}
+
 extern "C" int32_t hx_reference_selftest(double* maximum) try {
   if(!maximum)return -1;*maximum=0;
   const uint32_t count=6;uint32_t ids[count]={1,7,19,33,102,301};
@@ -126,6 +195,33 @@ extern "C" int32_t hx_reference_selftest(double* maximum) try {
     if(hx_reference_measure_tag(xy,-1,1400,1400,960,720,1920,1440,out,&quality)!=-1)return -23;
     xy[2]=xy[0];xy[3]=xy[1];
     if(hx_reference_measure_tag(xy,.144,1400,1400,960,720,1920,1440,out,&quality)!=0)return -24;
+  }
+  // Independent source-camera projection of a fixed metric board. Deliberately
+  // perturb the initializer; require all views, including a corrupted last view.
+  for(int trial=0;trial<12;trial++) {
+    cv::Mat rv=(cv::Mat_<double>(3,1)<<.12,.38+trial*.01,-.03),R;cv::Rodrigues(rv,R);
+    cv::Mat boardR=toNative*R*fromImage,boardT=(cv::Mat_<double>(3,1)<<.15,.08,-2.4);
+    std::vector<double> cameras,calibration,pixels;double seed[16]={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+    for(int r=0;r<3;r++){for(int c=0;c<3;c++)seed[r*4+c]=boardR.at<double>(r,c);seed[r*4+3]=boardT.at<double>(r)+(r==0?.008:r==2?.016:0);}
+    const double sx[4]={-1,1,1,-1},sz[4]={1,1,-1,-1};
+    for(int view=0;view<4;view++) {
+      double x=(view-1.5)*.16,y=std::sin(view)*.04;
+      double m[16]={1,0,0,x,0,1,0,y,0,0,1,0,0,0,0,1};cameras.insert(cameras.end(),m,m+16);calibration.insert(calibration.end(),{1400,1400,960,720,1920,1440});
+      for(int c=0;c<4;c++) {
+        cv::Mat local=(cv::Mat_<double>(3,1)<<sx[c]*.072,0,sz[c]*.072),world=boardR*local+boardT;
+        pixels.push_back(1400*(world.at<double>(0)-x)/(-world.at<double>(2))+960+rng.gaussian(.05));
+        pixels.push_back(1400*(world.at<double>(1)-y)/world.at<double>(2)+720+rng.gaussian(.05));
+      }
+    }
+    double out[16];HXBoardFitQuality quality{};
+    if(hx_reference_refine_board(cameras.data(),calibration.data(),pixels.data(),4,.144,seed,out,&quality)!=1)return -30;
+    double error=0;for(int axis=0;axis<3;axis++)error+=std::pow(out[axis*4+3]-boardT.at<double>(axis),2);
+    if(std::sqrt(error)>.003)return -31;
+    auto broken=pixels;for(int c=0;c<4;c++)broken[24+c*2]+=20;
+    if(hx_reference_refine_board(cameras.data(),calibration.data(),broken.data(),4,.144,seed,out,&quality)!=0)return -32;
+    auto stationary=cameras;for(int v=1;v<4;v++)std::copy(cameras.begin(),cameras.begin()+16,stationary.begin()+v*16);
+    if(hx_reference_refine_board(stationary.data(),calibration.data(),pixels.data(),4,.144,seed,out,&quality)!=0)return -33;
+    if(hx_reference_refine_board(cameras.data(),calibration.data(),pixels.data(),4,.216,seed,out,&quality)!=0)return -34;
   }
   return 1;
 } catch(...){return -2;}

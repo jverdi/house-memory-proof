@@ -27,7 +27,7 @@ clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 \
   -F build/opencv-host -c packages/visual-core/hx_vision_test.cpp -o build/vision-core-test.o
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-host -I build/ceres/host/include -c packages/visual-core/hx_graph.cpp -o build/graph-core.o
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -I build/ceres/host/include -c packages/visual-core/hx_bundle.cpp -o build/bundle-core.o
-clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-host -c packages/reference-core/hx_reference_pose.cpp -o build/reference-pose.o
+clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-host -I build/ceres/host/include -c packages/reference-core/hx_reference_pose.cpp -o build/reference-pose.o
 swiftc -O -swift-version 5 -parse-as-library -target arm64-apple-macos14.0 \
   -import-objc-header packages/visual-core/hx_replay.h \
   HouseMemoryProof/Domain.swift HouseMemoryProof/EvidenceModels.swift \
