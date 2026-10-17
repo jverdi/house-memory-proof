@@ -8,6 +8,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   private var input = Data()
   private var continuation: CheckedContinuation<[Feature], Error>?
   private var features: [Feature] = []
+  private var vertexCount=0, indexCount=0
   private var roomID = UUID(), stageID = UUID()
   private var timeout: Task<Void, Never>?
   private var activeRequest:UUID?
@@ -22,7 +23,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     self.input = data
     self.roomID = roomID
     self.stageID = stageID
-    features = []
+    features = [];vertexCount=0;indexCount=0
     return try await withTaskCancellationHandler(operation:{
       try Task.checkCancellation()
       return try await withCheckedThrowingContinuation { continuation in
@@ -57,7 +58,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     web?.stopLoading()
     web?.configuration.userContentController.removeScriptMessageHandler(forName: "ifc")
     web = nil
-    input = Data();activeRequest=nil;features=[]
+    input = Data();activeRequest=nil;features=[];vertexCount=0;indexCount=0
     let c = continuation
     continuation = nil
     c?.resume(with: result)
@@ -67,40 +68,47 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   ) {
     guard continuation != nil,message.webView===web else{return}
     guard let body = message.body as? [String: Any], let type = body["type"] as? String else {
-      return
+      finish(.failure(HouseError.message("IFC converter returned malformed output.")));return
     }
-    if type == "mesh", let points = body["vertices"] as? [[Double]],
-      let indices = body["indices"] as? [Int32]
-    {
-      guard points.count <= 200000, points.allSatisfy({ $0.count == 3 }),
-        features.reduce(0, { $0 + $1.mesh.vertices.count }) + points.count <= 200000
-      else {
-        finish(.failure(HouseError.message("IFC geometry exceeds its admission budget.")))
-        return
-      }
-      // web-ifc applies its coordination transform to a Y-up rendering frame.
-      let mesh = Mesh(vertices: points.map { V3($0[0], -$0[2], $0[1]) }, triangles: indices)
-      guard mesh.valid else {
-        finish(.failure(HouseError.message("IFC produced invalid geometry.")))
-        return
-      }
-      var feature = Feature(
-        name: body["name"] as? String ?? "IFC element", trade: .structure, roomID: roomID,
-        stageID: stageID, kind: .planned, mesh: mesh)
-      feature.notes =
-        "IFC design geometry · GUID \(body["guid"] as? String ?? "unknown"). Original units and placements are handled by web-ifc 0.0.72. Design is not observed construction."
-      features.append(feature)
-    } else if type == "done" {
-      if features.isEmpty {
-        finish(.failure(HouseError.message("No supported IFC geometry found.")))
-      } else {
+    do {
+      if type == "mesh" {
+        let feature=try Self.decodeMesh(body,roomID:roomID,stageID:stageID,currentVertices:vertexCount,currentIndices:indexCount)
+        vertexCount += feature.mesh.vertices.count;indexCount += feature.mesh.triangles.count
+        features.append(feature)
+      } else if type == "done" {
+        guard Self.complete(body,parts:features.count,vertices:vertexCount,indices:indexCount) else {
+          throw HouseError.message("IFC conversion ended with incomplete geometry. Source remains preserved.")
+        }
         finish(.success(features))
+      } else if type == "error" {
+        throw HouseError.message("IFC: \((body["message"] as? String ?? "conversion failed").prefix(2000))")
+      } else {
+        throw HouseError.message("IFC converter returned an unsupported message.")
       }
-    } else if type == "error" {
-      finish(
-        .failure(HouseError.message("IFC: \(body["message"] as? String ?? "conversion failed")")))
-    }
+    } catch {finish(.failure(error))}
   }
+  // Enforce totals again at the native boundary, before retaining another mesh.
+  // A per-mesh index cap alone permits many small meshes to exhaust memory.
+  static func decodeMesh(_ body:[String:Any],roomID:UUID,stageID:UUID,currentVertices:Int,currentIndices:Int)throws->Feature {
+    guard let points=body["vertices"] as? [[Double]],let indices=body["indices"] as? [Int32],
+      !points.isEmpty,!indices.isEmpty,points.count<=200000,indices.count<=1200000,
+      currentVertices>=0,currentVertices<=200000-points.count,
+      currentIndices>=0,currentIndices<=1200000-indices.count,
+      points.allSatisfy({$0.count==3}),
+      let name=body["name"] as? String,name.utf8.count<=4096,
+      let guid=body["guid"] as? String,guid.utf8.count<=256
+    else {throw HouseError.message("IFC geometry is malformed or exceeds its total admission budget.")}
+    // web-ifc applies its coordination transform to a Y-up rendering frame.
+    let mesh=Mesh(vertices:points.map{V3($0[0],-$0[2],$0[1])},triangles:indices)
+    guard mesh.valid else{throw HouseError.message("IFC produced invalid geometry.")}
+    var feature=Feature(name:name,trade:.structure,roomID:roomID,stageID:stageID,kind:.planned,mesh:mesh)
+    feature.notes="IFC design geometry · GUID \(guid.isEmpty ? "unknown":guid). Original units and placements are handled by web-ifc 0.0.72. Design is not observed construction."
+    return feature
+  }
+  static func complete(_ body:[String:Any],parts:Int,vertices:Int,indices:Int)->Bool {
+    parts>0 && (body["parts"] as? Int)==parts && (body["vertices"] as? Int)==vertices && (body["indices"] as? Int)==indices
+  }
+
   func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
     guard let url = urlSchemeTask.request.url, url.scheme == "hxlocal" else {
       urlSchemeTask.didFailWithError(HouseError.message("External IFC resource blocked."))

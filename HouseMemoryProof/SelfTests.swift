@@ -790,6 +790,29 @@ import Darwin
                 let camera=TextureBuilder.Camera(observation:withDepth,depth:depth)
                 return abs(uv.u-0.5)<1e-9 && abs(uv.v-0.5)<1e-9 && TextureBuilder.visible(uv,z:z,camera:camera) && !TextureBuilder.visible(uv,z:2,camera:camera)
             }
+            await check("IFC total geometry budget and complete transaction boundary") {
+                let room=UUID(),stage=UUID()
+                let valid:[String:Any]=["name":"Triangle","guid":"fixture","vertices":[[0.0,0,0],[1.0,0,0],[0.0,1,0]],"indices":[Int32(0),1,2]]
+                let feature=try IFCImporter.decodeMesh(valid,roomID:room,stageID:stage,currentVertices:199997,currentIndices:1199997)
+                guard feature.kind == .planned,feature.mesh.vertices[2]==V3(0,0,1) else{return false}
+                for counts in [(199998,0),(0,1199998),(-1,0),(0,-1)] {
+                    do {_ = try IFCImporter.decodeMesh(valid,roomID:room,stageID:stage,currentVertices:counts.0,currentIndices:counts.1);return false}catch{}
+                }
+                for field in ["vertices","indices","name","guid"] {
+                    var malformed=valid;malformed.removeValue(forKey:field)
+                    do {_ = try IFCImporter.decodeMesh(malformed,roomID:room,stageID:stage,currentVertices:0,currentIndices:0);return false}catch{}
+                }
+                var invalid=valid;invalid["indices"]=[Int32(0),1,3]
+                do {_ = try IFCImporter.decodeMesh(invalid,roomID:room,stageID:stage,currentVertices:0,currentIndices:0);return false}catch{}
+                invalid=valid;invalid["vertices"]=[[Double.nan,0,0],[1.0,0,0],[0.0,1,0]]
+                do {_ = try IFCImporter.decodeMesh(invalid,roomID:room,stageID:stage,currentVertices:0,currentIndices:0);return false}catch{}
+                let done:[String:Any]=["parts":1,"vertices":3,"indices":3]
+                return IFCImporter.complete(done,parts:1,vertices:3,indices:3)
+                    && !IFCImporter.complete(done,parts:2,vertices:3,indices:3)
+                    && !IFCImporter.complete(done,parts:1,vertices:4,indices:3)
+                    && !IFCImporter.complete(done,parts:1,vertices:3,indices:6)
+                    && !IFCImporter.complete([:],parts:0,vertices:0,indices:0)
+            }
             do {
                 guard let path=Bundle.main.url(forResource:"IFC",withExtension:nil)?.appendingPathComponent("test-block.ifc") else{throw HouseError.message("IFC test fixture missing.")}
                 let importer=IFCImporter(),input=try Data(contentsOf:path),roomID=house.rooms[0].id,stageID=house.stages[0].id
@@ -804,6 +827,19 @@ import Darwin
                 let converted=try await importer.load(Data(millimetres.utf8),roomID:house.rooms[0].id,stageID:house.stages[0].id)
                 let vertices=converted.flatMap{$0.mesh.vertices};let low=V3(vertices.map{$0.x}.min() ?? 0,vertices.map{$0.y}.min() ?? 0,vertices.map{$0.z}.min() ?? 0),high=V3(vertices.map{$0.x}.max() ?? 0,vertices.map{$0.y}.max() ?? 0,vertices.map{$0.z}.max() ?? 0)
                 results.append(["test":"IFC4 millimetres and nested placement","passed":(low-V3(9.5,19,30)).length<0.001 && (high-V3(10.5,21,33)).length<0.001,"lower":[low.x,low.y,low.z],"upper":[high.x,high.y,high.z]])
+                let rotated=millimetres.replacingOccurrences(of:"#24=IFCAXIS2PLACEMENT3D(#23,#7,#8);",with:"#24=IFCAXIS2PLACEMENT3D(#23,#7,#26);\n#26=IFCDIRECTION((0.,1.,0.));")
+                let turned=try await importer.load(Data(rotated.utf8),roomID:roomID,stageID:stageID)
+                let turnedVertices=turned.flatMap{$0.mesh.vertices}
+                let turnedLow=V3(turnedVertices.map{$0.x}.min() ?? 0,turnedVertices.map{$0.y}.min() ?? 0,turnedVertices.map{$0.z}.min() ?? 0)
+                let turnedHigh=V3(turnedVertices.map{$0.x}.max() ?? 0,turnedVertices.map{$0.y}.max() ?? 0,turnedVertices.map{$0.z}.max() ?? 0)
+                results.append(["test":"IFC rotated nested placement preserves metric axes","passed":(turnedLow-V3(9,19.5,30)).length<0.001 && (turnedHigh-V3(11,20.5,33)).length<0.001])
+                let distant=millimetres.replacingOccurrences(of:"((10000.,20000.,30000.))",with:"((1000000000.,20000.,30000.))")
+                var refused=false
+                do {_ = try await importer.load(Data(distant.utf8),roomID:roomID,stageID:stageID)}catch{refused=true}
+                let recovered=try await importer.load(input,roomID:roomID,stageID:stageID)
+                let retainedInput=try Data(contentsOf:path)
+                results.append(["test":"IFC out-of-envelope coordinates refuse atomically and importer recovers","passed":refused && !recovered.isEmpty && retainedInput==input])
+
             }catch{results.append(["test":"Bundled IFC2x3 conversion and axes","passed":false,"error":error.localizedDescription])}
             do {
                 let fixture=try SimulatedCapture.make(repo:mainRepo)
