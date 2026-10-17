@@ -25,7 +25,7 @@ enum VisualMapping {
   static let featureLimit=2000
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v7-fixed-anchor";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v8-pooled-source-checks";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -147,11 +147,13 @@ enum VisualMapping {
     // Strong appearance in two separated competing views is enough to abstain,
     // even when their PnP poses cannot pass the geometric eligibility checks.
     for map in maps where map.valid {
-      var supported:[V3]=[]
+      var supported:[V3]=[],repeated:[Int:[V3]]=[:]
       for view in map.views {
         let bytes=map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32)
         var pairs=[UInt32](repeating:0,count:featureLimit*2)
         let count=bytes.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,UInt32(featureLimit))}}}
+        guard count>=8 else{continue}
+        for i in 0..<Int(count){repeated[Int(pairs[i*2+1]),default:[]].append(view.position)}
         guard count>=30 else{continue}
         var cells=Set<Int>(),loU=1.0,loV=1.0,hiU=0.0,hiV=0.0
         for i in 0..<Int(count) {let index=Int(pairs[i*2+1]),u=Double(features.xy[index*2]),v=Double(features.xy[index*2+1]);cells.insert(min(3,Int(u*4))+4*min(2,Int(v*3)));loU=min(loU,u);loV=min(loV,v);hiU=max(hiU,u);hiV=max(hiV,v)}
@@ -159,22 +161,71 @@ enum VisualMapping {
         if supported.contains(where:{($0-view.position).length>=0.15}) {return true}
         supported.append(view.position)
       }
+      if map.views.count>=4 {
+        let indices=repeated.keys.filter {index in let views=repeated[index]!;return views.contains{a in views.contains{($0-a).length>=0.15}}}
+        if indices.count>=30 {
+          var cells=Set<Int>(),loU=1.0,loV=1.0,hiU=0.0,hiV=0.0
+          for index in indices {let u=Double(features.xy[index*2]),v=Double(features.xy[index*2+1]);cells.insert(min(3,Int(u*4))+4*min(2,Int(v*3)));loU=min(loU,u);loV=min(loV,v);hiU=max(hiU,u);hiV=max(hiV,v)}
+          if cells.count>=6,hiU-loU>=0.3,hiV-loV>=0.3 {return true}
+        }
+      }
     }
     return false
+  }
+  struct SourceMatches {var id:UUID;var position:V3;var matches:[Int:V3]}
+  static func fusedPoints(_ sources:[SourceMatches])->[(Int,V3)] {
+    var repeated:[Int:[(V3,V3)]]=[:]
+    for source in sources {for (query,point) in source.matches {repeated[query,default:[]].append((point,source.position))}}
+    var result:[(Int,V3)]=[]
+    for query in repeated.keys.sorted() {
+      let samples=repeated[query]!;guard samples.count>=2 else{continue}
+      func median(_ values:[Double])->Double {let sorted=values.sorted();return sorted[sorted.count/2]}
+      let centre=V3(median(samples.map{$0.0.x}),median(samples.map{$0.0.y}),median(samples.map{$0.0.z}))
+      let supported=samples.filter{($0.0-centre).length<=0.025}
+      guard supported.count>=2,supported.contains(where:{($0.1-supported[0].1).length>=0.15}) else{continue}
+      result.append((query,supported.reduce(V3()){$0+$1.0}*(1/Double(supported.count))))
+    }
+    return result
+  }
+  static func pooledPose(_ sources:[SourceMatches],features:Features,width:Int,height:Int,intrinsics:[Double],diagnostic:((String)->Void)?)->Pose? {
+    let points=fusedPoints(sources)
+    guard points.count>=30 else{diagnostic?("Pooled source group has only \(points.count) independently repeated features");return nil}
+    let xyz=points.flatMap{[$0.1.x,$0.1.y,$0.1.z]},xy=points.flatMap{[Double(features.xy[$0.0*2])*Double(width),Double(features.xy[$0.0*2+1])*Double(height)]}
+    var matrix=[Double](repeating:0,count:16),quality=HXPoseQuality()
+    let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
+      hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(points.count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
+    }}}
+    diagnostic?("Pooled source group: \(sources.count) sources, \(points.count) repeated features, rejection \(quality.rejection)")
+    guard accepted==1,Rigid(values:matrix).valid else{return nil}
+    return Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:sources.map{$0.id})
+  }
+  static func checkedPooledPose(_ sources:[SourceMatches],individual:[Rigid],features:Features,width:Int,height:Int,intrinsics:[Double],diagnostic:((String)->Void)?)->Pose? {
+    guard sources.count>=4 else{return nil}
+    // Disjoint interleaved source-camera groups must independently pass the
+    // unchanged PnP geometry gates. Each landmark needs repeated, separated
+    // source support inside its own group; no single weak frame gains a vote.
+    let a=sources.enumerated().filter{$0.offset%2==0}.map{$0.element},b=sources.enumerated().filter{$0.offset%2==1}.map{$0.element}
+    guard let first=pooledPose(a,features:features,width:width,height:height,intrinsics:intrinsics,diagnostic:diagnostic),
+      let second=pooledPose(b,features:features,width:width,height:height,intrinsics:intrinsics,diagnostic:diagnostic),agree(first.transform,second.transform),
+      let all=pooledPose(sources,features:features,width:width,height:height,intrinsics:intrinsics,diagnostic:diagnostic),
+      ([first.transform,second.transform]+individual).allSatisfy({agree(all.transform,$0)}) else{return nil}
+    return all
   }
   static func query(_ features:Features,width:Int,height:Int,intrinsics:[Double],map:VisualMap,diagnostic:((String)->Void)?=nil)->Pose? {
     guard map.valid,features.count>=30,intrinsics.count==9 else{return nil}
     struct Candidate {var pose:Pose;var position:V3;var matches:[Int:V3]}
-    var candidates:[Candidate]=[]
+    var candidates:[Candidate]=[],sources:[SourceMatches]=[]
     for view in map.views {
       let descriptors=map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32)
       var pairs=[UInt32](repeating:0,count:featureLimit*2)
       let count=descriptors.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in
         hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,UInt32(featureLimit))
       }}}
-      guard count>=30 else{diagnostic?("view \(view.observationID): insufficient matches \(count)");continue}
+      guard count>=8 else{diagnostic?("view \(view.observationID): insufficient matches \(count)");continue}
       var xyz:[Double]=[],xy:[Double]=[],matches:[Int:V3]=[:]
       for i in 0..<Int(count){let p=map.points[view.start+Int(pairs[i*2])],q=Int(pairs[i*2+1]);xyz += [p.x,p.y,p.z];xy += [Double(features.xy[q*2])*Double(width),Double(features.xy[q*2+1])*Double(height)];matches[q]=p}
+      sources.append(SourceMatches(id:view.observationID,position:view.position,matches:matches))
+      guard count>=30 else{diagnostic?("view \(view.observationID): insufficient individual matches \(count)");continue}
       var matrix=[Double](repeating:0,count:16),quality=HXPoseQuality()
       let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
         hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
@@ -182,7 +233,10 @@ enum VisualMapping {
       diagnostic?("view \(view.observationID): matches \(count), pose \(accepted), rejection \(quality.rejection), inliers \(quality.inliers)")
       if accepted==1,Rigid(values:matrix).valid{candidates.append(Candidate(pose:Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:[view.observationID]),position:view.position,matches:matches))}
     }
-    guard candidates.count>=2 else{diagnostic?("Fewer than two accepted source views");return nil}
+    guard candidates.count>=2 else{
+      diagnostic?("Fewer than two accepted source views; checking disjoint pooled source groups")
+      return checkedPooledPose(sources,individual:candidates.map{$0.pose.transform},features:features,width:width,height:height,intrinsics:intrinsics,diagnostic:diagnostic)
+    }
     let admitted=consensus(candidates.map{$0.pose.transform},positions:candidates.map{$0.position})
     diagnostic?("Source pose consensus: \(admitted.count)/\(candidates.count) views; positions \(candidates.map{[ $0.pose.transform.values[3],$0.pose.transform.values[7],$0.pose.transform.values[11] ]})")
     guard admitted.count>=2 else{diagnostic?("No unique, separated source-pose consensus");return nil}
