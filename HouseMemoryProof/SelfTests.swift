@@ -3,6 +3,7 @@ import SceneKit
 import PDFKit
 import SQLite3
 import ImageIO
+import CoreImage
 import AVFoundation
 import UIKit
 import Darwin
@@ -703,6 +704,9 @@ import Darwin
                 let url=try Exporter.glb(candidate,options:SceneOptions(room:first.roomID));let target=mainRepo.root.appendingPathComponent("house-surface.glb");try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:url,to:target)
                 results.append(["test":"Noisy simulated house capture to native surface","passed":surface.mesh.valid && surface.mesh.triangles.count>300,"vertices":surface.mesh.vertices.count,"precisionQualified":false])
             }catch{results.append(["test":"Paired simulated house integration","passed":false,"error":error.localizedDescription])}
+            mark("Direct Metal movie target, color order, orientation and depth")
+            do {results.append(try await movieTargetReport(root:mainRepo.root))}
+            catch {results.append(["test":"Direct Metal movie target, color order, orientation and depth","passed":false,"error":error.localizedDescription])}
             if includeMovie || ProcessInfo.processInfo.arguments.contains("--video-test") {
                 mark("100-space scene capacity")
                 do{results.append(try await largeSceneReport(repo:mainRepo))}
@@ -736,6 +740,30 @@ import Darwin
 }
 
 extension SelfTests {
+    static func movieTargetReport(root:URL) async throws->[String:Any] {
+        let scene=SCNScene();scene.background.contents=UIColor.black
+        let camera=SCNNode();camera.camera=SCNCamera();camera.camera!.usesOrthographicProjection=true;camera.camera!.orthographicScale=1;camera.camera!.zNear=0.1;camera.camera!.zFar=10;scene.rootNode.addChildNode(camera)
+        func plane(_ x:Float,_ y:Float,_ z:Float,_ color:UIColor) {
+            let geometry=SCNPlane(width:0.6,height:0.6);geometry.firstMaterial!.diffuse.contents=color;geometry.firstMaterial!.lightingModel = .constant
+            let node=SCNNode(geometry:geometry);node.position=SCNVector3(x,y,z);scene.rootNode.addChildNode(node)
+        }
+        plane(-0.5,0.5,-2,.red);plane(-0.5,0.5,-3,.green);plane(0.5,0.5,-2,.green);plane(0.5,-0.5,-2,.blue)
+        let renderer=try MovieFrameRenderer(scene:scene,camera:camera,width:320,height:240,title:"Target orientation",provenance:"SYNTHETIC TEST")
+        var pool:CVPixelBufferPool?
+        let attributes=[kCVPixelBufferPixelFormatTypeKey as String:kCVPixelFormatType_32BGRA,kCVPixelBufferWidthKey as String:320,kCVPixelBufferHeightKey as String:240,kCVPixelBufferMetalCompatibilityKey as String:true,kCVPixelBufferIOSurfacePropertiesKey as String:[:]] as [String:Any]
+        guard CVPixelBufferPoolCreate(kCFAllocatorDefault,nil,attributes as CFDictionary,&pool)==kCVReturnSuccess,let pool else{throw HouseError.message("Probe pixel pool failed.")}
+        let buffer=try await renderer.frame(at:0,pool:pool)
+        CVPixelBufferLockBaseAddress(buffer,.readOnly);defer{CVPixelBufferUnlockBaseAddress(buffer,.readOnly)}
+        guard let base=CVPixelBufferGetBaseAddress(buffer)?.assumingMemoryBound(to:UInt8.self) else{throw HouseError.message("Probe pixels unavailable.")}
+        let stride=CVPixelBufferGetBytesPerRow(buffer)
+        func rgb(_ x:Int,_ y:Int)->[Int] {let p=y*stride+x*4;return [Int(base[p+2]),Int(base[p+1]),Int(base[p])]}
+        let red=rgb(100,60),green=rgb(220,60),blue=rgb(220,180)
+        var captionPixels=0
+        for y in 193..<221 {for x in 20..<300 {let c=rgb(x,y);if c.allSatisfy({$0>180}){captionPixels+=1}}}
+        if let cg=CIContext().createCGImage(CIImage(cvPixelBuffer:buffer),from:CGRect(x:0,y:0,width:320,height:240)) {try UIImage(cgImage:cg).pngData()?.write(to:root.appendingPathComponent("metal-target.png"))}
+        let passed=red[0]>180 && red[1]<70 && red[2]<70 && green[1]>180 && green[0]<70 && blue[2]>180 && blue[0]<70 && captionPixels>10
+        return ["test":"Direct Metal movie target, color order, orientation and depth","passed":passed,"topLeftRGB":red,"topRightRGB":green,"bottomRightRGB":blue,"captionPixels":captionPixels,"cpuSceneReadbackInProduction":false]
+    }
     // Read the process footprint, not total installed device RAM. This is a
     // sampled observation; the kernel's resident peak also includes earlier work.
     nonisolated static func memorySample()->[String:UInt64] {

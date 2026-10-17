@@ -81,7 +81,7 @@ for attempt in $(seq 1 150); do
 done
 if [ -f "$app_root/self-test-progress.json" ]; then cp "$app_root/self-test-progress.json" build/evidence/native-progress.json; fi
 # Preserve already-produced evidence before an incomplete diagnostic fails the job.
-for retained in coded-reference.pdf coded-reference-diagnostics.json coded-source-0.png coded-source-1.png self-test-partial.json test.hxray house-surface.glb points.glb points.usdz textured.usdz textured.glb test.glb test.usdz test-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
+for retained in metal-target.png coded-reference.pdf coded-reference-diagnostics.json coded-source-0.png coded-source-1.png self-test-partial.json test.hxray house-surface.glb points.glb points.usdz textured.usdz textured.glb test.glb test.usdz test-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
   if [ -f "$app_root/$retained" ]; then cp "$app_root/$retained" "build/evidence/$retained"; fi
 done
 if [ ! -f "$app_root/self-test.json" ]; then
@@ -112,7 +112,7 @@ cp "$app_root/test.glb" build/evidence/test.glb
 cp "$app_root/test.usdz" build/evidence/test.usdz
 cp "$app_root/test-render.png" build/evidence/test-render.png
 # Retain diagnostics before failing if the encoder did not produce a movie.
-for media in test-tour.mp4 test-tour-frame.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
+for media in test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png

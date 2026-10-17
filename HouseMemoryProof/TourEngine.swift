@@ -190,7 +190,7 @@ enum TourDirector {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v9", options.mode.rawValue,
+      "renderer-v10-metal-target", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
@@ -297,9 +297,8 @@ enum TourDirector {
           stage: shot.layerMode==nil ? options.stage:nil))
       let camera = SceneBuilder.camera(at: shot.position, yaw: shot.yaw, pitch: shot.pitch)
       scene.rootNode.addChildNode(camera)
-      let renderer = SCNRenderer(device: MTLCreateSystemDefaultDevice(), options: nil)
-      renderer.scene = scene
-      renderer.pointOfView = camera
+      let provenance=(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
+      let renderer=try MovieFrameRenderer(scene:scene,camera:camera,width:width,height:height,title:shot.caption,provenance:provenance)
       let writer = try AVAssetWriter(outputURL: candidate, fileType: .mp4)
       let input = AVAssetWriterInput(
         mediaType: .video,
@@ -311,10 +310,10 @@ enum TourDirector {
       let adaptor = AVAssetWriterInputPixelBufferAdaptor(
         assetWriterInput: input,
         sourcePixelBufferAttributes: [
-          kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32ARGB,
+          kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
           kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,
-          kCVPixelBufferCGImageCompatibilityKey as String: true,
-          kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+          kCVPixelBufferMetalCompatibilityKey as String: true,
+          kCVPixelBufferIOSurfacePropertiesKey as String: [:],
         ])
       guard writer.canAdd(input) else { throw HouseError.message("H.264 export is unavailable.") }
       writer.add(input)
@@ -345,51 +344,9 @@ enum TourDirector {
           let pose = TourDirector.camera(shot, phase: phase)
           camera.simdPosition = pose.0.render
           camera.eulerAngles = SCNVector3(Float(pose.2), Float(pose.1), 0)
-          try autoreleasepool {
-            let image = renderer.snapshot(
-              atTime: Double(frame) / 30, with: CGSize(width: width, height: height),
-              antialiasingMode: .none)
-            var buffer: CVPixelBuffer?
-            let status = CVPixelBufferCreate(
-              kCFAllocatorDefault, width, height, kCVPixelFormatType_32ARGB,
-              [
-                kCVPixelBufferCGImageCompatibilityKey: true,
-                kCVPixelBufferCGBitmapContextCompatibilityKey: true,
-              ] as CFDictionary, &buffer)
-            guard status == kCVReturnSuccess, let buffer, let cg = image.cgImage else {
-              throw HouseError.message("Unable to allocate a movie frame.")
-            }
-            CVPixelBufferLockBaseAddress(buffer, [])
-            defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
-            guard
-              let ctx = CGContext(
-                data: CVPixelBufferGetBaseAddress(buffer), width: width, height: height,
-                bitsPerComponent: 8, bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
-                space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
-            else { throw HouseError.message("Movie color context failed.") }
-            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
-            ctx.saveGState()
-            ctx.translateBy(x: 0, y: CGFloat(height))
-            ctx.scaleBy(x: 1, y: -1)
-            UIGraphicsPushContext(ctx)
-            let titleFont=UIFont.systemFont(ofSize:CGFloat(width)/55,weight:.medium)
-            let sourceFont=UIFont.systemFont(ofSize:CGFloat(width)/70,weight:.regular)
-            let titleHeight=ceil(titleFont.lineHeight),sourceHeight=ceil(sourceFont.lineHeight)
-            let rect=CGRect(x:24,y:CGFloat(height)-24-titleHeight-sourceHeight-8,width:CGFloat(width)-48,height:titleHeight+sourceHeight+8)
-            UIColor.black.withAlphaComponent(0.65).setFill()
-            UIBezierPath(roundedRect: rect.insetBy(dx: -10, dy: -5), cornerRadius: 8).fill()
-            let paragraph=NSMutableParagraphStyle();paragraph.lineBreakMode = .byTruncatingTail
-            (shot.caption as NSString).draw(in:CGRect(x:rect.minX,y:rect.minY,width:rect.width,height:titleHeight),withAttributes:[.font:titleFont,.foregroundColor:UIColor.white,.paragraphStyle:paragraph])
-            let provenance=(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
-            (provenance as NSString).draw(in:CGRect(x:rect.minX,y:rect.minY+titleHeight+8,width:rect.width,height:sourceHeight),withAttributes:[.font:sourceFont,.foregroundColor:UIColor.white,.paragraphStyle:paragraph])
-            UIGraphicsPopContext()
-            ctx.restoreGState()
-            guard
-              adaptor.append(
-                buffer, withPresentationTime: CMTime(value: Int64(frame), timescale: 30))
-            else { throw writer.error ?? HouseError.message("Movie frame was rejected.") }
-          }
+          guard let pool=adaptor.pixelBufferPool else{throw HouseError.message("Movie encoder did not provide a reusable frame pool.")}
+          let buffer=try await renderer.frame(at:Double(frame)/30,pool:pool)
+          guard adaptor.append(buffer,withPresentationTime:CMTime(value:Int64(frame),timescale:30)) else{throw writer.error ?? HouseError.message("Movie frame was rejected.")}
           progress(Double(complete + frame + 1) / Double(total))
           await Task.yield()
         }
