@@ -5,6 +5,12 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"8975CEC816012A38A1032675" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "SimulatedCapture.swift"; "sourceTree" = "<group>"; };
+		"84FD867BCF6198F76451DEEF" = { "isa" = "PBXBuildFile"; "fileRef" = "8975CEC816012A38A1032675"; };
+
+		"56C83C28558ECE91A4D777E3" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "Coverage.swift"; "sourceTree" = "<group>"; };
+		"B3C223E31126C9060ADEB75D" = { "isa" = "PBXBuildFile"; "fileRef" = "56C83C28558ECE91A4D777E3"; };
+
 		"76EDD3BB2D321BB85D0B3F54" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "StreamingArchive.swift"; "sourceTree" = "<group>"; };
 		"9D7FD0F65284F9DD82AAEB41" = { "isa" = "PBXBuildFile"; "fileRef" = "76EDD3BB2D321BB85D0B3F54"; };
 
@@ -99,6 +105,8 @@
 			"buildActionMask" = 2147483647;
 			"files" = (
 				"534A5F435ADDB25DA9F43232",
+				"84FD867BCF6198F76451DEEF",
+				"B3C223E31126C9060ADEB75D",
 				"9D7FD0F65284F9DD82AAEB41",
 				"504EA0C9AA2C4C95A106892E",
 				"1315D27D4FC88E195412189F",
@@ -136,6 +144,8 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"A33603BF79F74B056172D43B",
+				"8975CEC816012A38A1032675",
+				"56C83C28558ECE91A4D777E3",
 				"76EDD3BB2D321BB85D0B3F54", "IFCFOLDER0000000000000001",
 				"5596155B811589D64AA34366",
 				"CAEBDCF3DE57BA2AE3BB5464",

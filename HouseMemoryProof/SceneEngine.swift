@@ -17,7 +17,7 @@ enum SceneBuilder {
         case .ghost,.evidence:return true}
     }
     static func features(_ h:House,options:SceneOptions)->[Feature] {
-        let relevant=h.segments.filter{options.room==nil || $0.roomID==options.room}
+        let relevant=h.segments.filter{(options.room==nil || $0.roomID==options.room) && (options.stage==nil || $0.stageID==options.stage)}
         let unregistered=relevant.last(where:{$0.registration==nil})?.id
         return h.features.filter { f in
             guard visible(f,options) else{return false}

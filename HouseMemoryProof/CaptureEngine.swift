@@ -29,6 +29,7 @@ import ImageIO
     var reveal=false
     private var revealedNodes:[SCNNode]=[]
     private let overlayRoot=SCNNode()
+    private var loadedWorldMap=false
     private var markerSeen:TimeInterval=0
     private var markerTransform:simd_float4x4?
     private var currentReferencePoses:[UUID:ReferencePose]=[:]
@@ -43,11 +44,11 @@ import ImageIO
             self.reveal=reveal;houseID=h.id;generation=UUID();count=0;meshes=[:];cellSet=[];coverageCells=0;lastFrameTime=0;stopping=false
             let config=ARWorldTrackingConfiguration();config.planeDetection=[.horizontal,.vertical]
             config.detectionImages=await BoardGenerator.images(h,repo:repo);config.maximumNumberOfTrackedImages=2
-            currentReferencePoses=[:];markerTransform=nil;markerSeen=0
+            currentReferencePoses=[:];markerTransform=nil;markerSeen=0;loadedWorldMap=false
             if hasDepth{config.frameSemantics.insert(.sceneDepth)}
             if ARWorldTrackingConfiguration.supportsSceneReconstruction(.meshWithClassification){config.sceneReconstruction = .meshWithClassification}
             if let prior,let key=prior.worldMap {
-                do {let data=try repo.read(key);config.initialWorldMap=try NSKeyedUnarchiver.unarchivedObject(ofClass:ARWorldMap.self,from:data)}catch{message="Saved map could not be loaded: \(error.localizedDescription)";return}
+                do {let data=try repo.read(key);config.initialWorldMap=try NSKeyedUnarchiver.unarchivedObject(ofClass:ARWorldMap.self,from:data);loadedWorldMap=config.initialWorldMap != nil}catch{message="Saved map could not be loaded: \(error.localizedDescription)";return}
             }
             if reveal {
                 guard let prior,config.initialWorldMap != nil || !prior.referencePoses.isEmpty else{message="This session has no saved AR map. Open source photographs instead.";return}
@@ -69,7 +70,7 @@ import ImageIO
         case .limited(let reason):tracking="Limited: \(reason)";normal=false}
         if reveal {
             let markerFresh=frame.timestamp-markerSeen<2 && markerTransform != nil
-            let eligible=normal && (markerFresh || (markerTransform==nil && frame.worldMappingStatus == .mapped))
+            let eligible=normal && (markerFresh || (loadedWorldMap && markerTransform==nil && frame.worldMappingStatus == .mapped))
             if markerFresh,let transform=markerTransform{overlayRoot.simdTransform=transform}
             revealedNodes.forEach{$0.isHidden = !eligible}
             message=eligible ? "Approximate historical overlay. Verify against photographs and physical references; no precision calibration yet." : "Alignment unavailable — overlay hidden. Return to the original capture viewpoint."
@@ -111,7 +112,9 @@ import ImageIO
                 Task {@MainActor in
                     guard let self else{return};self.pending-=1
                     guard self.generation==token,self.model?.selected==houseID else{return}
-                    self.model?.edit{$0.observations.append(obs)};self.count+=1
+                    self.model?.edit{h in h.observations.append(obs)
+                        if self.count%5==0 {h.features.removeAll{$0.segmentID==segment.id && $0.name=="Observed LiDAR surface"};h.features.append(contentsOf:self.meshes.values);if let i=h.segments.firstIndex(where:{$0.id==segment.id}){h.segments[i].referencePoses=Array(self.currentReferencePoses.values)}}
+                    };self.count+=1
                     let p=self.lastPosition;self.cellSet.insert("\(Int(floor(p.x/0.25))):\(Int(floor(p.z/0.25)))");self.coverageCells=self.cellSet.count
                     self.message=obs.light<150 ? "Low light: add illumination and revisit dark cavities." : quality<0.02 ? "Low detail or blur: hold still and move closer." : "Saved locally. Change your viewing angle; unseen cavity depth remains unverified."
                     if self.stopping {self.finishStop()}
@@ -149,7 +152,8 @@ import ImageIO
             var triangles:[Int32]=[];triangles.reserveCapacity(g.faces.count*3)
             for i in 0..<g.faces.count*3 {let ptr=g.faces.buffer.contents().advanced(by:i*g.faces.bytesPerIndex);let value=g.faces.bytesPerIndex==4 ? ptr.load(as:UInt32.self):UInt32(ptr.load(as:UInt16.self));triangles.append(Int32(value))}
             let f=Feature(id:a.identifier,name:"Observed LiDAR surface",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:.observed,mesh:Mesh(vertices:vertices,triangles:triangles),segmentID:segment.id)
-            if meshes.count<120 || meshes[a.identifier] != nil {meshes[a.identifier]=f}
+            let total=meshes.values.reduce(0){$0+$1.mesh.vertices.count}-(meshes[a.identifier]?.mesh.vertices.count ?? 0)+vertices.count
+            if (meshes.count<120 || meshes[a.identifier] != nil) && total<=250000 {meshes[a.identifier]=f}else{message="Surface budget reached. Stop and start a new segment; original photographs continue saving."}
         }
     }
     func stop(){guard running else{return};running=false;stopping=true;processing=true;if reveal{view.session.pause();revealedNodes.forEach{$0.isHidden=true};processing=false;return};if pending==0{finishStop()}}

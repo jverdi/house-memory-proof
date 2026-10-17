@@ -27,6 +27,6 @@ import Foundation
         var output=[HXPoint](repeating:HXPoint(x:0,y:0,z:0,spread:0,views:0),count:count)
         _=output.withUnsafeMutableBufferPointer{hx_copy(core,$0.baseAddress,UInt32($0.count),3)}
         let points=output.map{V3($0.x,$0.y,$0.z)}
-        return Feature(name:"Fused depth · 2 cm cells",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:.observed,mesh:Mesh(vertices:points,triangles:[]),sourceIDs:observations.map{$0.id},notes:"\(count) cells supported by ≥3 captured views. ARKit pose priors are not optimized. Sample spread is not measurement accuracy. Thin services need photographs and manual tracing.",segmentID:segment.id)
+        return Feature(name:"Fused depth · 2 cm cells",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:points,triangles:[]),sourceIDs:observations.map{$0.id},notes:"\(count) cells supported by ≥3 captured views. ARKit pose priors are not optimized. Sample spread is not measurement accuracy. Thin services need photographs and manual tracing.",segmentID:segment.id)
     }
 }

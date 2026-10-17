@@ -47,6 +47,10 @@ final class Repository {
             _=h.name.withCString{sqlite3_bind_text(s,2,$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))}
             sqlite3_bind_int(s,3,Int32(h.revision));_=bytes.withUnsafeBytes{sqlite3_bind_blob(s,4,$0.baseAddress,Int32(bytes.count),unsafeBitCast(-1,to:sqlite3_destructor_type.self))}
             guard sqlite3_step(s)==SQLITE_DONE else{throw HouseError.message("Project save failed; prior revision retained.")}
+            // Bound full JSON revision history; original content-addressed assets are never pruned.
+            let trim=try statement("DELETE FROM history WHERE id=? AND revision NOT IN (SELECT revision FROM history WHERE id=? ORDER BY revision DESC LIMIT 20)");defer{sqlite3_finalize(trim)}
+            for column in 1...2{_=h.id.uuidString.withCString{sqlite3_bind_text(trim,Int32(column),$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))}}
+            guard sqlite3_step(trim)==SQLITE_DONE else{throw HouseError.message("Could not maintain revision history.")}
             try execute("COMMIT")
         }catch {try? execute("ROLLBACK");throw error}
     }
