@@ -214,9 +214,11 @@ enum TourDirector {
       reader.add(output)
       guard reader.startReading() else{return "Cannot start video sample inspection"}
       defer{reader.cancelReading()}
-      var times:[Double]=[]
+      var times:[Double]=[],buffers=0
+      let inspectionDeadline=ProcessInfo.processInfo.systemUptime+20
       while let sample=output.copyNextSampleBuffer(){
-        try Task.checkCancellation()
+        try Task.checkCancellation();buffers+=1
+        guard buffers<=frames*2+32,ProcessInfo.processInfo.systemUptime<inspectionDeadline else{return "Video sample inspection made insufficient progress"}
         let count=CMSampleBufferGetNumSamples(sample)
         guard count>=0,count<=frames-times.count else{return "Too many video frames: more than \(frames)"}
         // Core Media may pack multiple samples into a buffer or return an
@@ -270,6 +272,7 @@ enum TourDirector {
     let total = plan.shots.reduce(0) { $0 + Int(($1.duration * 30).rounded()) }
     var complete = 0
     for (shotIndex, shot) in plan.shots.enumerated() {
+      try Task.checkCancellation()
       let url = folder.appendingPathComponent("shot-\(shotIndex).mp4")
       let frames = Int((shot.duration * 30).rounded())
       let checksumURL=url.appendingPathExtension("sha256")
@@ -282,6 +285,8 @@ enum TourDirector {
         complete += frames
         continue
       }
+      // A cancelled cache check must never discard a completed verified shot.
+      try Task.checkCancellation()
       try? FileManager.default.removeItem(at: url)
       let candidate = folder.appendingPathComponent("shot-\(shotIndex).partial.mp4")
       try? FileManager.default.removeItem(at: candidate)
@@ -340,10 +345,10 @@ enum TourDirector {
           let pose = TourDirector.camera(shot, phase: phase)
           camera.simdPosition = pose.0.render
           camera.eulerAngles = SCNVector3(Float(pose.2), Float(pose.1), 0)
-          let image = renderer.snapshot(
-            atTime: Double(frame) / 30, with: CGSize(width: width, height: height),
-            antialiasingMode: .none)
           try autoreleasepool {
+            let image = renderer.snapshot(
+              atTime: Double(frame) / 30, with: CGSize(width: width, height: height),
+              antialiasingMode: .none)
             var buffer: CVPixelBuffer?
             let status = CVPixelBufferCreate(
               kCFAllocatorDefault, width, height, kCVPixelFormatType_32ARGB,
