@@ -1,0 +1,608 @@
+{
+  "detectorSelfTest": 1,
+  "source": [
+    {
+      "observationID": "4B49AFF6-CEF4-5A7A-A57F-B47BF8E16FBD",
+      "region": "F67ABC8F-68DB-5127-8188-D39041E61717",
+      "count": 5,
+      "ids": [
+        66,
+        150,
+        431,
+        465,
+        562
+      ]
+    },
+    {
+      "observationID": "469F423E-EEA8-55D4-8C69-0AFEE5A764A5",
+      "region": "F67ABC8F-68DB-5127-8188-D39041E61717",
+      "count": 6,
+      "ids": [
+        66,
+        150,
+        309,
+        431,
+        465,
+        562
+      ]
+    },
+    {
+      "observationID": "685785AF-DC06-5A56-A4AC-EED73AD223F2",
+      "region": "F67ABC8F-68DB-5127-8188-D39041E61717",
+      "count": 5,
+      "ids": [
+        66,
+        150,
+        309,
+        465,
+        562
+      ]
+    },
+    {
+      "observationID": "DE6713AB-4F18-5D85-942F-2C48901FB096",
+      "region": "F67ABC8F-68DB-5127-8188-D39041E61717",
+      "count": 5,
+      "ids": [
+        66,
+        150,
+        309,
+        465,
+        562
+      ]
+    },
+    {
+      "observationID": "5A0C539B-7EF4-56C8-92BC-6D3CFA3195DE",
+      "region": "61EFB726-10AC-5836-8732-B02FBA0634E5",
+      "count": 5,
+      "ids": [
+        0,
+        63,
+        67,
+        156,
+        448
+      ]
+    },
+    {
+      "observationID": "F911A4A5-EC4D-53DC-91DF-87E09A36E25D",
+      "region": "61EFB726-10AC-5836-8732-B02FBA0634E5",
+      "count": 6,
+      "ids": [
+        0,
+        63,
+        67,
+        156,
+        448,
+        475
+      ]
+    },
+    {
+      "observationID": "98905919-3590-59A3-A46E-206F6375D1ED",
+      "region": "61EFB726-10AC-5836-8732-B02FBA0634E5",
+      "count": 6,
+      "ids": [
+        0,
+        63,
+        67,
+        156,
+        448,
+        475
+      ]
+    },
+    {
+      "observationID": "883122D5-3E86-542B-BE70-8E0791934CF7",
+      "region": "61EFB726-10AC-5836-8732-B02FBA0634E5",
+      "count": 5,
+      "ids": [
+        0,
+        63,
+        67,
+        448,
+        475
+      ]
+    },
+    {
+      "observationID": "71776121-6D42-5B87-B8B2-35E5B6A77B91",
+      "region": "2FB6CD65-39F7-5073-AD90-404ADD1C85A6",
+      "count": 5,
+      "ids": [
+        27,
+        291,
+        400,
+        402,
+        411
+      ]
+    },
+    {
+      "observationID": "FC661C32-C8AA-5629-8C75-1BBECF1EDD97",
+      "region": "2FB6CD65-39F7-5073-AD90-404ADD1C85A6",
+      "count": 6,
+      "ids": [
+        27,
+        291,
+        302,
+        400,
+        402,
+        411
+      ]
+    },
+    {
+      "observationID": "3A279FAA-BD61-545A-A4AA-807753F54390",
+      "region": "2FB6CD65-39F7-5073-AD90-404ADD1C85A6",
+      "count": 5,
+      "ids": [
+        27,
+        291,
+        302,
+        402,
+        411
+      ]
+    },
+    {
+      "observationID": "7B0EEE19-8E80-5EBC-8568-7B8006AD742F",
+      "region": "2FB6CD65-39F7-5073-AD90-404ADD1C85A6",
+      "count": 5,
+      "ids": [
+        27,
+        291,
+        302,
+        402,
+        411
+      ]
+    },
+    {
+      "observationID": "A1C8442D-0A8F-5A77-B074-DFE0C5CEB9CC",
+      "region": "86986F7B-977F-50A1-A6B3-53BFDD5AA5A1",
+      "count": 5,
+      "ids": [
+        89,
+        139,
+        268,
+        365,
+        422
+      ]
+    },
+    {
+      "observationID": "1686E70B-007B-582C-A34E-482DA78789D4",
+      "region": "86986F7B-977F-50A1-A6B3-53BFDD5AA5A1",
+      "count": 6,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        365,
+        422
+      ]
+    },
+    {
+      "observationID": "658EAD98-E9A1-519F-B22A-CAAE0A3C7051",
+      "region": "86986F7B-977F-50A1-A6B3-53BFDD5AA5A1",
+      "count": 6,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        365,
+        422
+      ]
+    },
+    {
+      "observationID": "BDD30AD6-8198-5A59-9A20-AC040F60B444",
+      "region": "86986F7B-977F-50A1-A6B3-53BFDD5AA5A1",
+      "count": 5,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        422
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "scenario": "rough coded references",
+      "image": "region-0-False-0.jpg",
+      "count": 6,
+      "ids": [
+        66,
+        150,
+        309,
+        431,
+        465,
+        562
+      ]
+    },
+    {
+      "scenario": "rough coded references",
+      "image": "region-0-False-1.jpg",
+      "count": 5,
+      "ids": [
+        66,
+        150,
+        309,
+        465,
+        562
+      ]
+    },
+    {
+      "scenario": "finished coded references",
+      "image": "region-0-True-0.jpg",
+      "count": 6,
+      "ids": [
+        66,
+        150,
+        309,
+        431,
+        465,
+        562
+      ]
+    },
+    {
+      "scenario": "finished coded references",
+      "image": "region-0-True-1.jpg",
+      "count": 5,
+      "ids": [
+        66,
+        150,
+        309,
+        465,
+        562
+      ]
+    },
+    {
+      "scenario": "wrong room",
+      "image": "region-0-wrong-1.jpg",
+      "count": 6,
+      "ids": [
+        66,
+        150,
+        309,
+        431,
+        465,
+        562
+      ]
+    },
+    {
+      "scenario": "wrong floor",
+      "image": "region-0-wrong-2.jpg",
+      "count": 6,
+      "ids": [
+        66,
+        150,
+        309,
+        431,
+        465,
+        562
+      ]
+    },
+    {
+      "scenario": "missing reference",
+      "image": "region-0-missing.jpg",
+      "count": 0,
+      "ids": []
+    },
+    {
+      "scenario": "moved reference",
+      "image": "region-0-moved.jpg",
+      "count": 6,
+      "ids": [
+        66,
+        150,
+        309,
+        431,
+        465,
+        562
+      ]
+    },
+    {
+      "scenario": "duplicate reference",
+      "image": "region-0-duplicate.jpg",
+      "count": -4,
+      "ids": []
+    },
+    {
+      "scenario": "rough coded references",
+      "image": "region-1-False-0.jpg",
+      "count": 6,
+      "ids": [
+        0,
+        63,
+        67,
+        156,
+        448,
+        475
+      ]
+    },
+    {
+      "scenario": "rough coded references",
+      "image": "region-1-False-1.jpg",
+      "count": 5,
+      "ids": [
+        0,
+        63,
+        67,
+        448,
+        475
+      ]
+    },
+    {
+      "scenario": "finished coded references",
+      "image": "region-1-True-0.jpg",
+      "count": 6,
+      "ids": [
+        0,
+        63,
+        67,
+        156,
+        448,
+        475
+      ]
+    },
+    {
+      "scenario": "finished coded references",
+      "image": "region-1-True-1.jpg",
+      "count": 5,
+      "ids": [
+        0,
+        63,
+        67,
+        448,
+        475
+      ]
+    },
+    {
+      "scenario": "wrong room",
+      "image": "region-1-wrong-0.jpg",
+      "count": 6,
+      "ids": [
+        0,
+        63,
+        67,
+        156,
+        448,
+        475
+      ]
+    },
+    {
+      "scenario": "wrong floor",
+      "image": "region-1-wrong-3.jpg",
+      "count": 6,
+      "ids": [
+        0,
+        63,
+        67,
+        156,
+        448,
+        475
+      ]
+    },
+    {
+      "scenario": "missing reference",
+      "image": "region-1-missing.jpg",
+      "count": 0,
+      "ids": []
+    },
+    {
+      "scenario": "moved reference",
+      "image": "region-1-moved.jpg",
+      "count": 6,
+      "ids": [
+        0,
+        63,
+        67,
+        156,
+        448,
+        475
+      ]
+    },
+    {
+      "scenario": "duplicate reference",
+      "image": "region-1-duplicate.jpg",
+      "count": -4,
+      "ids": []
+    },
+    {
+      "scenario": "rough coded references",
+      "image": "region-2-False-0.jpg",
+      "count": 5,
+      "ids": [
+        27,
+        291,
+        400,
+        402,
+        411
+      ]
+    },
+    {
+      "scenario": "rough coded references",
+      "image": "region-2-False-1.jpg",
+      "count": 5,
+      "ids": [
+        27,
+        291,
+        302,
+        402,
+        411
+      ]
+    },
+    {
+      "scenario": "finished coded references",
+      "image": "region-2-True-0.jpg",
+      "count": 5,
+      "ids": [
+        27,
+        291,
+        400,
+        402,
+        411
+      ]
+    },
+    {
+      "scenario": "finished coded references",
+      "image": "region-2-True-1.jpg",
+      "count": 5,
+      "ids": [
+        27,
+        291,
+        302,
+        402,
+        411
+      ]
+    },
+    {
+      "scenario": "wrong room",
+      "image": "region-2-wrong-3.jpg",
+      "count": 6,
+      "ids": [
+        27,
+        291,
+        302,
+        400,
+        402,
+        411
+      ]
+    },
+    {
+      "scenario": "wrong floor",
+      "image": "region-2-wrong-0.jpg",
+      "count": 6,
+      "ids": [
+        27,
+        291,
+        302,
+        400,
+        402,
+        411
+      ]
+    },
+    {
+      "scenario": "missing reference",
+      "image": "region-2-missing.jpg",
+      "count": 0,
+      "ids": []
+    },
+    {
+      "scenario": "moved reference",
+      "image": "region-2-moved.jpg",
+      "count": 6,
+      "ids": [
+        27,
+        291,
+        302,
+        400,
+        402,
+        411
+      ]
+    },
+    {
+      "scenario": "duplicate reference",
+      "image": "region-2-duplicate.jpg",
+      "count": -4,
+      "ids": []
+    },
+    {
+      "scenario": "rough coded references",
+      "image": "region-3-False-0.jpg",
+      "count": 6,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        365,
+        422
+      ]
+    },
+    {
+      "scenario": "rough coded references",
+      "image": "region-3-False-1.jpg",
+      "count": 5,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        422
+      ]
+    },
+    {
+      "scenario": "finished coded references",
+      "image": "region-3-True-0.jpg",
+      "count": 6,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        365,
+        422
+      ]
+    },
+    {
+      "scenario": "finished coded references",
+      "image": "region-3-True-1.jpg",
+      "count": 5,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        422
+      ]
+    },
+    {
+      "scenario": "wrong room",
+      "image": "region-3-wrong-2.jpg",
+      "count": 6,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        365,
+        422
+      ]
+    },
+    {
+      "scenario": "wrong floor",
+      "image": "region-3-wrong-1.jpg",
+      "count": 6,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        365,
+        422
+      ]
+    },
+    {
+      "scenario": "missing reference",
+      "image": "region-3-missing.jpg",
+      "count": 0,
+      "ids": []
+    },
+    {
+      "scenario": "moved reference",
+      "image": "region-3-moved.jpg",
+      "count": 6,
+      "ids": [
+        71,
+        89,
+        139,
+        268,
+        365,
+        422
+      ]
+    },
+    {
+      "scenario": "duplicate reference",
+      "image": "region-3-duplicate.jpg",
+      "count": -4,
+      "ids": []
+    }
+  ],
+  "poseQualification": false
+}

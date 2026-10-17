@@ -35,7 +35,7 @@ import Darwin
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
             mark("Coded reference image-to-pose integration")
-            do {results.append(try codedReferenceReport(repo:repo,outputRoot:mainRepo.root))}
+            do {results.append(try codedReferenceReport(repo:Repository(root:folder.appendingPathComponent("coded-references")),outputRoot:mainRepo.root))}
             catch {results.append(["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":false,"error":error.localizedDescription])}
             await check("Multi-board pose holds out each board and rejects moved or duplicate references") {var error=0.0;return hx_reference_selftest(&error)==1 && error<0.003}
             await check("Pinned AprilTag identity, corner coordinates, rotation and duplicate rejection") {hx_tag_selftest()==1}
@@ -548,6 +548,25 @@ import Darwin
                   && !local.isWalkClear(from:a,to:V3(1.5,0,1.6))
                   && !local.isWalkClear(from:a,to:V3(Double.nan,0,1.6))
             }
+            await check("Observed floor walking preserves capture height, climbs checked steps and refuses holes or low headroom") {
+                func floor(_ centre:V3,_ size:V3)->Feature {Feature(name:"Observed floor fixture",trade:.floor,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:centre,size:size))}
+                let ground=floor(V3(0,0,-0.1),V3(4,3,0.2)),low=V3(0,0,1.1),target=V3(0.5,0,1.1)
+                let flat=SpatialClearance(features:[ground])
+                guard !flat.isWalkClear(from:low,to:target),let result=flat.walkingDestination(from:low,toward:target),(result.position-target).length<1e-9 else{return false}
+                let beam=Feature(name:"Low beam",trade:.structure,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:V3(0.4,0,1.7),size:V3(0.2,2,0.15)))
+                guard SpatialClearance(features:[ground,beam]).walkingDestination(from:low,toward:target)==nil else{return false}
+                let gap=[floor(V3(-0.3,0,-0.1),V3(1.4,2,0.2)),floor(V3(1.3,0,-0.1),V3(1.4,2,0.2))]
+                guard SpatialClearance(features:gap).walkingDestination(from:low,toward:V3(1,0,1.1))==nil else{return false}
+                var stairs=[floor(V3(-0.4,0,-0.1),V3(1.2,2,0.2))]
+                for i in 1...5 {let top=Double(i)*0.18;stairs.append(floor(V3(Double(i)*0.4,0,(top-0.1)/2),V3(0.4,2,top+0.1)))}
+                let stair=SpatialClearance(features:stairs),start=V3(-0.5,0,1.3)
+                guard let up=stair.walkingDestination(from:start,toward:V3(1.4,0,1.3)),up.position.z>1.8,
+                  let down=stair.walkingDestination(from:up.position,toward:start,eyeHeight:up.eyeHeight),(down.position-start).length<1e-8 else{return false}
+                let tall=[stairs[0],floor(V3(0.4,0,0.125),V3(0.4,2,0.45))]
+                guard SpatialClearance(features:tall).walkingDestination(from:start,toward:V3(0.4,0,1.3))==nil else{return false}
+                let local=try SpatialClearance(index:SpatialDisplayIndex(features:[ground]),camera:low,radius:1)
+                return local.walkingDestination(from:low,toward:target)==nil
+            }
             await check("Tour path rejects observed wall and accepts supported camera corridor"){
                 var h=House.empty("Path test");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
                 for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}
@@ -762,23 +781,34 @@ extension SelfTests {
         }
         func render(_ camera:Observation,moved:Bool=false,duplicate:Bool=false)->Data {
             var data=Data(repeating:245,count:width*height)
+            let worldFromCamera=PoseRefinement.matrix(camera.camera)!
             data.withUnsafeMutableBytes {buffer in
-                let context=CGContext(data:buffer.baseAddress,width:width,height:height,bitsPerComponent:8,bytesPerRow:width,space:CGColorSpaceCreateDeviceGray(),bitmapInfo:0)!
-                context.setShouldAntialias(false)
+                let pixels=buffer.bindMemory(to:UInt8.self)
                 for i in centres.indices {
                     var transform=PoseRefinement.matrix(segment.referencePoses[i].matrix)!
                     if moved && i==0 {transform.columns.3.x+=0.08}
                     let board=house.references[i],image=cells[duplicate && i==1 ? 0:i]
-                    for row in 0..<10 {for column in 0..<10 {
-                        let bounds=[(column,row),(column+1,row),(column+1,row+1),(column,row+1)]
-                        let points=bounds.compactMap {x,y -> CGPoint? in
-                            let p=transform*SIMD4((Double(x)/10-0.5)*board.width,0,(Double(y)/10-0.5)*board.width,1)
-                            guard let projected=TextureBuilder.project(V3(p.x,-p.z,p.y),through:camera) else{return nil}
-                            return CGPoint(x:projected.0.u*Double(width),y:projected.0.v*Double(height))
-                        }
-                        guard points.count==4 else{continue}
-                        context.setFillColor(gray:image[row*10+column]==0 ? 0.05:0.96,alpha:1)
-                        context.beginPath();context.move(to:points[0]);for p in points.dropFirst(){context.addLine(to:p)};context.closePath();context.fillPath()
+                    let corners=[(-0.5,-0.5),(0.5,-0.5),(0.5,0.5),(-0.5,0.5)].compactMap {x,y -> UV? in
+                        let p=transform*SIMD4(x*board.width,0,y*board.width,1)
+                        return CameraProjection.project(V3(p.x,-p.z,p.y),through:camera)?.0
+                    }
+                    guard corners.count==4 else{continue}
+                    let x0=max(0,Int(floor(corners.map{$0.u}.min()!*Double(width)))-1)
+                    let x1=min(width-1,Int(ceil(corners.map{$0.u}.max()!*Double(width)))+1)
+                    let y0=max(0,Int(floor(corners.map{$0.v}.min()!*Double(height)))-1)
+                    let y1=min(height-1,Int(ceil(corners.map{$0.v}.max()!*Double(height)))+1)
+                    let boardFromCamera=transform.inverse*worldFromCamera
+                    let origin=boardFromCamera*SIMD4<Double>(0,0,0,1)
+                    // Write raw row-major pixels directly. Core Graphics path
+                    // coordinates must not choose the camera image orientation.
+                    for y in y0...y1 {for x in x0...x1 {
+                        let ray=boardFromCamera*SIMD4((Double(x)-camera.intrinsics[2])/camera.intrinsics[0],-(Double(y)-camera.intrinsics[5])/camera.intrinsics[4],-1,0)
+                        guard abs(ray.y)>1e-12 else{continue}
+                        let distance = -origin.y/ray.y
+                        guard distance>0 else{continue}
+                        let local=origin+ray*distance,u=local.x/board.width+0.5,v=local.z/board.width+0.5
+                        guard u>=0,u<1,v>=0,v<1 else{continue}
+                        pixels[y*width+x]=image[Int(v*10)*10+Int(u*10)]==0 ? 12:245
                     }}
                 }
             }
@@ -809,13 +839,35 @@ extension SelfTests {
         house.segments[0].referencePoses=measured.values.sorted{$0.boardID.uuidString<$1.boardID.uuidString}
         diagnostics["sourceBoardPositionErrorsMetres"]=measurementErrors;checkpoint("capture persistence")
         try house.validate()
-        var checkpoint=house;checkpoint.observations=[];try repo.save(checkpoint)
+        var captureCheckpoint=house;captureCheckpoint.observations=[];try repo.save(captureCheckpoint)
         for o in house.observations {try repo.stageCapture(o,projectID:house.id,room:house.rooms[0],stage:house.stages[0],segment:house.segments[0],references:house.references)}
         guard let recovered=try Repository(root:repo.root).all().first(where:{$0.id==house.id}),recovered.observations==house.observations else{throw HouseError.message("Coded capture rows did not preserve corner and pose evidence after reopening.")}
         let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(recovered));try restored.validate()
         let map=CodedReferences.build(house:restored,segment:restored.segments[0])
         diagnostics["supportedBoards"]=map.boards.count;checkpoint("source consistency")
         guard map.boards.count==6 else{throw HouseError.message("Translated source-corner evidence did not qualify the saved board geometry.")}
+        var missingCheckpoint=restored;missingCheckpoint.segments[0].referencePoses=[]
+        let rebuilt=CodedReferences.build(house:missingCheckpoint,segment:missingCheckpoint.segments[0])
+        guard rebuilt.boards.count==6,zip(rebuilt.boards,map.boards).allSatisfy({$0.id==$1.id && $0.corners==$1.corners}) else{throw HouseError.message("Committed source rows could not recover before the aggregate reference checkpoint.")}
+        var linked=missingCheckpoint
+        linked.segments[0].registration=Rigid()
+        var other=linked.segments[0];other.id=UUID();other.stageID=linked.stages[1].id;other.registration=nil
+        linked.segments.append(other)
+        for original in missingCheckpoint.observations {
+            var copy=original;copy.id=UUID();copy.segmentID=other.id;copy.stageID=other.stageID;copy.camera[3]-=0.4;copy.referenceObservations=[]
+            linked.observations.append(copy)
+        }
+        let (handoff,_,link)=try ReferenceRegistration.fit(source:other,anchor:linked.segments[0],house:linked)
+        guard (handoff.apply(V3())-V3(0.4,0,0)).length<0.001 else{throw HouseError.message("Coded handoff failed to rebuild geometry from durable source rows.")}
+        linked.segments[1].registration=handoff;linked.segments[1].registrationLink=link
+        ReferenceRegistration.invalidateChangedInputs(&linked)
+        guard linked.segments[1].registration != nil else{throw HouseError.message("Unchanged coded handoff invalidated itself.")}
+        let last=linked.observations.count-1
+        linked.observations[last].codedDetections![0].corners[0].u+=0.01
+        ReferenceRegistration.invalidateChangedInputs(&linked)
+        guard linked.segments[1].registration==nil else{throw HouseError.message("A changed raw reference corner retained a stale stage registration.")}
+        var resizedPrint=restored;resizedPrint.references[0].width *= 1.5
+        guard !CodedReferences.build(house:resizedPrint,segment:resizedPrint.segments[0]).boards.contains(where:{$0.id==resizedPrint.references[0].id}) else{throw HouseError.message("A changed print scale reused an old metric pose despite conflicting translated views.")}
         var conflictedHouse=restored,changed=restored.observations[0];changed.id=UUID()
         let firstBoard=house.references[0].id
         let changedIndex=changed.codedDetections!.firstIndex{$0.boardID==firstBoard}!

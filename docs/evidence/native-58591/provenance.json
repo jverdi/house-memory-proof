@@ -1,0 +1,17 @@
+{
+  "sourceCommit": "58591b97e1ab6d41844f60efcef44886034a1b03",
+  "runID": 39041607909,
+  "jobID": 117422284132,
+  "artifactID": 12104204688,
+  "reportedArchiveSHA256": "c00796e82547d6b628949ad9d95ee9ed9319cdcffaaed8c49fc561ae53a75530",
+  "wholeArchiveDigestVerified": false,
+  "memberDigests": "selective-download.json",
+  "nativeChecks": 90,
+  "nativePassed": 89,
+  "nativeSeconds": 127.68608412499998,
+  "nativeFailure": "Known source image did not decode all six separated boards.",
+  "uiTestsPassed": 2,
+  "actualProcessKillRecoveryCasesPassed": 3,
+  "independentExportReadersPassed": true,
+  "productionQualified": false
+}

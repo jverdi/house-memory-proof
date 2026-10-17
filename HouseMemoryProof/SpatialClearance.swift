@@ -48,6 +48,7 @@ struct SpatialClearance {
   }
   private var items: [Bounds] = []
   private var nodes: [Node] = []
+  private var floors=FloorSupport()
   private(set) var complete = true
   private(set) var coverageCentre: V3?
   private var coverageRadius = 0.0
@@ -68,12 +69,13 @@ struct SpatialClearance {
           let a = m.vertices[Int(m.triangles[i])]
           let b = m.vertices[Int(m.triangles[i + 1])]
           let c = m.vertices[Int(m.triangles[i + 2])]
+          if f.trade == .floor {floors.append(a,b,c)}
           items.append(
             Bounds(low: a, high: a).union(Bounds(low: b, high: b)).union(Bounds(low: c, high: c)))
         }
       }
     }
-    if !items.isEmpty { _ = build(0, items.count) }
+    if !items.isEmpty { _ = build(0, items.count) };floors.finish()
   }
   // Use original primitive bounds, not display LOD. The tile bounds include
   // crossing triangles whose centres lie outside this neighbourhood.
@@ -97,11 +99,12 @@ struct SpatialClearance {
           let a=mesh.vertices[Int(mesh.triangles[primitive*3])]
           let b=mesh.vertices[Int(mesh.triangles[primitive*3+1])]
           let c=mesh.vertices[Int(mesh.triangles[primitive*3+2])]
+          if index.features[tile.feature].trade == .floor {floors.append(a,b,c)}
           items.append(Bounds(low:a,high:a).union(Bounds(low:b,high:b)).union(Bounds(low:c,high:c)))
         }
       }
     }
-    if !items.isEmpty { _ = build(0, items.count) }
+    if !items.isEmpty { _ = build(0, items.count) };floors.finish()
     try Task.checkCancellation()
   }
   private mutating func build(_ start: Int, _ end: Int) -> Int {
@@ -134,6 +137,42 @@ struct SpatialClearance {
   func isWalkClear(from a:V3,to b:V3)->Bool {
     sweptClear(from:a,to:b,below:1.55,above:0.22,radius:0.20)
   }
+  // Follow observed floor triangles without assuming the phone was held at
+  // standing eye height. Preserve its actual height above the floor while
+  // checking a 1.77 m upright body, a 24 cm step and head clearance throughout.
+  // Point clouds or regions with no classified floor keep the camera-corridor
+  // fallback. A floor hole in an otherwise observed floor is never bridged.
+  func walkingDestination(from a:V3,toward b:V3,eyeHeight savedHeight:Double?=nil)->(position:V3,eyeHeight:Double)? {
+    guard complete,a.finite,b.finite else{return nil}
+    guard !floors.isEmpty else{return isWalkClear(from:a,to:b) ? (b,1.6):nil}
+    func support(at point:V3)->Double? {
+      var heights:[Double]=[]
+      for x in [-0.20,0,0.20] {for y in [-0.20,0,0.20] {
+        guard let height=floors.height(at:point+V3(x,y,0)) else{return nil};heights.append(height)
+      }}
+      guard let high=heights.max(),let low=heights.min(),high-low<=0.48 else{return nil}
+      return high
+    }
+    guard let start=support(at:a) else{return nil}
+    let eyeHeight=savedHeight ?? (a.z-start),horizontal=hypot(b.x-a.x,b.y-a.y)
+    guard eyeHeight.isFinite,eyeHeight>=0.4,eyeHeight<=2.2 else{return nil}
+    guard horizontal<=2 else{return nil}
+    let steps=max(1,Int(ceil(horizontal/0.05)))
+    var previous=a,previousFloor=start
+    for step in 1...steps {
+      let fraction=Double(step)/Double(steps)
+      var next=a+(b-a)*fraction;next.z=previousFloor+eyeHeight
+      guard let floor=support(at:next),abs(floor-previousFloor)<=0.24 else{return nil}
+      next.z=floor+eyeHeight
+      let high=max(floor,previousFloor),raisedFrom=V3(previous.x,previous.y,high+eyeHeight),raisedTo=V3(next.x,next.y,high+eyeHeight)
+      let below=eyeHeight-0.03,above=max(0.22,1.80-eyeHeight)
+      guard sweptClear(from:previous,to:raisedFrom,below:below,above:above,radius:0.20),
+        sweptClear(from:raisedFrom,to:raisedTo,below:below,above:above,radius:0.20),
+        sweptClear(from:raisedTo,to:next,below:below,above:above,radius:0.20) else{return nil}
+      previous=next;previousFloor=floor
+    }
+    return (previous,eyeHeight)
+  }
   private func sweptClear(from a:V3,to b:V3,below:Double,above:Double,radius:Double)->Bool {
     guard complete,a.finite,b.finite,radius.isFinite,radius>=0,
       below.isFinite,above.isFinite,below>=0,above>=0 else{return false}
@@ -159,5 +198,53 @@ struct SpatialClearance {
       }
     }
     return true
+  }
+}
+
+// Only actual, approximately horizontal triangles labelled as floor support
+// walking. Triangle bounds alone cannot fill a stairwell or an absent surface.
+private struct FloorSupport {
+  struct Triangle {var a:V3;var b:V3;var c:V3;var bounds:SpatialClearance.Bounds}
+  var triangles:[Triangle]=[]
+  var nodes:[SpatialClearance.Node]=[]
+  var isEmpty:Bool {triangles.isEmpty}
+  mutating func append(_ a:V3,_ b:V3,_ c:V3) {
+    let u=b-a,v=c-a,n=V3(u.y*v.z-u.z*v.y,u.z*v.x-u.x*v.z,u.x*v.y-u.y*v.x)
+    guard n.finite,n.length>1e-10,abs(n.z)/n.length>=0.707 else{return}
+    let bounds=SpatialClearance.Bounds(low:a,high:a).union(.init(low:b,high:b)).union(.init(low:c,high:c))
+    triangles.append(Triangle(a:a,b:b,c:c,bounds:bounds))
+  }
+  mutating func finish(){if !triangles.isEmpty {_=build(0,triangles.count)}}
+  private mutating func build(_ start:Int,_ end:Int)->Int {
+    var bounds=triangles[start].bounds
+    for i in (start+1)..<end {bounds=bounds.union(triangles[i].bounds)}
+    let index=nodes.count;nodes.append(.init(bounds:bounds,start:start,count:end-start))
+    if end-start>16 {
+      let x=bounds.high.x-bounds.low.x>=bounds.high.y-bounds.low.y
+      triangles.replaceSubrange(start..<end,with:triangles[start..<end].sorted{x ? $0.bounds.centre.x<$1.bounds.centre.x:$0.bounds.centre.y<$1.bounds.centre.y})
+      let middle=(start+end)/2,left=build(start,middle),right=build(middle,end)
+      nodes[index].left=left;nodes[index].right=right;nodes[index].count=0
+    }
+    return index
+  }
+  func height(at point:V3)->Double? {
+    guard !nodes.isEmpty else{return nil}
+    var stack=[0],highest:Double?
+    while let index=stack.popLast() {
+      let node=nodes[index],bounds=node.bounds
+      guard point.x>=bounds.low.x-1e-8,point.x<=bounds.high.x+1e-8,point.y>=bounds.low.y-1e-8,point.y<=bounds.high.y+1e-8,
+        bounds.low.z<=point.z-0.35,bounds.high.z>=point.z-2.5 else{continue}
+      if node.count==0 {stack.append(node.left);stack.append(node.right);continue}
+      for i in node.start..<(node.start+node.count) {
+        let t=triangles[i],u=t.b-t.a,v=t.c-t.a,p=point-t.a,denominator=u.x*v.y-u.y*v.x
+        guard abs(denominator)>1e-10 else{continue}
+        let b=(p.x*v.y-p.y*v.x)/denominator,c=(u.x*p.y-u.y*p.x)/denominator
+        guard b >= -1e-8,c >= -1e-8,b+c<=1+1e-8 else{continue}
+        let z=t.a.z+b*u.z+c*v.z
+        guard z<=point.z-0.35,z>=point.z-2.5 else{continue}
+        highest=max(highest ?? z,z)
+      }
+    }
+    return highest
   }
 }

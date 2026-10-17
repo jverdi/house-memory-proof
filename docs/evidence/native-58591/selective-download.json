@@ -1,0 +1,33 @@
+{
+  "artifact": 12104204688,
+  "archiveSize": 74015237,
+  "transferred": 237111,
+  "memberSHA256": {
+    "archive-validation.json": "4f15d0bf93cdfc9c5757ea22f1c0b29ced0ad099c82665ee738869b624eb7f58",
+    "house-surface-gltf-validation.json": "7910f2a035ad7d3ae90bf68058e1c9b80f15aebc2c85f490070ddfaebf2696c0",
+    "house-surface-interchange.json": "e1ee0d65d79f31ae6118810b61339b4a01d5445d269e9c2603297d2e5500b1d6",
+    "ifc-package-lock.json": "f185b1cebab7e82526e1e7ad9b50957ecfb7623299f188db616a7223a83200fd",
+    "native-progress.json": "14d1450df4ab2946f7a2218d8827a1e5a90f2a48e0d0401f57e36cc1077d6ace",
+    "native-self-test.json": "e26bf56ce8681b3738d01e698ea9f797bfe1a0081cc1afa778ee16eb259af416",
+    "offline-viewer-validation.json": "4d473375449cf8be1e22ed9d9adb0ed90f0ee08037009d94dc87ef25681a0332",
+    "points-gltf-validation.json": "b518ed67dd3843f8866ce09e95708cbb2a5b419ffd879c3e2d74c2e771c73001",
+    "points-interchange.json": "e1ee0d65d79f31ae6118810b61339b4a01d5445d269e9c2603297d2e5500b1d6",
+    "points-usd-validation.json": "74e17bbc0160eaae8fb42bd99d4f5f9f52a0fed0da80e1a594e897c61bc0b9b8",
+    "portable-tests.json": "9fc1b911d7095312468ac57b672cba30131992d0218982c717b1323338c4ea9d",
+    "process-recovery-capture-row.json": "c461c8a1ea740151c8ed5b6d110f525105aa95d2f3686ebcfed86be86fbc4707",
+    "process-recovery-journal.json": "3a9017acf0b4942495135abca72d311c8562f352261f28bec0a13c10c3f2ef2f",
+    "process-recovery-migration.json": "f41dfd40d85a1de2c80cc08158a774efb9c781c450c1a99026f8871c70612bf6",
+    "self-test-partial.json": "19e4d53400bec3b111d6392b93c1b7370257e220749a59c49b4713a2e063ae80",
+    "simulator-result.json": "90fdd7ab1fd69d4c73ceae1ba0517cd826a6a8fba839fdac3c31ee69071fbd56",
+    "simulator-inventory.json": "17b34e8a8fb94662ae895d520c0eea146c906fe7eed1f0a8b69f5ac060284429",
+    "surface-tests.json": "12f78c0489c48743cf7c385e5636268036915bac440c39bd8970ac4e4e08a1df",
+    "synthetic-house-generator.json": "18a238d0489c4c6f89bbd7caef116b34ccea7344999d9a49ea3f05252bc9df40",
+    "test-gltf-validation.json": "9374559f48d5411b5adc39d3f96607ecc723c1b735e75baa41efec8900805d6c",
+    "test-interchange.json": "ae3f21436bd7e0bf7b865e73d8a2514acc990e7f2c0c9b9a6a9e6d9fd192fae9",
+    "test-usd-validation.json": "fcb0c5ddf1c4f29d9a8b79d0c4b48bad913e3b9c7999f0924a0a82e1a2ce68f8",
+    "textured-gltf-validation.json": "b5e13029c680e34ccd50fee7f6817ba8661d7f1ad101f299253577d1777154c5",
+    "textured-interchange.json": "a320ef6b522cf48a332ec971aea45912e52316f5cddb5588ab22b07521638d0d",
+    "textured-usd-validation.json": "37a7f445253e304f7193b1ef7b2a246b2aa1d33e7a483551617e66bea86fbe3d"
+  },
+  "wholeArchiveDigestVerified": false
+}

@@ -1,0 +1,9 @@
+{
+  "sourceCommit": "a4f4b8fd8160691b21138eb7a3130645cd8010a0",
+  "runID": 39043608641,
+  "artifactID": 12105271117,
+  "artifactSHA256": "110e9d06217745b469bee53fa7fc26282ed61df7b5905d789804c876d2dc0e02",
+  "wholeArchiveSHA256Verified": true,
+  "scope": "Early checkpoint; later workflow steps are not inferred from this artifact",
+  "physicalQualified": false
+}

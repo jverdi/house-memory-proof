@@ -17,6 +17,14 @@ typedef struct {double rms_pixels,alternative_pixels;uint32_t rejection;} HXTagP
 // AR-camera-from-image-anchor (local X right, Y outward normal, Z image down).
 int32_t hx_reference_measure_tag(const double* corners_xy,double border_width,double fx,double fy,double cx,double cy,
                                 uint32_t width,uint32_t height,double* pose,HXTagPoseQuality* quality);
+typedef struct {double rms_pixels,maximum_pixels;uint32_t views,rejection;} HXBoardFitQuality;
+// Fit one rigid, measured square to 2..64 translated source views. Cameras and
+// output use native AR axes, row-major world-from-local transforms. Each view
+// supplies fx/fy/cx/cy/width/height and eight pixel coordinates. Cameras stay
+// fixed: this is not a camera-drift calibration or a physical error bound.
+int32_t hx_reference_refine_board(const double* cameras,const double* calibration,const double* corners_xy,
+                                 uint32_t views,double border_width,const double* initial_pose,
+                                 double* pose,HXBoardFitQuality* quality);
 #ifdef __cplusplus
 }
 #endif

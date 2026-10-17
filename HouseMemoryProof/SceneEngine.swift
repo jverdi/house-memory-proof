@@ -224,6 +224,7 @@ extension UIColor {
   private var preparingScene=false
   private var cameraCorridor: [V3] = []
   private var recordedPaths:[NavigationGeometry.PathEdge]=[]
+  private var walkEyeHeight:Double?
   @Published var navigationNotice = ""
   var house: House?
   var options = SceneOptions()
@@ -276,6 +277,7 @@ extension UIColor {
     house = h
     options = o
     revision = h.revision
+    walkEyeHeight=nil
     collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
     sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID();resumeScene=false
     stream=nil
@@ -300,7 +302,7 @@ extension UIColor {
           }
           guard !Task.isCancelled,self.sceneRequest==request,self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
           self.clearance=prepared.1;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
-          self.navigationNotice=prepared.1.complete ? "Nearby surfaces retain full detail; distant detail may appear as source points. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
+          self.navigationNotice=prepared.1.complete ? "Dense or distant surfaces may appear as source points. Select a room for more detail. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
         }catch is CancellationError {}catch {
           guard self.sceneRequest==request,self.view.scene===scene else{return}
           self.navigationNotice=error.localizedDescription
@@ -343,7 +345,7 @@ extension UIColor {
         let next=try await LocalWorker.run {try SpatialClearance(index:index,camera:position)}
         guard !Task.isCancelled,self.collisionRequest==request,self.stream===stream else{return}
         self.clearance=next
-        self.navigationNotice=next.complete ? "Nearby surfaces retain full detail; distant detail may appear as source points. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
+        self.navigationNotice=next.complete ? "Dense or distant surfaces may appear as source points. Select a room for more detail. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
       }catch is CancellationError {}catch {
         guard self.collisionRequest==request else{return}
         self.navigationNotice="Nearby collision preparation failed. Walking remains limited to the last checked area."
@@ -351,6 +353,7 @@ extension UIColor {
     }
   }
   func jump(_ room: Room) {
+    walkEyeHeight=nil
     var p = room.origin + V3(room.size.x / 2, room.size.y / 2, 1.6)
     var direction = V3(0.55, 1, -0.08)
     if let h = house,
@@ -377,6 +380,7 @@ extension UIColor {
     move = .zero
   }
   func bookmark(_ b: Bookmark) {
+    walkEyeHeight=nil
     camera.simdPosition = b.position.render
     yaw = Float(b.yaw)
     pitch = Float(b.pitch)
@@ -450,11 +454,13 @@ extension UIColor {
     let from = camera.simdPosition
     var to = from + delta
     if flying {
+      walkEyeHeight=nil
       camera.simdPosition = to
       return
     }
     if let adjusted=NavigationGeometry.followedHeight(from:V3(ar:from),to:V3(ar:to),paths:recordedPaths) {to=adjusted.render}
-    if clearance.isWalkClear(from:V3(ar:from),to:V3(ar:to)) {
+    if let destination=clearance.walkingDestination(from:V3(ar:from),toward:V3(ar:to),eyeHeight:walkEyeHeight) {
+      to=destination.position.render
       if let h = house {
         if h.isDemo && h.observations.isEmpty {
           guard NavigationGeometry.allowed(V3(ar: to), house: h) else { return }
@@ -463,6 +469,7 @@ extension UIColor {
         }
       }
       camera.simdPosition = to
+      walkEyeHeight=destination.eyeHeight
     }
   }
 }

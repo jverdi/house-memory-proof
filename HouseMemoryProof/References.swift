@@ -95,6 +95,8 @@ struct ReferencesPage: View {
   @State private var name = "Reference 1"
   @State private var creating = false
   @State private var selectedRoom:UUID?
+  struct Placement {var count:Int;var assessment:ReferenceLayout.Assessment}
+  @State private var placements:[UUID:Placement]=[:]
   var body: some View {
     List {
       Section {
@@ -129,13 +131,15 @@ struct ReferencesPage: View {
         Text("For a rough-in to finished-stage handoff, retain distinct fixed references where they remain visible after drywall. Stagger their horizontal positions and heights across two walls; two straight columns may still form a nearly flat layout. Six targets can cover upper, middle and lower viewing regions. Capture translated overlapping views in both stages and check the recorded layout below.").font(.footnote)
       }
       Section("Recorded reference placement") {
-        ForEach(house.segments.filter{!$0.referencePoses.isEmpty}) {segment in
-          let assessment=ReferenceLayout.assess(segment:segment,house:house)
+        ForEach(house.segments.filter{!$0.referencePoses.isEmpty || (placements[$0.id]?.count ?? 0)>0}) {segment in
           VStack(alignment:.leading,spacing:6) {
             Text(house.rooms.first{$0.id==segment.roomID}?.name ?? "Capture")
+            if let placement=placements[segment.id] {
+            let assessment=placement.assessment
             Text("\(assessment.count) fixed references · \(segment.started.formatted())").font(.caption)
             Text(assessment.advice).font(.footnote).foregroundStyle(assessment.distributed ? .mint:.orange)
-            Text("\(CodedReferences.build(house:house,segment:segment).boards.count) coded boards have matching corner evidence in translated views").font(.caption)
+            Text("\(placement.count) coded boards have matching corner evidence in translated views").font(.caption)
+            }else{ProgressView("Checking saved reference views…")}
           }
         }
       }
@@ -143,6 +147,22 @@ struct ReferencesPage: View {
         NavigationLink(board.name) { ReferenceEditor(board: board) }
       }
     }.navigationTitle("References")
+      .task(id:house.revision) {
+        let snapshot=house
+        do {
+          let result=try await LocalWorker.run { () throws -> [UUID:Placement] in
+            var result:[UUID:Placement]=[:]
+            for segment in snapshot.segments {
+              try Task.checkCancellation()
+              let poses=ReferenceRegistration.currentPoses(segment:segment,house:snapshot)
+              let centres=poses.map{p in V3(p.matrix[3],-p.matrix[11],p.matrix[7])}
+              result[segment.id]=Placement(count:poses.filter{$0.method=="coded-corners"}.count,assessment:ReferenceLayout.assess(centres))
+            }
+            return result
+          }
+          guard !Task.isCancelled else{return};placements=result
+        }catch is CancellationError {}catch {model.error=error.localizedDescription}
+      }
   }
 }
 struct ReferenceEditor: View {

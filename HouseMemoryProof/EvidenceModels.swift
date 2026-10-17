@@ -39,6 +39,24 @@ struct UV: Codable, Equatable {
   var v: Double
 }
 
+enum CameraProjection {
+  // Canonical metres/Z-up -> native AR camera -> unrotated image pixels.
+  // Shared by texturing and coded references, including isolated host replay.
+  static func project(_ p:V3,through o:Observation)->(UV,Double)? {
+    let m=o.camera
+    guard m.count==16,o.intrinsics.count==9,o.width>0,o.height>0,p.finite else{return nil}
+    let ar=V3(p.x,p.z,-p.y),d=ar-V3(m[3],m[7],m[11])
+    let x=m[0]*d.x+m[4]*d.y+m[8]*d.z
+    let y = -(m[1]*d.x+m[5]*d.y+m[9]*d.z)
+    let z = -(m[2]*d.x+m[6]*d.y+m[10]*d.z)
+    guard z>0.15,z<8 else{return nil}
+    let u=(o.intrinsics[0]*x/z+o.intrinsics[2])/Double(o.width)
+    let v=(o.intrinsics[4]*y/z+o.intrinsics[5])/Double(o.height)
+    guard u>=0,u<=1,v>=0,v<=1 else{return nil}
+    return(UV(u:u,v:v),z)
+  }
+}
+
 struct DrawingAlignment: Codable, Equatable {
     var page: Int
     var metresPerPoint: Double

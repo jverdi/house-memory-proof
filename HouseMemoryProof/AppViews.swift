@@ -691,6 +691,7 @@ struct CaptureSessionView: View {
               .caption)
             Text("Position count is not surface completeness.").font(.caption2).foregroundStyle(
               .secondary)
+            if !controller.referenceGuidance.isEmpty {Text(controller.referenceGuidance).font(.caption)}
           }
           HStack {
             if controller.running {
