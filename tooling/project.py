@@ -64,3 +64,10 @@ if 'HXTAGFRAMEWORKFILE000001' not in s:
  s=s.replace('("HXOPENCVFRAMEWORKBUILD01",','("HXOPENCVFRAMEWORKBUILD01", "HXTAGFRAMEWORKBUILD0001",')
  s=s.replace('"$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include"','"$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include", "$(SRCROOT)/build/apriltag/$(PLATFORM_NAME)/include"')
 p.write_text(s)
+
+s=p.read_text()
+if 'HXREFERENCEPOSEFILE0001' not in s:
+ s=s.replace('\t"objects" = {','\t"objects" = {\n"HXREFERENCEPOSEFILE0001"={isa=PBXFileReference;lastKnownFileType=sourcecode.cpp.cpp;path="../packages/reference-core/hx_reference_pose.cpp";sourceTree="<group>";};\n"HXREFERENCEPOSEBUILD001"={isa=PBXBuildFile;fileRef=HXREFERENCEPOSEFILE0001;};')
+ s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "HXREFERENCEPOSEFILE0001",')
+ s=s.replace('"534A5F435ADDB25DA9F43232",','"534A5F435ADDB25DA9F43232", "HXREFERENCEPOSEBUILD001",')
+p.write_text(s)

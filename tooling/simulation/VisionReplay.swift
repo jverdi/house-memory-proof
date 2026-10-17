@@ -16,8 +16,10 @@ final class DiskEvidence:EvidenceAssetReader {
       var maximum=0.0;var falseAccepts:UInt32=0
       let status=hx_vision_selftest(&maximum,&falseAccepts)
       var graphError=0.0;let graphStatus=hx_graph_selftest(&graphError)
-      print(String(data:try JSONSerialization.data(withJSONObject:["passed":status==1 && graphStatus==1,"status":status,"graphStatus":graphStatus,"graphMaxPositionErrorMetres":graphError,"maxPositionErrorMetres":maximum,"randomCorrespondenceFalseAccepts":falseAccepts,"positiveCases":200,"negativeCases":300,"imageQualification":false],options:[.sortedKeys]),encoding:.utf8)!)
+      var referenceError=0.0;let referenceStatus=hx_reference_selftest(&referenceError)
+      print(String(data:try JSONSerialization.data(withJSONObject:["passed":status==1 && graphStatus==1 && referenceStatus==1,"referenceStatus":referenceStatus,"referenceMaxPositionErrorMetres":referenceError,"referenceAnalyticCases":50,"status":status,"graphStatus":graphStatus,"graphMaxPositionErrorMetres":graphError,"maxPositionErrorMetres":maximum,"randomCorrespondenceFalseAccepts":falseAccepts,"positiveCases":200,"negativeCases":300,"imageQualification":false],options:[.sortedKeys]),encoding:.utf8)!)
       fflush(stdout)
+      guard referenceStatus==1 else{throw HouseError.message("Reference pose diagnostics failed at gate \(referenceStatus).") }
       guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed at gate \(graphStatus).")}
       guard status==1 else{throw HouseError.message("Native vision diagnostics failed.")};return
     }

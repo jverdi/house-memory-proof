@@ -14,6 +14,7 @@ on:
       - tooling/simulation/house.py
       - tooling/simulation/house_layout_fixture.py
       - packages/visual-core/**
+      - packages/reference-core/hx_reference_pose*
       - HouseMemoryProof/VisualMapping.swift
       - HouseMemoryProof/EvidenceModels.swift
       - HouseMemoryProof/Domain.swift

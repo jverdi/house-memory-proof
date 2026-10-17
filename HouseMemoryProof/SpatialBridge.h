@@ -8,3 +8,5 @@
 #include "../packages/visual-core/hx_bundle.h"
 
 #include "../packages/reference-core/hx_tags.h"
+
+#include "../packages/reference-core/hx_reference_pose.h"
