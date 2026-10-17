@@ -40,6 +40,8 @@ revision="$(git rev-parse --short=10 HEAD)"
 build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
 xcodebuild -version | tee build/evidence/xcode-version.txt
 
+# Redact before tee: GitHub's console masking does not sanitize artifact files.
+# pipefail preserves a failed xcodebuild (or sanitizer) as a failed release.
 # Automatic provisioning requires an authorized team key and suitable Apple
 # signing permissions. The first real run must verify those account capabilities.
 xcodebuild archive \
@@ -51,7 +53,7 @@ xcodebuild archive \
   PRODUCT_BUNDLE_IDENTIFIER="$APP_BUNDLE_ID" \
   CURRENT_PROJECT_VERSION="$build_number" PROOF_SOURCE_REVISION="$revision" \
   CODE_SIGN_STYLE=Automatic "${auth[@]}" \
-  2>&1 | tee build/evidence/archive.log
+  2>&1 | python3 ci/sanitize_signing_log.py "$key_path" | tee build/evidence/archive.log
 
 python3 - <<'PY'
 import os, plistlib
@@ -67,7 +69,7 @@ xcodebuild -exportArchive \
   -archivePath build/HouseMemoryProof.xcarchive \
   -exportPath build/export \
   -exportOptionsPlist build/ExportOptions.plist "${auth[@]}" \
-  2>&1 | tee build/evidence/upload.log
+  2>&1 | python3 ci/sanitize_signing_log.py "$key_path" | tee build/evidence/upload.log
 
 python3 - "$revision" "$build_number" <<'PY'
 import json, os, sys
