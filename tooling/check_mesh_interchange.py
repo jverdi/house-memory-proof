@@ -47,10 +47,16 @@ def main():
     groups = [line.split()[1] for line in (ROOT / 'interchange.obj').read_text().splitlines() if line.startswith('g ')]
     assert groups == ['feature_11111111_1111_4111_8111_111111111111',
                       'feature_22222222_2222_4222_8222_222222222222'], groups
+    scene = trimesh.load_scene(ROOT / 'interchange.obj', process=False, maintain_order=True,
+                               split_groups=True, group_material=False)
+    assert set(scene.geometry) == set(groups), list(scene.geometry)
+    for name, faces in zip(groups, [EXPECTED_FACES[:4], EXPECTED_FACES[4:]]):
+        mesh = scene.geometry[name]
+        assert oriented_triangles(mesh.vertices, mesh.faces) == oriented_triangles(EXPECTED_VERTICES, faces), name
     report = {'passed': True, 'reader': 'trimesh ' + trimesh.__version__,
               'units': 'metres', 'upAxis': 'Z', 'registrationAppliedExactlyOnce': True,
               'hiddenGeometryExcluded': True, 'physicalPrecisionQualified': False,
-              'files': results, 'objGroups': groups}
+              'files': results, 'objGroups': groups, 'objGroupGeometryMatches': True}
     (ROOT / 'mesh-interchange-validation.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report))
 
