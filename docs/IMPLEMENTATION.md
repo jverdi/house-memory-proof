@@ -305,3 +305,23 @@ The standard host suite reproduces the prior fixture outputs: basic, joint, long
 The isolated bounded subpixel experiment at `66def558`, run 39062207327, does not fix finished-wall matching: paired 16/20 and staggered 19/20 total accepts, with maximum errors 5.329 mm and 15.587 mm. The paired failures still lack six-cell coverage; the staggered finished views all match but exceed the metric accuracy gate. The candidate is not adopted, and all gates remain unchanged. Full verified reports and the candidate diff are retained under `docs/evidence/subpixel-66def/`.
 
 The earlier `ffa44947` full native artifact and `ab9116ae` resolution artifact have now also been retrieved and SHA-256 verified, resolving the previous workspace-outage evidence limitation. Their reports and updated provenance are retained. No intermediate TestFlight upload occurred; the installed delivery proof remains build 2.1. Finished-wall natural-feature reliability, full-house/sensor/topology and thin-service qualification, real-device/provider lifecycle checks and independent field validation remain open.
+
+
+### Snapshot retry, movie recovery and mesh interchange continuation
+
+Snapshot source `974b9d09` makes the revision commit idempotent by deriving its identity from the metadata content hash. An interrupted acknowledgement can be retried without publishing a duplicate revision; an existing conflicting record is rejected without overwriting evidence. The new native fault case covers interruption after commit, retry identity/date preservation, distinct changed content with a reused revision number and corrupt-record rejection. Native verification is pending.
+
+Movie source `666ce918` adds explicit final-assembly cancellation and cleanup, preserving verified completed shots. The fault matrix exercises interruption after a shot commit, before/after assembly and actual task cancellation before publication, followed by full-frame decode and checksum/modification-time reuse checks. Its queued standalone run was superseded by the combined `ed156b6a` run; no independent pass is claimed yet.
+
+Source `ed156b6a` rejects malformed PLY fields instead of compacting away bad tokens and silently shifting coordinates/indices. Header/element/property order, record lengths, nonfinite values, extra records and triangulated output budgets are checked. An asymmetric registered PLY/OBJ fixture is now emitted for pinned external **trimesh 5.1.1** validation of units, Z-up coordinates, winding, feature groups, hidden-feature exclusion and registration applied exactly once. The old native PLY round-trip is accurately renamed; it was not an independent parser. The external checker passes a standalone fixture and rejects injected winding/scale/index errors locally; actual native exports await CI. The 50 portable cases pass. Reader contract: https://trimesh.org/quick_start.html.
+
+### Landmark ablations fail the finished-wall gate
+
+Workflow `3fc3eb18`, run 39064286652, tested two isolated ablations against the exact frozen upscaled-image experiment, preserving all four input fixtures and every matching/geometric/evaluator gate. Both complete artifacts were downloaded and SHA-256 verified; full reports and candidate diffs are retained under `docs/evidence/landmark-3fc3/`.
+
+| Candidate | Rough A | Rough B | Paired | Staggered | Worst staggered error |
+|---|---:|---:|---:|---:|---:|
+| Original depth landmarks with joint camera refinement | 12/12 | 12/12 | 16/20 | 18/20 | 14.945 mm |
+| Graph cameras without joint bundle refinement | 12/12 | 12/12 | 16/20 | 18/20 | 14.891 mm |
+
+All 56 negative challenges reject in each candidate. Neither ablation repairs the finished-wall failure; both lose one more nominal view than the original upscale candidate. Neither is adopted. A separate experiment now varies only AKAZE detection contrast at original resolution, on a frozen `ca5a28fe` baseline. Production descriptor/matching/pose parameters and precision eligibility remain unchanged. These diagnostic results do not replace the required full-house, sensor, topology, lifecycle or physical-device acceptance work.

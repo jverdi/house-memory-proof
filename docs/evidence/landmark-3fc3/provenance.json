@@ -1,0 +1,21 @@
+{
+  "workflowSource": "3fc3eb18fd50617484157e70b3b6e5aed660686a",
+  "candidateBaseline": "ffa44947575049a8e3f13226f06133b5c7728094",
+  "run": 39064286652,
+  "artifacts": [
+    {
+      "name": "landmark-audit-depth-map",
+      "id": 12112841594,
+      "sha256": "0b7ebf172d88cd1085516f7856e331a08f6b8f7c13f6bd15f40ad20d5d607262",
+      "downloadedAndVerified": true
+    },
+    {
+      "name": "landmark-audit-graph-only",
+      "id": 12112627456,
+      "sha256": "0e870a2c039362983490c5369b12953cc533cae6db06d78ea54ebf49789c0e5b",
+      "downloadedAndVerified": true
+    }
+  ],
+  "adopted": false,
+  "physicalPrecisionQualified": false
+}
