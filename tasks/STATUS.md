@@ -16,6 +16,11 @@ Acceptance remains the runbook's gates. Implemented features below are not equiv
 - [x] Validate isolated host replay and five development geometries (13/15 matching, 0/5 false accepts); native photo-point workflow and surface resume (57 checks + 2 UI flows).
 - [x] Validate boundary editing/clipping, nominal-plane coverage, camera solution reloads, recorded slope following, incremental snapshots and SIGKILL journal recovery: source f300a1b0, 66 checks + 2 UI flows.
 - [x] Run the frozen physically rendered reference fixture: 2/3 matching queries, 0/1 false accepts, worst accepted position error 6.8 mm; development diagnostic only.
+- [x] Build pinned Ceres/Eigen for device/simulator and pass analytic optimization diagnostics.
+- [x] Validate 120-camera sparse graph and longer image session; preserve and repair clone-ambiguity failures.
+- [x] Implement tiled GPU residency, geometry-dependent annotations/measurements, structured animated GLB, tour presets and phone field-check records.
+- [x] Complete first 70-configuration stress run; record failure at p95 14.364 mm rather than accepting it.
+- [ ] Accept revised multi-view query candidate against unchanged broader targets.
 - [ ] Complete protected cross-room rejection and full-house localization qualification.
 - [ ] Complete robust optimization/localization, protected house-scale simulation and remaining software gates.
 - [ ] Complete owner-device resource and physical precision qualification.
