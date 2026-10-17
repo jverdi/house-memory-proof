@@ -3,6 +3,11 @@ name: Build and deliver House Proof
 on:
   push:
     branches: [main]
+    paths:
+      - HouseMemoryProof/**
+      - HouseMemoryProof.xcodeproj/**
+      - ci/simulator.sh
+      - ci/testflight.sh
   pull_request:
   workflow_dispatch:
 

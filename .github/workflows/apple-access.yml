@@ -1,0 +1,32 @@
+name: Verify Apple signing access
+on:
+  push:
+    branches: [main]
+    paths:
+      - ci/apple_access.py
+      - .github/workflows/apple-access.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: apple-access
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify secrets, register the proof bundle, and inspect signing readiness
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID }}
+        run: python3 ci/apple_access.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apple-access-result
+          path: build/evidence/apple-access.json
+          retention-days: 14
