@@ -19,8 +19,10 @@ extern "C" void* hx_surface_create(double v,uint32_t cap){if(!std::isfinite(v)||
 extern "C" void hx_surface_destroy(void*p){delete static_cast<Surface*>(p);}
 extern "C" uint32_t hx_surface_dropped(void*p){return p?static_cast<Surface*>(p)->dropped:0;}
 extern "C" int32_t hx_surface_integrate(void*p,const float*depth,const uint8_t*confidence,uint32_t w,uint32_t h,double fx,double fy,double cx,double cy,const double*m,uint32_t frame) try {
- if(!p||!depth||!m||w<3||h<3||uint64_t(w)*h>1000000||!std::isfinite(fx)||!std::isfinite(fy)||fx<=0||fy<=0||!std::isfinite(cx)||!std::isfinite(cy)||frame==UINT32_MAX)return -1;
+ if(!p||!depth||!m||w<3||h<3||uint64_t(w)*h>1000000||!std::isfinite(fx)||!std::isfinite(fy)||fx<0.1||fy<0.1||fx>1000000||fy>1000000||!std::isfinite(cx)||!std::isfinite(cy)||std::abs(cx)>1000000||std::abs(cy)>1000000||frame==UINT32_MAX)return -1;
  for(int i=0;i<16;i++)if(!std::isfinite(m[i]))return -1;
+ Vec axisX={m[0],m[4],m[8]},axisY={m[1],m[5],m[9]},axisZ={m[2],m[6],m[10]};
+ if(std::abs(dot(axisX,axisX)-1)>0.002||std::abs(dot(axisY,axisY)-1)>0.002||std::abs(dot(axisZ,axisZ)-1)>0.002||std::abs(dot(axisX,axisY))>0.001||std::abs(dot(cross(axisX,axisY),axisZ)-1)>0.001||std::abs(m[12])+std::abs(m[13])+std::abs(m[14])+std::abs(m[15]-1)>0.001)return -1;
  if(std::abs(m[3])+std::abs(m[7])+std::abs(m[11])>10000)return -1;
  auto&s=*static_cast<Surface*>(p);int32_t accepted=0;
  for(uint32_t y=1;y+1<h;y++)for(uint32_t x=1;x+1<w;x++){
@@ -33,7 +35,9 @@ extern "C" int32_t hx_surface_integrate(void*p,const float*depth,const uint8_t*c
    Key key={int(std::floor(q.x/s.voxel)),int(std::floor(q.y/s.voxel)),int(std::floor(q.z/s.voxel))};
    auto it=s.cells.find(key);if(it!=s.cells.end()&&it->second.views&&frame<=it->second.last)continue;
    Vec center={(key.x+0.5)*s.voxel,(key.y+0.5)*s.voxel,(key.z+0.5)*s.voxel};Vec c=camera(center,m);if(c.z<=0.15)continue;
-   int px=int(std::lround(fx*c.x/c.z+cx)),py=int(std::lround(fy*c.y/c.z+cy));if(px<1||px>=int(w)-1||py<1||py>=int(h)-1)continue;
+   double projectedX=fx*c.x/c.z+cx,projectedY=fy*c.y/c.z+cy;
+   if(!std::isfinite(projectedX)||!std::isfinite(projectedY)||projectedX<1||projectedX>=w-1||projectedY<1||projectedY>=h-1)continue;
+   int px=int(std::lround(projectedX)),py=int(std::lround(projectedY));if(px<1||px>=int(w)-1||py<1||py>=int(h)-1)continue;
    size_t j=size_t(py)*w+px;double measured=depth[j];if(!std::isfinite(measured)||measured<0.15||measured>5||(confidence&&confidence[j]==0))continue;
    double distance=measured-c.z;if(distance < -s.band||distance>s.band)continue;
    if(it==s.cells.end()){if(s.cells.size()>=s.capacity){s.dropped++;continue;}it=s.cells.emplace(key,Cell{}).first;}
