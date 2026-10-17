@@ -80,6 +80,9 @@ jobs:
         with:
           path: build/ceres
           key: ceres-2.2.0-macos-arm64-v1
+          restore-keys: |
+            ceres-2.2.0-eigen3.4-arm64-v3
+            ceres-host-bootstrap-v1
       - run: bash tooling/opencv/build-host.sh
       - name: Evaluate pinned-source reference rendering
         run: |

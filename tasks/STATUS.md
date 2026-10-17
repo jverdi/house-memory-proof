@@ -21,4 +21,4 @@ Acceptance remains the runbook's gates. Implemented features below are not equiv
 - [ ] Complete owner-device resource and physical precision qualification.
 - [ ] Upload one final accepted build and verify Apple availability.
 
-Every source checkpoint is committed to the private repository. Reports are retained under docs/evidence. Release uploads stay disabled while critical gates remain open.
+Every source checkpoint is committed to the repository. Reports are retained under docs/evidence. Release uploads stay disabled while critical gates remain open.

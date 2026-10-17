@@ -1,0 +1,2 @@
+6144	build/ceres/iphoneos/lib/libceres.a
+6232	build/ceres/iphonesimulator/lib/libceres.a

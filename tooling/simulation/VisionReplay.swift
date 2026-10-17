@@ -37,7 +37,19 @@ final class DiskEvidence:EvidenceAssetReader {
       var diagnostics:[String]=[]
       let start=Date();let pose=VisualMapping.query(features,width:q.width,height:q.height,intrinsics:q.intrinsics,map:map,diagnostic:{diagnostics.append($0)})
       var result:[String:Any]=["image":q.image,"diagnostics":diagnostics,"accepted":pose != nil,"queryFeatures":features.count,"seconds":Date().timeIntervalSince(start)]
-      if let pose{result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms;result["sourceIDs"]=pose.sources.map{$0.uuidString}}
+      if let pose {
+        // Adversarial room/floor clones share appearance but have distinct
+        // canonical placement. The exact runtime competing-map gate must hide.
+        var rejectedClones=0
+        for offset in [V3(8,0,0),V3(0,0,3.2)] {
+          var clone=map;clone.roomID=UUID();clone.segmentID=UUID()
+          clone.points=clone.points.map{$0+offset}
+          clone.views=clone.views.map{var v=$0;v.position=v.position+offset;return v}
+          if VisualMapping.competingMatch(features,width:q.width,height:q.height,intrinsics:q.intrinsics,maps:[clone]){rejectedClones+=1}
+        }
+        result["ambiguousRoomAndFloorRejected"]=rejectedClones==2
+        result["ambiguityCases"]=2
+        result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms;result["sourceIDs"]=pose.sources.map{$0.uuidString}}
       output.append(result)
     }
     print(String(data:try JSONSerialization.data(withJSONObject:["candidateFingerprint":map.fingerprint,"mapFeatures":map.points.count,"mapViews":map.views.count,"queries":output,"optimizedCameras":activeSegment.poseSolution?.cameras ?? [:],"bundleCheckRMS":activeSegment.poseSolution?.bundleCheckRMS as Any? ?? NSNull(),"bundlePointCount":activeSegment.poseSolution?.bundlePointCount as Any? ?? NSNull()],options:[.sortedKeys]),encoding:.utf8)!)

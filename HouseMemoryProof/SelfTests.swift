@@ -13,6 +13,7 @@ import ImageIO
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
             check("Durable capture rows recover without rewriting the project and survive a stale checkpoint") {
+                let repo=try Repository(root:folder.appendingPathComponent("capture-rows"))
                 var h=try SimulatedCapture.make(repo:repo);let original=h.observations;h.observations=[];try repo.save(h)
                 let room=h.rooms[0],stage=h.stages.first{$0.id==h.segments[0].stageID}!,segment=h.segments[0]
                 for o in original.prefix(2) {try repo.stageCapture(o,projectID:h.id,room:room,stage:stage,segment:segment)}
@@ -63,7 +64,7 @@ import ImageIO
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))
                 return SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.rough))==[h.stages[0].id] && SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.finished))==[h.stages[1].id]
             }
-            check("Ceres joint solver checks numerical derivatives and rejects corrupted held-out evidence") {
+            check("Ceres joint solver checks derivatives and rejects corrupt or disconnected evidence") {
                 var error=0.0;let status=hx_bundle_selftest(&error)
                 guard status==1 else{throw HouseError.message("Joint solver diagnostic failed at gate \(status).")};return error<0.003
             }
@@ -196,7 +197,7 @@ import ImageIO
                 capture.observations[0].note += " changed input"
                 return PoseGraph.selected(capture.observations,segment:capture.segments[0],house:capture)==nil
             }
-            check("Metric feature alignment and bounded pose graph closure"){
+            check("Metric feature alignment and 120-camera pose graph closure"){
                 var error=0.0;let status=hx_graph_selftest(&error)
                 guard status==1 else{throw HouseError.message("Pose graph diagnostic failed at gate \(status).")};return error<0.0001
             }

@@ -4,9 +4,7 @@ enum Reconstruction {
   static func fuse(
     house: House, segment: Segment, repo: Repository, progress: @escaping @MainActor (Double) -> Void
   ) async throws -> Feature {
-    let raw = Array(
-      house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && !$0.documentary }
-        .prefix(300))
+    let raw = house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && !$0.documentary }
     let (observations, referenceSupported) = PoseRefinement.selected(
       raw, segment: segment, house: house)
     guard !observations.isEmpty else {

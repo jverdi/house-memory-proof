@@ -44,7 +44,10 @@ jobs:
         with:
           path: build/ceres
           key: ceres-2.2.0-eigen3.4-arm64-v2-${{ hashFiles('tooling/solver/build.sh') }}
-          restore-keys: ceres-2.2.0-eigen3.4-arm64-v1
+          restore-keys: |
+            ceres-2.2.0-eigen3.4-arm64-v3
+            ceres-2.2.0-eigen3.4-arm64-v1
+            ceres-host-bootstrap-v1
       - name: Compile, launch, and capture evidence
         run: bash ci/simulator.sh
       - name: Verify portable core and independent export readers
@@ -85,7 +88,10 @@ jobs:
         with:
           path: build/ceres
           key: ceres-2.2.0-eigen3.4-arm64-v2-${{ hashFiles('tooling/solver/build.sh') }}
-          restore-keys: ceres-2.2.0-eigen3.4-arm64-v1
+          restore-keys: |
+            ceres-2.2.0-eigen3.4-arm64-v3
+            ceres-2.2.0-eigen3.4-arm64-v1
+            ceres-host-bootstrap-v1
       - name: Sign and upload for internal TestFlight testing
         env:
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || '4RLZ6F3UA4' }}

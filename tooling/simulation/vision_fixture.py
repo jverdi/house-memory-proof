@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 from house import generate,room,render,v,identity
 
-def make(dest, seed=73192, drift=0.0):
+def make(dest, seed=73192, drift=0.0, frames=6):
  rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True)
  h=generate(seed,dest/'base',rooms=1,frames=6,width=64,noise=.001,drift=.001)
  shapes,finish,dimensions=room(np.random.default_rng(seed));items=shapes+finish
@@ -19,10 +19,11 @@ def make(dest, seed=73192, drift=0.0):
   rgb,depth,valid,m,k=render(items,position,heading,width,height,texture_seed=texture)
   stream=io.BytesIO();Image.fromarray(rgb).save(stream,format='JPEG',quality=95)
   return stream.getvalue(),depth,valid,m,k
- for index,shift in enumerate([-.3,-.2,-.1,.1,.2,.3]):
+ shifts=[-.3,-.2,-.1,.1,.2,.3] if frames==6 else np.linspace(-.6,.6,frames).tolist()
+ for index,shift in enumerate(shifts):
   image,depth,valid,m,k=image_capture(shift,0,seed)
   depth=np.where(valid,depth+rng.normal(0,.001,depth.shape),0).astype('<f4');confidence=np.where(valid,2,0).astype('uint8')
-  prior=m.copy();prior[:3,3]+=rng.normal(0,.001,3);prior[0,3]+=drift*index/5
+  prior=m.copy();prior[:3,3]+=rng.normal(0,.001,3);prior[0,3]+=drift*index/(frames-1)
   mapping_truth[identity(seed,f'visual-{index}')]=m.flatten().tolist()
   h['observations'].append(dict(id=identity(seed,f'visual-{index}'),roomID=rid,stageID=segment['stageID'],segmentID=segment['id'],timestamp=float(index),date=813974400.+index,image=put(image,'jpg'),depth=put(depth.tobytes(),'depth32'),confidence=put(confidence.tobytes(),'confidence8'),depthWidth=width,depthHeight=height,width=width,height=height,camera=prior.flatten().tolist(),intrinsics=k,tracking='synthetic perturbed prior',light=1000,sharpness=.1,note='Synthetic textured corner; not a validated phone sensor.',documentary=False,imageOrientation=1))
  entries={'house.json':json.dumps(h,separators=(',',':')).encode(),**assets}
@@ -35,8 +36,8 @@ def make(dest, seed=73192, drift=0.0):
   name=f'vision-query-{index}.jpg';(dest/name).write_bytes(image)
   queries.append(dict(image=name,width=width,height=height,intrinsics=k,expectedCamera=(canonical@pose).flatten().tolist(),shouldMatch=texture==seed))
  (dest/'vision-queries.json').write_text(json.dumps({'syntheticOnly':True,'fieldQualified':False,'queries':queries,'mappingCameras':mapping_truth,'injectedTranslationDriftMetres':drift},indent=2))
- print(json.dumps({'mapViews':6,'heldQueryViews':3,'unrelatedTextureQueries':1,'oracleExcludedFromMapArchive':True}))
+ print(json.dumps({'mapViews':frames,'heldQueryViews':3,'unrelatedTextureQueries':1,'oracleExcludedFromMapArchive':True}))
 if __name__=='__main__':
  import argparse
- p=argparse.ArgumentParser();p.add_argument('destination',type=Path);p.add_argument('--seed',type=int,default=73192);a=p.parse_args()
- make(a.destination,a.seed)
+ p=argparse.ArgumentParser();p.add_argument('destination',type=Path);p.add_argument('--seed',type=int,default=73192);p.add_argument('--frames',type=int,choices=range(6,121),default=6);p.add_argument('--drift',type=float,default=0);a=p.parse_args()
+ make(a.destination,a.seed,a.drift,a.frames)

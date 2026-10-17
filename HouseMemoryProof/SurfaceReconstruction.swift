@@ -4,12 +4,10 @@ enum SurfaceReconstruction {
   static func build(
     house: House, segment: Segment, repo: Repository, progress: @escaping @MainActor (Double) -> Void
   ) async throws -> Feature {
-    let raw = Array(
-      house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && !$0.documentary }
-        .prefix(300))
+    let raw = house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && !$0.documentary }
     let (observations, referenceSupported) = PoseRefinement.selected(
       raw, segment: segment, house: house)
-    let fingerprint="surface-v1|" + (try VisualMapping.fingerprint(house:house,segment:segment))
+    let fingerprint="surface-v2|" + (try VisualMapping.fingerprint(house:house,segment:segment))
     let checkpoint=try FusionCheckpoint.load(repo:repo,segment:segment,fingerprint:fingerprint,frameCount:observations.count)
     guard !observations.isEmpty, let core = checkpoint?.0 ?? hx_surface_create(0.02, 400000) else {
       throw HouseError.message("No depth observations or insufficient surface-fusion resources.")

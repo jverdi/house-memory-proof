@@ -3,6 +3,7 @@
 #include <opencv2/calib3d.hpp>
 #include <algorithm>
 #include <cmath>
+#include <chrono>
 #include <queue>
 #include <set>
 #include <vector>
@@ -34,16 +35,18 @@ extern "C" int32_t hx_depth_transform(const double* source,const double* target,
  cv::PCA pca(points,cv::Mat(),cv::PCA::DATA_AS_ROW);*rms=std::sqrt(sum/best.size());if(*rms>.015||pca.eigenvalues.at<double>(1)<.025||!valid(result))return 0;write(result,output);return int32_t(best.size());
 } catch(...){return -2;}
 extern "C" int32_t hx_graph_optimize(const double* priors,uint32_t n,const HXGraphEdge* edges,uint32_t ne,double* output,double* maximum) try {
- if(!priors||!edges||!output||!maximum||n<3||n>24||ne<n||ne>276)return -1;
+ if(!priors||!edges||!output||!maximum||n<3||n>120||ne<n||ne>7140)return -1;
  std::vector<Pose> poses,original,measurements;std::vector<std::vector<int>> adjacency(n);
  for(uint32_t i=0;i<n;i++){Pose p=read(priors+i*16);if(!valid(p)||!homogeneous(priors+i*16))return -1;poses.push_back(p);}original=poses;
  std::set<std::pair<uint32_t,uint32_t>> uniqueEdges;
  for(uint32_t e=0;e<ne;e++){auto edge=edges[e];if(edge.a>=n||edge.b>=n||edge.a==edge.b)return -1;Pose p=read(edge.a_from_b);if(!valid(p)||!homogeneous(edge.a_from_b)||!uniqueEdges.insert({std::min(edge.a,edge.b),std::max(edge.a,edge.b)}).second)return -1;measurements.push_back(p);adjacency[edge.a].push_back(edge.b);adjacency[edge.b].push_back(edge.a);}
  std::vector<bool> seen(n,false);std::queue<int> queue;queue.push(0);seen[0]=true;while(!queue.empty()){int i=queue.front();queue.pop();for(int j:adjacency[i])if(!seen[j]){seen[j]=true;queue.push(j);}}if(std::find(seen.begin(),seen.end(),false)!=seen.end())return 0;
+ auto started=std::chrono::steady_clock::now();
  int dimensions=(n-1)*6;double damping=1e-5;
  auto cost=[&](const std::vector<Pose>& p){double value=0;for(uint32_t e=0;e<ne;e++){double x=cv::norm(residual(p[edges[e].a],p[edges[e].b],measurements[e]));value+=x<=.02?.5*x*x:.02*(x-.01);}return value;};
  double current=cost(poses);
  for(int iteration=0;iteration<30;iteration++){
+  if(std::chrono::duration<double>(std::chrono::steady_clock::now()-started).count()>20)return 0;
   cv::Mat H=cv::Mat::zeros(dimensions,dimensions,CV_64F),g=cv::Mat::zeros(dimensions,1,CV_64F);
   for(uint32_t e=0;e<ne;e++){auto edge=edges[e];auto r=residual(poses[edge.a],poses[edge.b],measurements[e]);double weight=std::min(1.,.02/std::max(1e-12,cv::norm(r)));std::vector<std::pair<int,cv::Vec<double,6>>> derivatives;
    for(int side=0;side<2;side++){int node=side?edge.b:edge.a;if(node==0)continue;for(int axis=0;axis<6;axis++){Pose a=poses[edge.a],b=poses[edge.b];if(side)b=perturb(b,axis,1e-6);else a=perturb(a,axis,1e-6);derivatives.push_back({(node-1)*6+axis,(residual(a,b,measurements[e])-r)*(1e6)});}}
@@ -66,5 +69,13 @@ extern "C" int32_t hx_graph_selftest(double* maximum) try {
  for(int i=0;i<n;i++)for(int j=i+1;j<n;j++)if(j-i<=2||i==0&&j==n-1){HXGraphEdge e{};e.a=i;e.b=j;write(relative(exact[i],exact[j]),e.a_from_b);edges.push_back(e);}
  if(hx_graph_optimize(priors.data(),n,edges.data(),edges.size(),out.data(),&rms)!=1)return -11;
  for(int i=0;i<n;i++)*maximum=std::max(*maximum,cv::norm(read(out.data()+i*16).t-exact[i].t));if(*maximum>.0001)return -12;
- edges.back().a_from_b[3]+=1;if(hx_graph_optimize(priors.data(),n,edges.data(),edges.size(),out.data(),&rms)!=0)return -13;return 1;
+ edges.back().a_from_b[3]+=1;if(hx_graph_optimize(priors.data(),n,edges.data(),edges.size(),out.data(),&rms)!=0)return -13;
+ // Capacity diagnostic: a connected 120-camera route with short overlap and a
+ // long loop. Independent exact relative transforms determine the answer.
+ constexpr int large=120;std::vector<Pose> route;std::vector<double> inputs(large*16),outputs(large*16);std::vector<HXGraphEdge> links;
+ for(int i=0;i<large;i++){Pose p{M::eye(),V(.08*i,.1*std::sin(i*.1),0)};route.push_back(p);if(i)p.t+=V(.04*std::sin(i*.05),.02*std::sin(i*.07),.01*std::sin(i*.03));write(p,inputs.data()+i*16);}
+ for(int i=0;i<large;i++)for(int j=i+1;j<large;j++)if(j-i<=2||(i==0&&j==large-1)){HXGraphEdge e{};e.a=i;e.b=j;write(relative(route[i],route[j]),e.a_from_b);links.push_back(e);}
+ if(hx_graph_optimize(inputs.data(),large,links.data(),links.size(),outputs.data(),&rms)!=1)return -14;
+ for(int i=0;i<large;i++)*maximum=std::max(*maximum,cv::norm(read(outputs.data()+i*16).t-route[i].t));if(*maximum>.0001)return -15;
+ return 1;
 } catch(...){return -2;}

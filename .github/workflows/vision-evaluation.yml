@@ -44,6 +44,9 @@ jobs:
         with:
           path: build/ceres
           key: ceres-2.2.0-macos-arm64-v1
+          restore-keys: |
+            ceres-2.2.0-eigen3.4-arm64-v3
+            ceres-host-bootstrap-v1
       - name: Build shared production core as isolated command-line candidate
         run: bash tooling/opencv/build-host.sh
       - name: Preserve compiled SDK even if candidate qualification fails
@@ -60,6 +63,10 @@ jobs:
           build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-fixture --output build/vision-evaluation/replay.json
       - name: Evaluate joint optimization against independent query views
         run: build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-fixture --output build/vision-evaluation/bundle-replay.json --refine --bundle
+      - name: Exercise a longer overlapping capture session
+        run: |
+          build/vision-env/bin/python tooling/simulation/vision_fixture.py build/vision-long --frames 36 --drift .03
+          build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-long --output build/vision-evaluation/long-session.json --refine --bundle
       - name: Exercise additional development room geometries
         run: build/vision-env/bin/python tooling/simulation/vision_matrix.py --executable build/vision-replay --output build/vision-evaluation/diversity
       - uses: actions/upload-artifact@v4

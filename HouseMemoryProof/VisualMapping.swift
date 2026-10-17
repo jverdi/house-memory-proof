@@ -15,8 +15,8 @@ struct VisualMap: Codable {
   var schema=1;var segmentID:UUID;var roomID:UUID;var stageID:UUID;var frameID:UUID?
   var fingerprint:String;var points:[V3];var descriptors:Data;var views:[View]
   var valid:Bool {
-    schema==1 && points.count<=28800 && descriptors.count==points.count*32
-      && points.allSatisfy{$0.finite} && views.count>=2 && views.count<=12
+    schema==1 && points.count<=144000 && descriptors.count==points.count*32
+      && points.allSatisfy{$0.finite} && views.count>=2 && views.count<=120
       && Set(views.map{$0.observationID}).count==views.count
       && views.allSatisfy{$0.start>=0 && $0.count>=0 && $0.start<=points.count && $0.count<=points.count-$0.start && $0.position.finite}
   }
@@ -47,15 +47,21 @@ enum VisualMapping {
     }
     guard ok else{throw HouseError.message("Visual map image allocation failed.")};return (gray,w,h)
   }
-  static func build(house:House,segment:Segment,repo:any EvidenceAssetReader)throws->VisualMap {
+  static func keyframes(_ input:[Observation],limit:Int)->[Observation] {
+    let ordered=input.sorted{a,b in a.timestamp==b.timestamp ? a.id.uuidString<b.id.uuidString:a.timestamp<b.timestamp}
+    let count=min(max(1,limit),ordered.count)
+    guard count>1 else{return Array(ordered.prefix(count))}
+    return (0..<count).map{ordered[$0*(ordered.count-1)/(count-1)]}
+  }
+  static func build(house:House,segment:Segment,repo:any EvidenceAssetReader,maximumViews:Int=12)throws->VisualMap {
     let all=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary}
     let selected=PoseRefinement.selected(all,segment:segment,house:house).0.filter{$0.sharpness>=0.02}
     guard selected.count>=2 else{throw HouseError.message("Capture at least two overlapping, sharp depth views of this stage first.")}
     var map=VisualMap(segmentID:segment.id,roomID:segment.roomID,stageID:segment.stageID,frameID:segment.registration==nil ? segment.id:nil,fingerprint:try fingerprint(house:house,segment:segment),points:[],descriptors:Data(),views:[])
-    let count=min(12,selected.count)
-    for index in 0..<count {
+    let retainedViews=keyframes(selected,limit:min(120,maximumViews))
+    for o in retainedViews {
       try Task.checkCancellation()
-      let o=selected[index*selected.count/count],w=o.depthWidth,h=o.depthHeight
+      let w=o.depthWidth,h=o.depthHeight
       guard w>=3,h>=3,w*h<=1000000 else{continue}
       let depth=try repo.read(o.depth!),confidence=try o.confidence.map{try repo.read($0)}
       guard depth.count==w*h*4,confidence==nil || confidence?.count==w*h else{continue}

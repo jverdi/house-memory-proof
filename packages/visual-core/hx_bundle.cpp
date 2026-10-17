@@ -66,6 +66,13 @@ extern "C" int32_t hx_bundle_optimize(const double* input,uint32_t nc,const doub
  for(uint32_t i=0;i<no;i++){const auto& o=obs[i];if(o.camera>=nc||o.point>=np||o.fit>1||!std::isfinite(o.u)||!std::isfinite(o.v)||!std::isfinite(o.depth)||o.depth<0||o.depth>8||!seen.insert({o.camera,o.point}).second)return -1;if(o.fit){fits[o.point]++;cameraFits[o.camera]++;}else checks[o.point]++;}
  for(uint32_t p=0;p<np;p++)if(fits[p]<2||checks[p]<1)return -1;
  if(cameraFits[0]<20)return -1;
+ // Camera priors do not establish overlap. Every fitted point and camera must
+ // connect to the anchor through fitting observations, independent of priors.
+ std::vector<std::vector<uint32_t>> pointCameras(np),cameraPoints(nc);
+ for(uint32_t i=0;i<no;i++)if(obs[i].fit){pointCameras[obs[i].point].push_back(obs[i].camera);cameraPoints[obs[i].camera].push_back(obs[i].point);}
+ std::vector<bool> cameraSeen(nc,false),pointSeen(np,false);std::vector<uint32_t> queue{0};cameraSeen[0]=true;
+ for(size_t i=0;i<queue.size();i++)for(auto p:cameraPoints[queue[i]])if(!pointSeen[p]){pointSeen[p]=true;for(auto c:pointCameras[p])if(!cameraSeen[c]){cameraSeen[c]=true;queue.push_back(c);}}
+ if(std::find(pointSeen.begin(),pointSeen.end(),false)!=pointSeen.end())return 0;
  auto initialCheck=score(cameras,points,k,obs,no,false);if(!initialCheck.valid)return 0;quality->initial_check_rms=initialCheck.rms;
  ceres::Problem problem;
  for(uint32_t i=0;i<no;i++){const auto& o=obs[i];if(!o.fit)continue;const double* intr=k+o.camera*4;
@@ -120,6 +127,11 @@ extern "C" int32_t hx_bundle_selftest(double* maximum) try {
  for(int p=0;p<np;p++){double e=0;for(int j=0;j<3;j++)e+=std::pow(outP[p*3+j]-points[p*3+j],2);*maximum=std::max(*maximum,std::sqrt(e));}if(*maximum>.003||q.final_check_rms>=q.initial_check_rms)return -11;
  for(auto& o:observations)if(!o.fit)o.u+=30;
  if(hx_bundle_optimize(cameras.data(),nc,initial.data(),np,k.data(),observations.data(),observations.size(),outC.data(),outP.data(),&q)!=0)return -12;
+ // Two separate well-supported clusters must not be accepted just because
+ // their original priors happen to fit the observations.
+ std::vector<HXBundleObservation> disconnected;
+ for(int p=0;p<np;p++)for(int j=0;j<3;j++){int c=(p<np/2?0:3)+j;double z=-points[p*3+2],x=points[p*3]-truth[c*16+3],y=points[p*3+1];disconnected.push_back({uint32_t(c),uint32_t(p),uint32_t(j<2),500*x/z+320,-500*y/z+240,z});}
+ if(hx_bundle_optimize(truth.data(),nc,points.data(),np,k.data(),disconnected.data(),disconnected.size(),outC.data(),outP.data(),&q)!=0)return -13;
  return 1;
 } catch(...){return -2;}
 #ifdef HX_BUNDLE_TEST_MAIN

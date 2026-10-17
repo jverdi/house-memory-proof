@@ -32,7 +32,7 @@ enum PoseGraph {
     let input=house.observations.filter{$0.segmentID==segment.id}
     let observations=PoseRefinement.selected(input,segment:raw,house:house).0
     let byID=Dictionary(uniqueKeysWithValues:observations.map{($0.id,$0)})
-    let map=try VisualMapping.build(house:house,segment:raw,repo:repo)
+    let map=try VisualMapping.build(house:house,segment:raw,repo:repo,maximumViews:120)
     guard map.views.count>=3 else{throw HouseError.message("Pose refinement needs at least three overlapping textured depth views.")}
     let adapter=PoseRefinement.matrix([1,0,0,0, 0,0,-1,0, 0,1,0,0, 0,0,0,1])!
     let registration=PoseRefinement.matrix((segment.registration ?? Rigid()).values)!
@@ -44,9 +44,15 @@ enum PoseGraph {
       for point in map.points[view.start..<(view.start+view.count)] {let p=inverse*SIMD4(point.x,point.y,point.z,1);points += [p.x,p.y,p.z]}
       cameraPoints.append(points);descriptors.append(map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32));priors += observation.camera;ids.append(observation.id)
     }
+    // Nearby temporal frames establish continuity. Spatially nearby older
+    // views may close loops; far-apart rooms are never exhaustively paired.
+    let started=Date()
     var edges:[HXGraphEdge]=[]
     for a in map.views.indices {for b in map.views.indices where b>a {
       try Task.checkCancellation()
+      guard Date().timeIntervalSince(started)<120 else{throw HouseError.message("Camera matching reached its two-minute budget. Capture shorter sessions; originals are preserved.")}
+      let separation=(map.views[a].position-map.views[b].position).length
+      guard b-a<=12 || separation<=2.5 else{continue}
       var pairs=[UInt32](repeating:0,count:2400)
       let count=descriptors[a].withUnsafeBytes{x in descriptors[b].withUnsafeBytes{y in pairs.withUnsafeMutableBufferPointer{p in hx_vision_match(x.bindMemory(to:UInt8.self).baseAddress,UInt32(map.views[a].count),y.bindMemory(to:UInt8.self).baseAddress,UInt32(map.views[b].count),p.baseAddress,1200)}}}
       guard count>=30 else{continue}

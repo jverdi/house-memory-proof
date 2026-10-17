@@ -62,6 +62,13 @@ struct RootView: View {
     }
     .onChange(of: phase) { _, value in
       if value == .active { SnapshotService.automatic(model: model) }
+      if value == .background,model.busy { model.cancelOperation() }
+    }
+    .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+      if model.busy {model.cancelOperation()}
+    }
+    .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification)) { _ in
+      if ProcessInfo.processInfo.thermalState == .critical,model.busy {model.cancelOperation()}
     }
     .task(id: model.selected) { SnapshotService.automatic(model: model) }
     .alert("Create a house", isPresented: $newProject) {

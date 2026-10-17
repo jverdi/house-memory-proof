@@ -532,7 +532,7 @@ struct ReconstructionPage: View {
               return nil
             }
           }.disabled(model.busy)
-          Button("Refine local camera poses") {
+          Button("Refine session camera poses") {
             guard let repo = model.repository else { return }
             let revision = house.revision
             model.perform("Matching depth features and refining camera poses") {
@@ -574,7 +574,7 @@ struct ReconstructionPage: View {
             if let rms=solution.bundleCheckRMS {Text("Joint refinement: \(solution.bundlePointCount ?? 0) points, held-out image RMS \(rms.formatted(.number.precision(.fractionLength(2)))) px. Not a physical accuracy estimate.").font(.caption)}
             if let excluded=solution.excludedFrameCount,excluded>0 {Text("\(excluded) photographs remain outside the connected camera solution; their originals are preserved.").font(.caption)}
             Text(
-              "Local graph: \(solution.cameras.count) camera views, \(solution.edges) matched connections. Rebuild surfaces and visual references after refinement. Residuals do not establish accuracy."
+              "Session graph: \(solution.cameras.count) camera views, \(solution.edges) matched connections. Rebuild surfaces and visual references after refinement. Residuals do not establish accuracy."
             ).font(.caption)
           }
           Button("Reconstruct triangle surface") {

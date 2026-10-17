@@ -19,7 +19,7 @@ enum PhotoReconstruction {
   static func build(house:House,segment:Segment,repo:any EvidenceAssetReader)throws->Feature {
     let input=PoseRefinement.selected(house.observations.filter{$0.segmentID==segment.id && !$0.documentary},segment:segment,house:house).0.filter{$0.sharpness>=0.02}
     guard input.count>=3 else{throw HouseError.message("Photograph triangulation needs three sharp, translated views with compatible camera estimates.")}
-    let count=min(12,input.count),observations=(0..<count).map{input[$0*input.count/count]}
+    let observations=VisualMapping.keyframes(input,limit:120),started=Date()
     var rays:[Ray]=[],features:[VisualMapping.Features]=[],offsets:[Int]=[]
     for (index,o) in observations.enumerated() {
       try Task.checkCancellation();let(gray,w,h)=try VisualMapping.image(repo.read(o.image));let detected=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
@@ -32,16 +32,22 @@ enum PhotoReconstruction {
     }
     var parents=Array(rays.indices)
     func root(_ index:Int)->Int {var i=index;while parents[i] != i {i=parents[i]};return i}
-    for a in features.indices {for b in features.indices where b>a {
-      try Task.checkCancellation();var pairs=[UInt32](repeating:0,count:2400)
+    for a in features.indices {for b in features.indices where b>a && b-a<12 {
+      try Task.checkCancellation()
+      guard Date().timeIntervalSince(started)<120 else{throw HouseError.message("Photograph matching reached its two-minute budget. Use shorter capture sessions; originals are preserved.")}
+      var pairs=[UInt32](repeating:0,count:2400)
       let n=features[a].descriptors.withUnsafeBytes{x in features[b].descriptors.withUnsafeBytes{y in pairs.withUnsafeMutableBufferPointer{p in hx_vision_match(x.bindMemory(to:UInt8.self).baseAddress,UInt32(features[a].count),y.bindMemory(to:UInt8.self).baseAddress,UInt32(features[b].count),p.baseAddress,1200)}}}
       for i in 0..<max(0,Int(n)) {let x=offsets[a]+Int(pairs[i*2]),y=offsets[b]+Int(pairs[i*2+1]);guard pair(rays[x],rays[y],minimumAngle:Double.pi/180) != nil else{continue};let rx=root(x),ry=root(y);if rx != ry {parents[max(rx,ry)]=min(rx,ry)}}
     }}
     var tracks:[Int:[Int]]=[:];for i in rays.indices {tracks[root(i),default:[]].append(i)}
     var points:[V3]=[],evidence:[PointTrack]=[]
     for key in tracks.keys.sorted() {
-      try Task.checkCancellation();let indices=tracks[key]!
-      guard indices.count>=3,indices.count<=12,Set(indices.map{rays[$0].view}).count==indices.count else{continue}
+      try Task.checkCancellation();let connected=tracks[key]!
+      guard connected.count>=3,Set(connected.map{rays[$0].view}).count==connected.count else{continue}
+      // Retain bounded, distributed provenance for long tracks. Matches form
+      // overlapping twelve-view neighborhoods, not isolated independent chunks.
+      let count=min(12,connected.count)
+      let indices=(0..<count).map{connected[$0*(connected.count-1)/(count-1)]}
       var best:(Int,Int)?,dot=1.0
       for a in indices {for b in indices where b>a {let value=simd_dot(rays[a].direction,rays[b].direction);if value<dot {dot=value;best=(a,b)}}}
       guard let (a,b)=best,let point=pair(rays[a],rays[b],minimumAngle:5*Double.pi/180),indices.allSatisfy({consistent(point,rays[$0])}) else{continue}
@@ -50,6 +56,6 @@ enum PhotoReconstruction {
       points.append(V3(point.x,point.y,point.z));evidence.append(PointTrack(controls:([a,b]+independent).map{rays[$0].control}))
     }
     guard points.count>=20 else{throw HouseError.message("Too few independently checked photograph details. Add translated views of distinct texture; repetitive framing or blank walls cannot constrain this reconstruction.")}
-    return Feature(name:"Photograph detail points",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:points,triangles:[]),sourceIDs:observations.map{$0.id},notes:"Sparse RGB triangulation from known camera estimates. Every point uses two fitting views and at least one independent image check, ≥5° parallax and ≤2 pixel residuals. No depth or oracle geometry supplied; physical accuracy and completeness remain unqualified.",segmentID:segment.id,sourceFingerprint:try VisualMapping.fingerprint(house:house,segment:segment),pointTracks:evidence)
+    return Feature(name:"Photograph detail points",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:points,triangles:[]),sourceIDs:observations.map{$0.id},notes:"Sparse RGB triangulation across overlapping twelve-view neighborhoods (up to 120 session keyframes) from known camera estimates. Every point uses two fitting views and at least one independent image check, ≥5° parallax and ≤2 pixel residuals. No depth or oracle geometry supplied; physical accuracy and completeness remain unqualified.",segmentID:segment.id,sourceFingerprint:try VisualMapping.fingerprint(house:house,segment:segment),pointTracks:evidence)
   }
 }
