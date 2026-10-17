@@ -108,6 +108,17 @@ import Darwin
                 guard !SceneBuilder.features(h,options:SceneOptions()).contains(where:{$0.trade == .ceiling}),SceneBuilder.features(h,options:SceneOptions(ceilings:true)).contains(where:{$0.trade == .ceiling}) else{return false}
                 return MeshSemantics.partition(mesh,labels:["floor","ceiling","unsupported"],anchor:anchor,roomID:room.id,stage:stage,segmentID:segment.id).map{$0.id}==parts.map{$0.id}
             }
+            check("Field evidence separates validation, preserves abstentions and never enables precision") {
+                var h=House.empty("Field record")
+                let dimension=Dimension(name:"Fixture width",a:V3(),b:V3(1.01,0,0),roomID:h.rooms[0].id,sourceRevision:1)
+                let check=FieldCheck(split:.validation,kind:.distance,fixture:"Independent region",session:"Later session",conditions:"Fixture",device:"Synthetic test device",sourceBuild:"test",cameraMode:"synthetic",truthUncertainty:0.002,cameraDistance:1.5,measurement:dimension,referenceDistance:1,referencePoint:nil)
+                var abstention=check;abstention.id=UUID();abstention.abstained=true;abstention.measurement=nil
+                var calibration=check;calibration.id=UUID();calibration.split = .calibration;calibration.referenceDistance=0.5
+                h.fieldChecks=[check,abstention,calibration];try h.validate()
+                let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h)),summary=FieldEvidence.summary(restored.fieldChecks,split:.validation)
+                guard restored.fieldChecks==h.fieldChecks,summary.attempts==2,summary.accepted==1,abs((summary.p95Metres ?? 1)-0.01)<1e-9,!summary.precisionProfileEnabled else{return false}
+                var invalid=check;invalid.referenceDistance = -1;return !invalid.valid
+            }
             check("Construction category survives arbitrary stage names") {
                 var h=house;h.stages[0].name="After inspection";h.stages[0].phase = .rough;h.stages[1].name="Ready to paint";h.stages[1].phase = .finished
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))

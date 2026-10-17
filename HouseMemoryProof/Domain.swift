@@ -102,6 +102,7 @@ struct House:Codable,Identifiable,Equatable {
     var schema=1;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
     var boundaries:[RevealBoundary]=[]
+    var fieldChecks:[FieldCheck]=[]
     var visualMaps:[VisualMapReference]=[]
     var connections:[ServiceConnection]=[]
     var documentaryPhotos:[DocumentaryPhoto]=[]
@@ -115,6 +116,7 @@ struct House:Codable,Identifiable,Equatable {
     func validate() throws {
         guard schema==1 else {throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
         guard rooms.count<=100,features.count<=10000,observations.count<=50000 else{throw HouseError.message("Project exceeds this build's supported metadata limits.")}
+        guard fieldChecks.count<=10000,Set(fieldChecks.map{$0.id}).count==fieldChecks.count,fieldChecks.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid field evidence records.")}
         let roomIDs=Set(rooms.map{$0.id}),stageIDs=Set(stages.map{$0.id})
         guard roomIDs.count==rooms.count,stageIDs.count==stages.count,Set(features.map{$0.id}).count==features.count else{throw HouseError.message("Duplicate identities in project.")}
         for r in rooms {guard r.origin.finite,r.size.finite,r.size.x>0,r.size.y>0,r.size.z>0 else{throw HouseError.message("Invalid room dimensions.")}}
@@ -205,6 +207,7 @@ extension House {
         drawings=try c.decodeIfPresent([Drawing].self,forKey:.drawings) ?? []
         bookmarks=try c.decodeIfPresent([Bookmark].self,forKey:.bookmarks) ?? []
         boundaries=try c.decodeIfPresent([RevealBoundary].self,forKey:.boundaries) ?? []
+        fieldChecks=try c.decodeIfPresent([FieldCheck].self,forKey:.fieldChecks) ?? []
         visualMaps=try c.decodeIfPresent([VisualMapReference].self,forKey:.visualMaps) ?? []
         connections=try c.decodeIfPresent([ServiceConnection].self,forKey:.connections) ?? []
         documentaryPhotos=try c.decodeIfPresent([DocumentaryPhoto].self,forKey:.documentaryPhotos) ?? []

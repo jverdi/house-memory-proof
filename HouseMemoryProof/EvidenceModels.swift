@@ -91,3 +91,44 @@ struct RevealBoundary: Codable, Identifiable, Equatable {
 }
 
 struct PointTrack:Codable,Equatable {var controls:[PhotoControl]}
+
+// Field observations are immutable evidence records. They never silently turn
+// on a precision claim or alter source coordinates/calibration parameters.
+enum FieldSplit:String,Codable,CaseIterable {case calibration="Calibration",validation="Independent validation"}
+enum FieldCheckKind:String,Codable,CaseIterable {case distance="Surface distance",placement="Point placement",rejection="Alignment rejection"}
+struct FieldCheck:Codable,Identifiable,Equatable {
+  var id=UUID();var date=Date();var split:FieldSplit;var kind:FieldCheckKind
+  var fixture:String;var session:String;var conditions:String
+  var device:String;var sourceBuild:String;var cameraMode:String
+  var truthUncertainty:Double;var cameraDistance:Double
+  var measurement:Dimension?;var referenceDistance:Double?;var referencePoint:V3?
+  var abstained:Bool=false;var overlayWasVisible:Bool?=nil
+  var originalIDs:[UUID]=[]
+  var valid:Bool {
+    guard !fixture.isEmpty,!session.isEmpty,fixture.count<=500,session.count<=500,conditions.count<=5000,device.count<=500,sourceBuild.count<=200,cameraMode.count<=500,originalIDs.count<=50000,truthUncertainty.isFinite,truthUncertainty>=0,truthUncertainty<=0.1,cameraDistance.isFinite,cameraDistance>=0,cameraDistance<=20 else{return false}
+    if kind == .rejection{return overlayWasVisible != nil}
+    if abstained{return true}
+    guard let measurement,measurement.a.finite,measurement.b.finite else{return false}
+    if kind == .distance{return referenceDistance.map{$0.isFinite && $0>0 && $0<=1000} ?? false}
+    return referencePoint?.finite==true
+  }
+  var errorMetres:Double? {
+    guard !abstained,let measurement else{return nil}
+    if kind == .distance,let expected=referenceDistance{return abs(measurement.metres-expected)}
+    if kind == .placement,let expected=referencePoint{return (measurement.a-expected).length}
+    return nil
+  }
+}
+struct FieldSummary:Codable {
+  var attempts:Int;var accepted:Int;var p95Metres:Double?;var maximumMetres:Double?
+  var criticalChallenges:Int;var visibleOnRejectionChallenges:Int
+  var truthWithinTwoMillimetres:Int;var independentSessions:Int
+  var precisionProfileEnabled=false
+}
+enum FieldEvidence {
+  static func summary(_ checks:[FieldCheck],split:FieldSplit)->FieldSummary {
+    let selected=checks.filter{$0.split==split && $0.valid},nominal=selected.filter{$0.kind != .rejection}
+    let errors=nominal.compactMap{$0.errorMetres}.sorted()
+    return FieldSummary(attempts:nominal.count,accepted:errors.count,p95Metres:errors.isEmpty ? nil:errors[max(0,Int(ceil(Double(errors.count)*0.95))-1)],maximumMetres:errors.last,criticalChallenges:selected.filter{$0.kind == .rejection}.count,visibleOnRejectionChallenges:selected.filter{$0.kind == .rejection && $0.overlayWasVisible==true}.count,truthWithinTwoMillimetres:nominal.filter{$0.truthUncertainty<=0.002}.count,independentSessions:Set(selected.map{$0.session}).count)
+  }
+}

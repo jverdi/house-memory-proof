@@ -123,6 +123,7 @@ struct ToolsPage: View {
           ).font(.footnote).foregroundStyle(.secondary)
         }
         Section("Diagnostics") {
+          NavigationLink("Field checks and calibration evidence"){FieldChecksPage(house:house)}
           Button("Load paired simulated house captures") {
             guard let repo = model.repository,
               let folder = Bundle.main.url(forResource: "IFC", withExtension: nil)
