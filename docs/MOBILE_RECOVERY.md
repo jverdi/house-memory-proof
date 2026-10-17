@@ -20,3 +20,5 @@ The app is local. Deleting it can remove the only copy of construction evidence.
 - **Development issue:** tell the agent what screen/action failed and the build/source shown in Tools. Use Export diagnostics for the local self-test report. No remote agent can silently inspect your phone or its local data.
 
 The installed proof build 2.1 does not contain these application screens; they describe the implementation currently under qualification.
+
+A weekly renewal check is implemented but disabled until acceptance. Once enabled, it uses Apple’s reported expiration date and rebuilds only the pinned `personal-beta` tag when fewer than 21 days remain. Signing/account failures still require agent repair; this is not a guarantee that Apple or GitHub remains available.

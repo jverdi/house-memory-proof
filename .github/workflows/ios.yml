@@ -13,6 +13,11 @@ on:
       - .github/workflows/ios.yml
   pull_request:
   workflow_dispatch:
+    inputs:
+      ship:
+        description: Upload the accepted personal-beta tag after validation
+        type: boolean
+        default: false
 
 permissions:
   contents: read

@@ -1,0 +1,38 @@
+name: Check personal beta renewal
+on:
+  schedule:
+    - cron: '17 8 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: personal-beta-renewal
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect expiry without creating a build
+        id: expiry
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
+          APP_BUNDLE_ID: com.jverdi.housememoryproof
+        run: python3 ci/renewal.py
+      - name: Rebuild only the pinned accepted source when expiry approaches
+        if: steps.expiry.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/personal-beta" --jq .object.sha
+          gh workflow run ios.yml --ref personal-beta -f ship=true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: renewal-status
+          path: build/evidence/renewal.json
+          retention-days: 30

@@ -1,0 +1,5 @@
+{
+  "automatic_renewal": false,
+  "release_tag": "personal-beta",
+  "note": "Enable only after the release source has passed acceptance and the tag is pinned."
+}
