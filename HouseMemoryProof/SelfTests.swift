@@ -93,10 +93,10 @@ import Darwin
                 source.referencePoses[index].matrix[3]+=0.1
                 do {_=try ReferenceRegistration.fit(source:source,anchor:anchor,house:h);return false}catch{return true}
             }
-            await check("Display reduction stays bounded and preserves source triangles and UVs") {
+            await check("Display reduction uses bounded source points without perforated triangles") {
                 let mesh=Mesh.box(center:V3(),size:V3(2,3,4)),uv=mesh.vertices.map{UV(u:$0.x,v:$0.y)}
                 let reduced=DisplayGeometry.reduce(mesh,uv:uv,budget:9)
-                guard reduced.0.valid,reduced.0.vertices.count<=9,reduced.0.triangles.count<=9,reduced.1?.count==reduced.0.vertices.count else{return false}
+                guard reduced.0.valid,reduced.0.vertices.count<=9,reduced.0.triangles.isEmpty,reduced.1?.count==reduced.0.vertices.count else{return false}
                 return zip(reduced.0.vertices,reduced.1!).allSatisfy{mesh.vertices.contains($0.0) && $0.1.u==$0.0.x && $0.1.v==$0.0.y} && mesh.vertices.count==8
             }
             await check("Spatial display tiles preserve source primitives, UVs, budgets and room movement") {
@@ -876,7 +876,7 @@ extension SelfTests {
         let stream=SpatialSceneStream(index:index,scene:scene,options:options)
         let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene
         let camera=SceneBuilder.camera(at:V3());scene.rootNode.addChildNode(camera);renderer.pointOfView=camera
-        var frameTimes:[Double]=[],memories:[[String:UInt64]]=[],sharpFrames=0,loads:[Double]=[],collisionCounts:[Int]=[],textureCounts:[Int]=[],decodedBytes:[Int]=[]
+        var frameTimes:[Double]=[],memories:[[String:UInt64]]=[],sharpFrames=0,loads:[Double]=[],collisionCounts:[Int]=[],textureCounts:[Int]=[],decodedBytes:[Int]=[],completeNearFaces:[Int]=[]
         for (visit,roomIndex) in [0,99].enumerated() {
             let room=h.rooms[roomIndex],position=room.origin+V3(2.5,-1,1.5),start=ProcessInfo.processInfo.systemUptime
             camera.simdPosition=position.render;camera.look(at:SCNVector3((room.origin+V3(2.5,4.8,1.5)).render))
@@ -884,6 +884,14 @@ extension SelfTests {
             // synthetic clock drives residency only, never the reported timing.
             for tick in 0..<513 {try Task.checkCancellation();stream.update(camera:position,time:Double(visit*1000+tick)/30);if tick%16==0 {await Task.yield()}}
             guard stream.pending.isEmpty,stream.nodes.count<=512,stream.allocations.values.reduce(0,{$0+$1.budget})<=DisplayGeometry.sceneVertexBudget else{throw HouseError.message("Capacity scene did not settle within its residency budget.")}
+            let roomTiles=index.tiles.indices.filter{index.features[index.tiles[$0].feature].roomID==room.id}
+            var nearFaces=0
+            for tile in roomTiles {
+                guard let allocation=stream.allocations[tile],allocation.budget>=index.tiles[tile].cost else{throw HouseError.message("The nearby capacity wall lost full-surface admission.")}
+                let (_,mesh,_)=index.materialize(allocation);nearFaces+=mesh.triangles.count/3
+            }
+            guard nearFaces==10000 else{throw HouseError.message("Display reduction perforated a nearby wall.")}
+            completeNearFaces.append(nearFaces)
             loads.append(ProcessInfo.processInfo.systemUptime-start)
             let rasterBytes=SceneBuilder.decodedTextureBytes(stream.textures)
             guard !stream.textures.isEmpty,stream.textures.count<=DisplayGeometry.textureBudget,rasterBytes<=DisplayGeometry.textureByteBudget else{throw HouseError.message("Capacity textures exceed decoded residency limits.")}
@@ -912,6 +920,7 @@ extension SelfTests {
         report["sourceTextureCount"]=textureKeys.count;report["residentTextureCounts"]=textureCounts
         report["decodedTextureBytes"]=decodedBytes;report["decodedTextureByteBudget"]=DisplayGeometry.textureByteBudget
         report["localCollisionPrimitives"]=collisionCounts;report["localCollisionRadiusMetres"]=4
+        report["completeNearbySourceFaces"]=completeNearFaces
         report["limitations"]="Synthetic tiled walls with procedural textures, local original-geometry collision and no capture data. Decoded raster bounds exclude GPU/driver allocations. Offscreen snapshot time includes readback; it is not sustained display FPS, device thermal qualification, reconstruction completeness or navigation-topology evidence."
         report["physicalDeviceQualified"]=false
         return report

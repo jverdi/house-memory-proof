@@ -1,0 +1,17 @@
+{
+  "commit": "4a3074d128136763c7fcff7c7d8c5698440340e0",
+  "run": 39040257844,
+  "job": 117419285122,
+  "artifact": 12104352269,
+  "artifactReportedSHA256": "6a6f6e7abeb26228100345bff91379cbfc287fb1284e345cc409e944070f738e",
+  "selectiveMembersCRCVerified": true,
+  "wholeArchiveDigestVerified": false,
+  "nativeChecks": 89,
+  "uiChecks": 2,
+  "physicalQualified": false,
+  "limitations": "Predates coded-reference Swift integration and pixel-derived source-board estimation. Simulator evidence only; exact source is recorded, without enabling field precision.",
+  "visualReview": {
+    "movieFrame": "Legible framing, service route and synthetic caption.",
+    "capacityView": "Failed visual review: partial triangle LOD perforates distant walls. Numeric capacity result does not establish display quality; source-point fallback and nearby full-surface admission repair pending."
+  }
+}

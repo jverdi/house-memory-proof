@@ -290,7 +290,7 @@ extension UIColor {
           }
           guard self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
           self.clearance=prepared.1;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
-          self.navigationNotice=prepared.1.complete ? "Nearby detail loads as you move; distant geometry is simplified. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
+          self.navigationNotice=prepared.1.complete ? "Nearby surfaces retain full detail; distant detail may appear as source points. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
         }catch {
           guard self.view.scene===scene else{return}
           self.navigationNotice=error.localizedDescription
@@ -333,7 +333,7 @@ extension UIColor {
         let next=try await LocalWorker.run {try SpatialClearance(index:index,camera:position)}
         guard !Task.isCancelled,self.collisionRequest==request,self.stream===stream else{return}
         self.clearance=next
-        self.navigationNotice=next.complete ? "Nearby detail loads as you move; distant geometry is simplified. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
+        self.navigationNotice=next.complete ? "Nearby surfaces retain full detail; distant detail may appear as source points. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
       }catch is CancellationError {}catch {
         guard self.collisionRequest==request else{return}
         self.navigationNotice="Nearby collision preparation failed. Walking remains limited to the last checked area."

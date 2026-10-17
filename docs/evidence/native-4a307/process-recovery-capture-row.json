@@ -1,0 +1,1 @@
+{"fault":"SIGKILL after capture row commit, before project checkpoint","passed":true,"recoveredExactlyOnce":true,"powerLossQualified":false,"verifiedAssets":3}

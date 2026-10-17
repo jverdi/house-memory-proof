@@ -1,7 +1,9 @@
 import Foundation
 import CryptoKit
 
-// Display-only reduction retains original triangles/points and interpolates nothing.
+// Display-only reduction retains complete surfaces when admitted, otherwise
+// presents sampled source points. Dropping faces made solid walls look like
+// missing capture, so partial triangle soups are never used as a display LOD.
 // Metric evidence, exports and collision geometry always use full originals.
 enum DisplayGeometry {
   static let sceneVertexBudget=400000
@@ -20,14 +22,17 @@ enum DisplayGeometry {
       for i in stride(from:0,to:mesh.vertices.count,by:step) {result.vertices.append(mesh.vertices[i]);if let uv {values.append(uv[i])}}
     } else {
       let faces=mesh.triangles.count/3,step=max(1,Int(ceil(Double(faces)/Double(max(1,budget/3)))))
-      var indices:[Int32:Int32]=[:]
-      for face in stride(from:0,to:faces,by:step) {for offset in 0..<3 {let source=mesh.triangles[face*3+offset];if indices[source]==nil {indices[source]=Int32(result.vertices.count);result.vertices.append(mesh.vertices[Int(source)]);if let uv {values.append(uv[Int(source)])}};result.triangles.append(indices[source]!)}}
+      var seen=Set<Int32>()
+      for face in stride(from:0,to:faces,by:step) {for offset in 0..<3 {
+        let source=mesh.triangles[face*3+offset]
+        if seen.insert(source).inserted {result.vertices.append(mesh.vertices[Int(source)]);if let uv {values.append(uv[Int(source)])}}
+      }}
     }
     return(result,uv==nil ? nil:values)
   }
   static func notice(_ features:[Feature])->String {
     let vertices=features.reduce(0){$0+cost($1.mesh)},textures=Set(features.compactMap{$0.texture}).count
-    return vertices>sceneVertexBudget || textures>textureBudget ? "Display detail limited for memory. Select a room for more detail; originals and exports are unchanged." : ""
+    return vertices>sceneVertexBudget || textures>textureBudget ? "Nearby surfaces retain full detail. Distant or over-budget detail may appear as source points. Select a room for more detail; measurements and exports use originals." : ""
   }
 }
 
@@ -72,7 +77,7 @@ struct SpatialDisplayIndex {
     var ranked:[Ranked]=[]
     for index in tiles.indices {
       let separation=distance(tiles[index])
-      let factor:Int=separation<4 ? 1:(separation<10 ? 4:16)
+      let factor:Int=separation<10 ? 1:16
       let wanted=max(3,min(50000,tiles[index].cost/factor))
       ranked.append(Ranked(tile:index,distance:separation,requested:wanted))
     }
@@ -81,10 +86,9 @@ struct SpatialDisplayIndex {
       return a.distance<b.distance
     }
     let ordered=Array(ranked.prefix(min(residents,budget/3)))
-    var extra=0
-    for item in ordered {extra+=max(0,item.requested-3)}
-    let remaining=max(0,budget-ordered.count*3)
-    let scale=min(1.0,Double(remaining)/Double(max(1,extra)))
+    // Reserve a minimum for distant context, then spend the remaining budget
+    // nearest-first. Scaling every allocation also perforated the closest wall.
+    var remaining=max(0,budget-ordered.count*3)
     var textures=Set<String>(),result:[Allocation]=[]
     for item in ordered {
       let tile=tiles[item.tile]
@@ -92,7 +96,8 @@ struct SpatialDisplayIndex {
       if let key=features[tile.feature].texture {
         if textures.contains(key) || textures.count<DisplayGeometry.textureBudget {textures.insert(key);textured=true}
       }
-      let allocation=3+Int(Double(item.requested-3)*scale)
+      let extra=min(max(0,item.requested-3),remaining),allocation=3+extra
+      remaining-=extra
       result.append(Allocation(tile:item.tile,budget:allocation,textured:textured))
     }
     return result
@@ -100,13 +105,14 @@ struct SpatialDisplayIndex {
 
   func materialize(_ allocation:Allocation)->(Feature,Mesh,[UV]?) {
     let tile=tiles[allocation.tile],feature=features[tile.feature],source=feature.mesh,points=source.triangles.isEmpty
-    let capacity=max(1,allocation.budget/(points ? 1:3)),step=max(1,Int(ceil(Double(tile.primitives.count)/Double(capacity))))
+    let completeSurface = !points && allocation.budget>=tile.cost
+    let capacity=max(1,allocation.budget/(points ? 1:3)),step=completeSurface ? 1:max(1,Int(ceil(Double(tile.primitives.count)/Double(capacity))))
     var mesh=Mesh(),uv:[UV]=[],lookup:[Int:Int32]=[:]
     for index in stride(from:0,to:tile.primitives.count,by:step) {
       let primitive=tile.primitives[index],indices=points ? [primitive]:(0..<3).map{Int(source.triangles[primitive*3+$0])}
       for original in indices {
         if lookup[original]==nil {lookup[original]=Int32(mesh.vertices.count);mesh.vertices.append(source.vertices[original]);if let coordinates=feature.uv {uv.append(coordinates[original])}}
-        if !points {mesh.triangles.append(lookup[original]!)}
+        if completeSurface {mesh.triangles.append(lookup[original]!)}
       }
     }
     return(feature,mesh,feature.uv==nil ? nil:uv)

@@ -1,0 +1,73 @@
+{
+  "uri": "textured.glb",
+  "mimeType": "model/gltf-binary",
+  "validatorVersion": "2.0.0-dev.3.10",
+  "validatedAt": "2026-10-17T14:38:54.075Z",
+  "issues": {
+    "numErrors": 0,
+    "numWarnings": 0,
+    "numInfos": 2,
+    "numHints": 0,
+    "messages": [
+      {
+        "code": "IMAGE_NPOT_DIMENSIONS",
+        "message": "Image has non-power-of-two dimensions: 192x144.",
+        "severity": 2,
+        "pointer": "/images/0"
+      },
+      {
+        "code": "IMAGE_NPOT_DIMENSIONS",
+        "message": "Image has non-power-of-two dimensions: 192x144.",
+        "severity": 2,
+        "pointer": "/images/1"
+      }
+    ],
+    "truncated": false
+  },
+  "info": {
+    "version": "2.0",
+    "generator": "House Xray",
+    "resources": [
+      {
+        "pointer": "/buffers/0",
+        "mimeType": "application/gltf-buffer",
+        "storage": "glb",
+        "byteLength": 63076
+      },
+      {
+        "pointer": "/images/0",
+        "mimeType": "image/jpeg",
+        "storage": "buffer-view",
+        "image": {
+          "width": 192,
+          "height": 144,
+          "format": "rgb",
+          "bits": 8
+        }
+      },
+      {
+        "pointer": "/images/1",
+        "mimeType": "image/jpeg",
+        "storage": "buffer-view",
+        "image": {
+          "width": 192,
+          "height": 144,
+          "format": "rgb",
+          "bits": 8
+        }
+      }
+    ],
+    "animationCount": 6,
+    "materialCount": 2,
+    "hasMorphTargets": false,
+    "hasSkins": false,
+    "hasTextures": true,
+    "hasDefaultScene": true,
+    "drawCallCount": 2,
+    "totalVertexCount": 36,
+    "totalTriangleCount": 12,
+    "maxUVs": 1,
+    "maxInfluences": 0,
+    "maxAttributes": 2
+  }
+}
