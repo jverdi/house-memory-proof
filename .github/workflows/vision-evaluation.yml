@@ -10,6 +10,7 @@ on:
       - tooling/simulation/replay_fixture.py
       - tooling/simulation/vision_matrix.py
       - tooling/simulation/vision_fixture.py
+      - tooling/simulation/test_render_contract.py
       - tooling/simulation/house.py
       - tooling/simulation/house_layout_fixture.py
       - packages/visual-core/**
@@ -60,6 +61,7 @@ jobs:
         run: |
           python3 -m venv build/vision-env
           build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+          build/vision-env/bin/python tooling/simulation/test_render_contract.py
           build/vision-env/bin/python tooling/simulation/vision_fixture.py build/vision-fixture
           build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-fixture --output build/vision-evaluation/replay.json
       - name: Evaluate joint optimization against independent query views

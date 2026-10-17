@@ -190,7 +190,7 @@ enum TourDirector {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v7", options.mode.rawValue,
+      "renderer-v8", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
@@ -205,7 +205,30 @@ enum TourDirector {
       let actual=CMTimeGetSeconds(duration),expected=Double(frames)/30
       guard abs(actual-expected)<1.0/600 else{return "Duration \(actual) seconds; expected \(expected) seconds"}
       guard Int(size.width)==width,Int(size.height)==height else{return "Dimensions \(size.width) × \(size.height); expected \(width) × \(height)"}
-      guard abs(rate-30)<0.1 else{return "Frame rate \(rate); expected 30"}
+      // Inspect actual compressed sample timestamps as well as advertised FPS.
+      // This detects gaps/duplicates at shot joins that duration alone misses.
+      let reader=try AVAssetReader(asset:asset)
+      let output=AVAssetReaderTrackOutput(track:track,outputSettings:nil)
+      output.alwaysCopiesSampleData=false
+      guard reader.canAdd(output) else{return "Cannot inspect video samples"}
+      reader.add(output)
+      guard reader.startReading() else{return "Cannot start video sample inspection"}
+      defer{reader.cancelReading()}
+      var times:[Double]=[]
+      while let sample=output.copyNextSampleBuffer(){
+        try Task.checkCancellation()
+        guard CMSampleBufferGetNumSamples(sample)==1 else{return "Unexpected packed video sample"}
+        times.append(CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample)))
+        guard times.count<=frames else{return "Too many video frames: more than \(frames)"}
+        if times.count%64==0{await Task.yield()}
+      }
+      guard reader.status == .completed else{return "Video sample read failed: \(reader.error?.localizedDescription ?? "unknown")"}
+      guard times.count==frames else{return "Video has \(times.count) frames; expected \(frames), nominal FPS \(rate)"}
+      times.sort()
+      for (index,time) in times.enumerated(){
+        guard time.isFinite,abs(time-Double(index)/30)<1.0/600 else{return "Frame \(index) at \(time)s; expected \(Double(index)/30)s, nominal FPS \(rate)"}
+      }
+      guard abs(rate-30)<0.1 else{return "Frame rate \(rate); expected 30; \(times.count) sample timestamps verified"}
       let generator=AVAssetImageGenerator(asset:asset);generator.maximumSize=CGSize(width:320,height:180)
       _=try await generator.image(at:CMTime(value:Int64(max(0,frames-1)),timescale:30))
       return nil
@@ -271,7 +294,7 @@ enum TourDirector {
         mediaType: .video,
         outputSettings: [
           AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
-          AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 6_000_000,AVVideoExpectedSourceFrameRateKey:30,AVVideoMaxKeyFrameIntervalKey:60],
+          AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 6_000_000,AVVideoExpectedSourceFrameRateKey:30,AVVideoMaxKeyFrameIntervalKey:60,AVVideoAllowFrameReorderingKey:false],
         ])
       input.expectsMediaDataInRealTime = false
       let adaptor = AVAssetWriterInputPixelBufferAdaptor(

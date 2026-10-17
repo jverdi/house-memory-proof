@@ -34,9 +34,19 @@ def render(items,position,yaw,width,height,texture_seed=None):
  inv=np.divide(1,rays,out=np.full_like(rays,np.inf),where=np.abs(rays)>1e-12)
  nearest=np.full((height,width),np.inf);colors=np.zeros((height,width,3),np.uint8)+15
  for item in items:
-  a=(np.array(item['low'])-position)*inv;b=(np.array(item['high'])-position)*inv
-  near=np.minimum(a,b).max(axis=2);far=np.maximum(a,b).min(axis=2);hit=np.where(near>.1,near,far)
-  selected=(far>=near)&(hit>.15)&(hit<nearest)&(hit<5)
+  low=np.array(item['low']);high=np.array(item['high'])
+  with np.errstate(invalid='ignore'):
+   a=(low-position)*inv;b=(high-position)*inv
+  entering=np.minimum(a,b);leaving=np.maximum(a,b)
+  # A ray parallel to a slab and starting on its boundary has an unbounded
+  # interval, not NaN (0 * infinity). Outside parallel slabs are empty.
+  for axis in range(3):
+   parallel=np.abs(rays[...,axis])<=1e-12
+   inside=low[axis]<=position[axis]<=high[axis]
+   entering[...,axis][parallel]=-np.inf if inside else np.inf
+   leaving[...,axis][parallel]=np.inf if inside else -np.inf
+  near=entering.max(axis=2);far=leaving.min(axis=2);hit=np.where(near>1e-8,near,far)
+  selected=(far>=near)&(hit>1e-8)&(hit<nearest)&(hit<5)
   nearest[selected]=hit[selected];colors[selected]=item['color']
  # Stable spatial texture helps the renderer exhibit blur/lighting changes.
  finite=np.isfinite(nearest);safe=np.where(finite,nearest,0)
@@ -51,9 +61,10 @@ def render(items,position,yaw,width,height,texture_seed=None):
  rotation=np.stack([right,up,-forward],axis=1)
  adapter=np.array([[1,0,0],[0,0,1],[0,-1,0]])
  matrix=np.eye(4);matrix[:3,:3]=adapter@rotation;matrix[:3,3]=adapter@position
- return colors,safe.astype('<f4'),finite,matrix,[fx,0,cx,0,fy,cy,0,0,1]
+ depth_valid=finite & (nearest>=.15)
+ return colors,np.where(depth_valid,safe,0).astype('<f4'),depth_valid,matrix,[fx,0,cx,0,fy,cy,0,0,1]
 def generate(seed,dest,rooms=3,frames=24,width=128,noise=.004,drift=.015):
- rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True);assets={};observations=[];segments=[];space=[];truth={'seed':seed,'generator':'analytic-aabb-v1','not_a_validated_sensor_model':True,'rooms':[],'frames':[]}
+ rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True);assets={};observations=[];segments=[];space=[];truth={'seed':seed,'generator':'analytic-aabb-v2','not_a_validated_sensor_model':True,'rooms':[],'frames':[]}
  rough=identity(seed,'rough');finished=identity(seed,'finished');now=813974400.0
  def asset(data,ext):
   key=hashlib.sha256(data).hexdigest()+'.'+ext;assets['assets/'+key]=data;return key

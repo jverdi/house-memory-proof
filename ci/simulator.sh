@@ -80,8 +80,10 @@ cp "$app_root/textured.glb" build/evidence/textured.glb
 cp "$app_root/test.glb" build/evidence/test.glb
 cp "$app_root/test.usdz" build/evidence/test.usdz
 cp "$app_root/test-render.png" build/evidence/test-render.png
-cp "$app_root/test-tour.mp4" build/evidence/test-tour.mp4
-cp "$app_root/test-tour-frame.png" build/evidence/test-tour-frame.png
+# Retain diagnostics before failing if the encoder did not produce a movie.
+for media in test-tour.mp4 test-tour-frame.png; do
+  if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
+done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
 python3 - <<'PYTEST'
 import json

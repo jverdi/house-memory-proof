@@ -73,7 +73,7 @@ def make(dest,seed=905771):
    low,high=np.array(item['low']),np.array(item['high'])
    corners=np.array([[x,y,z] for x in [low[0],high[0]] for y in [low[1],high[1]] for z in [low[2],high[2]]])-position
    z=corners@forward;x=corners@right;y=corners[:,2]
-   if (z<=.15).all() or (z>=5).all() or (x>z*horizontal).all() or (x < -z*horizontal).all() or (y>z*vertical).all() or (y < -z*vertical).all():continue
+   if (z<=1e-8).all() or (z>=5).all() or (x>z*horizontal).all() or (x < -z*horizontal).all() or (y>z*vertical).all() or (y < -z*vertical).all():continue
    visible.append(item)
   rgb,depth,valid,m,k=render(visible,position,heading,width,height,texture_seed=seed if texture is None else texture)
   m[:3,3]-=np.array([origin[0],origin[2],-origin[1]])

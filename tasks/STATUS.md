@@ -27,3 +27,11 @@ Acceptance remains the runbook's gates. Implemented features below are not equiv
 - [ ] Upload one final accepted build and verify Apple availability.
 
 Every source checkpoint is committed to the repository. Reports are retained under docs/evidence. Release uploads stay disabled while critical gates remain open.
+
+### 2026-10-17 — movie timing and house-layout failures retained
+
+Native source `96ea8a0b4c` compiled and passed 73 of 74 native checks; the remaining movie check reported a final nominal frame rate of 29.70297 instead of 30. The next candidate disables H.264 frame reordering at each shot boundary and verifies every compressed presentation timestamp and exact frame count, in addition to duration, dimensions, FPS and decoding. No rate tolerance was relaxed. CI now prints the native failure even when movie output is missing.
+
+The first connected four-room/two-level development replay at source `875d7d55` built all four maps, accepted 9/12 nominal queries, rejected 8/8 wrong-room/floor queries, and had 13.585 mm p95/worst accepted position error. This fails the 90% availability and 10 mm p95 gates. It is retained under `docs/evidence/house-layout-875d7`; no production qualification is claimed.
+
+The analytic evaluator now tests parallel ray/box boundary intersections, optical-axis depth, near-foreground occlusion and camera convention independently. Four local tests pass. A near object can no longer expose background depth by falling below the depth sensor admission range. The current frozen stress run retains its original source and evaluator.
