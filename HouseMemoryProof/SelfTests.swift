@@ -54,6 +54,16 @@ import ImageIO
                 capture.features=[result];try capture.validate()
                 return result.mesh.vertices.count>=20 && result.pointTracks?.count==result.mesh.vertices.count && result.pointTracks!.allSatisfy{$0.controls.count>=3}
             }
+            check("Incremental snapshots deduplicate originals and reject partial or corrupt restore") {
+                let folder=repo.root.appendingPathComponent("incremental-test"),restoredRepo=try Repository(root:repo.root.appendingPathComponent("incremental-restore"))
+                var h=House.empty("Snapshot test");let key=try repo.put(Data("original bytes".utf8),ext:"jpg");h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)]
+                let first=try IncrementalSnapshots.write(house:h,repo:repo,folder:folder);h.revision+=1;h.notes="Later note";_=try IncrementalSnapshots.write(house:h,repo:repo,folder:folder)
+                let base=IncrementalSnapshots.root(folder),assets=try FileManager.default.contentsOfDirectory(at:base.appendingPathComponent("assets"),includingPropertiesForKeys:nil)
+                let catalog=try IncrementalSnapshots.catalog(folder:folder),restored=try IncrementalSnapshots.restore(first,repo:restoredRepo,folder:folder)
+                guard assets.count==1,catalog.count==2,restored.id != h.id,restored.notes.isEmpty,try restoredRepo.read(key)==Data("original bytes".utf8) else{return false}
+                try Data("corrupt".utf8).write(to:assets[0],options:.atomic)
+                do{_=try IncrementalSnapshots.restore(first,repo:restoredRepo,folder:folder);return false}catch{return true}
+            }
             check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
             check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
             check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}

@@ -58,7 +58,7 @@ enum SnapshotStorage {
     guard let bookmark = UserDefaults.standard.data(forKey: bookmarkKey) else {
       throw HouseError.message("Choose a backup folder in Files first.")
     }
-    let result = try await Task.detached(priority: .utility) {
+    let result = try await LocalWorker.run(priority: .utility) {
       var stale = false
       let folder = try URL(
         resolvingBookmarkData: bookmark, options: .withoutUI, relativeTo: nil,
@@ -70,10 +70,20 @@ enum SnapshotStorage {
       }
       let access = folder.startAccessingSecurityScopedResource()
       defer { if access { folder.stopAccessingSecurityScopedResource() } }
-      return try SnapshotStorage.write(house: house, repo: repo, folder: folder)
-    }.value
+      let revision=try IncrementalSnapshots.write(house:house,repo:repo,folder:folder)
+      return "Incremental snapshot saved: \(revision.id.uuidString.prefix(8)). Provider upload completion is not verified."
+    }
     UserDefaults.standard.set(result + " Revision \(house.revision).", forKey: statusKey)
     UserDefaults.standard.set(Date(), forKey: "snapshot-date-" + house.id.uuidString)
+  }
+  static func inFolder<T>(_ operation:@escaping @Sendable (URL)throws->T) async throws->T {
+    guard let bookmark=UserDefaults.standard.data(forKey:bookmarkKey) else{throw HouseError.message("Choose a snapshot folder first.")}
+    return try await LocalWorker.run(priority:.utility) {
+      var stale=false;let folder=try URL(resolvingBookmarkData:bookmark,options:.withoutUI,relativeTo:nil,bookmarkDataIsStale:&stale)
+      guard !stale else{throw HouseError.message("Choose the snapshot folder again to renew its permission.")}
+      let access=folder.startAccessingSecurityScopedResource();defer{if access {folder.stopAccessingSecurityScopedResource()}}
+      return try operation(folder)
+    }
   }
   static func automatic(model: AppModel) {
     guard UserDefaults.standard.bool(forKey: automaticKey), !model.busy, let house = model.house,
@@ -98,6 +108,7 @@ struct SnapshotSettings: View {
   @EnvironmentObject var model: AppModel
   var house: House
   @State private var choosing = false
+  @State private var revisions:[SnapshotRevision]=[]
   @State private var automatic = UserDefaults.standard.bool(forKey: SnapshotService.automaticKey)
   @State private var status = SnapshotService.status
   var body: some View {
@@ -127,9 +138,23 @@ struct SnapshotSettings: View {
         }.disabled(model.busy)
         Text(status).font(.footnote)
       }
+      Section("Restore an independent revision") {
+        Button("List saved revisions") {
+          model.perform("Reading snapshot catalog") {revisions=try await SnapshotService.inFolder{try IncrementalSnapshots.catalog(folder:$0)};return nil}
+        }.disabled(model.busy)
+        ForEach(revisions){revision in
+          Button("Restore \(revision.name) · r\(revision.revision) · \(revision.date.formatted())") {
+            guard let repo=model.repository else{return}
+            model.perform("Verifying and restoring snapshot") {
+              let restored=try await SnapshotService.inFolder{try IncrementalSnapshots.restore(revision,repo:repo,folder:$0)}
+              guard model.commit(restored) else{throw HouseError.message("Verified restore could not be committed locally.")};return nil
+            }
+          }.disabled(model.busy)
+        }
+      }
       Section {
         Text(
-          "Runs while the app is active; it cannot promise an overnight upload while iOS suspends the app. Incomplete files fail archive restore checks. Originals are never evicted. Each snapshot is complete and uses additional storage; automatic incremental chunk sync is not implemented."
+          "Runs while the app is active; it cannot promise an overnight upload while iOS suspends the app. Incomplete files fail archive restore checks. Originals are never evicted. Incremental revisions share immutable originals; only new assets and metadata are copied. Existing assets are verified, never pruned. Full portable .hxray archives remain available under Tools. Provider conflicts or partial arrivals never merge projects automatically."
         ).font(.footnote)
       }
     }.navigationTitle("Folder snapshots").fileImporter(

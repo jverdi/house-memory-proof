@@ -4,7 +4,7 @@ import simd
 struct BoundaryEditor:View {
   @EnvironmentObject var model:AppModel
   @Environment(\.dismiss) var dismiss
-  var house:House;var segment:Segment;var points:[V3]
+  var house:House;var segment:Segment;var points:[V3];var cameraPosition:V3
   @State private var name="Wall section"
   @State private var depth=0.20
   @State private var finish=0.0125
@@ -14,7 +14,7 @@ struct BoundaryEditor:View {
     NavigationStack {
       Form {
         Section("Selected rectangle") {
-          Text("The first point is a corner, the second sets the horizontal edge, and the third sets the other edge. The cavity extends along their cross-product normal. Check the direction before using AR.").font(.footnote)
+          Text("The first point is a corner, the second sets the horizontal edge, and the third sets the other edge. The cavity points away from your current viewpoint by default. Reverse it only if you selected the opposite side.").font(.footnote)
           TextField("Name",text:$name)
           if let boundary=try? make() {
             Text("\(boundary.width.formatted(.number.precision(.fractionLength(2)))) × \(boundary.height.formatted(.number.precision(.fractionLength(2)))) m")
@@ -39,7 +39,8 @@ struct BoundaryEditor:View {
     guard points.count==3 else{throw HouseError.message("Select exactly three corners.")}
     let inverse=segment.registration.flatMap{PoseRefinement.matrix($0.values)}.map{Rigid(values:PoseRefinement.array(simd_inverse($0)))} ?? Rigid()
     let p=points.map{inverse.apply($0)};let x=(p[1]-p[0]).normalized;var y=(p[2]-p[0])-x*x.dot(p[2]-p[0]);let height=y.length;y=y.normalized
-    var origin=p[0];if flip {origin=origin+y*height;y=y * -1}
+    let towardCamera=x.cross(y).dot(inverse.apply(cameraPosition)-p[0])>0
+    var origin=p[0];if towardCamera != flip {origin=origin+y*height;y=y * -1}
     let b=RevealBoundary(name:name.isEmpty ? "Wall section":name,segmentID:segment.id,origin:origin,horizontal:x,vertical:y,width:(p[1]-p[0]).length,height:height,depth:depth,finishOffset:finish,sourceFingerprint:try VisualMapping.fingerprint(house:house,segment:segment))
     guard b.valid else{throw HouseError.message("Choose three separated, non-collinear corners on the same wall or ceiling plane.")};return b
   }

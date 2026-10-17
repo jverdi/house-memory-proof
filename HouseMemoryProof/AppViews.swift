@@ -452,7 +452,7 @@ struct ExploreView: View {
           }
         }
         .sheet(isPresented: $editor) { if let f = selectedFeature { FeatureEditor(feature: f) } }
-        .sheet(item:$boundarySegment) { segment in BoundaryEditor(house:house,segment:segment,points:controller.points) }
+        .sheet(item:$boundarySegment) { segment in BoundaryEditor(house:house,segment:segment,points:controller.points,cameraPosition:V3(ar:controller.camera.simdPosition)) }
         .sheet(isPresented: $saveRoute) {
           NavigationStack {
             Form {
