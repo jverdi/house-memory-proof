@@ -83,7 +83,7 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
     var house:House?;var options=SceneOptions();var revision = -1
     var move=SIMD2<Float>.zero;var vertical:Float=0
     var yaw:Float=0;var pitch:Float=0;private var timer:CADisplayLink?
-    private var lastTime:CFTimeInterval=0;private var panStart=CGPoint.zero
+    private var lastTime:CFTimeInterval=0;private var panStart=CGPoint.zero;private var hadController=false
     var camera=SceneBuilder.camera(at:V3(3,2,1.6))
     override init(){super.init();view.backgroundColor = .black;view.antialiasingMode = .multisampling4X;view.preferredFramesPerSecond=30;view.isPlaying=true
         view.addGestureRecognizer(UIPanGestureRecognizer(target:self,action:#selector(pan(_:))))
@@ -93,13 +93,15 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
     func stop(){timer?.invalidate();timer=nil;move = .zero;vertical=0;lastTime=0}
     func load(_ h:House,_ o:SceneOptions) {
         guard revision != h.revision || house?.id != h.id || options != o else{return}
-        let fresh=house?.id != h.id;house=h;options=o;revision=h.revision
+        let oldFrame=house.flatMap{SceneBuilder.activeUnregisteredSegment($0,options:options)}
+        let fresh=house?.id != h.id || oldFrame != SceneBuilder.activeUnregisteredSegment(h,options:o)
+        points=[];selection=nil;house=h;options=o;revision=h.revision
         let scene=SceneBuilder.scene(h,options:o);scene.rootNode.addChildNode(camera);view.scene=scene;view.pointOfView=camera
-        if fresh,let room=h.rooms.first {jump(room)}
+        if fresh,let room=h.rooms.first(where:{$0.id==o.room}) ?? h.rooms.first {jump(room)}
     }
     func jump(_ room:Room){
         var p=room.origin+V3(room.size.x/2,room.size.y/2,1.6)
-        if let h=house,!h.isDemo,let observation=h.observations.last(where:{$0.roomID==room.id}) {let m=observation.camera;p=V3(m[3],-m[11],m[7]);if let t=h.segments.first(where:{$0.id==observation.segmentID})?.registration{p=t.apply(p)}}
+        if let h=house,!h.isDemo,let observation=h.observations.last(where:{$0.roomID==room.id && SceneBuilder.eligibleStages(h,options:options).contains($0.stageID) && !$0.documentary}) {let m=observation.camera;p=V3(m[3],-m[11],m[7]);if let t=h.segments.first(where:{$0.id==observation.segmentID})?.registration{p=t.apply(p)}}
         camera.simdPosition=p.render;yaw=0;pitch=0;camera.eulerAngles=SCNVector3Zero;move = .zero
     }
     func bookmark(_ b:Bookmark){camera.simdPosition=b.position.render;yaw=Float(b.yaw);pitch=Float(b.pitch);camera.eulerAngles=SCNVector3(pitch,yaw,0)}
@@ -108,13 +110,13 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
     func clear(){points=[];drawPoints()}
     func drawPoints(){view.scene?.rootNode.childNode(withName:"selection-points",recursively:false)?.removeFromParentNode();let group=SCNNode();group.name="selection-points";for p in points {let n=SCNNode(geometry:SCNSphere(radius:0.025));n.geometry?.firstMaterial?.diffuse.contents=UIColor.white;n.simdPosition=p.render;group.addChildNode(n)};view.scene?.rootNode.addChildNode(group)}
     @objc func tick(_ link:CADisplayLink){let dt=Float(lastTime==0 ? 0:min(0.05,link.timestamp-lastTime));lastTime=link.timestamp
-        if let pad=GCController.current?.extendedGamepad {move=SIMD2(pad.leftThumbstick.xAxis.value,pad.leftThumbstick.yAxis.value);yaw-=pad.rightThumbstick.xAxis.value*dt*1.8;pitch=max(-1.35,min(1.35,pitch+pad.rightThumbstick.yAxis.value*dt*1.2));camera.eulerAngles=SCNVector3(pitch,yaw,0)}
+        if let pad=GCController.current?.extendedGamepad {hadController=true;move=SIMD2(pad.leftThumbstick.xAxis.value,pad.leftThumbstick.yAxis.value);yaw-=pad.rightThumbstick.xAxis.value*dt*1.8;pitch=max(-1.35,min(1.35,pitch+pad.rightThumbstick.yAxis.value*dt*1.2));camera.eulerAngles=SCNVector3(pitch,yaw,0)}else if hadController{move = .zero;hadController=false}
         guard !orbit else{return};let forward=SIMD3<Float>(-sin(yaw),0,-cos(yaw)),right=SIMD3<Float>(cos(yaw),0,-sin(yaw));let delta=(forward*move.y+right*move.x+SIMD3(0,vertical,0))*dt*1.3
         guard simd_length(delta)>0 else{return};let from=camera.simdPosition,to=from+delta
         if flying{camera.simdPosition=to;return}
         let direction=simd_normalize(delta),ahead=to+direction*0.23
         let hits=view.scene?.rootNode.hitTestWithSegment(from:SCNVector3(from),to:SCNVector3(ahead),options:[SCNHitTestOption.searchMode.rawValue:SCNHitTestSearchMode.closest.rawValue]) ?? []
-        if hits.isEmpty {if let h=house,h.isDemo,!NavigationGeometry.allowed(V3(ar:to),house:h){return};camera.simdPosition=to}
+        if hits.isEmpty {if let h=house{if h.isDemo {guard NavigationGeometry.allowed(V3(ar:to),house:h) else{return}}else{guard NavigationGeometry.observed(V3(ar:to),house:h,options:options) else{return}}};camera.simdPosition=to}
     }
 }
 struct WalkSurface:UIViewRepresentable {
@@ -132,6 +134,14 @@ struct Joystick:View {
 }
 
 enum NavigationGeometry {
+    static func observed(_ p:V3,house:House,options:SceneOptions)->Bool {
+        let stages=SceneBuilder.eligibleStages(house,options:options),active=SceneBuilder.activeUnregisteredSegment(house,options:options)
+        return house.observations.contains{o in
+            guard !o.documentary,stages.contains(o.stageID),(options.room==nil || options.room==o.roomID),(active==nil || active==o.segmentID) else{return false}
+            let m=o.camera;var q=V3(m[3],-m[11],m[7]);if let t=house.segments.first(where:{$0.id==o.segmentID})?.registration{q=t.apply(q)}
+            return abs(p.z-q.z)<0.4 && hypot(p.x-q.x,p.y-q.y)<0.65
+        }
+    }
     static func allowed(_ p:V3,house:House)->Bool {
         let rooms=house.rooms.filter{abs(($0.origin.z+1.6)-p.z)<0.5}
         for r in rooms {let q=p-r.origin;if q.x>=0.2 && q.x<=r.size.x-0.2 && q.y>=0.2 && q.y<=r.size.y-0.2{return true}}

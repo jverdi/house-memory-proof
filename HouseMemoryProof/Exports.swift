@@ -83,12 +83,52 @@ enum Exporter {
     static func usdz(_ h:House,options:SceneOptions)throws->URL {
         let features=canonicalFeatures(h,options:options);guard !features.isEmpty else{throw HouseError.message("No geometry selected.")}
         var text="#usda 1.0\n(\n defaultPrim = \"House\"\n metersPerUnit = 1\n upAxis = \"Z\"\n)\ndef Xform \"House\" {\n"
+        var assets:[String:Data]=[:]
         for f in features {
-            let pts=f.mesh.vertices.map{"(\($0.x), \($0.y), \($0.z))"}.joined(separator:",")
-            let c=f.trade.hex
-            text+="def Mesh \"feature_\(f.id.uuidString.replacingOccurrences(of:"-",with:"_"))\" {\n point3f[] points = [\(pts)]\n int[] faceVertexCounts = [\(Array(repeating:"3",count:f.mesh.triangles.count/3).joined(separator:","))]\n int[] faceVertexIndices = [\(f.mesh.triangles.map(String.init).joined(separator:","))]\n uniform token subdivisionScheme = \"none\"\n bool doubleSided = true\n color3f[] primvars:displayColor = [(\(Double((c>>16)&255)/255), \(Double((c>>8)&255)/255), \(Double(c&255)/255))]\n}\n"
+            let id=f.id.uuidString.replacingOccurrences(of:"-",with:"_"),pts=f.mesh.vertices.map{"(\($0.x), \($0.y), \($0.z))"}.joined(separator:","),c=f.trade.hex
+            text+="def \(f.mesh.triangles.isEmpty ? "Points":"Mesh") \"feature_\(id)\" {\n point3f[] points = [\(pts)]\n"
+            if f.mesh.triangles.isEmpty{text+="float[] widths = [0.02] (interpolation = \"constant\")\n"}
+            else{text+="int[] faceVertexCounts = [\(Array(repeating:"3",count:f.mesh.triangles.count/3).joined(separator:","))]\n int[] faceVertexIndices = [\(f.mesh.triangles.map(String.init).joined(separator:","))]\n uniform token subdivisionScheme = \"none\"\n bool doubleSided = true\n"}
+            text+="color3f[] primvars:displayColor = [(\(Double((c>>16)&255)/255), \(Double((c>>8)&255)/255), \(Double(c&255)/255))]\ncustom string houseXray:id = \"\(f.id)\"\n"
+            var texture:String?
+            if let key=f.texture,let uv=f.uv,uv.count==f.mesh.vertices.count {
+                let root=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("HouseXray/assets")
+                if let bytes=try? Data(contentsOf:root.appendingPathComponent(key)),bytes.count<25_000_000 {
+                    assets[key]=bytes;texture=key
+                    text+="texCoord2f[] primvars:st = [\(uv.map{"(\($0.u),\(1-$0.v))"}.joined(separator:","))] (interpolation = \"vertex\")\nrel material:binding = </House/material_\(id)>\n"
+                }
+            }
+            text+="}\n"
+            if let texture {
+                text+="""
+                def Material "material_\(id)" {
+                  token outputs:surface.connect = </House/material_\(id)/Surface.outputs:surface>
+                  def Shader "Surface" {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor.connect = </House/material_\(id)/Image.outputs:rgb>
+                    float inputs:roughness = 0.8
+                    float inputs:metallic = 0
+                    token outputs:surface
+                  }
+                  def Shader "Image" {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @textures/\(texture)@
+                    token inputs:sourceColorSpace = "sRGB"
+                    float2 inputs:st.connect = </House/material_\(id)/ST.outputs:result>
+                    float3 outputs:rgb
+                  }
+                  def Shader "ST" {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                  }
+                }
+
+                """
+            }
         };text+="}\n"
-        let url=destination("House-Xray.usdz");try StoredZip.write([.init(name:"house.usda",data:Data(text.utf8))],to:url,aligned:true);return url
+        let entries=[StoredZip.Entry(name:"house.usda",data:Data(text.utf8))]+assets.sorted(by:{$0.key<$1.key}).map{StoredZip.Entry(name:"textures/"+$0.key,data:$0.value)}
+        let url=destination("House-Xray.usdz");try StoredZip.write(entries,to:url,aligned:true);return url
     }
     static func archive(_ h:House,repo:Repository)throws->URL {
         try h.validate();let metadata=try JSONEncoder().encode(h)
@@ -101,7 +141,8 @@ enum Exporter {
         guard UInt64(max(0,repo.freeBytes()))>required+200_000_000 else{throw HouseError.message("Not enough free space for the complete archive.")}
         let manifest=staging.appendingPathComponent("manifest.json");try JSONSerialization.data(withJSONObject:["format":"HouseXray","version":1,"sha256":hashes],options:[.sortedKeys]).write(to:manifest);items.append(.init(name:"manifest.json",url:manifest))
         let html="<!doctype html><meta charset=utf-8><title>House Xray evidence</title><style>body{font:16px system-ui;max-width:960px;margin:40px auto;background:#101923;color:#eee}img{max-width:100%;max-height:700px}article{margin:32px 0}</style><h1>House Xray evidence archive</h1><p>Unzip all files together. Coordinates in house.json are metres, Z-up. Photographs are historical evidence; placement is uncalibrated.</p><a href=house.json>Complete project metadata</a>"+h.observations.map{"<article><h2>\($0.date.formatted())</h2><img src=\"assets/\($0.image)\"><p>Observation \($0.id)</p></article>"}.joined()
-        let index=staging.appendingPathComponent("index.html");try Data(html.utf8).write(to:index);items.append(.init(name:"index.html",url:index))
+        let unposed=h.documentaryPhotos.map{"<article><h2>Unposed documentary photograph</h2><img src=\"assets/\($0.image)\"><p>Photo \($0.id) · no spatial calibration</p></article>"}.joined()
+        let index=staging.appendingPathComponent("index.html");try Data((html+unposed).utf8).write(to:index);items.append(.init(name:"index.html",url:index))
         let url=destination("House-Xray.hxray");_=try StreamingArchive.write(items,to:url);return url
     }
     static func restore(_ url:URL,repo:Repository)throws->House {try StreamingArchive.restore(url,repo:repo)}

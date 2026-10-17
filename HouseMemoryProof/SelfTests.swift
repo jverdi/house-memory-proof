@@ -60,6 +60,7 @@ import PDFKit
                 let textured=try TextureBuilder.build(house:fixture,segment:fixture.segments[0],repo:mainRepo)
                 var candidate=fixture;candidate.features=textured
                 let glb=try Exporter.glb(candidate,options:SceneOptions());try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("textured.glb"));try FileManager.default.copyItem(at:glb,to:mainRepo.root.appendingPathComponent("textured.glb"))
+                let usd=try Exporter.usdz(candidate,options:SceneOptions());try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("textured.usdz"));try FileManager.default.copyItem(at:usd,to:mainRepo.root.appendingPathComponent("textured.usdz"))
                 results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":feature.mesh.vertices.count>100 && error<0.003 && textured.contains{$0.texture != nil},"points":feature.mesh.vertices.count,"maxPlaneErrorMetres":error,"syntheticOnly":true])
             }catch{results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":false,"error":error.localizedDescription])}
             if ProcessInfo.processInfo.arguments.contains("--video-test") {

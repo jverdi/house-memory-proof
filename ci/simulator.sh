@@ -57,6 +57,7 @@ for attempt in $(seq 1 90); do
 done
 cp "$app_data/Library/Application Support/HouseXray/self-test.json" build/evidence/native-self-test.json
 cp "$app_data/Library/Application Support/HouseXray/test.hxray" build/evidence/test.hxray
+cp "$app_data/Library/Application Support/HouseXray/textured.usdz" build/evidence/textured.usdz
 cp "$app_data/Library/Application Support/HouseXray/textured.glb" build/evidence/textured.glb
 cp "$app_data/Library/Application Support/HouseXray/test.glb" build/evidence/test.glb
 cp "$app_data/Library/Application Support/HouseXray/test.usdz" build/evidence/test.usdz
