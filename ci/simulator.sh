@@ -82,3 +82,10 @@ xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   2>&1 | tee build/evidence/ui-tests.log
 
 xcrun xcresulttool export attachments --path build/evidence/ui-tests.xcresult --output-path build/evidence/ui-attachments
+
+# Preserve a readable, SDK-formatted source package for the next reviewed checkpoint.
+mkdir -p build/formatted-source
+cp -R HouseMemoryProof HouseXrayUITests build/formatted-source/
+rm -rf build/formatted-source/HouseMemoryProof/IFC build/formatted-source/HouseMemoryProof/Assets.xcassets
+xcrun swift-format format --in-place --recursive build/formatted-source
+tar -czf build/evidence/formatted-source.tgz -C build/formatted-source .
