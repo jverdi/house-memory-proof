@@ -344,6 +344,35 @@ import Darwin
                 let(gray,w,h)=try VisualMapping.image(encoded as Data)
                 return w==128 && h==128 && gray[0]>240 && gray[127*128]<10
             }
+            await check("Resized photographs preserve original camera pixel centres"){
+                let width=2048,height=1536,centreX=723.25,centreY=511.75
+                var pixels=Data(repeating:0,count:width*height)
+                for y in 448..<576 {for x in 660..<788 {
+                    let dx=Double(x)-centreX,dy=Double(y)-centreY
+                    pixels[y*width+x]=UInt8((255*exp(-(dx*dx+dy*dy)/(2*12*12))).rounded())
+                }}
+                func centroid(_ data:Data,_ w:Int,_ h:Int,_ x:Double,_ y:Double)->(Double,Double) {
+                    var weight=0.0,u=0.0,v=0.0
+                    for row in max(0,Int(y)-64)..<min(h,Int(y)+65) {for col in max(0,Int(x)-64)..<min(w,Int(x)+65) {
+                        let value=Double(data[row*w+col]);weight+=value;u+=Double(col)*value;v+=Double(row)*value
+                    }}
+                    return (u/weight,v/weight)
+                }
+                let original=centroid(pixels,width,height,centreX,centreY)
+                let cg=CGImage(width:width,height:height,bitsPerComponent:8,bitsPerPixel:8,bytesPerRow:width,space:CGColorSpaceCreateDeviceGray(),bitmapInfo:CGBitmapInfo(rawValue:0),provider:CGDataProvider(data:pixels as CFData)!,decode:nil,shouldInterpolate:false,intent:.defaultIntent)!
+                let encoded=NSMutableData();let destination=CGImageDestinationCreateWithData(encoded as CFMutableData,"public.png" as CFString,1,nil)!;CGImageDestinationAddImage(destination,cg,nil)
+                guard CGImageDestinationFinalize(destination) else{return false}
+                let (gray,w,h)=try VisualMapping.image(encoded as Data)
+                guard w==1280,h==960 else{return false}
+                let measured=centroid(gray,w,h,centreX*Double(w)/Double(width),centreY*Double(h)/Double(height))
+                let raw=VisualMapping.Features(xy:[Float(measured.0/Double(w)),Float(measured.1/Double(h))],descriptors:Data(repeating:7,count:32),count:1)
+                let restored=try VisualMapping.cameraFeatures(raw,imageWidth:w,imageHeight:h,cameraWidth:width,cameraHeight:height)
+                let unchanged=try VisualMapping.cameraFeatures(raw,imageWidth:w,imageHeight:h,cameraWidth:w,cameraHeight:h)
+                let errorX=abs(Double(restored.xy[0])*Double(width)-original.0),errorY=abs(Double(restored.xy[1])*Double(height)-original.1)
+                let legacyX=abs(Double(raw.xy[0])*Double(width)-original.0),legacyY=abs(Double(raw.xy[1])*Double(height)-original.1)
+                guard errorX<0.15,errorY<0.15,legacyX>0.2,legacyY>0.2 else{throw HouseError.message("Thumbnail pixel centres: restored errors \(errorX)/\(errorY), legacy errors \(legacyX)/\(legacyY) pixels.")}
+                return restored.descriptors==raw.descriptors && unchanged.xy==raw.xy
+            }
             await check("Rendered corner images localize held query viewpoints without pose input"){
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 let capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
@@ -351,8 +380,7 @@ import Darwin
                 let evaluator=try JSONSerialization.jsonObject(with:Data(contentsOf:resources.appendingPathComponent("vision-queries.json"))) as! [String:Any]
                 var matched=0;var worst=0.0
                 for query in evaluator["queries"] as! [[String:Any]] {
-                    let(gray,w,h)=try VisualMapping.image(Data(contentsOf:resources.appendingPathComponent(query["image"] as! String)))
-                    let features=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
+                    let features=try VisualMapping.detectImage(Data(contentsOf:resources.appendingPathComponent(query["image"] as! String)),cameraWidth:query["width"] as! Int,cameraHeight:query["height"] as! Int)
                     let result=VisualMapping.query(features,width:query["width"] as! Int,height:query["height"] as! Int,intrinsics:query["intrinsics"] as! [Double],map:map)
                     if query["shouldMatch"] as! Bool {
                         if let result {guard VisualMapping.competingMatch(features,width:query["width"] as! Int,height:query["height"] as! Int,intrinsics:query["intrinsics"] as! [Double],maps:[map]) else{throw HouseError.message("A duplicated visual room was not flagged as a competing match.")};let a=result.transform.values,b=query["expectedCamera"] as! [Double];let error=(V3(a[3],a[7],a[11])-V3(b[3],b[7],b[11])).length;worst=max(worst,error);matched+=1}
@@ -1056,4 +1084,3 @@ extension SelfTests {
         return report
     }
 }
-

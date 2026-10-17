@@ -29,7 +29,11 @@ extern "C" int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t 
   // Refinement can converge neighbouring detections onto the same patch.
   // Identical descriptors are ambiguous evidence, not extra independent votes.
   if(!unique.insert(descriptor).second)continue;
-  xy[n*2]=keys[i].pt.x/image.cols;xy[n*2+1]=keys[i].pt.y/image.rows;std::memcpy(descriptors+n*32,descriptor.data(),32);n++;
+  // Restore integer pixel centres to the supplied image after bounded resize.
+  // Preserve the existing float arithmetic exactly when there is no resize.
+  xy[n*2]=image.cols==int(w) ? keys[i].pt.x/image.cols:(keys[i].pt.x+.5)/image.cols-.5/w;
+  xy[n*2+1]=image.rows==int(h) ? keys[i].pt.y/image.rows:(keys[i].pt.y+.5)/image.rows-.5/h;
+  std::memcpy(descriptors+n*32,descriptor.data(),32);n++;
  }
  return int32_t(n);
 } catch(...){return -2;}

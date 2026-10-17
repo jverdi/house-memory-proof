@@ -26,7 +26,7 @@ enum VisualMapping {
   struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v11-akaze-mldb256";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v12-camera-pixel-centres";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -48,6 +48,20 @@ enum VisualMapping {
       context.draw(cg,in:CGRect(x:0,y:0,width:w,height:h));return true
     }
     guard ok else{throw HouseError.message("Visual map image allocation failed.")};return (gray,w,h)
+  }
+  static func cameraFeatures(_ features:Features,imageWidth:Int,imageHeight:Int,cameraWidth:Int,cameraHeight:Int)throws->Features {
+    guard imageWidth>0,imageHeight>0,cameraWidth>0,cameraHeight>0,features.count>=0,features.xy.count==features.count*2,features.descriptors.count==features.count*32 else{throw HouseError.message("Invalid visual image dimensions or feature storage.")}
+    guard imageWidth != cameraWidth || imageHeight != cameraHeight else{return features}
+    // Integer pixel centres do not scale about zero. A thumbnail pixel x
+    // maps to (x + 0.5) * cameraWidth / imageWidth - 0.5 in the camera.
+    let du=0.5/Double(imageWidth)-0.5/Double(cameraWidth),dv=0.5/Double(imageHeight)-0.5/Double(cameraHeight)
+    var result=features
+    for i in 0..<features.count {result.xy[i*2]=Float(Double(features.xy[i*2])+du);result.xy[i*2+1]=Float(Double(features.xy[i*2+1])+dv)}
+    return result
+  }
+  static func detectImage(_ data:Data,cameraWidth:Int,cameraHeight:Int)throws->Features {
+    let (gray,w,h)=try image(data),features=try detect(gray:gray,width:w,height:h,stride:w)
+    return try cameraFeatures(features,imageWidth:w,imageHeight:h,cameraWidth:cameraWidth,cameraHeight:cameraHeight)
   }
   static func keyframes(_ input:[Observation],limit:Int)->[Observation] {
     let ordered=input.sorted{a,b in a.timestamp==b.timestamp ? a.id.uuidString<b.id.uuidString:a.timestamp<b.timestamp}
@@ -75,7 +89,7 @@ enum VisualMapping {
       guard w>=3,h>=3,w*h<=1000000 else{continue}
       let depth=try repo.read(o.depth!),confidence=try o.confidence.map{try repo.read($0)}
       guard depth.count==w*h*4,confidence==nil || confidence?.count==w*h else{continue}
-      let (gray,iw,ih)=try image(repo.read(o.image));let features=try detect(gray:gray,width:iw,height:ih,stride:iw)
+      let features=try detectImage(repo.read(o.image),cameraWidth:o.width,cameraHeight:o.height)
       let start=map.points.count
       for i in 0..<features.count {
         let u=Double(features.xy[i*2]),v=Double(features.xy[i*2+1]);let x=Int(u*Double(w)),y=Int(v*Double(h))
@@ -288,4 +302,3 @@ enum VisualMapping {
     return Pose(transform:transform,inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:candidates.flatMap{$0.pose.sources})
   }
 }
-

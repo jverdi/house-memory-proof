@@ -287,3 +287,10 @@ The standard host workflow at `ffa44947`, run 39057607243, reproduces the two ro
 The isolated image-scale experiment at workflow `ab9116ae`, run 39058172269, passed both rough fixtures but failed the paired and staggered fixtures: 16/20 and 19/20 total nominal accepts respectively, with maximum accepted error 5.326 mm and 15.687 mm. No false accepts were reported. It is **not adopted**; production remains the stress-qualified AKAZE candidate. Log-derived results and clearly labelled unverified artifact hashes are retained under `docs/evidence/resolution-ab911/`.
 
 Remaining work includes finished-wall natural-feature support, full-house/sensor/topology and thin-service qualification, physical-device resources and acquisition checks, independent field validation and the final release handoff. No implementation TestFlight build was uploaded and no precision profile was enabled. Further image-level diagnosis was interrupted by the unavailable execution workspace.
+
+
+### Camera pixel centres across image resizing
+
+Saved photographs are analysed as bounded thumbnails, but natural-feature coordinates previously scaled directly into original-camera intrinsics. Integer pixel centres instead require the half-pixel resize transform. The adapter now restores centres after its internal downsize, and saved-image mapping, photograph triangulation and replay queries explicitly restore thumbnail centres into original camera dimensions. Images analysed at their original dimensions retain the same coordinate arithmetic. Descriptor extraction and acceptance gates are unchanged; the visual fingerprint advances to invalidate derived results computed with the old convention.
+
+New C++ diagnostics compare identical analysis pixels through internal versus external resizing, including odd input dimensions. A native image test measures a rendered Gaussian through the actual ImageIO thumbnail path and compares its recovered centre to the original raster. These changes await host and native validation. The separate bounded subpixel-refinement experiment remains isolated and is not part of production.

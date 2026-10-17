@@ -1,6 +1,7 @@
 #include "hx_vision.h"
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
+#include <opencv2/imgproc.hpp>
 #include <cmath>
 #include <algorithm>
 #include <cstring>
@@ -41,5 +42,20 @@ extern "C" int32_t hx_vision_selftest(double* maximum,uint32_t* falseAccepts) tr
  int repeat=hx_vision_detect(gray.data(),uint32_t(gray.size()),w,h,w,other.data(),again.data(),1200);
  if(count<100||count!=repeat||std::memcmp(desc.data(),again.data(),count*32)||std::memcmp(xy.data(),other.data(),count*2*sizeof(float)))return -15;
  if(hx_vision_match(desc.data(),count,again.data(),repeat,pairs.data(),1200)!=count)return -16;
+ // The same analysis pixels must produce identical descriptors and camera
+ // rays whether resizing happens inside the adapter or before it. Odd input
+ // dimensions also exercise independently rounded output rows and columns.
+ for(int edge:{1920,1921}){
+  cv::Mat large(edge*3/4,edge,CV_8U),small;random.fill(large,cv::RNG::UNIFORM,0,256);
+  double scale=1280.0/edge;cv::resize(large,small,cv::Size(),scale,scale,cv::INTER_AREA);
+  int a=hx_vision_detect(large.data,uint32_t(large.total()),large.cols,large.rows,uint32_t(large.step),xy.data(),desc.data(),1200);
+  int b=hx_vision_detect(small.data,uint32_t(small.total()),small.cols,small.rows,uint32_t(small.step),other.data(),again.data(),1200);
+  if(a<30||a!=b||std::memcmp(desc.data(),again.data(),a*32))return -19;
+  for(int i=0;i<a;i++)for(int axis=0;axis<2;axis++){
+   double input=axis==0?large.cols:large.rows,analysed=axis==0?small.cols:small.rows;
+   double expected=(double(other[i*2+axis])*analysed+.5)*input/analysed-.5;
+   if(std::abs(double(xy[i*2+axis])*input-expected)>0.0002)return -20;
+  }
+ }
  return 1;
 } catch(...){return -2;}

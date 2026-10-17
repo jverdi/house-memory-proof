@@ -46,8 +46,7 @@ final class DiskEvidence:EvidenceAssetReader {
     var output:[[String:Any]]=[]
     for q in queries.queries {
       guard !q.image.contains("/"),!q.image.contains("..") else{throw HouseError.message("Unsafe query image path.")}
-      let(gray,w,h)=try VisualMapping.image(Data(contentsOf:queriesURL.deletingLastPathComponent().appendingPathComponent(q.image)))
-      let features=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
+      let features=try VisualMapping.detectImage(Data(contentsOf:queriesURL.deletingLastPathComponent().appendingPathComponent(q.image)),cameraWidth:q.width,cameraHeight:q.height)
       var diagnostics:[String]=[]
       let start=Date();let pose=VisualMapping.query(features,width:q.width,height:q.height,intrinsics:q.intrinsics,map:map,diagnostic:{diagnostics.append($0)})
       var result:[String:Any]=["image":q.image,"diagnostics":diagnostics,"accepted":pose != nil,"queryFeatures":features.count,"seconds":Date().timeIntervalSince(start)]
@@ -126,8 +125,7 @@ final class DiskEvidence:EvidenceAssetReader {
     for q in queries.queries {
       guard !q.image.contains("/"),!q.image.contains("..") else{throw HouseError.message("Unsafe query image path.")}
       guard let selected=q.segmentID,let map=maps[selected] else{output.append(["image":q.image,"accepted":false,"reason":"Selected capture has no admitted map"]);continue}
-      let (gray,w,h)=try VisualMapping.image(Data(contentsOf:root.appendingPathComponent(q.image)))
-      let features=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w),start=Date()
+      let features=try VisualMapping.detectImage(Data(contentsOf:root.appendingPathComponent(q.image)),cameraWidth:q.width,cameraHeight:q.height),start=Date()
       let competing=maps.filter{$0.key != selected && ($0.value.roomID != map.roomID || $0.value.frameID != map.frameID)}.map{$0.value}
       let ambiguous=VisualMapping.competingMatch(features,width:q.width,height:q.height,intrinsics:q.intrinsics,maps:competing)
       var diagnostics:[String]=[]

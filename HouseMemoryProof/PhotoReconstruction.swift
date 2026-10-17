@@ -22,7 +22,7 @@ enum PhotoReconstruction {
     let observations=VisualMapping.keyframes(input,limit:120),started=Date()
     var rays:[Ray]=[],features:[VisualMapping.Features]=[],offsets:[Int]=[]
     for (index,o) in observations.enumerated() {
-      try Task.checkCancellation();let(gray,w,h)=try VisualMapping.image(repo.read(o.image));let detected=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
+      try Task.checkCancellation();let detected=try VisualMapping.detectImage(repo.read(o.image),cameraWidth:o.width,cameraHeight:o.height)
       offsets.append(rays.count);features.append(detected);let m=o.camera
       for i in 0..<detected.count {
         let u=Double(detected.xy[i*2]),v=Double(detected.xy[i*2+1]),x=(u*Double(o.width)-o.intrinsics[2])/o.intrinsics[0],y = -(v*Double(o.height)-o.intrinsics[5])/o.intrinsics[4]
