@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "updatedUTC": "2026-10-17T23:48:00Z",
+  "overall": "in_progress",
+  "precisionEnabled": false,
+  "currentImplementationCommit": "c2beb732a8b919d5b6c072763d45525064aff90a",
+  "testflight": {
+    "build": "161.1",
+    "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
+    "appleProcessing": "VALID",
+    "internalState": "IN_BETA_TESTING",
+    "ownerAccessVerified": true,
+    "physicalInstallationVerified": false,
+    "readinessRun": 39080146782,
+    "additionalIntermediateUploads": false
+  },
+  "verifiedNative": {
+    "source": "f6f2865bc9ec1635b40c6bf79ff36b91158e626e",
+    "passed": 108,
+    "failed": 0,
+    "artifact": 12118052415,
+    "sha256": "41072e8a01d5e0953fb532dbf95fe9fd6504f5517e4fd7271953301ba4855bb3"
+  },
+  "softwareAcceptanceOpen": [
+    {
+      "area": "integrated candidate",
+      "remaining": "Compile and run all native, interface, recovery and independent-reader checks for current source."
+    },
+    {
+      "area": "finished localization",
+      "remaining": "Resolve low-resolution accuracy and rough-to-finished availability failures; broader wrong-room/floor/wall-side qualification."
+    },
+    {
+      "area": "whole-house simulation",
+      "remaining": "50 development and 20 protected house topologies, paired stages, sensor/coverage degradation and closed-loop navigation; analytic corners do not satisfy this gate."
+    },
+    {
+      "area": "registration and thin services",
+      "remaining": "Whole-house registration/scaling and foreground curve/geometry qualification with independent truth."
+    },
+    {
+      "area": "persistence and interchange",
+      "remaining": "Complete large-workload, cross-version, semantic handoff, importer and provider fault matrices."
+    },
+    {
+      "area": "release durability",
+      "remaining": "Exercise signed-identity/symbol retention on the final authorized candidate and prove pinned-source renewal after acceptance."
+    }
+  ],
+  "externalAcceptanceOpen": [
+    "Owner-device sustained capture, rendering, memory, thermal, interruption and background admission/expiration.",
+    "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
+    "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
+  ],
+  "nextAction": "Inspect exact-source integrated CI; repair failures without weakening gates, then continue the remaining software qualification.",
+  "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts."
+}

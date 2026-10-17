@@ -1,11 +1,11 @@
 # Implementation ledger
 
-Delivery proof completed 2026-10-17: signed build 2.1 installed by owner. No implementation build has been uploaded.
+Current delivery: owner-requested snapshot build **161.1**, source **2fae54ff2d3177958a4b7e78da1f3546d23314fd**, uploaded and verified **VALID / IN_BETA_TESTING**, with owner access in Personal iPhone on 2026-10-17. Physical installation of this build remains unverified. Direct commits to main are explicitly authorized. Later implementation changes do not trigger another TestFlight upload.
 
 Acceptance remains the runbook's gates. Implemented features below are not equivalent to complete package qualification. See [requirement audit](../docs/IMPLEMENTATION.md).
 
 ## Checkpoints
-- [x] Preserve approved runbook; disable intermediate delivery.
+- [x] Preserve approved runbook; deliver the one explicitly requested current-state snapshot.
 - [x] Implement canonical contracts, SQLite/hashed-asset store and initial fixtures.
 - [x] Implement native capture, quality guidance, reference/map paths and periodic mesh checkpoints.
 - [x] Implement first-person viewing, stage/layer isolation, labels, measurements and documentary imports.
@@ -20,13 +20,22 @@ Acceptance remains the runbook's gates. Implemented features below are not equiv
 - [x] Validate 120-camera sparse graph and longer image session; preserve and repair clone-ambiguity failures.
 - [x] Implement tiled GPU residency, geometry-dependent annotations/measurements, structured animated GLB, tour presets and phone field-check records.
 - [x] Complete first 70-configuration stress run; record failure at p95 14.364 mm rather than accepting it.
-- [ ] Accept revised multi-view query candidate against unchanged broader targets.
+- [x] Pass the 70-configuration analytic stress at be375307 without relaxing spatial targets; full-house acceptance remains separate.
 - [ ] Complete protected cross-room rejection and full-house localization qualification.
 - [ ] Complete robust optimization/localization, protected house-scale simulation and remaining software gates.
 - [ ] Complete owner-device resource and physical precision qualification.
 - [ ] Upload one final accepted build and verify Apple availability.
 
-Every source checkpoint is committed to the repository. Reports are retained under docs/evidence. Release uploads stay disabled while critical gates remain open.
+Every source checkpoint is committed to main. Aggregate evidence is retained under docs/evidence; detailed diagnostics stay in bounded CI artifacts. No additional intermediate upload is authorized by the snapshot workflow. The machine-readable continuation state is in qualification.json.
+
+### Current continuation: 2026-10-17
+
+- Snapshot 161.1 passed 102 native checks, all three interface flows, process-kill recovery, portable and independent-reader checks before signing/upload. Apple readiness and verified owner-group access passed in run 39080146782.
+- Source f6f2865bc9 passed 108 native checks covering aggregate IFC budgets/placement/refusal, drawing-source invalidation and ZIP64 directory/offset validation. Native checkpoint SHA-256: 41072e8a01d5e0953fb532dbf95fe9fd6504f5517e4fd7271953301ba4855bb3.
+- Following source adds room/stage metadata search with a 50,000-photo benchmark, accessible step/snap-turn controls, collision independent of hidden layers, safe walking viewpoints, CPU continued processing, memory-pressure cooldown, and viewer/index archive integrity. Integrated candidate validation is pending at c2beb732a8.
+- Finished-map development tests at 768 pixels accept 19/20 queries in each layout with zero false accepts and at most 6.270 mm error after contradictory-depth refusal. Both 384-pixel cases fail the unchanged accuracy target. Rough-only maps still fail finished-stage availability. These failures remain open; no threshold was relaxed.
+- Daily expiry checks, 45-day renewal policy, existing-build upload preflight and signed-identity/symbol-retention checks are implemented. Twenty-one release-policy tests pass. Automatic renewal remains disabled pending acceptance; the new signing inspection still needs a future authorized signed build.
+- Full 50-development/20-protected **house topology** qualification is not satisfied by the 70 analytic corner configurations. Sensor diversity, whole-house registration, thin-service geometry and independent field precision remain required. Actual phone resource/background/iCloud-provider qualification remains separate.
 
 ### 2026-10-17 — movie timing and house-layout failures retained
 

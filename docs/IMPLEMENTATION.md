@@ -6,7 +6,7 @@ Updated during the October 17, 2026 implementation session. This document record
 
 - Prior delivery proof: build 2.1 was installed by the owner.
 - Current implementation: experimental, native integration in progress.
-- One owner-requested current-state TestFlight snapshot is authorized: build 161.1 from 2fae54ff2d, workflow 39078429529. Upload/Apple processing remain pending until verified below. Subsequent development commits do not upload.
+- The requested current-state TestFlight snapshot **161.1**, source **2fae54ff2d**, is uploaded and verified **VALID / IN_BETA_TESTING**, with owner access in Personal iPhone (delivery run 39078429529; readiness run 39080146782). Physical installation is unverified. Subsequent development commits do not upload.
 - Production readiness: **not established**.
 - Field precision profile: **disabled**. No synthetic metric enables one.
 - No promise that only field calibration remains: substantial software acceptance work remains below.
@@ -17,7 +17,7 @@ Updated during the October 17, 2026 implementation session. This document record
 |---|---|---|
 | P0 Delivery/native feasibility | Repository, managed macOS CI, Swift/C++ bridge, SQLite, SceneKit/Metal, H.264, internal TestFlight proof, offline IFC2x3/IFC4; pinned OpenCV 4.13 and Ceres 2.2/Eigen 3.4 | Final signed implementation build, renewal evidence and actual device workloads |
 | P1 Contracts/store | Metres/Z-up adapters; SHA originals; SQLite WAL/FULL; journal plus durable capture rows; explicit store versions and verified pre-migration snapshots; additive decoding; source dependency invalidation; 20 revision checkpoints; ZIP64 | Interrupted-migration SIGKILL, content-idempotent snapshot retry and partial-catalog recovery pass; broader persistence fault matrix and large-device workload qualification |
-| P2 Simulation | Analytic camera/depth/pose generation; frozen Cycles fixture; OS-isolated oracle; 70-configuration stress; four-room/two-level layout replay | Current runtime be375307 passes all 70 analytic configurations: 1,000/1,000 valid views, 4.870 mm p95, 7.611 mm worst error, no false accepts in 3,400 challenges. Earlier failures remain retained; both natural-feature finished-stage fixtures still accept 0/8. Full protected house/sensor/topology diversity remains incomplete |
+| P2 Simulation | Analytic camera/depth/pose generation; frozen Cycles fixture; OS-isolated oracle; 70-configuration stress; four-room/two-level layout replay | The prior complete analytic run at be375307 passed all 70 configurations: 1,000/1,000 valid views, 4.870 mm p95, 7.611 mm worst error, no false accepts in 3,400 challenges. Rough-only source maps still accept 0/8 finished queries in each original fixture. Observed finished maps pass both 768-pixel development layouts; 384-pixel accuracy fails at v14. Full protected house/sensor/topology diversity remains incomplete |
 | P3 Reconstruction | AR mesh capture; 2 cm point/TSDF fusion; reference constraints; sparse Ceres graph up to 120 cameras; joint image/depth optimization; overlapping photo tracks; textures | Whole-house registration/scaling qualification, thin-service geometry and physical uncertainty |
 | P4 Capture | Posed photographs/depth/confidence/intrinsics; one pending frame; durable capture rows and foreground-resumed processing jobs; quality/thermal/disk guidance; classified mesh partitions; printable coded and legacy references | Real adapter timing/orientation, sustained capture and comprehensive interruption/resource checks |
 | P5 Localization/stages | Two-source-view PnP consensus and multi-view refinement; competing-map abstention; world-map/reference paths; three-board handoff; coded corners and independently checked multi-board pose; oriented reveal volumes and stale-input hiding | Broader coded-source diversity, finished-stage/general wrong-room qualification and field precision profile (coded development replays pass) |
@@ -488,8 +488,23 @@ The previous paired fixtures queried a rough-in map after its construction textu
 - ZIP/ZIP64 restores now validate the central directory, local-header agreement, offsets and entry counts. Corrupt-directory and sparse-file offsets beyond 4 GiB are tested separately from a complete large-payload transfer.
 - Evidence search includes room/stage metadata, uses a cancellable off-main index and pages results in groups of 200. A 50,000-photo metadata benchmark and a room-plus-system UI workflow are added; physical-phone performance is still required.
 
-These changes are committed but await the integrated native run. No simulator or field acceptance is inferred from source inspection.
+IFC, drawing invalidation and the ZIP64 changes passed 108 native checks at f6f2865bc9; the downloaded native checkpoint was independently verified against SHA-256 41072e8a01d5e0953fb532dbf95fe9fd6504f5517e4fd7271953301ba4855bb3. Search and later changes await the integrated candidate. No physical-device acceptance is inferred.
 
 ### Contradictory foreground/depth evidence
 
 Source 09f4ce87 stops a unique optimized photograph landmark from falling back onto a disagreeing depth surface. A foreground detail with background depth now removes that correspondence. Conflicting optimized feature identities also abstain. The existing 25 mm consistency bound is unchanged; visual/pose fingerprints advance to v14. The regression modifies an actually retained image-track landmark and verifies fewer map correspondences with immutable camera originals. Full native, four-house, finished-map and 70-case analytic replays are required for this source. This is not a complete thin-service reconstruction qualification.
+
+
+### Snapshot delivered; continued implementation checkpoint
+
+Build 161.1 completed simulator validation, signing and Apple upload. The readiness report verifies VALID, IN_BETA_TESTING and access for the verified account holder in the internal Personal iPhone group. This is the requested snapshot, not final qualification. See docs/evidence/testflight-161-1-summary.json. No additional intermediate upload was performed.
+
+Current candidate c2beb732a8 includes 20 cm step navigation and 15-degree snap look/turn controls, enabled automatically with VoiceOver; both orientations have interface checks. Walking and tours now use collision geometry independently of hidden display layers, while preserving stage and capture-frame isolation. Unsafe viewpoints relocate to a checked position without animation or explicitly enable Free fly. Native collision regressions include hidden walls and unsupported stages.
+
+Manually requested CPU capture processing can obtain BGContinuedProcessingTask admission. Background continuation requires an actual grant; rejection keeps foreground work, expiration cancels cooperatively, and originals/checkpoints remain intact. The GPU capability query is recorded, but no GPU entitlement or background movie execution is assumed. Memory pressure now reports waiting for resources and delays retries at least 30 seconds. Real OS admission/expiration and phone resource behavior remain unqualified.
+
+Archive manifests now include the HTML photo index. Restore verifies retained sidecar/viewer hashes and CRCs before publishing, while allowing historical v1 archives whose index lacked a SHA entry. New native cases challenge tampered viewer/index files and legacy compatibility.
+
+Release preparation adds daily Apple expiry reads, the runbook's 45-day refresh boundary and 30/14/7-day warnings; automatic renewal remains disabled. Upload preflight checks whether the exact build already exists. Future signed archives verify bundle/build/source/team identity, debugger restrictions and matching dSYM UUIDs, retaining symbol hashes without provisioning profiles. Twenty-one release-policy tests pass; actual execution of the new signed-archive audit awaits a future authorized release.
+
+The v14 observed-finished-map run 39079202282 rejects all 80 critical queries. At 768 pixels both layouts accept 19/20; worst errors are 6.270 and 6.168 mm. At 384 pixels both fail: p95 11.226/20.860 mm, worst 11.660/33.488 mm. The low-resolution failures and original rough-to-finished availability failures remain open. The frozen rendered replay at v14 passes. Full 70-case stress aggregation and latest native/interface acceptance are tracked in tasks/qualification.json.

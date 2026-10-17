@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": "161.1",
+  "sourceRevision": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
+  "deliveryRun": 39078429529,
+  "nativeChecks": 102,
+  "nativePassed": true,
+  "simulatorWorkflowPassed": true,
+  "archiveAndUploadPassed": true,
+  "readinessRun": 39080146782,
+  "appleProcessing": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "ownerAccessVerified": true,
+  "physicalInstallationVerified": false,
+  "precisionQualified": false,
+  "artifacts": {
+    "upload": {
+      "id": 12118072978,
+      "sha256": "dbf56ed1e3632961ca049987b56e3b43e735ebdecffc81f4c627d9ef5e15a01e"
+    },
+    "readiness": {
+      "id": 12118876043,
+      "sha256": "1e9daac507e529212cd0196db051a0ee5d9b52d47f27d60e87a5c2854d23dbb0"
+    }
+  }
+}
