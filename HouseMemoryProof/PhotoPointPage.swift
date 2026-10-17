@@ -1,0 +1,57 @@
+import SwiftUI
+import ImageIO
+
+struct PhotoPointPage:View {
+  @EnvironmentObject var model:AppModel
+  var house:House
+  @State private var segmentID:UUID?
+  @State private var selected:[UUID?]=[nil,nil,nil]
+  @State private var controls:[PhotoControl?]=[nil,nil,nil]
+  @State private var name="Photo-located point"
+  @State private var trade:Trade = .unknown
+  var observations:[Observation]{house.observations.filter{$0.segmentID==segmentID && !$0.documentary}}
+  var body:some View {Form{
+    Text("Locate a small visible feature without trusting background LiDAR depth. Select the same point in three translated photographs. The first two fit the point; the third independently checks it. Results remain approximate. Photographs use their original sensor orientation.").font(.footnote)
+    Picker("Capture segment",selection:$segmentID){Text("Choose").tag(UUID?.none);ForEach(house.segments){s in Text(s.started.formatted()).tag(Optional(s.id))}}
+    ForEach(0..<3,id:\.self){index in
+      Section(index==2 ? "3 · Independent check":"\(index+1) · Fitting view"){
+        Picker("Photograph",selection:$selected[index]){Text("Choose").tag(UUID?.none);ForEach(observations){o in Text("\(o.date.formatted(date:.omitted,time:.standard)) · \(o.id.uuidString.prefix(6))").tag(Optional(o.id))}}
+        if let id=selected[index],let observation=observations.first(where:{$0.id==id}),let url=try? model.repository?.assetURL(observation.image){
+          PhotoPointSurface(url:url,control:controls[index]){u,v in controls[index]=PhotoControl(observationID:id,u:u,v:v)}.frame(height:280).id(id)
+          Text(controls[index]==nil ? "Tap the exact feature; pinch to zoom first.":"Point selected. Tap to adjust.").font(.caption)
+        }
+      }
+    }
+    TextField("Label",text:$name)
+    Picker("System",selection:$trade){ForEach(Trade.allCases){Text($0.rawValue).tag($0)}}
+    Button("Check and save point"){
+      do {
+        guard let segment=house.segments.first(where:{$0.id==segmentID}),controls.compactMap({$0}).count==3 else{throw HouseError.message("Select three photograph points first.")}
+        guard model.house?.id==house.id,model.house?.revision==house.revision else{throw HouseError.message("Project changed. Reopen this tool and repeat the selections.")}
+        let chosen=controls.compactMap{$0},point=try PhotoTriangulation.locate(chosen,house:house,segment:segment)
+        let feature=Feature(name:name.isEmpty ? "Photo-located point":name,trade:trade,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:[point],triangles:[]),route:[point],sourceIDs:chosen.map{$0.observationID},notes:"Manually identified point; two fitting photos and one independent reprojection check. No validated physical accuracy or inferred service thickness.",segmentID:segment.id,sourceFingerprint:try VisualMapping.fingerprint(house:house,segment:segment),photoControls:chosen)
+        model.edit{$0.features.append(feature)}
+      }catch{model.error=error.localizedDescription}
+    }.disabled(controls.contains(where:{$0==nil}))
+  }.navigationTitle("Locate from photographs").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil]}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
+}
+struct PhotoPointSurface:UIViewRepresentable {
+  var url:URL
+  var control:PhotoControl?
+  var select:(Double,Double)->Void
+  func makeUIView(context:Context)->PointScrollView{
+    let view=PointScrollView();view.select=select
+    if let source=CGImageSourceCreateWithURL(url as CFURL,nil),let cg=CGImageSourceCreateThumbnailAtIndex(source,0,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:2048,kCGImageSourceCreateThumbnailWithTransform:false] as CFDictionary){view.imageView.image=UIImage(cgImage:cg)}
+    return view
+  }
+  func updateUIView(_ view:PointScrollView,context:Context){view.select=select;view.point=control.map{CGPoint(x:$0.u,y:$0.v)};view.setNeedsLayout()}
+}
+final class PointScrollView:UIScrollView,UIScrollViewDelegate {
+  let imageView=UIImageView();let marker=CAShapeLayer();var select:((Double,Double)->Void)?;var point:CGPoint?
+  init(){super.init(frame:.zero);minimumZoomScale=1;maximumZoomScale=10;delegate=self;backgroundColor = .black;imageView.contentMode = .scaleAspectFit;imageView.isUserInteractionEnabled=true;addSubview(imageView);imageView.layer.addSublayer(marker);marker.strokeColor=UIColor.systemYellow.cgColor;marker.fillColor=UIColor.clear.cgColor;marker.lineWidth=2;imageView.addGestureRecognizer(UITapGestureRecognizer(target:self,action:#selector(tap(_:))))}
+  required init?(coder:NSCoder){fatalError("Not used")}
+  func rect()->CGRect{guard let image=imageView.image else{return .zero};let scale=min(imageView.bounds.width/image.size.width,imageView.bounds.height/image.size.height);let size=CGSize(width:image.size.width*scale,height:image.size.height*scale);return CGRect(x:(imageView.bounds.width-size.width)/2,y:(imageView.bounds.height-size.height)/2,width:size.width,height:size.height)}
+  override func layoutSubviews(){super.layoutSubviews();if zoomScale==1{imageView.frame=bounds;contentSize=bounds.size};let r=rect();if let p=point{let x=r.minX+p.x*r.width,y=r.minY+p.y*r.height;marker.path=UIBezierPath(ovalIn:CGRect(x:x-5,y:y-5,width:10,height:10)).cgPath}else{marker.path=nil}}
+  func viewForZooming(in scrollView:UIScrollView)->UIView?{imageView}
+  @objc func tap(_ gesture:UITapGestureRecognizer){let p=gesture.location(in:imageView),r=rect();guard r.width>0,r.contains(p) else{return};select?(Double((p.x-r.minX)/r.width),Double((p.y-r.minY)/r.height))}
+}

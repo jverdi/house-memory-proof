@@ -674,6 +674,7 @@ struct EvidencePage: View {
       List {
         Section {
           NavigationLink("Import existing photographs") { DocumentaryPhotosPage(house: house) }
+          NavigationLink("Locate a point from three photos") { PhotoPointPage(house:house) }
         }
         Section("Original photographs") {
           if house.observations.isEmpty {

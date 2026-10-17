@@ -70,7 +70,7 @@ struct Stage:Codable,Identifiable,Equatable { var id=UUID();var name:String;var 
 struct Feature:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var trade:Trade;var roomID:UUID;var stageID:UUID;var kind:EvidenceKind
     var mesh:Mesh;var route:[V3]=[];var sourceIDs:[UUID]=[];var notes="";var endpoint="";var reviewed=false
-    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil;var sourceFingerprint:String?=nil
+    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil;var sourceFingerprint:String?=nil;var photoControls:[PhotoControl]?=nil
 }
 struct Observation:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var segmentID:UUID;var timestamp:Double;var date=Date()
@@ -119,6 +119,7 @@ struct House:Codable,Identifiable,Equatable {
         for s in segments {if let solution=s.poseSolution {guard solution.cameras.count>=3,solution.cameras.count<=24,solution.maximumEdgeResidual.isFinite,solution.maximumEdgeResidual>=0,solution.cameras.allSatisfy({ key,value in observations.contains(where:{$0.id.uuidString==key && $0.segmentID==s.id}) && Rigid(values:value).valid }) else{throw HouseError.message("Invalid optimized camera provenance.")}}}
         for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentByID[o.segmentID]?.roomID==o.roomID,segmentByID[o.segmentID]?.stageID==o.stageID,o.sharpness.isFinite,o.light.isFinite,o.camera.count==16,Rigid(values:o.camera).valid,o.intrinsics.count==9,o.intrinsics[0]>0,o.intrinsics[4]>0,o.timestamp.isFinite,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.width<=20000,o.height>0,o.height<=20000,o.depthWidth>=0,o.depthWidth<=8192,o.depthHeight>=0,o.depthHeight<=8192 else{throw HouseError.message("Invalid observation metadata.")}}
         let featureIDs=Set(features.map{$0.id});for c in connections{guard featureIDs.contains(c.fromFeature),featureIDs.contains(c.toFeature),c.fromFeature != c.toFeature,[0,1].contains(c.fromEnd),[0,1].contains(c.toEnd) else{throw HouseError.message("Invalid service endpoint link.")}}
+        for f in features {if let controls=f.photoControls {guard controls.count==3,Set(controls.map{$0.observationID}).count==3,controls.allSatisfy({c in c.u.isFinite && c.v.isFinite && (0...1).contains(c.u) && (0...1).contains(c.v) && observations.contains(where:{$0.id==c.observationID && $0.segmentID==f.segmentID})}) else{throw HouseError.message("Invalid image triangulation provenance.")}}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in bookmarks {guard b.position.finite,b.yaw.isFinite,b.pitch.isFinite,roomIDs.contains(b.roomID),(b.segmentID==nil || segmentIDs.contains(b.segmentID!)) else{throw HouseError.message("Invalid viewpoint frame.")}}
         for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}

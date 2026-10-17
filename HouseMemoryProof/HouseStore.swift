@@ -77,6 +77,7 @@ final class Repository: EvidenceAssetReader {
     defer { lock.unlock() }
     try h.validate()
     let bytes = try JSONEncoder().encode(h)
+    guard bytes.count <= 100_000_000 else {throw HouseError.message("Project metadata exceeds the 100 MB storage budget. Existing revisions and originals remain intact; use smaller capture projects.")}
     try execute("BEGIN IMMEDIATE")
     do {
       let history = try statement(

@@ -70,3 +70,9 @@ enum CheckedRegistration {
 }
 
 
+
+struct PhotoControl: Codable, Equatable {
+  var observationID:UUID
+  var u:Double
+  var v:Double
+}

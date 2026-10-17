@@ -218,7 +218,19 @@ import ImageIO
                 results.append(["test":"IFC4 millimetres and nested placement","passed":(low-V3(9.5,19,30)).length<0.001 && (high-V3(10.5,21,33)).length<0.001,"lower":[low.x,low.y,low.z],"upper":[high.x,high.y,high.z]])
             }catch{results.append(["test":"Bundled IFC2x3 conversion and axes","passed":false,"error":error.localizedDescription])}
             do {
-                let fixture=try SimulatedCapture.make(repo:mainRepo);let feature=try await Reconstruction.fuse(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
+                let fixture=try SimulatedCapture.make(repo:mainRepo)
+                check("Photo triangulation uses an independent third view and rejects disagreement"){
+                    let expected=V3(0,2,1.1)
+                    var controls=try [0,4,8].map {index -> PhotoControl in
+                        let o=fixture.observations[index];guard let projected=TextureBuilder.project(expected,through:o) else{throw HouseError.message("Synthetic point outside image.")}
+                        return PhotoControl(observationID:o.id,u:projected.0.u,v:projected.0.v)
+                    }
+                    let result=try PhotoTriangulation.locate(controls,house:fixture,segment:fixture.segments[0])
+                    guard (result-expected).length<1e-8 else{return false}
+                    controls[2].v+=0.1
+                    do{_=try PhotoTriangulation.locate(controls,house:fixture,segment:fixture.segments[0]);return false}catch{return true}
+                }
+                let feature=try await Reconstruction.fuse(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
                 let surface=try await SurfaceReconstruction.build(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
                 let surfaceError=surface.mesh.vertices.map{abs($0.y-2)}.max() ?? .infinity
                 results.append(["test":"Native signed-distance surface fusion","passed":surface.mesh.valid && surface.mesh.triangles.count>300 && surfaceError<0.003,"vertices":surface.mesh.vertices.count,"maxPlaneErrorMetres":surfaceError,"syntheticOnly":true])

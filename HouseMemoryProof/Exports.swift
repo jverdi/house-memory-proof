@@ -410,7 +410,7 @@ enum Exporter {
     let metadata = try JSONEncoder().encode(h)
     guard metadata.count <= 100_000_000 else {
       throw HouseError.message(
-        "Project metadata exceeds the tested 100 MB restore budget. Split large captures into separate projects before continuing."
+        "Project metadata exceeds the 100 MB restore budget. Split large captures into separate projects before continuing."
       )
     }
     let staging = FileManager.default.temporaryDirectory.appendingPathComponent(

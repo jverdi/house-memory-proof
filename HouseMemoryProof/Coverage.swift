@@ -28,6 +28,7 @@ enum CoverageAnalyzer {
       $0.segmentID == segment.id && $0.name == "Observed LiDAR surface"
     }
     for f in surfaces {
+      try Task.checkCancellation()
       let strideCount = max(1, (f.mesh.triangles.count / 3) / 1000)
       for face in stride(from: 0, to: f.mesh.triangles.count / 3, by: strideCount) {
         let a = f.mesh.vertices[Int(f.mesh.triangles[face * 3])]
@@ -101,11 +102,12 @@ struct CoveragePage: View {
           guard let repo = model.repository else { return }
           let snapshot = house
           model.perform("Checking angles, lighting and depth support") {
-            let result = try await Task.detached {
+            let result = try await LocalWorker.run {
               try snapshot.segments.map {
                 try CoverageAnalyzer.analyze(house: snapshot, segment: $0, repo: repo)
               }
-            }.value
+            }
+            guard model.house?.id==snapshot.id,model.house?.revision==snapshot.revision else{throw HouseError.message("Capture changed; run coverage analysis again.")}
             reports = result
             return nil
           }
