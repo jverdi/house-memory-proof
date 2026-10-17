@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hx_tag_refine.h"
 
 int32_t hx_tag_image(uint32_t id,uint8_t* output,uint32_t capacity) {
   if(!output||capacity<100||id>=587)return -1;
@@ -35,6 +36,8 @@ int32_t hx_tag_detect(const uint8_t* gray,uint32_t bytes,uint32_t width,uint32_t
       if(!isfinite(x)||!isfinite(y)||x<2||y<2||x>=width-2||y>=height-2||hypot(dx,dy)<24)valid=0;
     }
     if(!valid)continue;
+    uint8_t cells[100];
+    if(hx_tag_image((uint32_t)d->id,cells,100)==10)hx_tag_refine(gray,(int)width,(int)height,(int)stride,cells,d->p);
     if((uint32_t)count>=capacity){count=-3;break;}
     for(int prior=0;prior<count;prior++)if(ids[prior]==(uint32_t)d->id){count=-4;break;}
     if(count<0)break;
@@ -80,3 +83,4 @@ int32_t hx_tag_selftest(void) {
 #include <stdio.h>
 int main(void){int status=hx_tag_selftest();printf("{\"suite\":\"pinned AprilTag detector and raster coordinates\",\"status\":%d,\"passed\":%s,\"fieldQualified\":false}\n",status,status==1?"true":"false");return status==1?0:1;}
 #endif
+

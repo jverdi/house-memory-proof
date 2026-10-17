@@ -30,6 +30,15 @@ jobs:
             -I build/apriltag/host/include packages/reference-core/hx_tags.c \
             build/apriltag/host/lib/libapriltag.a -o build/tag-test
           build/tag-test | tee build/reference-evidence/host.json
+      - name: Validate projective pixels, blur and noise independently
+        run: |
+          python3 -m venv build/reference-env
+          build/reference-env/bin/pip install numpy==2.3.3 Pillow==11.3.0
+          clang -std=c11 -O2 -arch arm64 -mmacosx-version-min=14.0 -dynamiclib \
+            -I build/apriltag/host/include packages/reference-core/hx_tags.c \
+            build/apriltag/host/lib/libapriltag.a -o build/reference-detector.dylib
+          build/reference-env/bin/python tooling/references/test_refinement.py \
+            --library build/reference-detector.dylib --output build/reference-evidence/pixel-refinement.json
       - run: bash tooling/references/build.sh ios
       - name: Record pinned platform libraries
         run: |
@@ -47,3 +56,4 @@ jobs:
           name: metric-reference-detector-evidence
           path: build/reference-evidence/
           retention-days: 30
+

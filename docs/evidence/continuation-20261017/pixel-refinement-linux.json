@@ -1,0 +1,202 @@
+{
+  "passed": true,
+  "cases": 24,
+  "checks": [
+    {
+      "case": 0,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.35973491547454445,
+      "passed": true
+    },
+    {
+      "case": 0,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.35037317194534134,
+      "passed": true
+    },
+    {
+      "case": 1,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.1460568904542956,
+      "passed": true
+    },
+    {
+      "case": 1,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.11839213809115501,
+      "passed": true
+    },
+    {
+      "case": 2,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.16541334960341078,
+      "passed": true
+    },
+    {
+      "case": 2,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.19033125640903203,
+      "passed": true
+    },
+    {
+      "case": 3,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.09911199850840764,
+      "passed": true
+    },
+    {
+      "case": 3,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.08570548755255616,
+      "passed": true
+    },
+    {
+      "case": 4,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.1095941018873457,
+      "passed": true
+    },
+    {
+      "case": 4,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.1048538994943663,
+      "passed": true
+    },
+    {
+      "case": 5,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.12249654720297917,
+      "passed": true
+    },
+    {
+      "case": 5,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.11263567401929005,
+      "passed": true
+    },
+    {
+      "case": 6,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.16461609150518813,
+      "passed": true
+    },
+    {
+      "case": 6,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.14832346308652902,
+      "passed": true
+    },
+    {
+      "case": 7,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.3992753001892504,
+      "passed": true
+    },
+    {
+      "case": 7,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.40344079556841295,
+      "passed": true
+    },
+    {
+      "case": 8,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.13894513556931123,
+      "passed": true
+    },
+    {
+      "case": 8,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.10437903925834931,
+      "passed": true
+    },
+    {
+      "case": 9,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.05334332330145594,
+      "passed": true
+    },
+    {
+      "case": 9,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.045986908167937796,
+      "passed": true
+    },
+    {
+      "case": 10,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.12972352675011048,
+      "passed": true
+    },
+    {
+      "case": 10,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.10196558146554177,
+      "passed": true
+    },
+    {
+      "case": 11,
+      "blurPixels": 0.0,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.1548513242975635,
+      "passed": true
+    },
+    {
+      "case": 11,
+      "blurPixels": 0.7,
+      "detected": 1,
+      "codeMatches": true,
+      "maximumCornerErrorPixels": 0.12136699416020598,
+      "passed": true
+    }
+  ],
+  "elapsedSeconds": 1.2055356179989758,
+  "maximumCornerErrorPixels": 0.40344079556841295,
+  "fieldQualified": false,
+  "limitation": "Small independent projective raster/blur/noise fixture; not a camera sensor model or metric pose qualification"
+}
