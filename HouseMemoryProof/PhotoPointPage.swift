@@ -13,12 +13,14 @@ struct PhotoPointPage:View {
   var observations:[Observation]{house.observations.filter{$0.segmentID==segmentID && !$0.documentary}}
   var body:some View {Form{
     Text("Locate a small visible feature without trusting background LiDAR depth. Select the same point in three translated photographs. The first two fit the point; the third independently checks it. Results remain approximate. Photographs use their original sensor orientation.").font(.footnote)
-    Picker("Capture segment",selection:$segmentID){Text("Choose").tag(UUID?.none);ForEach(house.segments){s in Text(s.started.formatted()).tag(Optional(s.id))}}
+    Picker("Capture segment",selection:$segmentID){Text("Choose").tag(UUID?.none);ForEach(house.segments){s in Text(s.started.formatted()).accessibilityIdentifier("point-segment-choice").tag(Optional(s.id))}}
+    .accessibilityIdentifier("point-segment-picker")
     ForEach(0..<3,id:\.self){index in
       Section(index==2 ? "3 · Independent check":"\(index+1) · Fitting view"){
-        Picker("Photograph",selection:$selected[index]){Text("Choose").tag(UUID?.none);ForEach(observations){o in Text("\(o.date.formatted(date:.omitted,time:.standard)) · \(o.id.uuidString.prefix(6))").tag(Optional(o.id))}}
+        Picker("Photograph",selection:$selected[index]){Text("Choose").tag(UUID?.none);ForEach(Array(observations.enumerated()),id:\.element.id){index,o in Text("Photo \(index+1) · \(o.date.formatted(date:.omitted,time:.standard))").accessibilityIdentifier("point-photo-choice-\(index)").tag(Optional(o.id))}}
+        .accessibilityIdentifier("point-photo-picker-\(index)")
         if let id=selected[index],let observation=observations.first(where:{$0.id==id}),let url=try? model.repository?.assetURL(observation.image){
-          PhotoPointSurface(url:url,control:controls[index]){u,v in controls[index]=PhotoControl(observationID:id,u:u,v:v)}.frame(height:280).id(id)
+          PhotoPointSurface(url:url,control:controls[index]){u,v in controls[index]=PhotoControl(observationID:id,u:u,v:v)}.frame(height:280).accessibilityIdentifier("point-image-\(index)").id(id)
           Text(controls[index]==nil ? "Tap the exact feature; pinch to zoom first.":"Point selected. Tap to adjust.").font(.caption)
         }
       }
