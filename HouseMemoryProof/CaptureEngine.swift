@@ -127,7 +127,8 @@ import Vision
           return
         }
         var scoped = h
-        scoped.features = h.features.filter { $0.segmentID == prior.id }
+        let current=DerivedEvidence.currentIDs(h)
+        scoped.features = h.features.filter { $0.segmentID == prior.id && current.contains($0.id) }.map { feature in var f=feature;f.sourceFingerprint=nil;return f }
         scoped.segments = scoped.segments.map {
           var s = $0
           s.registration = nil

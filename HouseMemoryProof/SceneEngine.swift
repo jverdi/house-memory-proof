@@ -50,8 +50,9 @@ enum SceneBuilder {
   static func features(_ h: House, options: SceneOptions) -> [Feature] {
     let stages = eligibleStages(h, options: options)
     let unregistered = activeUnregisteredSegment(h, options: options)
+    let current=DerivedEvidence.currentIDs(h)
     return h.features.filter { f in
-      guard visible(f, options),
+      guard current.contains(f.id),visible(f, options),
         stages.contains(f.stageID) || (f.trade == .floor && options.stage == nil)
       else { return false }
       if let sid = f.segmentID {

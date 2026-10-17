@@ -59,6 +59,16 @@ import ImageIO
                 guard matched>=2,worst<0.03 else{throw HouseError.message("Image localization: \(matched)/3 held views, worst accepted position error \(worst) m, \(map.points.count) map features.")}
                 return true
             }
+            check("Derived surfaces are excluded when camera inputs change"){
+                let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
+                var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
+                let segment=capture.segments[0]
+                let feature=Feature(name:"Derived",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:.synthetic,mesh:.box(center:V3(),size:V3(1,1,1)),segmentID:segment.id,sourceFingerprint:try VisualMapping.fingerprint(house:capture,segment:segment))
+                capture.features=[feature]
+                guard DerivedEvidence.currentIDs(capture).contains(feature.id) else{return false}
+                capture.observations[0].camera[3]+=0.01
+                return !DerivedEvidence.currentIDs(capture).contains(feature.id) && capture.features[0].mesh==feature.mesh
+            }
             check("Image depth graph removes injected camera translation drift"){
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)

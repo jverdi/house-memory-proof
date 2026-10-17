@@ -112,6 +112,8 @@ enum TextureBuilder {
         output.append(copy)
       }
     }
+    let fingerprint=try VisualMapping.fingerprint(house:house,segment:segment)
+    for i in output.indices {output[i].sourceFingerprint=fingerprint}
     return output
   }
 }

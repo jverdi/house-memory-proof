@@ -77,6 +77,6 @@ enum Reconstruction {
       mesh: Mesh(vertices: points, triangles: []), sourceIDs: observations.map { $0.id },
       notes:
         "\(count) cells supported by ≥3 captured views. \(referenceSupported ? "Locally constrained camera estimates were used.":"ARKit pose priors are not optimized.") Sample spread is not measurement accuracy. Thin services need photographs and manual tracing.",
-      segmentID: segment.id)
+      segmentID: segment.id, sourceFingerprint: try VisualMapping.fingerprint(house:house,segment:segment))
   }
 }

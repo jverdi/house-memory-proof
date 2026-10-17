@@ -34,7 +34,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: build/opencv-host
-          key: opencv-4.13.0-macos14-arm64-v1-${{ hashFiles('tooling/opencv/build-host.sh') }}
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+          restore-keys: opencv-4.13.0-macos14-arm64-v1-
       - name: Build shared production core as isolated command-line candidate
         run: bash tooling/opencv/build-host.sh
       - name: Preserve compiled SDK even if candidate qualification fails
@@ -42,7 +43,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: build/opencv-host
-          key: opencv-4.13.0-macos14-arm64-v1-${{ hashFiles('tooling/opencv/build-host.sh') }}
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
       - name: Generate independent query views and enforce oracle exclusion
         run: |
           python3 -m venv build/vision-env

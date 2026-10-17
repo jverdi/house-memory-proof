@@ -66,3 +66,19 @@ enum PoseGraph {
     return PoseGraphSolution(fingerprint:try fingerprint(house:house,segment:segment),cameras:corrected,edges:edges.count,maximumEdgeResidual:residual)
   }
 }
+
+// Derived geometry follows the exact capture/pose/reference inputs that produced it.
+enum DerivedEvidence {
+  static func currentIDs(_ house:House)->Set<UUID> {
+    let needed=Set(house.features.filter{$0.sourceFingerprint != nil}.compactMap{$0.segmentID})
+    var fingerprints:[UUID:String]=[:]
+    for segment in house.segments where needed.contains(segment.id) {
+      fingerprints[segment.id]=try? VisualMapping.fingerprint(house:house,segment:segment)
+    }
+    return Set(house.features.filter { feature in
+      guard let expected=feature.sourceFingerprint else{return true}
+      guard let segment=feature.segmentID else{return false}
+      return fingerprints[segment]==expected
+    }.map{$0.id})
+  }
+}
