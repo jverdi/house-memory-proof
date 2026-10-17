@@ -1,6 +1,7 @@
 import Foundation
 import SceneKit
 import PDFKit
+import SQLite3
 
 @MainActor enum SelfTests {
     static func run(model:AppModel) async {
@@ -26,6 +27,16 @@ import PDFKit
             }
             check("Local store roundtrip"){try repo.save(house);return try repo.all().first==house}
             check("Revision recovery"){let original=house;house.revision+=1;house.name="Edited";try repo.save(house);return try repo.previous(house.id)==original}
+            check("Failed candidate does not replace committed evidence"){
+                let before=try repo.all().first;var bad=house;bad.features[0].mesh.triangles=[0,1,Int32.max]
+                do{try repo.save(bad);return false}catch{return try repo.all().first==before}
+            }
+            check("Corrupt project is isolated without hiding healthy projects"){
+                let isolated=try Repository(root:folder.appendingPathComponent("corrupt-row"));let good=House.empty("Healthy"),bad=House.empty("Corrupt");try isolated.save(good);try isolated.save(bad)
+                var db:OpaquePointer?;guard sqlite3_open(isolated.root.appendingPathComponent("house.sqlite").path,&db)==SQLITE_OK else{return false};defer{sqlite3_close(db)}
+                guard sqlite3_exec(db,"UPDATE projects SET json='broken' WHERE id='\(bad.id.uuidString)'",nil,nil,nil)==SQLITE_OK else{return false}
+                let remaining=try isolated.all();return remaining.map{$0.id}==[good.id] && isolated.recoveryWarnings.count==1 && FileManager.default.fileExists(atPath:isolated.root.appendingPathComponent("recovery/"+bad.id.uuidString+".json").path)
+            }
             check("Asset hash identity"){let a=try repo.put(Data("original".utf8),ext:"txt"),b=try repo.put(Data("original".utf8),ext:"txt");let read=try repo.read(a);return a==b && read==Data("original".utf8)}
             check("Unsafe paths rejected"){do{_=try repo.assetURL("../escape");return false}catch{return true}}
             check("Invalid mesh indices rejected"){!Mesh(vertices:[V3()],triangles:[0,1,2]).valid}

@@ -12,6 +12,7 @@ final class Repository {
         self.root=root ?? FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("HouseXray",isDirectory:true)
         try FileManager.default.createDirectory(at:self.root.appendingPathComponent("assets"),withIntermediateDirectories:true)
         guard sqlite3_open_v2(self.root.appendingPathComponent("house.sqlite").path,&db,SQLITE_OPEN_CREATE|SQLITE_OPEN_READWRITE|SQLITE_OPEN_FULLMUTEX,nil)==SQLITE_OK else{throw HouseError.message("Could not open local project database.")}
+        sqlite3_busy_timeout(db,3000)
         try execute("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL, json BLOB NOT NULL); CREATE TABLE IF NOT EXISTS history(id TEXT, revision INTEGER, json BLOB, PRIMARY KEY(id,revision)); CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, state TEXT, json BLOB);")
     }
     deinit {sqlite3_close(db)}
@@ -20,7 +21,9 @@ final class Repository {
     func all()throws->[House] {
         lock.lock();defer{lock.unlock()};recoveryWarnings=[]
         let s=try statement("SELECT id,json FROM projects ORDER BY name");defer{sqlite3_finalize(s)};var result:[House]=[]
-        while sqlite3_step(s)==SQLITE_ROW {
+        var step=sqlite3_step(s)
+        while step==SQLITE_ROW {
+            defer{step=sqlite3_step(s)}
             let n=Int(sqlite3_column_bytes(s,1));guard let p=sqlite3_column_blob(s,1) else{continue}
             let data=Data(bytes:p,count:n)
             do {let h=try JSONDecoder().decode(House.self,from:data);try h.validate();result.append(h)}
@@ -31,7 +34,7 @@ final class Repository {
                 try data.write(to:recovery.appendingPathComponent(name+".json"),options:.atomic)
                 recoveryWarnings.append("Project \(name.prefix(8)) could not be opened; its database row and recovery copy remain intact. \(error.localizedDescription)")
             }
-        };return result
+        };guard step==SQLITE_DONE else{throw HouseError.message("Local database could not finish reading. Existing records are preserved.")};return result
     }
     func save(_ h:House)throws {
         lock.lock();defer{lock.unlock()};try h.validate();let bytes=try JSONEncoder().encode(h)

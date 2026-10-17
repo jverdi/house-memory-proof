@@ -1,16 +1,19 @@
 # Implementation ledger
 
-Delivery proof completed 2026-10-17: signed build 2.1 installed by owner.
+Delivery proof completed 2026-10-17: signed build 2.1 installed by owner. No implementation build has been uploaded.
 
-Current work: implement the approved runbook in the existing app, with intermediate uploads disabled. Logical checkpoints use [skip ci]; native verification runs at integration boundaries. Exactly one final candidate upload is intended.
-
-Acceptance remains the runbook's gates. No unimplemented feature, simulation-only result, or unqualified accuracy claim may be marked complete. Changes in implementation technology must be documented with actual limitations. Physical accuracy and owner-device performance remain empirical.
+Acceptance remains the runbook's gates. Implemented features below are not equivalent to complete package qualification. See [requirement audit](../docs/IMPLEMENTATION.md).
 
 ## Checkpoints
-- [x] Preserve runbook and disable intermediate delivery.
-- [ ] Canonical spatial contracts, local durable store, synthetic fixtures.
-- [ ] Capture, image/depth/pose evidence, quality guidance, map recovery.
-- [ ] First-person scene, stage/layer composition, labels and measurements.
-- [ ] Plans, archive/import, standard geometry and automatic movie export.
-- [ ] Native integration, failure-path verification, requirement gap audit.
-- [ ] Final candidate upload and evidence report.
+- [x] Preserve approved runbook; disable intermediate delivery.
+- [x] Implement canonical contracts, SQLite/hashed-asset store and initial fixtures.
+- [x] Implement native capture, quality guidance, reference/map paths and periodic mesh checkpoints.
+- [x] Implement first-person viewing, stage/layer isolation, labels, measurements and documentary imports.
+- [x] Implement drawings/IFC/PLY imports, model/video outputs and streaming archives.
+- [x] Pass integrated source 94b6decb2e: 30 native tests, XCUITest, portable cases, independent GLB/USD/ZIP readers.
+- [ ] Validate later IFC4, connection, camera-framing and recovery changes against exact source.
+- [ ] Complete robust optimization/localization, protected house-scale simulation and remaining software gates.
+- [ ] Complete owner-device resource and physical precision qualification.
+- [ ] Upload one final accepted build and verify Apple availability.
+
+Every source checkpoint is committed to the private repository. Reports are retained under docs/evidence. Release uploads stay disabled while critical gates remain open.
