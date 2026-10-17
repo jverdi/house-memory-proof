@@ -45,6 +45,8 @@ import Vision
   private var visualReferences: [(VisualMap, Rigid)] = []
   private var competingVisualReferences: [VisualMap] = []
   private var visualConflict = false
+  private var codedMap:CodedReferences.Map?
+  private var revealSourceRevision:Int?
   private var currentReferencePoses: [UUID: ReferencePose] = [:]
   init(model: AppModel) {
     self.model = model
@@ -108,13 +110,17 @@ import Vision
       stopping = false
       let config = ARWorldTrackingConfiguration()
       config.planeDetection = [.horizontal, .vertical]
-      config.detectionImages = await BoardGenerator.images(h, repo: repo)
+      var referenceScope=h
+      referenceScope.references=h.references.filter{$0.valid && ($0.roomID==nil || $0.roomID==room.id)}
+      guard referenceScope.references.count<=20 else{message="This room has more than 20 active references. Assign unused boards to their rooms before capturing.";return}
+      config.detectionImages = await BoardGenerator.images(referenceScope, repo: repo)
       guard starting == startToken, model?.selected == h.id, UIApplication.shared.applicationState == .active else { return }
       config.maximumNumberOfTrackedImages = 2
       currentReferencePoses = [:]
       markerTransform = nil
       markerSeen = 0
       visualTransform = nil; visualSeen = 0; lastVisualQuery = 0; visualBusy = false; visualReferences = []; competingVisualReferences = []; visualConflict = false
+      codedMap=nil;revealSourceRevision=nil
       loadedWorldMap = false
       referenceConflict = false
       if hasDepth { config.frameSemantics.insert(.sceneDepth) }
@@ -138,6 +144,9 @@ import Vision
           return
         }
         segment = prior
+        codedMap=try? await LocalWorker.run{CodedReferences.build(house:h,segment:prior)}
+        revealSourceRevision=h.revision
+        guard starting==startToken,model?.selected==h.id,UIApplication.shared.applicationState == .active else{return}
         var visualBytes=0
         for reference in (h.visualMaps.count<=24 ? h.visualMaps:[]).sorted(by: { $0.date > $1.date }) {
           guard let source = h.segments.first(where: { $0.id == reference.segmentID }),
@@ -213,7 +222,10 @@ import Vision
       normal = false
     }
     if reveal {
-      if normal, !visualBusy, !visualReferences.isEmpty, frame.timestamp - lastVisualQuery > 1.5 { requestVisualLocalization(frame) }
+      guard model?.house?.id==houseID,model?.house?.revision==revealSourceRevision else {
+        revealedNodes.forEach{$0.isHidden=true};message="Saved capture inputs changed. Close and reopen reveal to check the new evidence.";return
+      }
+      if normal, !visualBusy, (!visualReferences.isEmpty || (codedMap?.boards.count ?? 0)>=4), frame.timestamp - lastVisualQuery > 1.5 { requestVisualLocalization(frame) }
       let markerFresh = frame.timestamp - markerSeen < 2 && markerTransform != nil
       let visualFresh = frame.timestamp - visualSeen < 2 && visualTransform != nil
       var disagreement = false
@@ -282,17 +294,27 @@ import Vision
     CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
     let k = frame.camera.intrinsics
     let calibration = (0..<3).flatMap { row in (0..<3).map { col in Double(k[col][row]) } }
-    let liveCamera = frame.camera.transform, timestamp = frame.timestamp, token = generation, references = visualReferences, competitors = competingVisualReferences
+    let liveCamera = frame.camera.transform, timestamp = frame.timestamp, token = generation, references = visualReferences, competitors = competingVisualReferences,coded=codedMap
     visualBusy = true; lastVisualQuery = timestamp
     Task {
       let outcome = await Task.detached(priority: .userInitiated) { () -> ([Rigid],Bool) in
-        guard let features = try? VisualMapping.detect(gray: gray, width: width, height: height, stride: stride) else { return ([],false) }
+        var codedPose:Rigid?
+        if let coded,coded.boards.count>=4 {
+          do {
+            let result=try CodedReferences.localize(gray:gray,width:width,height:height,stride:stride,intrinsics:calibration,map:coded)
+            if result.conflict {return([],true)}
+            codedPose=result.pose
+          }catch{return([],true)}
+        }
+        if references.isEmpty {return(codedPose.map{[$0]} ?? [],false)}
+        guard let features = try? VisualMapping.detect(gray: gray, width: width, height: height, stride: stride) else { return (codedPose.map{[$0]} ?? [],false) }
         if VisualMapping.competingMatch(features,width:width,height:height,intrinsics:calibration,maps:competitors) {return ([],true)}
-        let estimates: [Rigid] = references.compactMap { reference in
+        var estimates: [Rigid] = references.compactMap { reference in
           guard let result = VisualMapping.query(features, width: width, height: height, intrinsics: calibration, map: reference.0),
             let pose = PoseRefinement.matrix(result.transform.values), let prior = PoseRefinement.matrix(reference.1.values) else { return nil }
           return Rigid(values: PoseRefinement.array(prior * pose))
         }
+        if let codedPose {estimates.append(codedPose)}
         return (estimates,false)
       }.value
       guard self.generation == token else { return }
@@ -387,6 +409,11 @@ import Vision
         for row in 0..<4 { for col in 0..<4 { camera.append(Double(t[col][row])) } }
         for row in 0..<3 { for col in 0..<3 { intrinsics.append(Double(k[col][row])) } }
         let quality = Self.sharpness(image)
+        var coded:[CodedDetection]=[]
+        if !documentary,project.references.contains(where:{$0.valid && $0.tagID != nil}),
+          let (gray,w,h,stride)=try? CodedReferences.gray(frame.capturedImage) {
+          coded=(try? CodedReferences.detect(gray:gray,width:w,height:h,stride:stride,boards:project.references)) ?? []
+        }
         let obs = Observation(
           roomID: segment.roomID, stageID: segment.stageID, segmentID: segment.id,
           timestamp: frame.timestamp, image: imageKey, depth: depthKey, confidence: confidenceKey,
@@ -394,7 +421,7 @@ import Vision
           intrinsics: intrinsics, tracking: String(describing: frame.camera.trackingState),
           light: Double(frame.lightEstimate?.ambientIntensity ?? 0), sharpness: quality,
           documentary: documentary, imageOrientation: orientation,
-          referenceObservations: observedReferences)
+          referenceObservations: observedReferences,codedDetections:coded.isEmpty ? nil:coded)
         try repo.journalCapture(projectID: houseID, observation: obs)
         try repo.stageCapture(obs,projectID:houseID,room:room,stage:stage,segment:segment)
         try repo.finishCaptureJournal(obs.id)

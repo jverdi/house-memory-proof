@@ -3,15 +3,29 @@ import CryptoKit
 import SwiftUI
 
 @MainActor enum BoardGenerator {
-  static func make(name: String, repo: Repository) throws -> ReferenceBoard {
+  static func make(name: String, repo: Repository,tagID:Int?=nil,roomID:UUID?=nil) throws -> ReferenceBoard {
     let id = UUID()
     let seed = Array(SHA256.hash(data: Data(id.uuidString.utf8)))
+    var tagPixels:[UInt8]?=nil
+    if let tagID {
+      guard (0..<587).contains(tagID) else{throw HouseError.message("Coded reference ID is out of range.")}
+      var cells=[UInt8](repeating:0,count:100)
+      guard cells.withUnsafeMutableBufferPointer({hx_tag_image(UInt32(tagID),$0.baseAddress,100)})==10 else{throw HouseError.message("Coded reference could not be rendered.")}
+      tagPixels=cells
+    }
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1
     let image = UIGraphicsImageRenderer(size: CGSize(width: 720, height: 720), format: format).image
     { ctx in
       UIColor.white.setFill()
       ctx.fill(CGRect(x: 0, y: 0, width: 720, height: 720))
+      if let cells=tagPixels {
+        for y in 0..<10 {for x in 0..<10 {
+          (cells[y*10+x]==0 ? UIColor.black:UIColor.white).setFill()
+          ctx.fill(CGRect(x:x*72,y:y*72,width:72,height:72))
+        }}
+        return
+      }
       UIColor.black.setStroke()
       ctx.cgContext.setLineWidth(12)
       ctx.cgContext.stroke(CGRect(x: 8, y: 8, width: 704, height: 704))
@@ -51,12 +65,13 @@ import SwiftUI
       image.draw(in: CGRect(x: 42, y: 90, width: points, height: points))
       let instructions =
         "Print at 100% / actual size. The outer image must measure 180 mm wide. Measure the physical print and enter its actual width. Mount flat on stable structure that remains accessible after finishing. Never move a registered board; mark it invalid if moved. Image tracking is approximate and is not a surveyed precision reference.\n\nID: \(id.uuidString)"
-      (instructions as NSString).draw(
+      let coded=tagID.map{"\nAprilTag 36h11 code \($0). The black-border square is 144 mm wide when the outer image is 180 mm. Keep the complete white margin visible. Use at least four spatially distributed fixed boards; placement remains uncalibrated."} ?? ""
+      ((instructions+coded) as NSString).draw(
         in: CGRect(x: 30, y: 640, width: 535, height: 180),
-        withAttributes: [.font: UIFont.systemFont(ofSize: 12)])
+        withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
     }
     let pdfKey = try repo.put(pdf, ext: "pdf")
-    return ReferenceBoard(id: id, name: name, image: key, pdf: pdfKey, width: width)
+    return ReferenceBoard(id: id, name: name, image: key, pdf: pdfKey, width: width,tagID:tagID,roomID:roomID)
   }
   static func images(_ h: House, repo: Repository) async -> Set<ARReferenceImage> {
     var result = Set<ARReferenceImage>()
@@ -79,17 +94,32 @@ struct ReferencesPage: View {
   var house: House
   @State private var name = "Reference 1"
   @State private var creating = false
+  @State private var selectedRoom:UUID?
   var body: some View {
     List {
       Section {
         Text(
-          "Printable image references can help recover a session after construction changes. They are approximate ARKit image targets, not AprilTag survey boards. Print at actual size, measure the print, and keep it flat and fixed. Keep at least two different boards visible together for approximate drift constraints; disagreement rejects the correction."
+          "Print references at actual size, measure the outer image, and keep them flat and fixed. Record each coded board in at least two sharp views separated by 15 cm. For the coded alignment path, keep at least four well-distributed boards visible together. These are uncalibrated references; disagreement hides alignment."
         ).font(.footnote)
         TextField("Board name", text: $name)
-        Button("Create printable reference") {
+        Picker("Reference room",selection:$selectedRoom) {
+          Text("Shared between rooms").tag(UUID?.none)
+          ForEach(house.rooms){room in Text(room.name).tag(Optional(room.id))}
+        }
+        Button("Create coded reference") {
+          guard let repo=model.repository else{return}
+          let used=Set(house.references.compactMap{$0.tagID}),start=Int.random(in:0..<587)
+          guard let code=(0..<587).map({($0+start)%587}).first(where:{!used.contains($0)}) else{model.error="All reference codes are already reserved in this house.";return}
+          do {
+            let board=try BoardGenerator.make(name:name,repo:repo,tagID:code,roomID:selectedRoom)
+            model.edit{$0.references.append(board)};model.shareURL=try repo.assetURL(board.pdf)
+          }catch{model.error=error.localizedDescription}
+        }
+        Text("Coded references retain detected image corners and support a separate multi-board consistency check. They still use approximate ARKit board positions until independently validated.").font(.footnote)
+        Button("Create legacy image reference") {
           guard let repo = model.repository else { return }
           do {
-            let board = try BoardGenerator.make(name: name, repo: repo)
+            let board = try BoardGenerator.make(name: name, repo: repo,roomID:selectedRoom)
             model.edit { $0.references.append(board) }
             model.shareURL = try repo.assetURL(board.pdf)
           } catch { model.error = error.localizedDescription }
@@ -105,6 +135,7 @@ struct ReferencesPage: View {
             Text(house.rooms.first{$0.id==segment.roomID}?.name ?? "Capture")
             Text("\(assessment.count) fixed references · \(segment.started.formatted())").font(.caption)
             Text(assessment.advice).font(.footnote).foregroundStyle(assessment.distributed ? .mint:.orange)
+            Text("\(CodedReferences.build(house:house,segment:segment).boards.count) coded boards have matching corner evidence in translated views").font(.caption)
           }
         }
       }
@@ -120,6 +151,11 @@ struct ReferenceEditor: View {
   var body: some View {
     Form {
       TextField("Name", text: $board.name)
+      Picker("Reference room",selection:$board.roomID) {
+        Text("Shared between rooms").tag(UUID?.none)
+        ForEach(model.house?.rooms ?? []){room in Text(room.name).tag(Optional(room.id))}
+      }
+      if let code=board.tagID {Text("AprilTag 36h11 · \(code)");Text("Width below measures the full image including the white margin; the black border spans 80% of that width.").font(.footnote)}
       TextField("Measured print width in metres", value: $board.width, format: .number)
         .keyboardType(.decimalPad)
       TextField("Mounting location", text: $board.location, axis: .vertical)

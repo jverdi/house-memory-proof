@@ -8,6 +8,12 @@ struct ReferenceBoard: Codable, Identifiable, Equatable {
   var width: Double = 0.18
   var location = ""
   var valid = true
+  var tagID:Int?=nil
+  var roomID:UUID?=nil
+}
+struct CodedDetection:Codable,Equatable {
+  var boardID:UUID;var tagID:Int;var corners:[UV];var margin:Double
+  var valid:Bool {(0..<587).contains(tagID) && corners.count==4 && corners.allSatisfy{$0.u.isFinite && $0.v.isFinite && (0...1).contains($0.u) && (0...1).contains($0.v)} && margin.isFinite && margin>=30}
 }
 struct ReferencePose: Codable, Equatable {
   var boardID: UUID

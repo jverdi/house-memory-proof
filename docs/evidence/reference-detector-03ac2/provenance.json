@@ -1,0 +1,10 @@
+{
+  "sourceRevision": "03ac2bec26ec5ad8d7517b710aa1238a52081150",
+  "run": 39040136936,
+  "job": 117417746269,
+  "artifact": 12103956185,
+  "artifactSHA256": "af02f527507552f9b369d430c8dbb86a61d2787b3a5260e88862b2235e6f0c23",
+  "passed": true,
+  "scope": "Detector and raster-coordinate diagnostics; compiled host, iPhone and simulator static libraries. Does not test the later multi-board pose solver or Swift/live integration.",
+  "fieldQualified": false
+}

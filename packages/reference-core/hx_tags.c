@@ -63,6 +63,7 @@ int32_t hx_tag_selftest(void) {
       double x=xy[j*2],y=xy[j*2+1];
       if(fmin(fabs(x-256),fabs(x-384))>1||fmin(fabs(y-156),fabs(y-284))>1)result=-4;
     }
+    if(rotation==0){const double expected[8]={256,284,384,284,384,156,256,156};for(int j=0;j<8;j++)if(fabs(xy[j]-expected[j])>1)result=-8;}
   }
   if(result==1) {
     // A duplicated physical identity must refuse the complete frame.

@@ -34,6 +34,9 @@ import Darwin
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
+            mark("Coded reference image-to-pose integration")
+            do {results.append(try codedReferenceReport(repo:repo,outputRoot:mainRepo.root))}
+            catch {results.append(["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":false,"error":error.localizedDescription])}
             await check("Multi-board pose holds out each board and rejects moved or duplicate references") {var error=0.0;return hx_reference_selftest(&error)==1 && error<0.003}
             await check("Pinned AprilTag identity, corner coordinates, rotation and duplicate rejection") {hx_tag_selftest()==1}
             await check("Capture owns processing through final save and stale completion cannot unlock a new capture") {
@@ -705,6 +708,83 @@ extension SelfTests {
         }
         guard status==KERN_SUCCESS else{return [:]}
         return ["physicalFootprintBytes":info.phys_footprint,"residentBytes":info.resident_size,"lifetimeResidentPeakBytes":info.resident_size_peak]
+    }
+    static func codedReferenceReport(repo:Repository,outputRoot:URL)throws->[String:Any] {
+        var house=House.empty("Coded reference fixture");house.isDemo=true
+        var segment=Segment(roomID:house.rooms[0].id,stageID:house.stages[0].id);house.segments=[segment]
+        let centres=[V3(-0.7,-0.5,2.4),V3(0.7,-0.55,2.8),V3(-0.65,0.05,2.0),V3(0.75,0.10,2.5),V3(-0.7,0.6,2.7),V3(0.65,0.6,2.1)]
+        let codes=[1,7,19,33,102,301],width=1280,height=960
+        var cells:[[UInt8]]=[]
+        for i in centres.indices {
+            let board=try BoardGenerator.make(name:"Test reference \(i+1)",repo:repo,tagID:codes[i]);house.references.append(board)
+            let c=centres[i]
+            let pose=ReferencePose(boardID:board.id,matrix:[1,0,0,c.x, 0,0,-1,-c.y, 0,1,0,-c.z, 0,0,0,1])
+            segment.referencePoses.append(pose)
+            var bytes=[UInt8](repeating:0,count:100)
+            guard bytes.withUnsafeMutableBufferPointer({hx_tag_image(UInt32(codes[i]),$0.baseAddress,100)})==10 else{throw HouseError.message("Reference raster failed.")};cells.append(bytes)
+            if i==0 {
+                try repo.read(board.pdf).write(to:outputRoot.appendingPathComponent("coded-reference.pdf"))
+                let (gray,w,h)=try VisualMapping.image(repo.read(board.image))
+                let found=try CodedReferences.detect(gray:gray,width:w,height:h,stride:w,boards:[board])
+                guard found.count==1,found[0].tagID==codes[i],abs(found[0].corners[0].u-0.1)<0.003,abs(found[0].corners[0].v-0.9)<0.003 else{throw HouseError.message("Printed reference orientation or full-image coordinates changed.")}
+            }
+        }
+        house.segments[0]=segment
+        func observation(_ x:Double,_ y:Double=0)->Observation {
+            var matrix=Rigid().values;matrix[3]=x;matrix[7]=y
+            return Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:x+1,image:"synthetic-codes.png",width:width,height:height,camera:matrix,intrinsics:[1000,0,640,0,1000,480,0,0,1],tracking:"synthetic reference camera",light:1000,sharpness:0.1)
+        }
+        func render(_ camera:Observation,moved:Bool=false,duplicate:Bool=false)->Data {
+            var data=Data(repeating:245,count:width*height)
+            data.withUnsafeMutableBytes {buffer in
+                let context=CGContext(data:buffer.baseAddress,width:width,height:height,bitsPerComponent:8,bytesPerRow:width,space:CGColorSpaceCreateDeviceGray(),bitmapInfo:0)!
+                context.setShouldAntialias(false)
+                for i in centres.indices {
+                    var transform=PoseRefinement.matrix(segment.referencePoses[i].matrix)!
+                    if moved && i==0 {transform.columns.3.x+=0.08}
+                    let board=house.references[i],image=cells[duplicate && i==1 ? 0:i]
+                    for row in 0..<10 {for column in 0..<10 {
+                        let bounds=[(column,row),(column+1,row),(column+1,row+1),(column,row+1)]
+                        let points=bounds.compactMap {x,y -> CGPoint? in
+                            let p=transform*SIMD4((Double(x)/10-0.5)*board.width,0,(Double(y)/10-0.5)*board.width,1)
+                            guard let projected=TextureBuilder.project(V3(p.x,-p.z,p.y),through:camera) else{return nil}
+                            return CGPoint(x:projected.0.u*Double(width),y:projected.0.v*Double(height))
+                        }
+                        guard points.count==4 else{continue}
+                        context.setFillColor(gray:image[row*10+column]==0 ? 0.05:0.96,alpha:1)
+                        context.beginPath();context.move(to:points[0]);for p in points.dropFirst(){context.addLine(to:p)};context.closePath();context.fillPath()
+                    }}
+                }
+            }
+            return data
+        }
+        for x in [-0.12,0.12] {
+            var o=observation(x);o.codedDetections=try CodedReferences.detect(gray:render(o),width:width,height:height,stride:width,boards:house.references)
+            guard o.codedDetections?.count==6 else{throw HouseError.message("Known source image did not decode all six separated boards.")}
+            house.observations.append(o)
+        }
+        try house.validate()
+        let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(house));try restored.validate()
+        let map=CodedReferences.build(house:restored,segment:restored.segments[0])
+        guard map.boards.count==6 else{throw HouseError.message("Translated source-corner evidence did not qualify the saved board geometry.")}
+        var errors:[Double]=[]
+        for (x,y) in [(-0.06,0.02),(0.0,-0.03),(0.05,0.04),(0.09,-0.02)] {
+            let o=observation(x,y),result=try CodedReferences.localize(gray:render(o),width:width,height:height,stride:width,intrinsics:o.intrinsics,map:map)
+            guard let pose=result.pose,!result.conflict else{throw HouseError.message("Nominal finished-wall coded image was rejected.")}
+            errors.append((V3(pose.values[3],pose.values[7],pose.values[11])-V3(x,0,y)).length)
+        }
+        let q=observation(0.03)
+        let moved=try CodedReferences.localize(gray:render(q,moved:true),width:width,height:height,stride:width,intrinsics:q.intrinsics,map:map)
+        guard moved.conflict,moved.pose==nil else{throw HouseError.message("A moved reference was incorrectly admitted.")}
+        var duplicateRejected=false
+        do{_=try CodedReferences.localize(gray:render(q,duplicate:true),width:width,height:height,stride:width,intrinsics:q.intrinsics,map:map)}catch{duplicateRejected=true}
+        let missing=try CodedReferences.localize(gray:Data(repeating:245,count:width*height),width:width,height:height,stride:width,intrinsics:q.intrinsics,map:map)
+        let otherRegion=CodedReferences.Map(boards:[],known:map.known)
+        let wrong=try CodedReferences.localize(gray:render(q),width:width,height:height,stride:width,intrinsics:q.intrinsics,map:otherRegion)
+        guard wrong.conflict,wrong.pose==nil else{throw HouseError.message("References from another saved region did not hide alignment.")}
+        var movedHouse=house;movedHouse.references[0].valid=false
+        guard CodedReferences.build(house:movedHouse,segment:segment).boards.count==5 else{throw HouseError.message("Invalidating a board did not remove its evidence.")}
+        return ["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":duplicateRejected && missing.pose==nil && errors.allSatisfy{$0<=0.01},"nominalQueries":errors.count,"acceptedPositionErrorsMetres":errors,"movedReferenceRejected":true,"duplicateReferenceRejected":duplicateRejected,"missingReferencesHidden":missing.pose==nil,"wrongRegionRejected":true,"physicalDeviceQualified":false,"limitations":"Analytic fixed-board geometry, raster images and camera calibration. Actual ARKit anchor orientation/timing, board position/flatness/scale and complete-house diversity remain unqualified."]
     }
     nonisolated static func prepareLargeScene(textureKeys:[String])throws->(House,SpatialDisplayIndex,[String:Any]) {
         let started=ProcessInfo.processInfo.systemUptime

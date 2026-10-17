@@ -95,7 +95,7 @@ struct Observation:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var segmentID:UUID;var timestamp:Double;var date=Date()
     var image:String;var depth:String?;var confidence:String?;var depthWidth:Int=0;var depthHeight:Int=0
     var width:Int;var height:Int;var camera:[Double];var intrinsics:[Double]
-    var tracking:String;var light:Double;var sharpness:Double;var note="";var documentary=false;var imageOrientation:Int?=nil;var referenceObservations:[ReferencePose]?=nil
+    var tracking:String;var light:Double;var sharpness:Double;var note="";var documentary=false;var imageOrientation:Int?=nil;var referenceObservations:[ReferencePose]?=nil;var codedDetections:[CodedDetection]?=nil
     // Native camera transform is row-major, ARKit right/up/back. No pretend calibration.
 }
 struct DocumentaryPhoto:Codable,Identifiable,Equatable {var id=UUID();var image:String;var date=Date();var note="";var roomID:UUID?;var stageID:UUID?}
@@ -156,6 +156,12 @@ struct House:Codable,Identifiable,Equatable {
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)),d.sourceGeometry==nil || (!d.sourceGeometry!.isEmpty && d.sourceGeometry!.count<=64 && d.sourceGeometry!.allSatisfy{$0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in bookmarks {guard b.position.finite,b.yaw.isFinite,b.pitch.isFinite,roomIDs.contains(b.roomID),(b.segmentID==nil || segmentIDs.contains(b.segmentID!)) else{throw HouseError.message("Invalid viewpoint frame.")}}
         for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}
+        let codes=references.compactMap{$0.tagID}
+        guard references.count<=1000,Set(references.map{$0.id}).count==references.count,Set(codes).count==codes.count,codes.allSatisfy({(0..<587).contains($0)}),references.allSatisfy({$0.roomID==nil || roomIDs.contains($0.roomID!)}) else{throw HouseError.message("Reference identities must be unique, within the supported dictionary and assigned to an existing room.")}
+        let boardIDs=Set(references.map{$0.id})
+        for observation in observations {if let detections=observation.codedDetections {
+          guard detections.count<=64,Set(detections.map{$0.tagID}).count==detections.count,detections.allSatisfy({detection in detection.valid && boardIDs.contains(detection.boardID) && references.first(where:{$0.id==detection.boardID})?.tagID==detection.tagID}) else{throw HouseError.message("Invalid coded-reference capture provenance.")}
+        }}
         for map in visualMaps {guard segmentByID[map.segmentID]?.roomID==map.roomID,segmentByID[map.segmentID]?.stageID==map.stageID else{throw HouseError.message("Invalid visual reference provenance.")}}
         for d in drawings {if let a=d.alignment {guard a.transform.valid,a.metresPerPoint.isFinite,a.metresPerPoint>0,a.page>=0,a.sheetPoints.count>=4,a.sheetPoints.count==a.housePoints.count,a.sheetPoints.allSatisfy({$0.finite}),a.housePoints.allSatisfy({$0.finite}),a.fitMaximum.isFinite,a.checkMaximum.isFinite else{throw HouseError.message("Invalid drawing alignment.")}}}
         for a in assets {guard a.count<100,!a.contains("/"),!a.contains("\\"),!a.contains("..") else{throw HouseError.message("Unsafe asset reference.")}}

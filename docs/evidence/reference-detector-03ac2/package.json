@@ -1,0 +1,23 @@
+{
+  "sourceRevision": "94be783968e5091bcc9972c72c84fd63efce2935",
+  "version": "3.4.5",
+  "family": "tag36h11",
+  "libraries": [
+    {
+      "platform": "host",
+      "bytes": 1566512,
+      "sha256": "2ae7b49fdeb05d8de8e36c03e613e606d6e3983ce6556d1feb32a10dbfeddb6c"
+    },
+    {
+      "platform": "iphoneos",
+      "bytes": 1566064,
+      "sha256": "1f919c53d29ddf32fcbc2601f2e6eaf56aeaeb5236df921a6ec557e5be005b0c"
+    },
+    {
+      "platform": "iphonesimulator",
+      "bytes": 1566440,
+      "sha256": "4128a4cfcf9d86c0372630ffabd3d7602e6581019f7447afc924e98662b5f0d5"
+    }
+  ],
+  "fieldQualified": false
+}
