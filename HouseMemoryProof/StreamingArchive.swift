@@ -288,6 +288,17 @@ enum StreamingArchive {
     else { throw HouseError.message("Archive manifest identity failed.") }
     var house = try JSONDecoder().decode(House.self, from: data)
     try house.validate()
+    // Verify retained viewer/sidecar files as well as project originals. Older
+    // archives did not hash index.html; its ZIP CRC is still checked. New
+    // exports include it in the SHA manifest without changing the v1 reader.
+    let originalNames=Set(house.assets.map{"assets/"+$0})
+    for (name,expected) in hashes {
+      guard name != "manifest.json",entries[name] != nil,expected.count==64,expected.allSatisfy({$0.isHexDigit}) else{throw HouseError.message("Archive manifest references a missing or invalid entry.")}
+    }
+    for record in entries.values where record.name != "manifest.json" && record.name != "house.json" && !originalNames.contains(record.name) {
+      let verified=try digest(url,offset:record.offset,count:record.size)
+      guard verified.crc==record.crc,hashes[record.name]==nil || hashes[record.name]==verified.sha else{throw HouseError.message("Archive viewer or sidecar checksum failed. Restore was not committed.")}
+    }
     let needed = try house.assets.reduce(UInt64(0)) { sum, key in
       guard let r = entries["assets/" + key], hashes[r.name] != nil else {
         throw HouseError.message("Archive is missing original evidence.")

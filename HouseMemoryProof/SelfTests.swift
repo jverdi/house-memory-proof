@@ -628,6 +628,26 @@ import Darwin
                 }
                 return true
             }
+            await check("Archive handoff verifies viewer and photo-index hashes and retains legacy compatibility") {
+                let original=try Exporter.archive(house,repo:repo),records=try StreamingArchive.index(original)
+                let entries=try records.values.sorted{$0.name<$1.name}.map{StoredZip.Entry(name:$0.name,data:try StreamingArchive.read($0,from:original))}
+                let manifestIndex=entries.firstIndex{$0.name=="manifest.json"}!
+                var manifest=try JSONSerialization.jsonObject(with:entries[manifestIndex].data) as! [String:Any]
+                var hashes=manifest["sha256"] as! [String:String]
+                guard hashes["index.html"] != nil,hashes["viewer.html"] != nil else{return false}
+                let target=try Repository(root:folder.appendingPathComponent("handoff-restore")),before=try target.all()
+                for name in ["viewer.html","index.html"] {
+                    var damaged=entries;let i=damaged.firstIndex{$0.name==name}!;damaged[i].data.append(Data("changed sidecar".utf8))
+                    let url=folder.appendingPathComponent("changed-"+name+".hxray");try StoredZip.write(damaged,to:url)
+                    do{_=try Exporter.restore(url,repo:target);return false}catch{}
+                    guard try target.all()==before else{return false}
+                }
+                hashes.removeValue(forKey:"index.html");manifest["sha256"]=hashes
+                var legacy=entries;legacy[manifestIndex].data=try JSONSerialization.data(withJSONObject:manifest)
+                let url=folder.appendingPathComponent("legacy-unhashed-index.hxray");try StoredZip.write(legacy,to:url)
+                let restored=try Exporter.restore(url,repo:target)
+                return restored.features==house.features && restored.id != house.id
+            }
             await check("ZIP64 indexing preserves offsets beyond four GiB without reading payload") {
                 let source=folder.appendingPathComponent("zip64-source.bin"),small=folder.appendingPathComponent("zip64-small.zip"),large=folder.appendingPathComponent("zip64-sparse.zip")
                 try Data("small".utf8).write(to:source)

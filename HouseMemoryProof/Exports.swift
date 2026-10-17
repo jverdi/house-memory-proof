@@ -536,10 +536,6 @@ enum Exporter {
     hashes["viewer.html"]=SHA256.hash(data:viewer).map{String(format:"%02x",$0)}.joined()
     items.append(.init(name:"viewer.html",url:viewerURL))
     let manifest = staging.appendingPathComponent("manifest.json")
-    try JSONSerialization.data(
-      withJSONObject: ["format": "HouseXray", "version": 1, "sha256": hashes],
-      options: [.sortedKeys]
-    ).write(to: manifest)
     items.append(.init(name: "manifest.json", url: manifest))
     let html =
       "<!doctype html><meta charset=utf-8><title>House Xray evidence</title><style>body{font:16px system-ui;max-width:960px;margin:40px auto;background:#101923;color:#eee}img{max-width:100%;max-height:700px}article{margin:32px 0}</style><h1>House Xray evidence archive</h1><p>Unzip all files together. Coordinates in house.json are metres, Z-up. Photographs are historical evidence; placement is uncalibrated.</p><a href=viewer.html>Explore offline 3D</a> · <a href=house.json>Complete project metadata</a>"
@@ -550,8 +546,11 @@ enum Exporter {
       "<article><h2>Unposed documentary photograph</h2><img src=\"assets/\($0.image)\"><p>Photo \($0.id) · no spatial calibration</p></article>"
     }.joined()
     let index = staging.appendingPathComponent("index.html")
-    try Data((html + unposed).utf8).write(to: index)
+    let indexData=Data((html+unposed).utf8)
+    try indexData.write(to:index)
+    hashes["index.html"]=SHA256.hash(data:indexData).map{String(format:"%02x",$0)}.joined()
     items.append(.init(name: "index.html", url: index))
+    try JSONSerialization.data(withJSONObject:["format":"HouseXray","version":1,"sha256":hashes],options:[.sortedKeys]).write(to:manifest)
     let url = destination("House-Xray.hxray")
     _ = try StreamingArchive.write(items, to: url)
     return url
