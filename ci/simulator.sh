@@ -81,7 +81,7 @@ for attempt in $(seq 1 150); do
 done
 if [ -f "$app_root/self-test-progress.json" ]; then cp "$app_root/self-test-progress.json" build/evidence/native-progress.json; fi
 # Preserve already-produced evidence before an incomplete diagnostic fails the job.
-for retained in coded-reference.pdf self-test-partial.json test.hxray house-surface.glb points.glb points.usdz textured.usdz textured.glb test.glb test.usdz test-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
+for retained in coded-reference.pdf coded-reference-diagnostics.json coded-source-0.png coded-source-1.png self-test-partial.json test.hxray house-surface.glb points.glb points.usdz textured.usdz textured.glb test.glb test.usdz test-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
   if [ -f "$app_root/$retained" ]; then cp "$app_root/$retained" "build/evidence/$retained"; fi
 done
 if [ ! -f "$app_root/self-test.json" ]; then
@@ -120,8 +120,9 @@ native_failed=0
 python3 - <<'PYTEST' || native_failed=1
 import json
 r=json.load(open('build/evidence/native-self-test.json'))
-assert r['passed'], r
-print('All native self-tests passed:',len(r['tests']))
+failed=[t for t in r['tests'] if not t.get('passed')]
+print(json.dumps({'nativePassed':r['passed'],'checks':len(r['tests']),'failures':failed},sort_keys=True))
+if not r['passed']: raise SystemExit('Native diagnostic failures retained in native-self-test.json')
 PYTEST
 fi
 if [ "$mode" = native ]; then exit "$native_failed"; fi

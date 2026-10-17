@@ -730,6 +730,12 @@ extension SelfTests {
         return ["physicalFootprintBytes":info.phys_footprint,"residentBytes":info.resident_size,"lifetimeResidentPeakBytes":info.resident_size_peak]
     }
     static func codedReferenceReport(repo:Repository,outputRoot:URL)throws->[String:Any] {
+        var diagnostics:[String:Any]=["completed":false,"stage":"print","physicalDeviceQualified":false]
+        func checkpoint(_ stage:String) {
+            diagnostics["stage"]=stage
+            if let bytes=try? JSONSerialization.data(withJSONObject:diagnostics,options:[.sortedKeys]) {try? DurableFiles.write(bytes,to:outputRoot.appendingPathComponent("coded-reference-diagnostics.json"))}
+        }
+        defer {checkpoint(diagnostics["stage"] as? String ?? "unknown")}
         var house=House.empty("Coded reference fixture");house.isDemo=true
         var segment=Segment(roomID:house.rooms[0].id,stageID:house.stages[0].id);house.segments=[segment]
         let centres=[V3(-0.7,-0.5,2.4),V3(0.7,-0.55,2.8),V3(-0.65,0.05,2.0),V3(0.75,0.10,2.5),V3(-0.7,0.6,2.7),V3(0.65,0.6,2.1)]
@@ -779,10 +785,15 @@ extension SelfTests {
             return data
         }
         var measured:[UUID:ReferencePose]=[:],measurementErrors:[Double]=[]
-        for x in [-0.12,0.12] {
-            var o=observation(x);o.codedDetections=try CodedReferences.detect(gray:render(o),width:width,height:height,stride:width,boards:house.references)
+        for (imageIndex,x) in [-0.12,0.12].enumerated() {
+            checkpoint("source image \(imageIndex)")
+            var o=observation(x);let gray=render(o)
+            if let provider=CGDataProvider(data:gray as CFData),let image=CGImage(width:width,height:height,bitsPerComponent:8,bitsPerPixel:8,bytesPerRow:width,space:CGColorSpaceCreateDeviceGray(),bitmapInfo:CGBitmapInfo(rawValue:0),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent),let png=UIImage(cgImage:image).pngData() {try png.write(to:outputRoot.appendingPathComponent("coded-source-\(imageIndex).png"))}
+            o.codedDetections=try CodedReferences.detect(gray:gray,width:width,height:height,stride:width,boards:house.references)
+            diagnostics["source\(imageIndex)DetectedIDs"]=o.codedDetections?.map{$0.tagID} ?? []
             guard o.codedDetections?.count==6 else{throw HouseError.message("Known source image did not decode all six separated boards.")}
             let poses=CodedReferences.measure(o.codedDetections ?? [],camera:o.camera,intrinsics:o.intrinsics,width:width,height:height,boards:house.references)
+            diagnostics["source\(imageIndex)MeasuredIDs"]=poses.compactMap{p in house.references.first{$0.id==p.boardID}?.tagID}
             guard poses.count==6 else{throw HouseError.message("Source corner geometry did not resolve all six board poses: \(poses.count).")}
             o.referenceObservations=poses
             for pose in poses {
@@ -796,12 +807,14 @@ extension SelfTests {
             house.observations.append(o)
         }
         house.segments[0].referencePoses=measured.values.sorted{$0.boardID.uuidString<$1.boardID.uuidString}
+        diagnostics["sourceBoardPositionErrorsMetres"]=measurementErrors;checkpoint("capture persistence")
         try house.validate()
         var checkpoint=house;checkpoint.observations=[];try repo.save(checkpoint)
         for o in house.observations {try repo.stageCapture(o,projectID:house.id,room:house.rooms[0],stage:house.stages[0],segment:house.segments[0],references:house.references)}
         guard let recovered=try Repository(root:repo.root).all().first(where:{$0.id==house.id}),recovered.observations==house.observations else{throw HouseError.message("Coded capture rows did not preserve corner and pose evidence after reopening.")}
         let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(recovered));try restored.validate()
         let map=CodedReferences.build(house:restored,segment:restored.segments[0])
+        diagnostics["supportedBoards"]=map.boards.count;checkpoint("source consistency")
         guard map.boards.count==6 else{throw HouseError.message("Translated source-corner evidence did not qualify the saved board geometry.")}
         var conflictedHouse=restored,changed=restored.observations[0];changed.id=UUID()
         let firstBoard=house.references[0].id
@@ -811,10 +824,13 @@ extension SelfTests {
         guard !CodedReferences.build(house:conflictedHouse,segment:conflictedHouse.segments[0]).boards.contains(where:{$0.id==firstBoard}) else{throw HouseError.message("A conflicting later source frame was ignored in favor of earlier agreeing views.")}
         var errors:[Double]=[]
         for (x,y) in [(-0.06,0.02),(0.0,-0.03),(0.05,0.04),(0.09,-0.02)] {
+            checkpoint("query \(errors.count)")
             let o=observation(x,y),result=try CodedReferences.localize(gray:render(o),width:width,height:height,stride:width,intrinsics:o.intrinsics,map:map)
             guard let pose=result.pose,!result.conflict else{throw HouseError.message("Nominal finished-wall coded image was rejected.")}
             errors.append((V3(pose.values[3],pose.values[7],pose.values[11])-V3(x,0,y)).length)
+            diagnostics["acceptedPositionErrorsMetres"]=errors
         }
+        checkpoint("rejection challenges")
         let q=observation(0.03)
         let moved=try CodedReferences.localize(gray:render(q,moved:true),width:width,height:height,stride:width,intrinsics:q.intrinsics,map:map)
         guard moved.conflict,moved.pose==nil else{throw HouseError.message("A moved reference was incorrectly admitted.")}
@@ -826,6 +842,7 @@ extension SelfTests {
         guard wrong.conflict,wrong.pose==nil else{throw HouseError.message("References from another saved region did not hide alignment.")}
         var movedHouse=house;movedHouse.references[0].valid=false
         guard CodedReferences.build(house:movedHouse,segment:movedHouse.segments[0]).boards.count==5 else{throw HouseError.message("Invalidating a board did not remove its evidence.")}
+        diagnostics["completed"]=true;checkpoint("completed")
         return ["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":duplicateRejected && missing.pose==nil && errors.allSatisfy{$0<=0.01},"nominalQueries":errors.count,"acceptedPositionErrorsMetres":errors,"sourceBoardPositionErrorsMetres":measurementErrors,"oracleBoardPosesUsedForLocalization":false,"movedReferenceRejected":true,"duplicateReferenceRejected":duplicateRejected,"missingReferencesHidden":missing.pose==nil,"wrongRegionRejected":true,"physicalDeviceQualified":false,"limitations":"Synthetic raster images and known source camera calibration/poses. Board poses are estimated from pixels. Actual camera pose drift/timing, print flatness/scale and complete-house diversity remain unqualified."]
     }
     nonisolated static func prepareLargeScene(textureKeys:[String])throws->(House,SpatialDisplayIndex,[String:Any]) {
