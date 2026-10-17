@@ -349,3 +349,10 @@ The native-resolution AKAZE detector thresholds 0.0003 and 0.0001, isolated at w
 On October 17 at 16:10 America/New_York, the owner explicitly instructed: “Yes, Just commit directly to main.” Prepared source/evidence commits through `9297d1b3` were fast-forwarded to main. Ongoing logical commits go directly to main; no PR review is required. TestFlight remains held for the final candidate.
 
 Source `974b9d09` now passes its complete workflow: 95 native checks, both UI tests, all three process-kill recovery modes, 50 portable cases and independent GLB/USDZ/ZIP64/offline-viewer readers. The full artifact was downloaded and SHA-256 verified (`022ddd33963d49fbe907e88b74810e080a117834703dc21b0b82f9f5e264d695`); exact reports extend `docs/evidence/native-974b/`. The movie/PLY sources are newer and still require their own results.
+
+
+### Movie cancellation and strict PLY import verified natively
+
+Source `9297d1b3`, run 39065223663, passed **98/98 native checks** in 131.4 seconds. Actual cancellation three frames into the second shot retains the completed first shot and removes partial output; failures after shot commit and before/after final assembly preserve completed clips. A subsequent retry reuses all three verified chunks (hashes and modification times unchanged) and decodes all 150 output frames. Snapshot commit retry and the PLY malformed-field/header/record checks pass. The asymmetric native PLY/OBJ files were generated successfully; external-reader and UI results remain pending. Checkpoint SHA-256 was independently verified, with exact reports in `docs/evidence/native-9297/`. No physical-device or release qualification is inferred.
+
+The finished-stage follow-up at workflow `5129d268` records bounded candidate 3D/2D correspondences before querying evaluator-only synthetic camera truth. It repeats the frozen image-scale candidate without altering its matching/pose gates, so residual diagnosis can distinguish image correspondence bias from fitting behavior. Production remains unchanged.

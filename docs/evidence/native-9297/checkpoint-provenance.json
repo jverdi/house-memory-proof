@@ -1,0 +1,11 @@
+{
+  "source": "9297d1b346644c760d98534b0474980ce0fa3327",
+  "run": 39065223663,
+  "artifact": 12112739179,
+  "sha256": "fce0c1b6bcad85b5be7191f8ebb195e3f25eab14f95ddc596dda216ec438f83f",
+  "downloadedAndVerified": true,
+  "nativeChecks": 98,
+  "nativePassed": true,
+  "fullWorkflowPending": true,
+  "physicalDeviceQualified": false
+}
