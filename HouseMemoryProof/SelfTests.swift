@@ -53,6 +53,24 @@ import Darwin
                 guard !isolated.beginCapture(first) else{return false}
                 isolated.busy=false;return !isolated.captureInProgress
             }
+            mark("Foreground fallback, resource cooldown and cancellation preserve saved work")
+            do {
+                let isolated=AppModel(root:folder.appendingPathComponent("continued-fallback"))
+                isolated.create("Preserved project");let original=isolated.house
+                isolated.setProcessingForeground(true)
+                isolated.perform("Foreground-only operation") {try await Task.sleep(nanoseconds:5_000_000_000);return nil}
+                isolated.setProcessingForeground(false)
+                for _ in 0..<50 {if !isolated.busy {break};try await Task.sleep(nanoseconds:20_000_000)}
+                guard !isolated.busy,!isolated.continuedProcessing.granted,isolated.processingPause == .waitingForForeground,
+                  isolated.status.contains("Waiting for the app"),isolated.house==original else{throw HouseError.message("Foreground fallback failed to pause and preserve the saved project.")}
+                isolated.setProcessingForeground(true)
+                isolated.perform("Resource constrained operation") {try await Task.sleep(nanoseconds:5_000_000_000);return nil}
+                isolated.cancelOperation(reason:.waitingForResources)
+                for _ in 0..<50 {if !isolated.busy {break};try await Task.sleep(nanoseconds:20_000_000)}
+                guard !isolated.busy,isolated.processingPause == .waitingForResources,isolated.resourceRetryAfter>ProcessInfo.processInfo.systemUptime,
+                  isolated.status.contains("Waiting for resources"),isolated.house==original else{throw HouseError.message("Resource pause did not retain its cooldown or originals.")}
+                results.append(["test":"Foreground fallback, resource cooldown and cancellation preserve saved work","passed":true,"backgroundGPUAvailable":ContinuedProcessing.backgroundGPUAvailable,"physicalBackgroundExecutionQualified":false])
+            }catch {results.append(["test":"Foreground fallback, resource cooldown and cancellation preserve saved work","passed":false,"error":error.localizedDescription])}
             await check("Durable capture rows recover without rewriting the project and survive a stale checkpoint") {
                 let repo=try Repository(root:folder.appendingPathComponent("capture-rows"))
                 var h=try SimulatedCapture.make(repo:repo);let original=h.observations;h.observations=[];try repo.save(h)

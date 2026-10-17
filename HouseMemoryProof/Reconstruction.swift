@@ -203,7 +203,7 @@ struct CaptureWork:Codable,Identifiable,Equatable {
 extension AppModel {
   func setProcessingForeground(_ active:Bool) {
     foreground=active
-    if !active,busy {cancelOperation(reason:.waitingForForeground)}
+    if !active,busy,!continuedProcessing.granted {cancelOperation(reason:.waitingForForeground)}
     if active {resumeCaptureQueue()}
   }
   func storeCaptureWork(_ work:CaptureWork)throws {
@@ -223,7 +223,9 @@ extension AppModel {
       guard captureJobs.count<1000 || captureJobs.contains(where:{$0.projectID==projectID && $0.segmentID==segmentID}) else{throw HouseError.message("The local processing queue has reached its session limit.")}
       var work=CaptureWork(projectID:projectID,segmentID:segmentID,inputFingerprint:fingerprint)
       if !foreground {work.state = .waitingForForeground}
-      try storeCaptureWork(work);resumeCaptureQueue()
+      try storeCaptureWork(work)
+      if !automatic,foreground {userStartedCaptureJobs.insert(work.id)}
+      resumeCaptureQueue()
     }catch{self.error=error.localizedDescription}
   }
   func pauseCaptureJob(_ id:UUID) {
@@ -235,7 +237,7 @@ extension AppModel {
   func resumeCaptureQueue() {
     guard foreground,!busy,!captureInProgress,activeCaptureJob==nil,let repo=repository,
       var work=captureJobs.filter({$0.resumable}).sorted(by:{$0.created<$1.created}).first else{return}
-    guard ProcessInfo.processInfo.thermalState != .serious,ProcessInfo.processInfo.thermalState != .critical,repo.freeBytes()>750_000_000 else {
+    guard ProcessInfo.processInfo.systemUptime>=resourceRetryAfter,ProcessInfo.processInfo.thermalState != .serious,ProcessInfo.processInfo.thermalState != .critical,repo.freeBytes()>750_000_000 else {
       if work.state != .waitingForResources {work.state = .waitingForResources;work.detail="Keep the app open after freeing storage or cooling the phone.";try? storeCaptureWork(work)}
       return
     }
@@ -249,7 +251,8 @@ extension AppModel {
     }catch{self.error=error.localizedDescription;return}
     activeCaptureJob=work.id;processingPause = .paused
     let running=work
-    perform("Processing saved capture") {
+    let mayContinue=userStartedCaptureJobs.remove(work.id) != nil
+    perform("Processing saved capture",continueCPUInBackground:mayContinue) {
       defer {self.activeCaptureJob=nil}
       var finished=running
       do {

@@ -360,13 +360,16 @@ enum StoreMigrationDiagnostics {
   @Published var selected: UUID?
   @Published var error: String?
   @Published var busy = false
-  @Published var progress: Double = 0
-  @Published var status = ""
+  @Published var progress: Double = 0 {didSet {continuedProcessing.update(fraction:progress,detail:status)}}
+  @Published var status = "" {didSet {continuedProcessing.update(fraction:progress,detail:status)}}
   @Published var shareURL: URL?
   @Published var captureJobs:[CaptureWork]=[]
   var foreground=false
   var activeCaptureJob:UUID?
   var processingPause=CaptureWork.State.paused
+  let continuedProcessing=ContinuedProcessing()
+  var userStartedCaptureJobs=Set<UUID>()
+  var resourceRetryAfter:TimeInterval=0
   private var operationTask: Task<Void, Never>?
   private var captureOwner:UUID?
   let repository: Repository?
@@ -442,23 +445,33 @@ enum StoreMigrationDiagnostics {
   }
   func endCapture(_ token:UUID) {if captureOwner==token {captureOwner=nil}}
   var captureInProgress:Bool {captureOwner != nil}
-  func cancelOperation(reason:CaptureWork.State = .paused) { processingPause=reason;operationTask?.cancel(); status = "Stopping at the next safe boundary…" }
-  func perform(_ label: String, operation: @escaping () async throws -> URL?) {
+  func cancelOperation(reason:CaptureWork.State = .paused) {
+    processingPause=reason
+    if reason == .waitingForResources {resourceRetryAfter=ProcessInfo.processInfo.systemUptime+30}
+    continuedProcessing.finish(success:false);operationTask?.cancel();status="Stopping at the next safe boundary…"
+  }
+  func perform(_ label: String,continueCPUInBackground:Bool=false,operation: @escaping () async throws -> URL?) {
     guard !busy else { return }
     guard captureOwner==nil else {error="Finish saving the capture before starting this operation.";return}
     busy = true
+    processingPause = .paused
     progress = 0
     status = label
+    if continueCPUInBackground,foreground {
+      continuedProcessing.begin(title:label) {[weak self] in self?.cancelOperation(reason:.paused)}
+    }
     operationTask = Task {
-      defer { busy = false; operationTask = nil;resumeCaptureQueue() }
+      var succeeded=false
+      defer {continuedProcessing.finish(success:succeeded);busy = false; operationTask = nil;resumeCaptureQueue() }
       do {
         let result = try await operation()
         try Task.checkCancellation()
         shareURL = result
         progress = 1
         status = "Complete"
+        succeeded=true
       } catch is CancellationError {
-        status = "Cancelled; originals preserved"
+        status = processingPause == .waitingForForeground ? "Waiting for the app to reopen; checkpoints preserved" : processingPause == .waitingForResources ? "Waiting for resources; checkpoints preserved" : "Paused; originals and checkpoints preserved"
       } catch {
         self.error = error.localizedDescription
         status = "Stopped; original project preserved"

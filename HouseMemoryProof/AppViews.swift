@@ -67,7 +67,7 @@ struct RootView: View {
       if value == .background {model.setProcessingForeground(false)}
     }
     .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-      if model.busy {model.cancelOperation()}
+      if model.busy {model.cancelOperation(reason:.waitingForResources)}
     }
     .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification)) { _ in
       if ProcessInfo.processInfo.thermalState == .critical,model.busy {model.cancelOperation(reason:.waitingForResources)}
