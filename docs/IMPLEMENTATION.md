@@ -325,3 +325,10 @@ Workflow `3fc3eb18`, run 39064286652, tested two isolated ablations against the 
 | Graph cameras without joint bundle refinement | 12/12 | 12/12 | 16/20 | 18/20 | 14.891 mm |
 
 All 56 negative challenges reject in each candidate. Neither ablation repairs the finished-wall failure; both lose one more nominal view than the original upscale candidate. Neither is adopted. A separate experiment now varies only AKAZE detection contrast at original resolution, on a frozen `ca5a28fe` baseline. Production descriptor/matching/pose parameters and precision eligibility remain unchanged. These diagnostic results do not replace the required full-house, sensor, topology, lifecycle or physical-device acceptance work.
+
+
+### Snapshot commit retry verified natively
+
+Source `974b9d09`, run 39064382551, passed **95/95 native checks** in 149.7 seconds, including the new post-commit retry/conflict case. The checkpoint artifact was downloaded and SHA-256 verified (`70245d5bba01c811d7b950b553e1a002f0410983b3ad7f5ef42a61e6f9f23f5d`); native reports are retained under `docs/evidence/native-974b/`. All three process-kill recovery modes also completed successfully. UI and independent-reader steps were still running when this checkpoint was recorded. This source predates the movie-recovery and PLY changes, whose combined native run remains pending.
+
+Automatic approval review blocked a subsequent default-branch evidence update for lack of explicit main-branch authorization. The prepared evidence is preserved on `continuation-evidence-20261017`; no rejected ref update was retried. Previously queued validation continues. No TestFlight upload occurred.
