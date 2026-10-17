@@ -17,6 +17,17 @@ import SQLite3
             check("Reject reflected transform"){var t=Rigid();t.values[0] = -1;return !t.valid}
             check("Reference fit and held-out point"){let a=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,2)],b=a.map{V3(-$0.y+3,$0.x+4,$0.z+2)};guard let(t,e)=Rigid.register(source:Array(a.prefix(3)),target:Array(b.prefix(3))) else{return false};return e<1e-10 && (t.apply(a[3])-b[3]).length<1e-10}
             check("Reject collinear controls"){Rigid.register(source:[V3(),V3(1),V3(2)],target:[V3(),V3(1),V3(2)])==nil}
+            check("Checked registration rejects distorted fit despite matching held-out point"){
+                let a=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,0)]
+                var b=a;b[1]=V3(2,0,0)
+                do{_=try CheckedRegistration.fit(source:a,target:b);return false}catch{return true}
+            }
+            check("Drawing controls fit translated vertical plane and reject malformed coordinates"){
+                let a=[V3(),V3(2,0,0),V3(0,3,0),V3(2,3,0)],b=a.map{V3($0.x+4,6,$0.y+1)}
+                let(t,f,c)=try CheckedRegistration.fit(source:a,target:b)
+                guard f<1e-10,c<1e-10,(t.apply(V3(1,2,0))-V3(5,6,3)).length<1e-10 else{return false}
+                do{_=try CheckedRegistration.coordinates("1,garbage,2,3");return false}catch{return true}
+            }
             check("Fixture has three independent rooms and paired stages"){try house.validate();return house.rooms.count==3 && house.stages.count==2 && house.features.allSatisfy{$0.kind == .synthetic}}
             check("Finish switch preserves stable geometry"){let rough=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.rough))},finish=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.finished,ceilings:true))};return !rough.isEmpty && !finish.isEmpty && rough.allSatisfy{$0.trade != .finish} && finish.contains{$0.trade == .ceiling}}
             check("Additive schema migration preserves original identity"){let data=try JSONEncoder().encode(house);var json=try JSONSerialization.jsonObject(with:data) as! [String:Any];json.removeValue(forKey:"references");let old=try JSONSerialization.data(withJSONObject:json);let decoded=try JSONDecoder().decode(House.self,from:old);return decoded.id==house.id && decoded.references.isEmpty && decoded.features==house.features}

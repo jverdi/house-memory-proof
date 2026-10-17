@@ -69,7 +69,7 @@ struct Stage:Codable,Identifiable,Equatable { var id=UUID();var name:String;var 
 struct Feature:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var trade:Trade;var roomID:UUID;var stageID:UUID;var kind:EvidenceKind
     var mesh:Mesh;var route:[V3]=[];var sourceIDs:[UUID]=[];var notes="";var endpoint="";var reviewed=false
-    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil
+    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil
 }
 struct Observation:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var segmentID:UUID;var timestamp:Double;var date=Date()
@@ -87,7 +87,7 @@ struct Dimension:Codable,Identifiable,Equatable {
     var metres:Double {(a-b).length}
 }
 struct Drawing:Codable,Identifiable,Equatable {
-    var id=UUID();var name:String;var asset:String;var page:Int=0;var metresPerPoint:Double?;var roomID:UUID?;var notes="Design reference; not surveyed as-built geometry."
+    var id=UUID();var name:String;var asset:String;var page:Int=0;var metresPerPoint:Double?;var roomID:UUID?;var notes="Design reference; not surveyed as-built geometry.";var alignment:DrawingAlignment?=nil
 }
 struct Bookmark:Codable,Identifiable,Equatable { var id=UUID();var name:String;var position:V3;var yaw:Double;var pitch:Double;var roomID:UUID }
 struct House:Codable,Identifiable,Equatable {
@@ -116,6 +116,7 @@ struct House:Codable,Identifiable,Equatable {
         let featureIDs=Set(features.map{$0.id});for c in connections{guard featureIDs.contains(c.fromFeature),featureIDs.contains(c.toFeature),c.fromFeature != c.toFeature,[0,1].contains(c.fromEnd),[0,1].contains(c.toEnd) else{throw HouseError.message("Invalid service endpoint link.")}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}
+        for d in drawings {if let a=d.alignment {guard a.transform.valid,a.metresPerPoint.isFinite,a.metresPerPoint>0,a.page>=0,a.sheetPoints.count>=4,a.sheetPoints.count==a.housePoints.count,a.sheetPoints.allSatisfy({$0.finite}),a.housePoints.allSatisfy({$0.finite}),a.fitMaximum.isFinite,a.checkMaximum.isFinite else{throw HouseError.message("Invalid drawing alignment.")}}}
         for a in assets {guard a.count<100,!a.contains("/"),!a.contains("\\"),!a.contains("..") else{throw HouseError.message("Unsafe asset reference.")}}
     }
     static func empty(_ name:String)->House {

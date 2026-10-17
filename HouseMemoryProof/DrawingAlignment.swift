@@ -1,0 +1,116 @@
+import SwiftUI
+import PDFKit
+
+struct DrawingAlignment: Codable, Equatable {
+    var page: Int
+    var metresPerPoint: Double
+    var sheetPoints: [V3]
+    var housePoints: [V3]
+    var transform: Rigid
+    var fitMaximum: Double
+    var checkMaximum: Double
+    var sourceRevision: Int
+    var date = Date()
+}
+
+enum CheckedRegistration {
+    static func fit(source: [V3], target: [V3], tolerance: Double = 0.025) throws -> (Rigid, Double, Double) {
+        guard source.count >= 4, source.count == target.count,
+              source.allSatisfy({ $0.finite }), target.allSatisfy({ $0.finite }),
+              tolerance.isFinite, tolerance > 0,
+              let (transform, _) = Rigid.register(source: Array(source.prefix(3)), target: Array(target.prefix(3)))
+        else { throw HouseError.message("Supply three non-collinear fitting pairs and at least one independent check pair.") }
+        let errors = zip(source, target).map { (transform.apply($0.0) - $0.1).length }
+        let fit = errors.prefix(3).max() ?? .infinity
+        let check = errors.dropFirst(3).max() ?? .infinity
+        guard fit <= tolerance, check <= tolerance else {
+            throw HouseError.message("Alignment rejected: fitting error \((fit * 1000).formatted()) mm; independent check \((check * 1000).formatted()) mm. Both must be within \((tolerance * 1000).formatted()) mm.")
+        }
+        return (transform, fit, check)
+    }
+    static func coordinates(_ text: String) throws -> [V3] {
+        try text.split(separator: "\n").map { line in
+            let tokens = line.split(whereSeparator: { $0 == "," || $0 == " " || $0 == "\t" })
+            let values = tokens.compactMap { Double($0) }
+            guard tokens.count == 3, values.count == 3, values.allSatisfy({ $0.isFinite && abs($0) < 100000 })
+            else { throw HouseError.message("Each line must contain exactly three finite coordinates: x,y,z in metres.") }
+            return V3(values[0], values[1], values[2])
+        }
+    }
+}
+
+struct DrawingAlignmentPage: View {
+    @EnvironmentObject var model: AppModel
+    @Binding var drawing: Drawing
+    var document: PDFDocument
+    @State private var points: [CGPoint] = []
+    @State private var page = 0
+    @State private var target = ""
+    @State private var room: UUID?
+    @State private var report = ""
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Place this design sheet in the house frame. Tap four identifiable points on one page: three to fit, then a separate point to check. Enter corresponding HOUSE coordinates in metres, not an unregistered session's coordinates. This remains an approximate design overlay.")
+                    .font(.footnote)
+                PDFSurface(document: document, points: $points, selectedPage: $page, maximumPoints: 4)
+                    .frame(height: 320).background(.white)
+                Text("Page \(page + 1) · \(points.count)/4 points, in tap order")
+                ForEach(Array(points.enumerated()), id: \.offset) { i, p in
+                    Text("\(i + 1): \(p.x.formatted(.number.precision(.fractionLength(1)))), \(p.y.formatted(.number.precision(.fractionLength(1)))) PDF points")
+                        .font(.caption.monospacedDigit())
+                }
+                Button("Reset sheet points") { points = [] }
+                Picker("Room", selection: $room) {
+                    Text("Choose room").tag(UUID?.none)
+                    ForEach(model.house?.rooms ?? []) { Text($0.name).tag(Optional($0.id)) }
+                }
+                Text("Corresponding house points: x,y,z per line")
+                TextEditor(text: $target).frame(height: 120).border(.secondary.opacity(0.3))
+                Button("Check and create design overlay", action: publish)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(points.count != 4 || room == nil || drawing.metresPerPoint == nil)
+                Text(report).font(.footnote)
+                Text("Scale must first be calibrated on this page. A matching four-point check does not establish that the rest of a design drawing matches construction. Changing the source scale invalidates the previous overlay.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }.padding()
+        }.navigationTitle("Align design sheet")
+            .onAppear { page = drawing.page; room = drawing.roomID ?? model.house?.rooms.first?.id }
+    }
+
+    private func publish() {
+        do {
+            guard let house = model.house, let repo = model.repository, let room,
+                  let scale = drawing.metresPerPoint, scale.isFinite, scale > 0,
+                  page == drawing.page, let sheet = document.page(at: page)
+            else { throw HouseError.message("Calibrate the selected page's scale first, and choose its room.") }
+            let source = points.map { V3(Double($0.x) * scale, Double($0.y) * scale, 0) }
+            let targets = try CheckedRegistration.coordinates(target)
+            let (transform, fit, check) = try CheckedRegistration.fit(source: source, target: targets)
+            let bounds = sheet.bounds(for: .cropBox)
+            guard bounds.width > 0, bounds.height > 0 else { throw HouseError.message("The source page has no usable bounds.") }
+            let image = sheet.thumbnail(of: CGSize(width: 2048, height: 2048), for: .cropBox)
+            guard let bytes = image.jpegData(compressionQuality: 0.95) else { throw HouseError.message("Unable to render the source page.") }
+            let texture = try repo.put(bytes, ext: "jpg")
+            let corners = [CGPoint(x: bounds.minX, y: bounds.minY), CGPoint(x: bounds.maxX, y: bounds.minY), CGPoint(x: bounds.maxX, y: bounds.maxY), CGPoint(x: bounds.minX, y: bounds.maxY)]
+            let mesh = Mesh(vertices: corners.map { transform.apply(V3(Double($0.x) * scale, Double($0.y) * scale, 0)) }, triangles: [0,1,2,0,2,3])
+            let stage = house.stages.first(where: { $0.name == "Aligned design sheets" && $0.kind == .planned }) ?? Stage(name: "Aligned design sheets", kind: .planned)
+            var feature = Feature(name: drawing.name + " · page \(page + 1)", trade: .unknown, roomID: room, stageID: stage.id, kind: .planned, mesh: mesh)
+            feature.texture = texture
+            feature.uv = [UV(u: 0, v: 1), UV(u: 1, v: 1), UV(u: 1, v: 0), UV(u: 0, v: 0)]
+            feature.sourceDrawingID = drawing.id
+            feature.notes = "Approximate design overlay. Fit maximum \(fit) m; independent check maximum \(check) m. Source revision \(house.revision). Not observed geometry."
+            drawing.roomID = room
+            drawing.alignment = DrawingAlignment(page: page, metresPerPoint: scale, sheetPoints: source, housePoints: targets, transform: transform, fitMaximum: fit, checkMaximum: check, sourceRevision: house.revision)
+            let updated = drawing
+            model.edit { h in
+                if !h.stages.contains(where: { $0.id == stage.id }) { h.stages.append(stage) }
+                for i in h.features.indices where h.features[i].sourceDrawingID == drawing.id { h.features[i].artifactValid = false }
+                h.features.append(feature)
+                if let i = h.drawings.firstIndex(where: { $0.id == updated.id }) { h.drawings[i] = updated }
+            }
+            report = "Saved approximate design overlay. Select Aligned design sheets in Explore's stage filter. Independent check: \((check * 1000).formatted()) mm."
+        } catch { model.error = error.localizedDescription }
+    }
+}
