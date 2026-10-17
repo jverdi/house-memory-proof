@@ -5,6 +5,11 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+"502728FBE6E262C4D7E463E2" = {isa=PBXFileReference; lastKnownFileType=sourcecode.cpp.cpp; path="../packages/visual-core/hx_graph.cpp"; sourceTree="<group>";};
+"20F15E1F079458B307983638" = {isa=PBXBuildFile; fileRef="502728FBE6E262C4D7E463E2";};
+		"AAA6991CB60589038E0C7ADB" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "PoseGraph.swift"; "sourceTree" = "<group>"; };
+		"6B0CAA67B49E07CB5855CD99" = { "isa" = "PBXBuildFile"; "fileRef" = "AAA6991CB60589038E0C7ADB"; };
+
 		"6C67841CAC3092351BA1F748" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "LocalWorker.swift"; "sourceTree" = "<group>"; };
 		"2F4F2829FA92D4B4026A90D4" = { "isa" = "PBXBuildFile"; "fileRef" = "6C67841CAC3092351BA1F748"; };
 
@@ -162,7 +167,8 @@
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
-				"534A5F435ADDB25DA9F43232",
+				"534A5F435ADDB25DA9F43232", "20F15E1F079458B307983638",
+				"6B0CAA67B49E07CB5855CD99",
 				"2F4F2829FA92D4B4026A90D4",
 				"B4682D9D41E2534774DF717E",
 				"1F068429EED77742F7F2ADBE", "299A55BB4CA90F5AF0C2C0E8", "06CFF24A2BB4C7819F397F8D",
@@ -214,7 +220,8 @@
 		"FC233BDA2344D97687F5A251" = {
 			"isa" = "PBXGroup";
 			"children" = (
-				"A33603BF79F74B056172D43B",
+				"A33603BF79F74B056172D43B", "502728FBE6E262C4D7E463E2",
+				"AAA6991CB60589038E0C7ADB",
 				"6C67841CAC3092351BA1F748",
 				"51BFC28227CE7CD3D62C797B",
 				"6DA473F9AD9382E022546AE5", "HXOPENCVFRAMEWORKFILE001", "9A8CFF079FCF535073158D92", "1EFD96950014CF02BB6EF525",

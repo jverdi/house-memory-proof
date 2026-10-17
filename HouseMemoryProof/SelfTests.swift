@@ -59,6 +59,24 @@ import ImageIO
                 guard matched>=2,worst<0.03 else{throw HouseError.message("Image localization: \(matched)/3 held views, worst accepted position error \(worst) m, \(map.points.count) map features.")}
                 return true
             }
+            check("Image depth graph removes injected camera translation drift"){
+                let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
+                var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
+                let original=capture.observations
+                for i in capture.observations.indices{capture.observations[i].camera[3]+=Double(i)*0.008}
+                let solution=try PoseGraph.build(house:capture,segment:capture.segments[0],repo:repo)
+                var worst=0.0
+                for observation in original {if let pose=solution.cameras[observation.id.uuidString]{let a=observation.camera;worst=max(worst,(V3(pose[3],pose[7],pose[11])-V3(a[3],a[7],a[11])).length)}}
+                guard solution.cameras.count>=3,worst<0.015 else{throw HouseError.message("Injected drift residual \(worst) m across \(solution.cameras.count) views.")}
+                capture.segments[0].poseSolution=solution
+                guard PoseGraph.selected(capture.observations,segment:capture.segments[0],house:capture) != nil else{return false}
+                capture.observations[0].note += " changed input"
+                return PoseGraph.selected(capture.observations,segment:capture.segments[0],house:capture)==nil
+            }
+            check("Metric feature alignment and bounded pose graph closure"){
+                var error=0.0;let status=hx_graph_selftest(&error)
+                guard status==1 else{throw HouseError.message("Pose graph diagnostic failed at gate \(status).")};return error<0.0001
+            }
             check("Native visual feature matching and robust PnP diagnostics"){
                 var error=0.0;var falseAccepts:UInt32=0
                 let status=hx_vision_selftest(&error,&falseAccepts)

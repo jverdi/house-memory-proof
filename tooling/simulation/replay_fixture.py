@@ -5,7 +5,7 @@ from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('--executable',type=Path,required=True);p.add_argument('--fixture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
 exe=a.executable.resolve();fixture=a.fixture.resolve();oracle=json.loads((fixture/'vision-queries.json').read_text())
 with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
- root=Path(temporary);candidate=root/'candidate';candidate.mkdir();(candidate/'temp').mkdir()
+ root=Path(temporary).resolve();candidate=root/'candidate';candidate.mkdir();(candidate/'temp').mkdir()
  with zipfile.ZipFile(fixture/'vision-map.hxray') as z:
   for item in z.infolist():
    path=Path(item.filename);assert not path.is_absolute() and '..' not in path.parts
@@ -26,7 +26,7 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
  sandbox=['/usr/bin/sandbox-exec','-f',str(policy)]
  positive=subprocess.run(sandbox+['/bin/cat',str(candidate/'house.json')],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
  negative=subprocess.run(sandbox+['/bin/cat',str(denied)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
- assert positive.returncode==0 and negative.returncode!=0,'Oracle exclusion controls failed'
+ assert positive.returncode==0 and negative.returncode!=0, f'Oracle exclusion controls failed: permitted={positive.returncode} ({positive.stderr.decode()[-1000:]}), denied={negative.returncode} ({negative.stderr.decode()[-1000:]})'
  result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')],capture_output=True,text=True,timeout=180)
  if result.returncode:raise RuntimeError(result.stderr[-5000:])
  report=json.loads(result.stdout);by_name={x['image']:x for x in report['queries']};positive_accepted=0;false_accepts=0;worst=0.

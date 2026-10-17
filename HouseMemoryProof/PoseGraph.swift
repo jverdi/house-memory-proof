@@ -1,0 +1,68 @@
+import Foundation
+import simd
+
+struct PoseGraphSolution: Codable, Equatable {
+  var fingerprint:String
+  var cameras:[String:[Double]]
+  var edges:Int
+  var maximumEdgeResidual:Double
+  var date=Date()
+}
+enum PoseGraph {
+  static func fingerprint(house:House,segment:Segment)throws->String {
+    var raw=segment;raw.poseSolution=nil
+    return try VisualMapping.fingerprint(house:house,segment:raw)
+  }
+  static func selected(_ observations:[Observation],segment:Segment,house:House)->[Observation]? {
+    guard let solution=segment.poseSolution,
+      let current=try? fingerprint(house:house,segment:segment),current==solution.fingerprint else{return nil}
+    let corrected=observations.compactMap { observation -> Observation? in
+      guard let pose=solution.cameras[observation.id.uuidString],Rigid(values:pose).valid else{return nil}
+      var o=observation;o.camera=pose;return o
+    }
+    return corrected.count>=3 ? corrected:nil
+  }
+  static func build(house:House,segment:Segment,repo:any EvidenceAssetReader)throws->PoseGraphSolution {
+    var raw=segment;raw.poseSolution=nil
+    let input=house.observations.filter{$0.segmentID==segment.id}
+    let observations=PoseRefinement.selected(input,segment:raw,house:house).0
+    let byID=Dictionary(uniqueKeysWithValues:observations.map{($0.id,$0)})
+    let map=try VisualMapping.build(house:house,segment:raw,repo:repo)
+    guard map.views.count>=3 else{throw HouseError.message("Pose refinement needs at least three overlapping textured depth views.")}
+    let adapter=PoseRefinement.matrix([1,0,0,0, 0,0,-1,0, 0,1,0,0, 0,0,0,1])!
+    let registration=PoseRefinement.matrix((segment.registration ?? Rigid()).values)!
+    var cameraPoints:[[Double]]=[],descriptors:[Data]=[],priors:[Double]=[],ids:[UUID]=[]
+    for view in map.views {
+      guard let observation=byID[view.observationID],let native=PoseRefinement.matrix(observation.camera) else{throw HouseError.message("Visual view has no valid camera provenance.")}
+      let inverse=simd_inverse(registration*adapter*native)
+      var points:[Double]=[]
+      for point in map.points[view.start..<(view.start+view.count)] {let p=inverse*SIMD4(point.x,point.y,point.z,1);points += [p.x,p.y,p.z]}
+      cameraPoints.append(points);descriptors.append(map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32));priors += observation.camera;ids.append(observation.id)
+    }
+    var edges:[HXGraphEdge]=[]
+    for a in map.views.indices {for b in map.views.indices where b>a {
+      try Task.checkCancellation()
+      var pairs=[UInt32](repeating:0,count:2400)
+      let count=descriptors[a].withUnsafeBytes{x in descriptors[b].withUnsafeBytes{y in pairs.withUnsafeMutableBufferPointer{p in hx_vision_match(x.bindMemory(to:UInt8.self).baseAddress,UInt32(map.views[a].count),y.bindMemory(to:UInt8.self).baseAddress,UInt32(map.views[b].count),p.baseAddress,1200)}}}
+      guard count>=30 else{continue}
+      var source:[Double]=[],target:[Double]=[]
+      for i in 0..<Int(count){let x=Int(pairs[i*2])*3,y=Int(pairs[i*2+1])*3;target += cameraPoints[a][x..<x+3];source += cameraPoints[b][y..<y+3]}
+      var transform=[Double](repeating:0,count:16),rms=0.0
+      let accepted=source.withUnsafeBufferPointer{x in target.withUnsafeBufferPointer{y in transform.withUnsafeMutableBufferPointer{m in hx_depth_transform(x.baseAddress,y.baseAddress,UInt32(count),m.baseAddress,&rms)}}}
+      guard accepted>=30,Rigid(values:transform).valid else{continue}
+      let pa=PoseRefinement.matrix(Array(priors[a*16..<(a+1)*16]))!,pb=PoseRefinement.matrix(Array(priors[b*16..<(b+1)*16]))!
+      let estimate=simd_inverse(pa)*pb,measured=PoseRefinement.matrix(transform)!
+      guard simd_distance(estimate.columns.3,measured.columns.3)<0.25 else{continue}
+      var edge=HXGraphEdge();edge.a=UInt32(a);edge.b=UInt32(b)
+      withUnsafeMutableBytes(of:&edge.a_from_b){bytes in for i in 0..<16{bytes.storeBytes(of:transform[i],toByteOffset:i*8,as:Double.self)}}
+      edges.append(edge)
+    }}
+    guard edges.count>=ids.count else{throw HouseError.message("Insufficient independently matched overlap to close a local pose graph. Capture translated corner views; no camera corrections were applied.")}
+    var output=[Double](repeating:0,count:priors.count),residual=0.0
+    let status=priors.withUnsafeBufferPointer{p in edges.withUnsafeBufferPointer{e in output.withUnsafeMutableBufferPointer{o in hx_graph_optimize(p.baseAddress,UInt32(ids.count),e.baseAddress,UInt32(edges.count),o.baseAddress,&residual)}}}
+    guard status==1 else{throw HouseError.message("Pose graph rejected disconnected, inconsistent or excessive corrections. Raw camera evidence is unchanged.")}
+    var corrected:[String:[Double]]=[:]
+    for i in ids.indices{corrected[ids[i].uuidString]=Array(output[i*16..<(i+1)*16])}
+    return PoseGraphSolution(fingerprint:try fingerprint(house:house,segment:segment),cameras:corrected,edges:edges.count,maximumEdgeResidual:residual)
+  }
+}

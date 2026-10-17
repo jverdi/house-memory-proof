@@ -81,7 +81,7 @@ struct Observation:Codable,Identifiable,Equatable {
 }
 struct DocumentaryPhoto:Codable,Identifiable,Equatable {var id=UUID();var image:String;var date=Date();var note="";var roomID:UUID?;var stageID:UUID?}
 struct Segment:Codable,Identifiable,Equatable {
-    var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var interrupted=false;var approved=false;var referencePoses:[ReferencePose]=[]
+    var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var interrupted=false;var approved=false;var referencePoses:[ReferencePose]=[];var poseSolution:PoseGraphSolution?=nil
 }
 struct Dimension:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var a:V3;var b:V3;var roomID:UUID;var date=Date();var source="Approximate geometry";var sourceRevision:Int;var segmentID:UUID?=nil
@@ -116,6 +116,7 @@ struct House:Codable,Identifiable,Equatable {
         let segmentByID=Dictionary(uniqueKeysWithValues:segments.map{($0.id,$0)})
         for f in features {if let sid=f.segmentID,!segmentIDs.contains(sid){throw HouseError.message("Feature references an absent capture session.")};if let uv=f.uv {guard uv.count==f.mesh.vertices.count,uv.allSatisfy({$0.u.isFinite && $0.v.isFinite}) else{throw HouseError.message("Invalid texture coordinates.")}}}
         for s in segments {guard roomIDs.contains(s.roomID),stageIDs.contains(s.stageID) else{throw HouseError.message("Capture session references an absent space or stage.")};if let t=s.registration, !t.valid {throw HouseError.message("Invalid segment registration.")}}
+        for s in segments {if let solution=s.poseSolution {guard solution.cameras.count>=3,solution.cameras.count<=24,solution.maximumEdgeResidual.isFinite,solution.maximumEdgeResidual>=0,solution.cameras.allSatisfy({ key,value in observations.contains(where:{$0.id.uuidString==key && $0.segmentID==s.id}) && Rigid(values:value).valid }) else{throw HouseError.message("Invalid optimized camera provenance.")}}}
         for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentByID[o.segmentID]?.roomID==o.roomID,segmentByID[o.segmentID]?.stageID==o.stageID,o.sharpness.isFinite,o.light.isFinite,o.camera.count==16,Rigid(values:o.camera).valid,o.intrinsics.count==9,o.intrinsics[0]>0,o.intrinsics[4]>0,o.timestamp.isFinite,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.width<=20000,o.height>0,o.height<=20000,o.depthWidth>=0,o.depthWidth<=8192,o.depthHeight>=0,o.depthHeight<=8192 else{throw HouseError.message("Invalid observation metadata.")}}
         let featureIDs=Set(features.map{$0.id});for c in connections{guard featureIDs.contains(c.fromFeature),featureIDs.contains(c.toFeature),c.fromFeature != c.toFeature,[0,1].contains(c.fromEnd),[0,1].contains(c.toEnd) else{throw HouseError.message("Invalid service endpoint link.")}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)) else{throw HouseError.message("Invalid measurement reference.")}}

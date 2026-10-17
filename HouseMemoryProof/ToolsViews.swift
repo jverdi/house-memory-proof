@@ -471,7 +471,7 @@ struct ReconstructionPage: View {
   var body: some View {
     List {
       Text(
-        "Fuse saved raw depth locally. This bounded 2 cm point-cloud engine uses ARKit poses without bundle adjustment; it does not reconstruct thin wires reliably or establish precision."
+        "Fuse saved raw depth locally. Bounded 2 cm fusion uses raw poses, reference constraints or an optional local RGB-D pose graph. The graph handles up to 12 textured views, not whole-house bundle adjustment. Thin wires and precision remain unqualified."
       ).font(.footnote)
       ForEach(house.segments) { s in
         VStack(alignment: .leading) {
@@ -501,6 +501,24 @@ struct ReconstructionPage: View {
               ).font(.caption)
             }
           }.disabled(model.busy)
+          Button("Refine local camera poses") {
+            guard let repo=model.repository else{return}
+            let revision=house.revision
+            model.perform("Matching depth features and refining camera poses") {
+              let solution=try await LocalWorker.run {try PoseGraph.build(house:house,segment:s,repo:repo)}
+              guard model.house?.id==house.id,model.house?.revision==revision else{throw HouseError.message("Capture changed; camera solution not published.")}
+              model.edit { h in
+                guard let index=h.segments.firstIndex(where:{$0.id==s.id}) else{return}
+                h.segments[index].poseSolution=solution
+                h.visualMaps.removeAll{$0.segmentID==s.id}
+                for i in h.features.indices where h.features[i].segmentID==s.id && !h.features[i].sourceIDs.isEmpty {h.features[i].artifactValid=false;h.features[i].hidden=true}
+              }
+              return nil
+            }
+          }.disabled(model.busy)
+          if let solution=s.poseSolution {
+            Text("Local graph: \(solution.cameras.count) camera views, \(solution.edges) matched connections. Rebuild surfaces and visual references after refinement. Residuals do not establish accuracy.").font(.caption)
+          }
           Button("Reconstruct triangle surface") {
             guard let repo = model.repository else { return }
             let revision = house.revision

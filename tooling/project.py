@@ -32,7 +32,7 @@ p.write_text(s)
 
 # Native visual feature / pose core and official platform-specific static SDK.
 s=p.read_text()
-for name in ['hx_vision.cpp','hx_vision_test.cpp']:
+for name in ['hx_vision.cpp','hx_vision_test.cpp','hx_graph.cpp']:
  rid=hashlib.sha256(('vision-file:'+name).encode()).hexdigest()[:24].upper()
  bid=hashlib.sha256(('vision-build:'+name).encode()).hexdigest()[:24].upper()
  if rid not in s:

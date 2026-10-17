@@ -70,7 +70,7 @@ enum SurfaceReconstruction {
         vertices: vertices.map { V3($0.x, $0.y, $0.z) }, triangles: Array(0..<Int32(count))),
       sourceIDs: observations.map { $0.id },
       notes:
-        "Sparse 2 cm signed-distance fusion, 6 cm truncation and ≥3 distinct views. Depth discontinuities are excluded. \(referenceSupported ? "Two-reference consensus camera constraints were used; unreferenced frames were excluded.":"Uses unoptimized camera priors.") Thin services, occlusions and precision remain unqualified.",
+        "Sparse 2 cm signed-distance fusion, 6 cm truncation and ≥3 distinct views. Depth discontinuities are excluded. \(referenceSupported ? "Locally constrained camera estimates were used; unsupported frames were excluded.":"Uses unoptimized camera priors.") Thin services, occlusions and precision remain unqualified.",
       segmentID: segment.id)
   }
 }

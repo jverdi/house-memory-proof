@@ -15,6 +15,7 @@ on:
       - HouseMemoryProof/EvidenceModels.swift
       - HouseMemoryProof/Domain.swift
       - HouseMemoryProof/PoseRefinement.swift
+      - HouseMemoryProof/PoseGraph.swift
   workflow_dispatch:
 permissions:
   contents: read
