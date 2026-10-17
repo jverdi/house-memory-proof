@@ -21,12 +21,18 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: rendered-construction-fixture
-          run-id: 39010282671
-          github-token: ${{ github.token }}
-          path: build/render-input
+      - name: Download checksum-pinned durable fixture
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/render-input
+          if ! gh release download rendered-reference-v1 --pattern rendered-reference-v1.zip --dir build; then
+            gh api "repos/$GH_REPO/actions/artifacts/12092369790/zip" > build/rendered-reference-v1.zip
+          fi
+          echo '91ad7166dcd79270aff71de974bd9dc2e3a9204f701ff8d7cd2313671b178d0b  build/rendered-reference-v1.zip' | shasum -a 256 --check
+          unzip -q build/rendered-reference-v1.zip -d build/render-input
       - uses: actions/cache@v4
         with:
           path: build/opencv-host

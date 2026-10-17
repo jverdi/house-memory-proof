@@ -1,0 +1,33 @@
+name: Preserve frozen development fixture
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/preserve-fixture.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  preserve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Preserve the exact reviewed artifact in this private repository
+        run: |
+          set -euo pipefail
+          archive=rendered-reference-v1.zip
+          if gh release view rendered-reference-v1 >/dev/null 2>&1; then
+            gh release download rendered-reference-v1 --pattern "$archive"
+          else
+            gh api "repos/$GH_REPO/actions/artifacts/12092369790/zip" > "$archive"
+          fi
+          echo '91ad7166dcd79270aff71de974bd9dc2e3a9204f701ff8d7cd2313671b178d0b  rendered-reference-v1.zip' | sha256sum --check
+          if ! gh release view rendered-reference-v1 >/dev/null 2>&1; then
+            gh release create rendered-reference-v1 "$archive" \
+              --target 3bb06ee5deabe9b1dcc8b84cd4e572b766c00134 --prerelease \
+              --title 'Frozen rendered development fixture v1' \
+              --notes 'Exact Blender development fixture ZIP, SHA256 91ad7166dcd79270aff71de974bd9dc2e3a9204f701ff8d7cd2313671b178d0b. Development diagnostic, not protected qualification. No app binary.'
+          fi
