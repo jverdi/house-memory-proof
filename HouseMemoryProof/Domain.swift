@@ -91,7 +91,7 @@ struct Segment:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var registrationLink:RegistrationLink?=nil;var interrupted=false;var approved=false;var referencePoses:[ReferencePose]=[];var poseSolution:PoseGraphSolution?=nil
 }
 struct Dimension:Codable,Identifiable,Equatable {
-    var id=UUID();var name:String;var a:V3;var b:V3;var roomID:UUID;var date=Date();var source="Approximate geometry";var sourceRevision:Int;var segmentID:UUID?=nil
+    var id=UUID();var name:String;var a:V3;var b:V3;var roomID:UUID;var date=Date();var source="Approximate geometry";var sourceRevision:Int;var segmentID:UUID?=nil;var sourceGeometry:[AnnotationDependency]?=nil
     var metres:Double {(a-b).length}
 }
 struct Drawing:Codable,Identifiable,Equatable {
@@ -131,7 +131,7 @@ struct House:Codable,Identifiable,Equatable {
         for f in features {if let controls=f.photoControls {guard controls.count==3,Set(controls.map{$0.observationID}).count==3,controls.allSatisfy({c in c.u.isFinite && c.v.isFinite && (0...1).contains(c.u) && (0...1).contains(c.v) && observations.contains(where:{$0.id==c.observationID && $0.segmentID==f.segmentID})}) else{throw HouseError.message("Invalid image triangulation provenance.")}}}
         for f in features {if let tracks=f.pointTracks {guard tracks.count==f.mesh.vertices.count,tracks.allSatisfy({track in track.controls.count>=3 && track.controls.count<=12 && Set(track.controls.map{$0.observationID}).count==track.controls.count && track.controls.allSatisfy{c in c.u.isFinite && c.v.isFinite && (0...1).contains(c.u) && (0...1).contains(c.v) && f.sourceIDs.contains(c.observationID)}}) else{throw HouseError.message("Invalid photograph point provenance.")}}}
         for f in features {if let sources=f.annotationSources {guard !sources.isEmpty,sources.count<=64,Set(sources.map{$0.featureID}).count==sources.count,sources.allSatisfy({$0.featureID != f.id && $0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid annotation source relationships.")}}}
-        for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)) else{throw HouseError.message("Invalid measurement reference.")}}
+        for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)),d.sourceGeometry==nil || (!d.sourceGeometry!.isEmpty && d.sourceGeometry!.count<=64 && d.sourceGeometry!.allSatisfy{$0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in bookmarks {guard b.position.finite,b.yaw.isFinite,b.pitch.isFinite,roomIDs.contains(b.roomID),(b.segmentID==nil || segmentIDs.contains(b.segmentID!)) else{throw HouseError.message("Invalid viewpoint frame.")}}
         for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}
         for map in visualMaps {guard segmentByID[map.segmentID]?.roomID==map.roomID,segmentByID[map.segmentID]?.stageID==map.stageID else{throw HouseError.message("Invalid visual reference provenance.")}}

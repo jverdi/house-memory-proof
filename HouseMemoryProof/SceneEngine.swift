@@ -358,6 +358,7 @@ extension UIColor {
     selection = hit.node.name.flatMap(UUID.init(uuidString:))
     let v = V3(ar: SIMD3(hit.worldCoordinates.x, hit.worldCoordinates.y, hit.worldCoordinates.z))
     if tool != "Inspect" {
+      guard selection != nil else{return}
       if (tool == "Measure" && points.count >= 2) || (tool == "Boundary" && points.count >= 3) {points=[];pointFeatureIDs=[]}
       if points.isEmpty {pointRoomID=house?.features.first(where:{$0.id==selection})?.roomID;pointFeatureIDs=[]}
       if let selection,!pointFeatureIDs.contains(selection),pointFeatureIDs.count<64 {pointFeatureIDs.append(selection)}

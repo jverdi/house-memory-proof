@@ -101,6 +101,20 @@ enum PoseGraph {
 
 // Derived geometry follows the exact capture/pose/reference inputs that produced it.
 enum DerivedEvidence {
+  static func dependencies(_ sources:[UUID],house:House)->[AnnotationDependency] {
+    sources.compactMap{id in
+      guard let source=house.features.first(where:{$0.id==id}) else{return nil}
+      return AnnotationDependency(featureID:source.id,revision:source.revision,segmentID:source.segmentID,registration:source.segmentID.flatMap{sid in house.segments.first{$0.id==sid}?.registration})
+    }
+  }
+  static func measurementIsCurrent(_ dimension:Dimension,house:House)->Bool {
+    guard let dependencies=dimension.sourceGeometry,!dependencies.isEmpty else{return false}
+    let current=currentIDs(house)
+    return dependencies.allSatisfy{dependency in
+      guard current.contains(dependency.featureID),let source=house.features.first(where:{$0.id==dependency.featureID}),source.revision==dependency.revision,source.segmentID==dependency.segmentID else{return false}
+      return source.segmentID.flatMap{sid in house.segments.first{$0.id==sid}?.registration}==dependency.registration
+    }
+  }
   static func currentIDs(_ house:House)->Set<UUID> {
     let needed=Set(house.features.filter{$0.sourceFingerprint != nil}.compactMap{$0.segmentID})
     var fingerprints:[UUID:String]=[:]

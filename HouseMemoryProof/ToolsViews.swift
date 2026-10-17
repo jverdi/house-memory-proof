@@ -29,8 +29,15 @@ struct ToolsPage: View {
                     "\(d.metres.formatted(.number.precision(.fractionLength(3)))) m  /  \((d.metres*3.2808399).formatted(.number.precision(.fractionLength(2)))) ft"
                   )
                   Text(
-                    "\(d.source) · revision \(d.sourceRevision)\(d.sourceRevision != house.revision ? " · source revision differs":"")"
+                    "\(d.source) · \(DerivedEvidence.measurementIsCurrent(d,house:house) ? "source geometry current":"historical measurement; source changed or unlinked")"
                   ).font(.caption).foregroundStyle(.secondary)
+                  if let dependencies=d.sourceGeometry {
+                    ForEach(dependencies,id:\.featureID){dependency in
+                      if let source=house.features.first(where:{$0.id==dependency.featureID}) {
+                        Text("\(source.name) · \(house.stages.first(where:{$0.id==source.stageID})?.name ?? "Unknown stage")").font(.caption)
+                      }
+                    }
+                  }
                 }
               }
             }.navigationTitle("Measurements")

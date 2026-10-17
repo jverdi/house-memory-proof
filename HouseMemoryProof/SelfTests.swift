@@ -90,9 +90,10 @@ import Darwin
                 annotation.annotationSources=[AnnotationDependency(featureID:source.id,revision:source.revision,segmentID:segment.id,registration:segment.registration)]
                 h.features=[source,annotation];try h.validate()
                 let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))
-                guard DerivedEvidence.currentIDs(restored).contains(annotation.id) else{return false}
+                let dimension=Dimension(name:"Wall size",a:V3(),b:V3(1,0,0),roomID:h.rooms[0].id,sourceRevision:h.revision,sourceGeometry:annotation.annotationSources)
+                guard DerivedEvidence.currentIDs(restored).contains(annotation.id),DerivedEvidence.measurementIsCurrent(dimension,house:restored) else{return false}
                 h.segments[0].registration!.values[3]=0.1
-                guard !DerivedEvidence.currentIDs(h).contains(annotation.id) else{return false}
+                guard !DerivedEvidence.currentIDs(h).contains(annotation.id),!DerivedEvidence.measurementIsCurrent(dimension,house:h) else{return false}
                 h=restored;source.revision+=1;h.features[0]=source
                 guard !DerivedEvidence.currentIDs(h).contains(annotation.id) else{return false}
                 h=restored;h.features[0].artifactValid=false

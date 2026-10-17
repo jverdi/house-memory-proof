@@ -356,7 +356,8 @@ struct ExploreView: View {
                           b: controller.points[1],
                           roomID: controller.pointRoomID ?? options.room ?? r.id,
                           sourceRevision: house.revision,
-                          segmentID: SceneBuilder.activeUnregisteredSegment(house, options: options)
+                          segmentID: SceneBuilder.activeUnregisteredSegment(house, options: options),
+                          sourceGeometry:DerivedEvidence.dependencies(controller.pointFeatureIDs,house:house)
                         ))
                     }
                     controller.clear()
@@ -475,7 +476,7 @@ struct ExploreView: View {
                 if let r = house.rooms.first, let stage = house.stages.first {
                   let pts = controller.points
                   let sources=controller.pointFeatureIDs.compactMap{id in house.features.first{$0.id==id}}
-                  let dependencies=sources.map{f in AnnotationDependency(featureID:f.id,revision:f.revision,segmentID:f.segmentID,registration:f.segmentID.flatMap{sid in house.segments.first{$0.id==sid}?.registration})}
+                  let dependencies=DerivedEvidence.dependencies(controller.pointFeatureIDs,house:house)
                   let f = Feature(
                     name: routeName.isEmpty ? "Traced route" : routeName, trade: routeTrade,
                     roomID: controller.pointRoomID ?? options.room ?? r.id,
