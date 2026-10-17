@@ -27,6 +27,9 @@ import Vision
   private var stopping = false
   private var generation = UUID()
   private var starting: UUID?
+  private var captureLease:UUID?
+  private var mapRequest:UUID?
+  private var mapWatchdog:Task<Void,Never>?
   var reveal = false
   private var revealBoundary:RevealBoundary?
   private var revealedNodes: [SCNNode] = []
@@ -60,7 +63,10 @@ import Vision
     let startToken = UUID()
     starting = startToken
     Task {
-      defer { if starting == startToken { starting = nil } }
+      defer {
+        if starting == startToken {starting=nil}
+        if !running && !processing {releaseCaptureLease(startToken)}
+      }
       let granted = await AVCaptureDevice.requestAccess(for: .video)
       guard granted else {
         message =
@@ -83,6 +89,8 @@ import Vision
         message = "Free at least 750 MB before starting a capture."
         return
       }
+      guard model?.beginCapture(startToken)==true else{message="Another operation is active. Finish it before starting capture.";return}
+      captureLease=startToken
       self.reveal = reveal
       self.revealBoundary = boundary
       houseID = h.id
@@ -570,13 +578,23 @@ import Vision
     if reveal {
       view.session.pause()
       revealedNodes.forEach { $0.isHidden = true }
-      processing = false
+      finishCaptureState()
       return
     }
     if pending == 0 { finishStop() }
   }
+  private func releaseCaptureLease(_ token:UUID) {
+    model?.endCapture(token)
+    if captureLease==token {captureLease=nil}
+  }
+  private func finishCaptureState() {
+    mapWatchdog?.cancel();mapWatchdog=nil;mapRequest=nil
+    view.session.pause();processing=false;stopping=false
+    if let captureLease {releaseCaptureLease(captureLease)}
+  }
   private func finishStop() {
-    guard processing, let segment, let houseID, let model, let repo = model.repository else { return }
+    guard processing,mapRequest==nil else{return}
+    guard let segment,let houseID,let model,let repo=model.repository else{finishCaptureState();return}
     let features = meshes.values.flatMap{$0}
     let saved = model.edit(projectID: houseID) { h in
       h.features.removeAll { $0.segmentID == segment.id }
@@ -586,19 +604,23 @@ import Vision
       }
     }
     guard saved else {
-      view.session.pause(); processing = false; stopping = false
+      finishCaptureState()
       message = "Surface checkpoint failed. Existing photographs and capture recovery records remain preserved."
       return
     }
+    let request=UUID();mapRequest=request
+    mapWatchdog=Task { [weak self] in
+      do{try await Task.sleep(nanoseconds:8_000_000_000)}catch{return}
+      guard let self,self.mapRequest==request else{return}
+      self.finishCaptureState()
+      self.message="Photos and geometry saved. ARKit did not return a world map; use reference boards or a visual reference for alignment."
+    }
     view.session.getCurrentWorldMap { [weak self] map, error in
       Task { @MainActor in
-        guard let self else { return }
-        defer {
-          self.view.session.pause()
-          self.processing = false
-          self.stopping = false
-        }
+        guard let self,self.mapRequest==request else{return}
+        defer {self.finishCaptureState()}
         do {
+          if let error {throw error}
           if let map {
             let data = try NSKeyedArchiver.archivedData(
               withRootObject: map, requiringSecureCoding: true)
@@ -610,8 +632,9 @@ import Vision
             }
             guard mapSaved else { throw HouseError.message("Map metadata save failed.") }
           }
-          self.message =
-            "Session saved: \(self.count) images, \(features.count) mesh patches. Approximate, uncalibrated geometry."
+          self.message = map==nil
+            ? "Photos and geometry saved. No world map was available; use reference boards or a visual reference for alignment."
+            : "Session saved: \(self.count) images, \(features.count) mesh patches. Approximate, uncalibrated geometry."
         } catch {
           self.message = "Photos and geometry saved. Map save failed: \(error.localizedDescription)"
         }

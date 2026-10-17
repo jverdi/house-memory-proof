@@ -10,6 +10,7 @@ import Darwin
 @MainActor enum SelfTests {
     static func run(model:AppModel,includeMovie:Bool=false) async {
         guard let mainRepo=model.repository else{return}
+        guard !model.captureInProgress else{model.error="Finish saving the capture before running diagnostics.";return}
         var results:[[String:Any]]=[]
         let wasBusy=model.busy;model.busy=true
         defer{model.busy=wasBusy}
@@ -25,6 +26,19 @@ import Darwin
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
+            await check("Capture owns processing through final save and stale completion cannot unlock a new capture") {
+                let isolated=AppModel(root:folder.appendingPathComponent("capture-lease")),first=UUID(),second=UUID()
+                guard isolated.beginCapture(first),!isolated.beginCapture(second) else{return false}
+                isolated.perform("Blocked export"){nil}
+                guard !isolated.busy,isolated.captureInProgress else{return false}
+                isolated.endCapture(first)
+                guard isolated.beginCapture(second) else{return false}
+                isolated.endCapture(first)
+                guard isolated.captureInProgress else{return false}
+                isolated.endCapture(second);isolated.busy=true
+                guard !isolated.beginCapture(first) else{return false}
+                isolated.busy=false;return !isolated.captureInProgress
+            }
             await check("Durable capture rows recover without rewriting the project and survive a stale checkpoint") {
                 let repo=try Repository(root:folder.appendingPathComponent("capture-rows"))
                 var h=try SimulatedCapture.make(repo:repo);let original=h.observations;h.observations=[];try repo.save(h)

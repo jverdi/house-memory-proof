@@ -1,0 +1,12 @@
+{
+  "source": "7366a2e8b9798aa34beb7bae76acb457742e62fc",
+  "run": 39035648512,
+  "artifact": 12102407023,
+  "artifactSHA256": "a77197634a39e674c082ba9527be7dc33b6b219d320ec96f3720644fd5c47ba6",
+  "nativePassed": 75,
+  "nativeTotal": 76,
+  "uiPassed": 2,
+  "processRecoveryPassed": 3,
+  "fullyPassed": false,
+  "physicalQualification": false
+}

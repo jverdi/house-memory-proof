@@ -346,6 +346,7 @@ enum StoreMigrationDiagnostics {
   @Published var status = ""
   @Published var shareURL: URL?
   private var operationTask: Task<Void, Never>?
+  private var captureOwner:UUID?
   let repository: Repository?
   init(root: URL? = nil) {
     do {
@@ -411,9 +412,16 @@ enum StoreMigrationDiagnostics {
       }
     } catch { self.error = error.localizedDescription }
   }
+  func beginCapture(_ token:UUID)->Bool {
+    guard !busy,captureOwner==nil else{return false}
+    captureOwner=token;return true
+  }
+  func endCapture(_ token:UUID) {if captureOwner==token {captureOwner=nil}}
+  var captureInProgress:Bool {captureOwner != nil}
   func cancelOperation() { operationTask?.cancel(); status = "Stopping at the next safe boundary…" }
   func perform(_ label: String, operation: @escaping () async throws -> URL?) {
     guard !busy else { return }
+    guard captureOwner==nil else {error="Finish saving the capture before starting this operation.";return}
     busy = true
     progress = 0
     status = label
