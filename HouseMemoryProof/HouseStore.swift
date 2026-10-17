@@ -52,10 +52,14 @@ final class Repository: EvidenceAssetReader {
     while step == SQLITE_ROW {
       defer { step = sqlite3_step(s) }
       let n = Int(sqlite3_column_bytes(s, 1))
-      guard let p = sqlite3_column_blob(s, 1) else { continue }
+      guard n>0,n<=100_000_000,let p = sqlite3_column_blob(s, 1) else {
+        recoveryWarnings.append("A project row is empty or exceeds its read budget; its database contents remain intact.")
+        continue
+      }
       let data = Data(bytes: p, count: n)
       do {
         var h = try JSONDecoder().decode(House.self, from: data)
+        guard let row=sqlite3_column_text(s,0),UUID(uuidString:String(cString:row))==h.id else{throw HouseError.message("Stored project identity disagrees with its database row.")}
         let pending=try captureRecords(projectID:h.id)
         guard Set(h.observations.map{$0.id}).count==h.observations.count else{throw HouseError.message("Duplicate capture identities in the stored project.")}
         var known=Dictionary(uniqueKeysWithValues:h.observations.map{($0.id,$0)})

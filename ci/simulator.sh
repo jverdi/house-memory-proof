@@ -2,12 +2,17 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
+mode="${1:-all}"
+case "$mode" in all|prepare|verify) ;; *) echo 'Expected all, prepare or verify'; exit 2;; esac
+if [ "$mode" != verify ]; then
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
 bash tooling/solver/build.sh ios
 cp build/ceres/CERES-LICENSE.txt build/ceres/EIGEN-LICENSE.txt HouseMemoryProof/IFC/
 cp build/opencv/LICENSE HouseMemoryProof/IFC/OPENCV-LICENSE.txt
+fi
+if [ "$mode" = prepare ]; then exit 0; fi
 xcodebuild -version | tee build/evidence/xcode-version.txt
 xcrun simctl list devices available --json > build/evidence/simulator-inventory.json
 device_id="$(python3 - <<'PY'
@@ -26,7 +31,7 @@ PY
 )"
 revision="$(git rev-parse --short=10 HEAD)"
 build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
-xcodebuild build \
+python3 ci/run_bounded.py 600 xcodebuild build \
   -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData \
@@ -37,7 +42,7 @@ xcodebuild build \
 if ! xcrun simctl list devices booted | grep -Fq "$device_id"; then
   xcrun simctl boot "$device_id"
 fi
-xcrun simctl bootstatus "$device_id" -b
+python3 ci/run_bounded.py 180 xcrun simctl bootstatus "$device_id" -b
 xcrun simctl install "$device_id" build/DerivedData/Build/Products/Debug-iphonesimulator/HouseMemoryProof.app
 xcrun simctl launch "$device_id" com.example.HouseMemoryProof --demo --self-test --video-test | tee build/evidence/launch.log
 # Allow the first SwiftUI frame to render before recording CI evidence.
@@ -73,6 +78,7 @@ cp "$app_root/test.glb" build/evidence/test.glb
 cp "$app_root/test.usdz" build/evidence/test.usdz
 cp "$app_root/test-render.png" build/evidence/test-render.png
 cp "$app_root/test-tour.mp4" build/evidence/test-tour.mp4
+cp "$app_root/test-tour-frame.png" build/evidence/test-tour-frame.png
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
 python3 - <<'PYTEST'
 import json
@@ -100,7 +106,7 @@ cp "$app_root/process-recovery.json" "build/evidence/process-recovery-$fault_mod
 python3 -c "import json; r=json.load(open('build/evidence/process-recovery-$fault_mode.json')); assert r['passed'],r"
 done
 
-xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
+python3 ci/run_bounded.py 600 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \

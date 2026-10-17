@@ -89,7 +89,7 @@ struct ToolsPage: View {
           Button("Import archive, IFC or point cloud") { importing = true }
           Button("Restore previous local revision") { model.undo() }
           Text(
-            "Save your archive to iCloud Drive or external storage using Files. This is a manual portable snapshot, not automatic iCloud synchronization. Archives stream originals in bounded buffers using ZIP64; available device storage is the practical limit. Originals are never evicted."
+            "Save your archive to iCloud Drive or external storage using Files. Portable archives and optional incremental folder snapshots preserve separate revisions; they do not merge edits from different devices. Archives stream originals in bounded buffers using ZIP64; available device storage is the practical limit. Originals are never evicted."
           ).font(.footnote).foregroundStyle(.secondary)
         }
         Section("Diagnostics") {
@@ -125,7 +125,7 @@ struct ToolsPage: View {
           }
           Button("Run synthetic self-tests") {
             model.perform("Running isolated synthetic diagnostics") {
-              await SelfTests.run(model: model)
+              await SelfTests.run(model: model,includeMovie:true)
               diagnostics = "Self-test report saved. Use Export diagnostics to inspect the pass/fail results."
               return nil
             }
@@ -493,7 +493,7 @@ struct ReconstructionPage: View {
   var body: some View {
     List {
       Text(
-        "Fuse saved raw depth locally. Bounded 2 cm fusion uses raw poses, reference constraints or an optional local RGB-D pose graph. The graph handles up to 12 textured views, not whole-house bundle adjustment. Thin wires and precision remain unqualified."
+        "Fuse saved raw depth locally. Bounded 2 cm fusion uses raw poses, reference constraints or an optional local RGB-D pose graph. Session refinement uses at most 120 connected keyframes; other photographs stay outside the saved solution. Thin wires and precision remain unqualified."
       ).font(.footnote)
       ForEach(house.segments) { s in
         VStack(alignment: .leading) {

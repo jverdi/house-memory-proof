@@ -21,33 +21,42 @@ enum BoundaryCoverage {
       let raw=house.observations.filter{$0.segmentID==segment.id && !$0.documentary && $0.depth != nil}
       observations += PoseRefinement.selected(raw,segment:segment,house:house).0.map{o in var changed=o;changed.camera=PoseRefinement.array(conversion*PoseRefinement.matrix(o.camera)!);return changed}
     }
-    let count=min(120,observations.count)
-    let selected=(0..<count).map{observations[$0*observations.count/count]}
-    let cameras=try selected.map{o in (TextureBuilder.Camera(observation:o,depth:try repo.read(o.depth!)),try o.confidence.map{try repo.read($0)})}
+    let selected=VisualMapping.keyframes(observations,limit:120)
     let columns=min(64,max(1,Int(ceil(boundary.width/0.1)))),rows=min(64,max(1,Int(ceil(boundary.height/0.1))))
-    var states:[Int]=[]
-    for y in 0..<rows {for x in 0..<columns {
+    let points=(0..<(columns*rows)).map{index->V3 in
+      boundary.origin+boundary.horizontal*(boundary.width*(Double(index%columns)+0.5)/Double(columns))+boundary.vertical*(boundary.height*(Double(index/columns)+0.5)/Double(rows))+boundary.normal*boundary.depth
+    }
+    var states=[Int](repeating:0,count:points.count),positions=[[V3]](repeating:[],count:points.count)
+    var blocked=[Bool](repeating:false,count:points.count),weak=[Bool](repeating:false,count:points.count)
+    // Stream one original depth/confidence pair at a time. A long capture must
+    // not retain all camera buffers just to inspect the same wall rectangle.
+    for o in selected {
       try Task.checkCancellation()
-      let p=boundary.origin+boundary.horizontal*(boundary.width*(Double(x)+0.5)/Double(columns))+boundary.vertical*(boundary.height*(Double(y)+0.5)/Double(rows))+boundary.normal*boundary.depth
-      var positions:[V3]=[],blocked=false,weak=false
-      for (camera,confidence) in cameras {
-        let o=camera.observation,m=o.camera,position=V3(m[3],-m[11],m[7])
-        guard boundary.viewedFromFront(position),let (uv,z)=TextureBuilder.project(p,through:o),let data=camera.depth,o.depthWidth>0,o.depthHeight>0 else{continue}
+      guard o.depthWidth>0,o.depthHeight>0,o.depthWidth*o.depthHeight<=1_000_000 else{continue}
+      let data=try repo.read(o.depth!),confidence=try o.confidence.map{try repo.read($0)},m=o.camera,position=V3(m[3],-m[11],m[7])
+      guard data.count==o.depthWidth*o.depthHeight*4,confidence==nil || confidence?.count==o.depthWidth*o.depthHeight,boundary.viewedFromFront(position) else{continue}
+      for i in points.indices where states[i] != 2 {
+        if i%64==0 {try Task.checkCancellation()}
+        let p=points[i]
+        guard let (uv,z)=TextureBuilder.project(p,through:o) else{continue}
         let ix=min(o.depthWidth-1,Int(uv.u*Double(o.depthWidth))),iy=min(o.depthHeight-1,Int(uv.v*Double(o.depthHeight))),index=iy*o.depthWidth+ix
-        guard index*4+4<=data.count,confidence==nil || (index<confidence!.count && confidence![index]>=2) else{continue}
+        guard confidence==nil || confidence![index]>=2 else{continue}
         let measured=Double(Float(bitPattern:data.uint32(index*4)))
         guard measured.isFinite,measured>0 else{continue}
-        if measured<z-0.03 {blocked=true;continue}
+        if measured<z-0.03 {blocked[i]=true;continue}
         guard abs(measured-z)<=0.03 else{continue}
-        weak=true
-        guard o.light>=150,o.sharpness>=0.02,o.intrinsics[0]/z>=120,abs(boundary.normal.dot((position-p).normalized))>0.35 else{continue}
-        if positions.allSatisfy({($0-position).length>=0.12}) {positions.append(position)}
+        weak[i]=true
+        guard o.light>=150,o.sharpness>=0.02,o.intrinsics[0]/z>=120,abs(boundary.normal.dot((position-p).normalized))>0.35,positions[i].allSatisfy({($0-position).length>=0.12}) else{continue}
+        positions[i].append(position)
+        if positions[i].count>=3 {
+          var angle=false
+          for a in positions[i].indices {for b in positions[i].indices where b>a {if (positions[i][a]-p).normalized.dot((positions[i][b]-p).normalized)<cos(15*Double.pi/180) {angle=true}}}
+          if angle {states[i]=2;positions[i]=[]}
+        }
       }
-      var angle=false
-      for i in positions.indices {for j in positions.indices where j>i {if (positions[i]-p).normalized.dot((positions[j]-p).normalized)<cos(15*Double.pi/180) {angle=true}}}
-      states.append(positions.count>=3 && angle ? 2:weak ? 1:blocked ? 3:0)
-    }}
-    return BoundaryCoverageReport(boundary:boundary,revision:house.revision,columns:columns,rows:rows,states:states,cameraCount:count)
+    }
+    for i in states.indices where states[i] != 2 {states[i]=weak[i] ? 1:blocked[i] ? 3:0}
+    return BoundaryCoverageReport(boundary:boundary,revision:house.revision,columns:columns,rows:rows,states:states,cameraCount:selected.count)
   }
 }
 struct BoundaryCoveragePanel:View {

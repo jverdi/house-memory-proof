@@ -44,6 +44,9 @@ extern "C" int32_t hx_vision_pose(const double* xyz,const double* xy,uint32_t n,
   if(!hxFinite(x)||!hxFinite(y)||!hxFinite(z)||std::max({std::abs(x),std::abs(y),std::abs(z)})>100000||!hxFinite(u)||!hxFinite(v)||u<0||u>=w||v<0||v>=h)return -1;
   world.emplace_back(x,y,z);pixels.emplace_back(u,v);
  }
+ // Translation of the house origin must not change pose conditioning or
+ // candidate rejection. Solve in a local centroid frame, then restore origin.
+ cv::Point3d origin(0,0,0);for(const auto& p:world)origin+=p;origin*=1./world.size();for(auto& p:world)p-=origin;
  cv::Mat K=(cv::Mat_<double>(3,3)<<fx,0,cx,0,fy,cy,0,0,1),r,t,inliers;
  cv::theRNG().state=0x4858524159504e50ULL;
  if(!cv::solvePnPRansac(world,pixels,K,cv::noArray(),r,t,false,400,2.5,0.999,inliers,cv::SOLVEPNP_EPNP))return reject(1);
@@ -69,6 +72,6 @@ extern "C" int32_t hx_vision_pose(const double* xyz,const double* xy,uint32_t n,
  if(!hxFinite(condition)||condition<1e-5)return reject(7);
  cv::Mat inverse=R.t(),position=-inverse*t;
  for(int row=0;row<4;row++)for(int col=0;col<4;col++)output[row*4+col]=row==col?1:0;
- for(int row=0;row<3;row++){for(int col=0;col<3;col++)output[row*4+col]=inverse.at<double>(row,col)*(col==0?1:-1);output[row*4+3]=position.at<double>(row);}
+ for(int row=0;row<3;row++){for(int col=0;col<3;col++)output[row*4+col]=inverse.at<double>(row,col)*(col==0?1:-1);output[row*4+3]=position.at<double>(row)+(row==0?origin.x:row==1?origin.y:origin.z);}
  *quality={uint32_t(selected.size()),double(selected.size())/n,rms,p95,condition,0};return 1;
 } catch(...){return -2;}

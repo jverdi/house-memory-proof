@@ -105,7 +105,24 @@ enum VisualMapping {
     return result.valid ? result:nil
   }
   static func competingMatch(_ features:Features,width:Int,height:Int,intrinsics:[Double],maps:[VisualMap])->Bool {
-    maps.contains {query(features,width:width,height:height,intrinsics:intrinsics,map:$0) != nil}
+    // An ill-conditioned competing map is not evidence that a room is unique.
+    // Strong appearance in two separated competing views is enough to abstain,
+    // even when their PnP poses cannot pass the geometric eligibility checks.
+    for map in maps where map.valid {
+      var supported:[V3]=[]
+      for view in map.views {
+        let bytes=map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32)
+        var pairs=[UInt32](repeating:0,count:2400)
+        let count=bytes.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,1200)}}}
+        guard count>=30 else{continue}
+        var cells=Set<Int>(),loU=1.0,loV=1.0,hiU=0.0,hiV=0.0
+        for i in 0..<Int(count) {let index=Int(pairs[i*2+1]),u=Double(features.xy[index*2]),v=Double(features.xy[index*2+1]);cells.insert(min(3,Int(u*4))+4*min(2,Int(v*3)));loU=min(loU,u);loV=min(loV,v);hiU=max(hiU,u);hiV=max(hiV,v)}
+        guard cells.count>=6,hiU-loU>=0.3,hiV-loV>=0.3 else{continue}
+        if supported.contains(where:{($0-view.position).length>=0.15}) {return true}
+        supported.append(view.position)
+      }
+    }
+    return false
   }
   static func query(_ features:Features,width:Int,height:Int,intrinsics:[Double],map:VisualMap,diagnostic:((String)->Void)?=nil)->Pose? {
     guard map.valid,features.count>=30,intrinsics.count==9 else{return nil}

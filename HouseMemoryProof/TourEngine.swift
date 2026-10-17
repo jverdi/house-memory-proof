@@ -153,12 +153,23 @@ enum TourDirector {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v4", options.mode.rawValue,
+      "renderer-v5", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
     data.append(Data(selection.utf8))
     return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+  }
+  static func validClip(_ url:URL,frames:Int,width:Int,height:Int) async -> Bool {
+    do {
+      let asset=AVURLAsset(url:url)
+      guard let track=try await asset.loadTracks(withMediaType:.video).first else{return false}
+      let duration=try await asset.load(.duration),size=try await track.load(.naturalSize),rate=try await track.load(.nominalFrameRate)
+      guard abs(CMTimeGetSeconds(duration)-Double(frames)/30)<0.1,Int(size.width)==width,Int(size.height)==height,abs(rate-30)<0.1 else{return false}
+      let generator=AVAssetImageGenerator(asset:asset);generator.maximumSize=CGSize(width:320,height:180)
+      _=try await generator.image(at:CMTime(value:Int64(max(0,frames-1)),timescale:30))
+      return true
+    }catch{return false}
   }
   // Compatibility adapter: AVAssetWriter's pixel buffer adaptor remains available
   // in iOS 26. Its use is isolated here; no live screen recording is performed.
@@ -189,9 +200,11 @@ enum TourDirector {
     for (shotIndex, shot) in plan.shots.enumerated() {
       let url = folder.appendingPathComponent("shot-\(shotIndex).mp4")
       let frames = Int((shot.duration * 30).rounded())
-      if FileManager.default.fileExists(atPath: url.path),
-        let d = try? await AVURLAsset(url: url).load(.duration),
-        abs(CMTimeGetSeconds(d) - Double(frames) / 30) < 0.1
+      let checksumURL=url.appendingPathExtension("sha256")
+      if FileManager.default.fileExists(atPath:url.path),
+        let expected=try? String(contentsOf:checksumURL,encoding:.utf8),
+        let actual=try? StreamingArchive.digest(url).sha,actual==expected,
+        await validClip(url,frames:frames,width:width,height:height)
       {
         files.append(url)
         complete += frames
@@ -308,7 +321,9 @@ enum TourDirector {
         guard writer.status == .completed else {
           throw writer.error ?? HouseError.message("Movie segment did not finish.")
         }
+        guard await validClip(candidate,frames:frames,width:width,height:height) else{throw HouseError.message("Encoded shot did not pass its dimensions, timing and decode checks.")}
         try FileManager.default.moveItem(at: candidate, to: url)
+        try DurableFiles.write(Data(try StreamingArchive.digest(url).sha.utf8),to:checksumURL)
         files.append(url)
         complete += frames
         try repo.job(hash, state: "checkpointed", data: planData)
@@ -342,7 +357,7 @@ enum TourDirector {
     try await export.export(to: output, as: .mp4)
     let final = AVURLAsset(url: output)
     let actual = try await final.load(.duration)
-    guard abs(CMTimeGetSeconds(actual) - Double(total) / 30) < 0.15 else {
+    guard abs(CMTimeGetSeconds(actual) - Double(total) / 30) < 0.15,await validClip(output,frames:total,width:width,height:height) else {
       throw HouseError.message("Final movie duration did not match its plan.")
     }
     try planData.write(to: output.deletingPathExtension().appendingPathExtension("json"))

@@ -3,12 +3,16 @@ import SceneKit
 import PDFKit
 import SQLite3
 import ImageIO
+import AVFoundation
+import UIKit
+import Darwin
 
 @MainActor enum SelfTests {
-    static func run(model:AppModel) async {
+    static func run(model:AppModel,includeMovie:Bool=false) async {
         guard let mainRepo=model.repository else{return}
         var results:[[String:Any]]=[]
-        func check(_ name:String,_ body:()throws->Bool){do{let ok=try body();results.append(["test":name,"passed":ok])}catch{results.append(["test":name,"passed":false,"error":error.localizedDescription])}}
+        let runStarted=ProcessInfo.processInfo.systemUptime
+        func check(_ name:String,_ body:()throws->Bool){let started=ProcessInfo.processInfo.systemUptime;do{let ok=try body();results.append(["test":name,"passed":ok,"seconds":ProcessInfo.processInfo.systemUptime-started])}catch{results.append(["test":name,"passed":false,"error":error.localizedDescription,"seconds":ProcessInfo.processInfo.systemUptime-started])}}
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
@@ -390,8 +394,20 @@ import ImageIO
                 let url=try Exporter.glb(candidate,options:SceneOptions(room:first.roomID));let target=mainRepo.root.appendingPathComponent("house-surface.glb");try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:url,to:target)
                 results.append(["test":"Noisy simulated house capture to native surface","passed":surface.mesh.valid && surface.mesh.triangles.count>300,"vertices":surface.mesh.vertices.count,"precisionQualified":false])
             }catch{results.append(["test":"Paired simulated house integration","passed":false,"error":error.localizedDescription])}
-            if ProcessInfo.processInfo.arguments.contains("--video-test") {
-                do {let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:5,width:640,height:360){_ in};try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("test-tour.mp4"));try FileManager.default.copyItem(at:movie,to:mainRepo.root.appendingPathComponent("test-tour.mp4"));results.append(["test":"Native MP4 encode, assembly and duration","passed":true])}catch{results.append(["test":"Native MP4 encode, assembly and duration","passed":false,"error":error.localizedDescription])}
+            if includeMovie || ProcessInfo.processInfo.arguments.contains("--video-test") {
+                do {
+                    let started=ProcessInfo.processInfo.systemUptime
+                    let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:10,width:1920,height:1080){model.progress=$0}
+                    let directory=repo.root.appendingPathComponent("tours"),all=FileManager.default.enumerator(at:directory,includingPropertiesForKeys:[.contentModificationDateKey])!
+                    var dates:[URL:Date]=[:]
+                    for case let url as URL in all where url.pathExtension=="mp4" {dates[url]=try url.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate}
+                    _=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:10,width:1920,height:1080){_ in}
+                    let reused=try !dates.isEmpty && dates.allSatisfy{try $0.key.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate==$0.value}
+                    let target=mainRepo.root.appendingPathComponent("test-tour.mp4");try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:movie,to:target)
+                    let generator=AVAssetImageGenerator(asset:AVURLAsset(url:target));let frame=try await generator.image(at:CMTime(seconds:1,preferredTimescale:30))
+                    try UIImage(cgImage:frame.image).pngData()?.write(to:mainRepo.root.appendingPathComponent("test-tour-frame.png"))
+                    results.append(["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":reused,"width":1920,"height":1080,"durationSeconds":10,"seconds":ProcessInfo.processInfo.systemUptime-started])
+                }catch{results.append(["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":false,"error":error.localizedDescription])}
             }
         }catch{results.append(["test":"Test harness setup","passed":false,"error":error.localizedDescription])}
         #if targetEnvironment(simulator)
@@ -399,7 +415,7 @@ import ImageIO
         #else
         let platform="physical iPhone"
         #endif
-        let report:[String:Any]=["platform":platform,"date":ISO8601DateFormatter().string(from:Date()),"tests":results,"passed":results.allSatisfy{($0["passed"] as? Bool)==true},"fieldAccuracyValidated":false,"precisionProfileEnabled":false]
+        let report:[String:Any]=["deviceModel":UIDevice.current.model,"systemVersion":UIDevice.current.systemVersion,"physicalMemoryBytes":ProcessInfo.processInfo.physicalMemory,"elapsedSeconds":ProcessInfo.processInfo.systemUptime-runStarted,"sourceRevision":Bundle.main.object(forInfoDictionaryKey:"ProofSourceRevision") as? String ?? "local","build":Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "local","platform":platform,"date":ISO8601DateFormatter().string(from:Date()),"tests":results,"passed":results.allSatisfy{($0["passed"] as? Bool)==true},"fieldAccuracyValidated":false,"precisionProfileEnabled":false]
         do{let bytes=try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]);try bytes.write(to:mainRepo.root.appendingPathComponent("self-test.json"),options:.atomic)}catch{model.error=error.localizedDescription}
         try? FileManager.default.removeItem(at:folder)
     }

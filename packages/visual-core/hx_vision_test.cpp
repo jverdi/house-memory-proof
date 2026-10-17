@@ -21,6 +21,12 @@ extern "C" int32_t hx_vision_selftest(double* maximum,uint32_t* falseAccepts) tr
   double error=0;for(int row=0;row<3;row++)error+=std::pow(pose[row*4+3]-position[row],2);
   *maximum=std::max(*maximum,std::sqrt(error));if(*maximum>.02)return -11;
   for(int row=0;row<3;row++)for(int col=0;col<3;col++)if(std::abs(pose[row*4+col]-R.at<double>(row,col)*(col==0?1:-1))>.015)return -12;
+  // The same image/map must remain admissible when registered on another
+  // floor or far from the chosen house origin. No thresholds are relaxed.
+  if(trial%20==0){auto shifted=world;double offset[3]={80,-60,12};for(uint32_t i=0;i<n;i++)for(int axis=0;axis<3;axis++)shifted[i*3+axis]+=offset[axis];double moved[16];HXPoseQuality checked{};
+   if(hx_vision_pose(shifted.data(),pixels.data(),n,500,500,320,240,w,h,moved,&checked)!=1)return -17;
+   for(int axis=0;axis<3;axis++)if(std::abs(moved[axis*4+3]-offset[axis]-pose[axis*4+3])>1e-5)return -18;
+  }
  }
  for(int trial=0;trial<300;trial++){
   for(uint32_t i=0;i<n;i++){pixels[i*2]=random.uniform(0.,640.);pixels[i*2+1]=random.uniform(0.,480.);}

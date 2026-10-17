@@ -2,7 +2,7 @@ name: Build native vision dependency
 on:
   push:
     branches: [main]
-    paths: [tooling/opencv/**, .github/workflows/opencv.yml]
+    paths: [tooling/opencv/build.sh, .github/workflows/opencv.yml]
   workflow_dispatch:
 permissions:
   contents: read
