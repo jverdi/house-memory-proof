@@ -1,0 +1,9 @@
+{
+  "source": "a12d1249e8f939e32eebfab6240df7838dea7160",
+  "run": 39007121108,
+  "artifact": 12091014722,
+  "sha256": "26c128e137f3aed982c47ddb4c079d3e496896f817b188c8c6c968bb17d43a48",
+  "nativeTests": 47,
+  "workflow": "success",
+  "testflightUploaded": false
+}

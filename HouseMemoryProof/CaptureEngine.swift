@@ -181,7 +181,9 @@ import Vision
       let visualFresh = frame.timestamp - visualSeen < 2 && visualTransform != nil
       var disagreement = false
       if markerFresh, visualFresh, let a = markerTransform, let b = visualTransform {
-        disagreement = simd_distance(a.columns.3, b.columns.3) > 0.05
+        let av = (0..<4).flatMap { row in (0..<4).map { col in Double(a[col][row]) } }
+        let bv = (0..<4).flatMap { row in (0..<4).map { col in Double(b[col][row]) } }
+        disagreement = !VisualMapping.agree(Rigid(values: av), Rigid(values: bv))
       }
       let eligible = normal && !referenceConflict && !disagreement
         && (markerFresh || visualFresh || (loadedWorldMap && markerTransform == nil && visualTransform == nil && frame.worldMappingStatus == .mapped))

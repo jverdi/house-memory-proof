@@ -73,6 +73,13 @@ import ImageIO
                 for segment in h.segments{h.features.append(Feature(name:"Surface",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:.observed,mesh:.box(center:V3(),size:V3(1,1,1)),segmentID:segment.id))}
                 return SceneBuilder.features(h,options:SceneOptions(mode:.rough)).map{$0.segmentID}==[a.id] && SceneBuilder.features(h,options:SceneOptions(mode:.finished)).map{$0.segmentID}==[b.id] && SceneBuilder.features(h,options:SceneOptions(mode:.ghost)).count==1
             }
+            check("Observation provenance rejects a different segment stage"){
+                var h=House.empty("Provenance");let segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments=[segment]
+                let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
+                let capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
+                var o=capture.observations[0];o.roomID=h.rooms[0].id;o.segmentID=segment.id;o.stageID=h.stages[1].id;h.observations=[o]
+                do{try h.validate();return false}catch{return true}
+            }
             check("Local store roundtrip"){try repo.save(house);return try repo.all().first==house}
             check("Revision recovery"){let original=house;house.revision+=1;house.name="Edited";try repo.save(house);return try repo.previous(house.id)==original}
             check("Failed candidate does not replace committed evidence"){

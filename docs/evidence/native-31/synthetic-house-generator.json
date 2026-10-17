@@ -1,0 +1,10 @@
+{
+  "seed": 42,
+  "rooms": 3,
+  "stages": 2,
+  "observations": 144,
+  "depth_noise_sigma_m": 0.004,
+  "translation_drift_m": 0.015,
+  "oracle_is_separate": true,
+  "validated_iphone_sensor_model": false
+}

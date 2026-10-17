@@ -1,0 +1,221 @@
+{
+  "date" : "2026-10-17T05:42:50Z",
+  "fieldAccuracyValidated" : false,
+  "passed" : true,
+  "platform" : "iPhone simulator",
+  "precisionProfileEnabled" : false,
+  "tests" : [
+    {
+      "passed" : true,
+      "test" : "Canonical AR basis"
+    },
+    {
+      "passed" : true,
+      "test" : "Identity rigid transform"
+    },
+    {
+      "passed" : true,
+      "test" : "Reject scale in rigid transform"
+    },
+    {
+      "passed" : true,
+      "test" : "Reject reflected transform"
+    },
+    {
+      "passed" : true,
+      "test" : "Reference fit and held-out point"
+    },
+    {
+      "passed" : true,
+      "test" : "Reject collinear controls"
+    },
+    {
+      "passed" : true,
+      "test" : "Checked registration rejects distorted fit despite matching held-out point"
+    },
+    {
+      "passed" : true,
+      "test" : "Drawing controls fit translated vertical plane and reject malformed coordinates"
+    },
+    {
+      "passed" : true,
+      "test" : "Fixture has three independent rooms and paired stages"
+    },
+    {
+      "passed" : true,
+      "test" : "Finish switch preserves stable geometry"
+    },
+    {
+      "passed" : true,
+      "test" : "Additive schema migration preserves original identity"
+    },
+    {
+      "passed" : true,
+      "test" : "Stage composition isolates unfinished and finished session frames"
+    },
+    {
+      "passed" : true,
+      "test" : "Local store roundtrip"
+    },
+    {
+      "passed" : true,
+      "test" : "Revision recovery"
+    },
+    {
+      "passed" : true,
+      "test" : "Failed candidate does not replace committed evidence"
+    },
+    {
+      "passed" : true,
+      "test" : "Corrupt project is isolated without hiding healthy projects"
+    },
+    {
+      "passed" : true,
+      "test" : "Capture journal replays before commit and is idempotent after commit"
+    },
+    {
+      "passed" : true,
+      "test" : "Background capture save targets its original project without switching selection"
+    },
+    {
+      "passed" : true,
+      "test" : "Asset hash identity"
+    },
+    {
+      "passed" : true,
+      "test" : "Unsafe paths rejected"
+    },
+    {
+      "passed" : true,
+      "test" : "Invalid mesh indices rejected"
+    },
+    {
+      "passed" : true,
+      "test" : "Empty routes remain empty without invalid ranges"
+    },
+    {
+      "passed" : true,
+      "test" : "Reject nonfinite mesh"
+    },
+    {
+      "passed" : true,
+      "test" : "Archive metadata and original roundtrip"
+    },
+    {
+      "passed" : true,
+      "test" : "Coordinated folder snapshot is independently restorable"
+    },
+    {
+      "passed" : true,
+      "test" : "Corrupt archive rejected"
+    },
+    {
+      "passed" : true,
+      "test" : "GLB framing and length"
+    },
+    {
+      "passed" : true,
+      "test" : "PLY independent parser roundtrip"
+    },
+    {
+      "passed" : true,
+      "test" : "USDZ stored and 64-byte aligned"
+    },
+    {
+      "passed" : true,
+      "test" : "No tour across absent captured rooms"
+    },
+    {
+      "passed" : true,
+      "test" : "Deterministic tour source revision"
+    },
+    {
+      "passed" : true,
+      "test" : "Clearance handles parallel rays and rejects incomplete indexes"
+    },
+    {
+      "passed" : true,
+      "test" : "Tour path rejects observed wall and accepts supported camera corridor"
+    },
+    {
+      "passed" : true,
+      "test" : "Moving tour uses short-angle interpolation and endpoint continuity"
+    },
+    {
+      "passed" : true,
+      "test" : "Tour cache separates layers and projects"
+    },
+    {
+      "passed" : true,
+      "test" : "Walk collision and explicit doorway"
+    },
+    {
+      "passed" : true,
+      "test" : "SceneKit offscreen render"
+    },
+    {
+      "passed" : true,
+      "test" : "Two-reference drift correction and inconsistent-board rejection"
+    },
+    {
+      "passed" : true,
+      "test" : "Reference correction preserves nontrivial camera rotation"
+    },
+    {
+      "passed" : true,
+      "test" : "Projection and occlusion rejection"
+    },
+    {
+      "extent" : [
+        1,
+        2,
+        3
+      ],
+      "passed" : true,
+      "test" : "Bundled IFC2x3 conversion and axes"
+    },
+    {
+      "lower" : [
+        9.5,
+        19,
+        30
+      ],
+      "passed" : true,
+      "test" : "IFC4 millimetres and nested placement",
+      "upper" : [
+        10.5,
+        21,
+        33
+      ]
+    },
+    {
+      "maxPlaneErrorMetres" : 0.00029363552593109077,
+      "passed" : true,
+      "syntheticOnly" : true,
+      "test" : "Native signed-distance surface fusion",
+      "vertices" : 410880
+    },
+    {
+      "maxPlaneErrorMetres" : 0.00088949998219800541,
+      "passed" : true,
+      "points" : 10956,
+      "syntheticOnly" : true,
+      "test" : "Simulated camera to fusion and photo texture pipeline"
+    },
+    {
+      "passed" : true,
+      "syntheticOnly" : true,
+      "test" : "Paired three-room camera archive without oracle geometry"
+    },
+    {
+      "passed" : true,
+      "precisionQualified" : false,
+      "test" : "Noisy simulated house capture to native surface",
+      "vertices" : 31725
+    },
+    {
+      "passed" : true,
+      "test" : "Native MP4 encode, assembly and duration"
+    }
+  ]
+}

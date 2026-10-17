@@ -16,7 +16,8 @@ struct VisualMap: Codable {
   var fingerprint:String;var points:[V3];var descriptors:Data;var views:[View]
   var valid:Bool {
     schema==1 && points.count<=28800 && descriptors.count==points.count*32
-      && points.allSatisfy{$0.finite} && views.count<=12
+      && points.allSatisfy{$0.finite} && views.count>=2 && views.count<=12
+      && Set(views.map{$0.observationID}).count==views.count
       && views.allSatisfy{$0.start>=0 && $0.count>=0 && $0.start<=points.count && $0.count<=points.count-$0.start && $0.position.finite}
   }
 }
