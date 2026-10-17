@@ -65,12 +65,7 @@ struct DrawingAlignmentPage: View {
       guard bounds.width > 0, bounds.height > 0 else {
         throw HouseError.message("The source page has no usable bounds.")
       }
-      guard sheet.rotation % 360 == 0 else {
-        throw HouseError.message(
-          "This page has a rotation flag. Preserve the original and import a normalized unrotated PDF for a spatial overlay."
-        )
-      }
-      let image = sheet.thumbnail(of: CGSize(width: 2048, height: 2048), for: .cropBox)
+      let image = try DrawingTexture.normalizedThumbnail(sheet)
       guard let bytes = image.jpegData(compressionQuality: 0.95) else {
         throw HouseError.message("Unable to render the source page.")
       }
@@ -110,5 +105,22 @@ struct DrawingAlignmentPage: View {
       report =
         "Saved approximate design overlay. Select Aligned design sheets in Explore's stage filter. Independent check: \((check * 1000).formatted()) mm."
     } catch { model.error = error.localizedDescription }
+  }
+}
+
+@MainActor enum DrawingTexture {
+  static func normalizedThumbnail(_ page:PDFPage,maximumDimension:CGFloat=2048)throws->UIImage {
+    guard maximumDimension>=64,maximumDimension<=2048,let copy=page.copy() as? PDFPage else{throw HouseError.message("Unable to prepare a drawing texture.")}
+    // PDFView converts taps into unrotated page coordinates. Render a private
+    // zero-rotation copy in that same frame; keep the original PDF untouched.
+    copy.rotation=0
+    let bounds=copy.bounds(for:.cropBox)
+    guard bounds.width.isFinite,bounds.height.isFinite,bounds.width>0,bounds.height>0 else{throw HouseError.message("The drawing has invalid page bounds.")}
+    let image=copy.thumbnail(of:CGSize(width:maximumDimension,height:maximumDimension),for:.cropBox)
+    guard let cg=image.cgImage,cg.width>0,cg.height>0,cg.width*cg.height<=40_000_000 else{throw HouseError.message("Drawing preview exceeds its raster budget.")}
+    let ratio=min(1,maximumDimension/CGFloat(max(cg.width,cg.height)))
+    let size=CGSize(width:CGFloat(cg.width)*ratio,height:CGFloat(cg.height)*ratio)
+    let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
+    return UIGraphicsImageRenderer(size:size,format:format).image{_ in image.draw(in:CGRect(origin:.zero,size:size))}
   }
 }

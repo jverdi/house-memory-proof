@@ -258,6 +258,23 @@ import Darwin
                 guard f<1e-10,c<1e-10,(t.apply(V3(1,2,0))-V3(5,6,3)).length<1e-10 else{return false}
                 do{_=try CheckedRegistration.coordinates("1,garbage,2,3");return false}catch{return true}
             }
+            await check("Rotated cropped PDF sheets retain unrotated alignment pixels and original rotation") {
+                let data=UIGraphicsPDFRenderer(bounds:CGRect(x:0,y:0,width:240,height:140)).pdfData{context in
+                    context.beginPage();UIColor.white.setFill();context.cgContext.fill(CGRect(x:0,y:0,width:240,height:140))
+                    UIColor.red.setFill();context.cgContext.fill(CGRect(x:30,y:20,width:60,height:30))
+                    UIColor.blue.setFill();context.cgContext.fill(CGRect(x:140,y:70,width:50,height:40))
+                }
+                guard let page=PDFDocument(data:data)?.page(at:0) else{return false}
+                page.setBounds(CGRect(x:20,y:10,width:200,height:120),for:.cropBox)
+                let baseline=try DrawingTexture.normalizedThumbnail(page,maximumDimension:320)
+                guard let expected=baseline.pngData(),let cg=baseline.cgImage,CaptureController.sharpness(cg)>0.002 else{return false}
+                for angle in [90,180,270] {
+                    page.rotation=angle
+                    let image=try DrawingTexture.normalizedThumbnail(page,maximumDimension:320)
+                    guard page.rotation==angle,image.pngData()==expected,image.cgImage!.width<=320,image.cgImage!.height<=320 else{return false}
+                }
+                return true
+            }
             await check("Visual pose converts canonical saved frame into live AR frame"){
                 var live=Rigid();live.values[3]=5;live.values[7]=6;live.values[11]=7
                 let saved=Rigid(values:[1,0,0,2, 0,0,-1,-4, 0,1,0,3, 0,0,0,1])
