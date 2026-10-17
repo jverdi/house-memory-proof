@@ -107,10 +107,30 @@ enum DerivedEvidence {
     for segment in house.segments where needed.contains(segment.id) {
       fingerprints[segment.id]=try? VisualMapping.fingerprint(house:house,segment:segment)
     }
-    return Set(house.features.filter { feature in
+    let eligible=house.features.filter { feature in
+      guard feature.artifactValid != false else{return false}
       guard let expected=feature.sourceFingerprint else{return true}
       guard let segment=feature.segmentID else{return false}
       return fingerprints[segment]==expected
-    }.map{$0.id})
+    }
+    let byID=Dictionary(house.features.map{($0.id,$0)},uniquingKeysWith:{a,_ in a})
+    let registrations=Dictionary(house.segments.map{($0.id,$0.registration)},uniquingKeysWith:{a,_ in a})
+    var current=Set(eligible.filter{$0.annotationSources==nil}.map{$0.id})
+    var pending=eligible.filter{$0.annotationSources != nil}
+    // Bounded dependency propagation leaves cycles, missing sources and overly
+    // deep imported chains inactive instead of inventing current provenance.
+    for _ in 0..<64 {
+      var next:[Feature]=[],changed=false
+      for feature in pending {
+        let valid=feature.annotationSources!.allSatisfy { dependency in
+          guard current.contains(dependency.featureID),let source=byID[dependency.featureID],source.revision==dependency.revision,source.segmentID==dependency.segmentID else{return false}
+          let actual=dependency.segmentID.flatMap{registrations[$0] ?? nil}
+          return actual==dependency.registration
+        }
+        if valid {current.insert(feature.id);changed=true}else{next.append(feature)}
+      }
+      pending=next;if !changed || pending.isEmpty {break}
+    }
+    return current
   }
 }

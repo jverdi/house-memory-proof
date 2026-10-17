@@ -71,10 +71,13 @@ struct Stage:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var date=Date();var kind:EvidenceKind;var phase:ConstructionPhase?=nil
     var category:ConstructionPhase {phase ?? (name.lowercased().contains("finish") ? .finished:.rough)}
 }
+struct AnnotationDependency:Codable,Equatable {
+    var featureID:UUID;var revision:Int;var segmentID:UUID?;var registration:Rigid?
+}
 struct Feature:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var trade:Trade;var roomID:UUID;var stageID:UUID;var kind:EvidenceKind
     var mesh:Mesh;var route:[V3]=[];var sourceIDs:[UUID]=[];var notes="";var endpoint="";var reviewed=false
-    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil;var sourceFingerprint:String?=nil;var photoControls:[PhotoControl]?=nil;var pointTracks:[PointTrack]?=nil
+    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil;var sourceFingerprint:String?=nil;var photoControls:[PhotoControl]?=nil;var pointTracks:[PointTrack]?=nil;var annotationSources:[AnnotationDependency]?=nil
 }
 struct Observation:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var segmentID:UUID;var timestamp:Double;var date=Date()
@@ -127,6 +130,7 @@ struct House:Codable,Identifiable,Equatable {
         let featureIDs=Set(features.map{$0.id});for c in connections{guard featureIDs.contains(c.fromFeature),featureIDs.contains(c.toFeature),c.fromFeature != c.toFeature,[0,1].contains(c.fromEnd),[0,1].contains(c.toEnd) else{throw HouseError.message("Invalid service endpoint link.")}}
         for f in features {if let controls=f.photoControls {guard controls.count==3,Set(controls.map{$0.observationID}).count==3,controls.allSatisfy({c in c.u.isFinite && c.v.isFinite && (0...1).contains(c.u) && (0...1).contains(c.v) && observations.contains(where:{$0.id==c.observationID && $0.segmentID==f.segmentID})}) else{throw HouseError.message("Invalid image triangulation provenance.")}}}
         for f in features {if let tracks=f.pointTracks {guard tracks.count==f.mesh.vertices.count,tracks.allSatisfy({track in track.controls.count>=3 && track.controls.count<=12 && Set(track.controls.map{$0.observationID}).count==track.controls.count && track.controls.allSatisfy{c in c.u.isFinite && c.v.isFinite && (0...1).contains(c.u) && (0...1).contains(c.v) && f.sourceIDs.contains(c.observationID)}}) else{throw HouseError.message("Invalid photograph point provenance.")}}}
+        for f in features {if let sources=f.annotationSources {guard !sources.isEmpty,sources.count<=64,Set(sources.map{$0.featureID}).count==sources.count,sources.allSatisfy({$0.featureID != f.id && $0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid annotation source relationships.")}}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in bookmarks {guard b.position.finite,b.yaw.isFinite,b.pitch.isFinite,roomIDs.contains(b.roomID),(b.segmentID==nil || segmentIDs.contains(b.segmentID!)) else{throw HouseError.message("Invalid viewpoint frame.")}}
         for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}

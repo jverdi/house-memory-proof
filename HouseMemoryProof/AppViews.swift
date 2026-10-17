@@ -474,12 +474,14 @@ struct ExploreView: View {
               Button("Save") {
                 if let r = house.rooms.first, let stage = house.stages.first {
                   let pts = controller.points
+                  let sources=controller.pointFeatureIDs.compactMap{id in house.features.first{$0.id==id}}
+                  let dependencies=sources.map{f in AnnotationDependency(featureID:f.id,revision:f.revision,segmentID:f.segmentID,registration:f.segmentID.flatMap{sid in house.segments.first{$0.id==sid}?.registration})}
                   let f = Feature(
                     name: routeName.isEmpty ? "Traced route" : routeName, trade: routeTrade,
                     roomID: controller.pointRoomID ?? options.room ?? r.id,
-                    stageID: options.stage ?? stage.id, kind: house.isDemo ? .synthetic : .observed,
-                    mesh: .route(pts, radius: 0.015), route: pts,
-                    segmentID: SceneBuilder.activeUnregisteredSegment(house, options: options))
+                    stageID: sources.first?.stageID ?? options.stage ?? stage.id, kind: house.isDemo ? .synthetic : .observed,
+                    mesh: .route(pts, radius: 0.015), route: pts,sourceIDs:Array(Set(sources.flatMap{$0.sourceIDs})),
+                    segmentID: SceneBuilder.activeUnregisteredSegment(house, options: options),annotationSources:dependencies.isEmpty ? nil:dependencies)
                   model.edit { $0.features.append(f) }
                   controller.clear()
                 }
@@ -509,6 +511,7 @@ struct FeatureEditor: View {
         Toggle("Hide from scene", isOn: $feature.hidden)
         Section("Evidence") {
           Text("\(feature.kind.rawValue) · \(feature.sourceIDs.count) linked observations")
+          if let sources=feature.annotationSources {Text("Traced on \(sources.count) source objects. Changes to their revisions or registration make this annotation stale.").font(.caption)}
           Text(
             "Geometry is approximate. Reviewed identity does not certify route continuity or placement."
           ).font(.footnote)

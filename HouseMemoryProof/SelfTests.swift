@@ -83,6 +83,21 @@ import Darwin
                 }
                 do {_=try SpatialDisplayIndex(features:features,primitiveLimit:10);return false}catch{return true}
             }
+            check("Traced annotation loses eligibility when source revision or registration changes") {
+                var h=House.empty("Annotation inputs");var segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);segment.registration=Rigid();h.segments=[segment]
+                var source=Feature(name:"Wall",trade:.structure,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.observed,mesh:.box(center:V3(),size:V3(2,0.1,3)),segmentID:segment.id)
+                var annotation=source;annotation.id=UUID();annotation.name="Traced service";annotation.segmentID=nil
+                annotation.annotationSources=[AnnotationDependency(featureID:source.id,revision:source.revision,segmentID:segment.id,registration:segment.registration)]
+                h.features=[source,annotation];try h.validate()
+                let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))
+                guard DerivedEvidence.currentIDs(restored).contains(annotation.id) else{return false}
+                h.segments[0].registration!.values[3]=0.1
+                guard !DerivedEvidence.currentIDs(h).contains(annotation.id) else{return false}
+                h=restored;source.revision+=1;h.features[0]=source
+                guard !DerivedEvidence.currentIDs(h).contains(annotation.id) else{return false}
+                h=restored;h.features[0].artifactValid=false
+                return !DerivedEvidence.currentIDs(h).contains(annotation.id)
+            }
             check("Construction category survives arbitrary stage names") {
                 var h=house;h.stages[0].name="After inspection";h.stages[0].phase = .rough;h.stages[1].name="Ready to paint";h.stages[1].phase = .finished
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))

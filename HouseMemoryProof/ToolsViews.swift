@@ -547,7 +547,7 @@ struct ReconstructionPage: View {
                 h.segments[index].poseSolution = solution
                 h.visualMaps.removeAll { $0.segmentID == s.id }
                 for i in h.features.indices
-                where h.features[i].segmentID == s.id && !h.features[i].sourceIDs.isEmpty {
+                where h.features[i].segmentID == s.id {
                   h.features[i].artifactValid = false
                   h.features[i].hidden = true
                 }
@@ -564,7 +564,7 @@ struct ReconstructionPage: View {
                 guard let index=h.segments.firstIndex(where:{$0.id==s.id}) else{return}
                 h.segments[index].poseSolution=result.solution
                 h.visualMaps.removeAll{$0.segmentID==s.id}
-                for i in h.features.indices where h.features[i].segmentID==s.id && !h.features[i].sourceIDs.isEmpty {h.features[i].artifactValid=false;h.features[i].hidden=true}
+                for i in h.features.indices where h.features[i].segmentID==s.id {h.features[i].artifactValid=false;h.features[i].hidden=true}
                 h.features.removeAll{$0.segmentID==s.id && $0.name==result.feature.name}
                 h.features.append(result.feature)
               };return nil

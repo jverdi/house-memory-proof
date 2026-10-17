@@ -202,6 +202,7 @@ extension UIColor {
   @Published var selection: UUID?
   @Published var points: [V3] = []
   var pointRoomID: UUID?
+  var pointFeatureIDs:[UUID]=[]
   @Published var tool = "Inspect"
   @Published var flying = false
   @Published var orbit = false
@@ -252,6 +253,7 @@ extension UIColor {
     let fresh =
       house?.id != h.id || oldFrame != SceneBuilder.activeUnregisteredSegment(h, options: o)
     points = []
+    pointFeatureIDs=[]
     selection = nil
     house = h
     options = o
@@ -356,10 +358,9 @@ extension UIColor {
     selection = hit.node.name.flatMap(UUID.init(uuidString:))
     let v = V3(ar: SIMD3(hit.worldCoordinates.x, hit.worldCoordinates.y, hit.worldCoordinates.z))
     if tool != "Inspect" {
-      if points.isEmpty {
-        pointRoomID = house?.features.first(where: { $0.id == selection })?.roomID
-      }
-      if (tool == "Measure" && points.count >= 2) || (tool == "Boundary" && points.count >= 3) { points = [] }
+      if (tool == "Measure" && points.count >= 2) || (tool == "Boundary" && points.count >= 3) {points=[];pointFeatureIDs=[]}
+      if points.isEmpty {pointRoomID=house?.features.first(where:{$0.id==selection})?.roomID;pointFeatureIDs=[]}
+      if let selection,!pointFeatureIDs.contains(selection),pointFeatureIDs.count<64 {pointFeatureIDs.append(selection)}
       points.append(v)
       drawPoints()
     }
@@ -367,6 +368,7 @@ extension UIColor {
   func clear() {
     points = []
     pointRoomID = nil
+    pointFeatureIDs=[]
     drawPoints()
   }
   func drawPoints() {
