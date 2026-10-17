@@ -24,7 +24,7 @@ struct VisualMap: Codable {
 enum VisualMapping {
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v2-multiview-query";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -126,7 +126,8 @@ enum VisualMapping {
   }
   static func query(_ features:Features,width:Int,height:Int,intrinsics:[Double],map:VisualMap,diagnostic:((String)->Void)?=nil)->Pose? {
     guard map.valid,features.count>=30,intrinsics.count==9 else{return nil}
-    var candidates:[(Pose,V3)]=[]
+    struct Candidate {var pose:Pose;var position:V3;var matches:[Int:V3]}
+    var candidates:[Candidate]=[]
     for view in map.views {
       let descriptors=map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32)
       var pairs=[UInt32](repeating:0,count:2400)
@@ -134,20 +135,42 @@ enum VisualMapping {
         hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,1200)
       }}}
       guard count>=30 else{diagnostic?("view \(view.observationID): insufficient matches \(count)");continue}
-      var xyz:[Double]=[],xy:[Double]=[]
-      for i in 0..<Int(count){let p=map.points[view.start+Int(pairs[i*2])],q=Int(pairs[i*2+1]);xyz += [p.x,p.y,p.z];xy += [Double(features.xy[q*2])*Double(width),Double(features.xy[q*2+1])*Double(height)]}
+      var xyz:[Double]=[],xy:[Double]=[],matches:[Int:V3]=[:]
+      for i in 0..<Int(count){let p=map.points[view.start+Int(pairs[i*2])],q=Int(pairs[i*2+1]);xyz += [p.x,p.y,p.z];xy += [Double(features.xy[q*2])*Double(width),Double(features.xy[q*2+1])*Double(height)];matches[q]=p}
       var matrix=[Double](repeating:0,count:16),quality=HXPoseQuality()
       let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
         hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
       }}}
       diagnostic?("view \(view.observationID): matches \(count), pose \(accepted), rejection \(quality.rejection), inliers \(quality.inliers)")
-      if accepted==1,Rigid(values:matrix).valid{candidates.append((Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:[view.observationID]),view.position))}
+      if accepted==1,Rigid(values:matrix).valid{candidates.append(Candidate(pose:Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:[view.observationID]),position:view.position,matches:matches))}
     }
     guard candidates.count>=2 else{diagnostic?("Fewer than two accepted source views");return nil}
-    let origin=candidates[0].0.transform
-    guard candidates.contains(where:{($0.1-candidates[0].1).length>=0.15}) else{diagnostic?("Insufficient source-view baseline");return nil}
-    guard candidates.dropFirst().allSatisfy({agree(origin,$0.0.transform)}) else{diagnostic?("Accepted source views disagree");return nil}
-    var result=candidates.max(by:{$0.0.inliers<$1.0.inliers})!.0
-    result.sources=candidates.flatMap{$0.0.sources};return result
+    let origin=candidates[0].pose.transform
+    guard candidates.contains(where:{($0.position-candidates[0].position).length>=0.15}) else{diagnostic?("Insufficient source-view baseline");return nil}
+    guard candidates.dropFirst().allSatisfy({agree(origin,$0.pose.transform)}) else{diagnostic?("Accepted source views disagree");return nil}
+    // Do not throw away the checked multi-view evidence by selecting one source
+    // camera. Fuse spatially consistent repeats of each query feature, then
+    // rerun the same robust PnP gates on one correspondence per image feature.
+    var repeated:[Int:[(V3,V3)]]=[:]
+    for candidate in candidates {for (query,point) in candidate.matches {repeated[query,default:[]].append((point,candidate.position))}}
+    var xyz:[Double]=[],xy:[Double]=[]
+    for query in repeated.keys.sorted() {
+      let samples=repeated[query]!
+      guard samples.count>=2 else{continue}
+      func median(_ values:[Double])->Double {let ordered=values.sorted();return ordered[ordered.count/2]}
+      let centre=V3(median(samples.map{$0.0.x}),median(samples.map{$0.0.y}),median(samples.map{$0.0.z}))
+      let supported=samples.filter{($0.0-centre).length<=0.025}
+      guard supported.count>=2,supported.contains(where:{($0.1-supported[0].1).length>=0.15}) else{continue}
+      let point=supported.reduce(V3()){$0+$1.0}*(1/Double(supported.count))
+      xyz += [point.x,point.y,point.z];xy += [Double(features.xy[query*2])*Double(width),Double(features.xy[query*2+1])*Double(height)]
+    }
+    guard xy.count>=60 else{diagnostic?("Insufficient repeated features for multi-view query refinement");return nil}
+    var matrix=[Double](repeating:0,count:16),quality=HXPoseQuality()
+    let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
+      hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(xy.count/2),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
+    }}}
+    let transform=Rigid(values:matrix)
+    guard accepted==1,candidates.allSatisfy({agree(transform,$0.pose.transform)}) else{diagnostic?("Multi-view query refinement rejected at gate \(quality.rejection)");return nil}
+    return Pose(transform:transform,inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:candidates.flatMap{$0.pose.sources})
   }
 }
