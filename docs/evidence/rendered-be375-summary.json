@@ -1,0 +1,20 @@
+{
+  "runtimeSource": "be3753079215e46f3e18e5263c922d862be86c8c",
+  "artifact": 12116660894,
+  "artifactSHA256": "9cbbc2cc2893be701e4169084bae1efe674b22f494bcc9a1e3f0779ea6948175",
+  "verificationRun": 39074678968,
+  "verificationJob": 117519264559,
+  "artifactDigestVerified": true,
+  "productionQualified": false,
+  "workflowRun": 39073833598,
+  "workflowPassed": true,
+  "fixture": {
+    "passed": true,
+    "positiveAccepted": 3,
+    "positiveQueries": 3,
+    "falseAccepts": 0,
+    "negativeQueries": 1,
+    "worstAcceptedPositionErrorMetres": 0.008099905352539724,
+    "oracleReadDenied": true
+  }
+}

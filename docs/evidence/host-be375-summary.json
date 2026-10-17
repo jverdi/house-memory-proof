@@ -1,0 +1,73 @@
+{
+  "runtimeSource": "be3753079215e46f3e18e5263c922d862be86c8c",
+  "artifact": 12115932460,
+  "artifactSHA256": "40b0704b843e38648f917a4cc7dc5cc7566b7b26bd61ca159913450ab31aa23e",
+  "verificationRun": 39074678968,
+  "verificationJob": 117519264573,
+  "artifactDigestVerified": true,
+  "productionQualified": false,
+  "workflowRun": 39073833449,
+  "fixtures": {
+    "replay": {
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "falseAccepts": 0,
+      "negativeQueries": 1,
+      "worstAcceptedPositionErrorMetres": 0.0030970525804517868,
+      "oracleReadDenied": true
+    },
+    "bundle-replay": {
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "falseAccepts": 0,
+      "negativeQueries": 1,
+      "worstAcceptedPositionErrorMetres": 0.004567666221661783,
+      "oracleReadDenied": true
+    },
+    "long-session": {
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "falseAccepts": 0,
+      "negativeQueries": 1,
+      "worstAcceptedPositionErrorMetres": 0.0029654441748894513,
+      "oracleReadDenied": true
+    },
+    "coded-regions": {
+      "passed": true,
+      "positiveAccepted": 16,
+      "positiveQueries": 16,
+      "falseAccepts": 0,
+      "negativeQueries": 20,
+      "worstAcceptedPositionErrorMetres": 0.003908046305612429,
+      "p95Metres": 0.003908046305612429,
+      "availability": 1,
+      "scenarioMetrics": {
+        "finished coded references": {
+          "attempts": 8,
+          "accepted": 8,
+          "availability": 1,
+          "p95Metres": 0.003907891469531685,
+          "worstMetres": 0.003907891469531685,
+          "passed": true
+        },
+        "rough coded references": {
+          "attempts": 8,
+          "accepted": 8,
+          "availability": 1,
+          "p95Metres": 0.003908046305612429,
+          "worstMetres": 0.003908046305612429,
+          "passed": true
+        }
+      },
+      "oracleReadDenied": true
+    }
+  },
+  "workflowPassed": false,
+  "knownFailedGates": [
+    "paired finished-stage availability",
+    "staggered finished-stage availability"
+  ]
+}

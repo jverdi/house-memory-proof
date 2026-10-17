@@ -1,0 +1,115 @@
+{
+  "runtimeSource": "be3753079215e46f3e18e5263c922d862be86c8c",
+  "artifact": 12116178518,
+  "artifactSHA256": "c39de573c28accfa95a1d491ca9f4bac1d4ab8f20231baa599c823f1901af3f5",
+  "verificationRun": 39074678968,
+  "verificationJob": 117519264437,
+  "artifactDigestVerified": true,
+  "productionQualified": false,
+  "workflowRun": 39073907352,
+  "workflowSource": "70cc45f873c4e528db8464db70c26f8e04e54575",
+  "fixtures": {
+    "rough-a": {
+      "passed": true,
+      "positiveAccepted": 12,
+      "positiveQueries": 12,
+      "falseAccepts": 0,
+      "negativeQueries": 8,
+      "worstAcceptedPositionErrorMetres": 0.0029555543155036185,
+      "p95Metres": 0.0029555543155036185,
+      "availability": 1,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1,
+          "p95Metres": 0.0029555543155036185,
+          "worstMetres": 0.0029555543155036185,
+          "passed": true
+        }
+      },
+      "oracleReadDenied": true
+    },
+    "rough-b": {
+      "passed": true,
+      "positiveAccepted": 12,
+      "positiveQueries": 12,
+      "falseAccepts": 0,
+      "negativeQueries": 8,
+      "worstAcceptedPositionErrorMetres": 0.005272216262328606,
+      "p95Metres": 0.005272216262328606,
+      "availability": 1,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1,
+          "p95Metres": 0.005272216262328606,
+          "worstMetres": 0.005272216262328606,
+          "passed": true
+        }
+      },
+      "oracleReadDenied": true
+    },
+    "paired": {
+      "passed": false,
+      "positiveAccepted": 13,
+      "positiveQueries": 20,
+      "falseAccepts": 0,
+      "negativeQueries": 20,
+      "worstAcceptedPositionErrorMetres": 0.004085462078524539,
+      "p95Metres": 0.004085462078524539,
+      "availability": 0.65,
+      "scenarioMetrics": {
+        "finished stage with retained reference surfaces": {
+          "attempts": 8,
+          "accepted": 1,
+          "availability": 0.125,
+          "p95Metres": 0.0012631780284976795,
+          "worstMetres": 0.0012631780284976795,
+          "passed": false
+        },
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1,
+          "p95Metres": 0.004085462078524539,
+          "worstMetres": 0.004085462078524539,
+          "passed": true
+        }
+      },
+      "oracleReadDenied": true
+    },
+    "staggered": {
+      "passed": false,
+      "positiveAccepted": 13,
+      "positiveQueries": 20,
+      "falseAccepts": 0,
+      "negativeQueries": 20,
+      "worstAcceptedPositionErrorMetres": 0.004928394269145767,
+      "p95Metres": 0.004928394269145767,
+      "availability": 0.65,
+      "scenarioMetrics": {
+        "finished stage with retained reference surfaces": {
+          "attempts": 8,
+          "accepted": 1,
+          "availability": 0.125,
+          "p95Metres": 0.0037880778377903414,
+          "worstMetres": 0.0037880778377903414,
+          "passed": false
+        },
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1,
+          "p95Metres": 0.004928394269145767,
+          "worstMetres": 0.004928394269145767,
+          "passed": true
+        }
+      },
+      "oracleReadDenied": true
+    }
+  },
+  "adopted": false,
+  "comparisonControlDetailedSummaryPending": true
+}
