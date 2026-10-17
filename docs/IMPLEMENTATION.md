@@ -408,3 +408,8 @@ Source `0056098e`, run 39066800878, passed the entire workflow: **100 native che
 ### Streamed semantic CSV export
 
 The missing semantic CSV profile is implemented alongside metadata JSON. It includes all features (including hidden records), ordered route points, endpoint identities, explicit connections and measurements, with source IDs, stage/record dates and semantic provenance. Local capture coordinates remain local and carry explicit frame IDs plus optional registration metadata. The UI states that metadata exports include the whole project. The writer streams bounded records, escapes spreadsheet formulas reversibly and deletes incomplete output. `docs/SEMANTIC_CSV.md` specifies the contract. A native mixed-frame/text fixture and independent Python CSV reader are wired into CI; native validation is pending.
+
+
+### Upscaled SIFT comparison also fails availability
+
+Workflow `62f9f2d7`, run 39067764313, completed all four unchanged diagnostics. Rough A accepts 12/12 (worst 2.947 mm), rough B only 7/12 (5.942 mm); paired accepts 6/12 rough plus 2/8 finished (worst 3.593 mm), and staggered accepts 5/12 rough plus 0/8 finished (worst 2.538 mm). All 56 negative queries reject. Upscaling precise SIFT does not resolve the availability gate and introduces rough-view rejections, including ambiguity refusals. These results do not support adoption or relaxing ambiguity criteria. Exact reports and candidate diff are retained under `docs/evidence/sift-upscaled-62f9/`, with downloaded artifact SHA-256 independently verified. The production AKAZE matcher and disabled precision profiles remain unchanged.

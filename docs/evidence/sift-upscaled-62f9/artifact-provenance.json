@@ -1,0 +1,106 @@
+{
+  "workflowSource": "62f9f2d7b07fab9bc656865a7cd361b6fc57720d",
+  "candidateBaseline": "ca5a28fe80df316348a10e9bae220b23e8955664",
+  "run": 39067764313,
+  "artifactID": 12113908574,
+  "sha256": "50cf9ce6fdebb211d0dfd04b78867f48b0864ce4ccb4983aa1dbb632a19757f3",
+  "independentlyVerified": true,
+  "candidateValid": true,
+  "acceptedForProduction": false,
+  "syntheticOnly": true,
+  "descriptorContract": "Corrected 128-byte precise SIFT candidate with 1280-pixel analysis scale; unchanged pose and evaluator gates.",
+  "summary": {
+    "rough-a": {
+      "passed": true,
+      "mapCount": 4,
+      "positiveAccepted": 12,
+      "positiveQueries": 12,
+      "negativeQueries": 8,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.0029465811987705423,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1.0,
+          "p95Metres": 0.0029465811987705423,
+          "worstMetres": 0.0029465811987705423,
+          "passed": true
+        }
+      }
+    },
+    "rough-b": {
+      "passed": false,
+      "mapCount": 4,
+      "positiveAccepted": 7,
+      "positiveQueries": 12,
+      "negativeQueries": 8,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.0059421459473876954,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 7,
+          "availability": 0.5833333333333334,
+          "p95Metres": 0.0059421459473876954,
+          "worstMetres": 0.0059421459473876954,
+          "passed": false
+        }
+      }
+    },
+    "paired": {
+      "passed": false,
+      "mapCount": 4,
+      "positiveAccepted": 8,
+      "positiveQueries": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.003592879668916165,
+      "scenarioMetrics": {
+        "finished stage with retained reference surfaces": {
+          "attempts": 8,
+          "accepted": 2,
+          "availability": 0.25,
+          "p95Metres": 0.003592879668916165,
+          "worstMetres": 0.003592879668916165,
+          "passed": false
+        },
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 6,
+          "availability": 0.5,
+          "p95Metres": 0.0031309199228769613,
+          "worstMetres": 0.0031309199228769613,
+          "passed": false
+        }
+      }
+    },
+    "staggered": {
+      "passed": false,
+      "mapCount": 4,
+      "positiveAccepted": 5,
+      "positiveQueries": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.002538242811703031,
+      "scenarioMetrics": {
+        "finished stage with retained reference surfaces": {
+          "attempts": 8,
+          "accepted": 0,
+          "availability": 0.0,
+          "p95Metres": null,
+          "worstMetres": null,
+          "passed": false
+        },
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 5,
+          "availability": 0.4166666666666667,
+          "p95Metres": 0.002538242811703031,
+          "worstMetres": 0.002538242811703031,
+          "passed": false
+        }
+      }
+    }
+  }
+}
