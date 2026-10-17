@@ -13,10 +13,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: native-full
-            artifact: 12117025728
-            sha256: 5774ae88771d02cb87fcbaf107dbe29f6b53840410a2c7b7270efd13234f7bf1
-            kind: native
+          - label: baseline-stress
+            artifact: 12116652353
+            sha256: 1868f462de781d03ca406de7f21b22739908ee7f66ba12c8817505d4af7f94f3
+            kind: stress
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
