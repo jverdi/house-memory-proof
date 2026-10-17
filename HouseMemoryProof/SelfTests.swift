@@ -77,13 +77,19 @@ import SQLite3
             check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
             check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}
             check("Deterministic tour source revision"){let a=try JSONEncoder().encode(TourDirector.plan(house)),b=try JSONEncoder().encode(TourDirector.plan(house));let p=try JSONDecoder().decode(TourPlan.self,from:a),q=try JSONDecoder().decode(TourPlan.self,from:b);return Set(p.shots.map{$0.roomID}).count==3 && p.shots.allSatisfy{$0.duration<=5} && p.sourceRevision==q.sourceRevision && p.shots.map{$0.position}==q.shots.map{$0.position}}
+            check("Clearance handles parallel rays and rejects incomplete indexes"){
+                let box=SpatialClearance.Bounds(low:V3(),high:V3(1,1,1))
+                let f=Feature(name:"wall",trade:.structure,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:V3(),size:V3(1,1,1)))
+                let limited=SpatialClearance(features:[f],limit:1)
+                return box.intersects(V3(-1,0.5,0.5),V3(2,0.5,0.5),radius:0) && !box.intersects(V3(-1,2,0.5),V3(2,2,0.5),radius:0) && !limited.complete && !limited.isClear(from:V3(5),to:V3(6),radius:0.15)
+            }
             check("Tour path rejects observed wall and accepts supported camera corridor"){
                 var h=House.empty("Path test");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
                 for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}
                 let a=V3(0,0,1.6),b=V3(0.5,0,1.6),options=SceneOptions()
-                guard TourDirector.clearPath(a,b,house:h,options:options,scene:SceneBuilder.scene(h,options:options)),TourDirector.plan(h).shots.contains(where:{$0.endPosition != nil}) else{return false}
+                guard TourDirector.clearPath(a,b,house:h,options:options,clearance:SpatialClearance(features:Exporter.canonicalFeatures(h,options:options))),TourDirector.plan(h).shots.contains(where:{$0.endPosition != nil}) else{return false}
                 h.features=[Feature(name:"Blocking wall",trade:.structure,roomID:r.id,stageID:stage.id,kind:.synthetic,mesh:.box(center:V3(0.25,0,1.6),size:V3(0.1,2,2)),segmentID:segment.id)]
-                return !TourDirector.clearPath(a,b,house:h,options:options,scene:SceneBuilder.scene(h,options:options)) && TourDirector.plan(h).shots.allSatisfy{$0.endPosition==nil}
+                return !TourDirector.clearPath(a,b,house:h,options:options,clearance:SpatialClearance(features:Exporter.canonicalFeatures(h,options:options))) && TourDirector.plan(h).shots.allSatisfy{$0.endPosition==nil}
             }
             check("Moving tour uses short-angle interpolation and endpoint continuity"){
                 let shot=TourShot(roomID:UUID(),position:V3(),yaw:179*Double.pi/180,pitch:0,caption:"test",duration:5,endPosition:V3(1,0,0),endYaw: -179*Double.pi/180,endPitch:0.2)

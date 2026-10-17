@@ -166,6 +166,8 @@ extension UIColor {
   @Published var tool = "Inspect"
   @Published var flying = false
   @Published var orbit = false
+  private var clearance = SpatialClearance(features: [])
+  @Published var navigationNotice = ""
   var house: House?
   var options = SceneOptions()
   var revision = -1
@@ -210,6 +212,8 @@ extension UIColor {
     house = h
     options = o
     revision = h.revision
+    clearance = SpatialClearance(features: Exporter.canonicalFeatures(h, options: o))
+    navigationNotice = clearance.complete ? "" : "Walk collision budget exceeded. Choose one room or use Free fly."
     let scene = SceneBuilder.scene(h, options: o)
     scene.rootNode.addChildNode(camera)
     view.scene = scene
@@ -337,12 +341,7 @@ extension UIColor {
     }
     let direction = simd_normalize(delta)
     let ahead = to + direction * 0.23
-    let hits =
-      view.scene?.rootNode.hitTestWithSegment(
-        from: SCNVector3(from), to: SCNVector3(ahead),
-        options: [SCNHitTestOption.searchMode.rawValue: SCNHitTestSearchMode.closest.rawValue])
-      ?? []
-    if hits.isEmpty {
+    if clearance.isClear(from: V3(ar: from), to: V3(ar: ahead), radius: 0.15) {
       if let h = house {
         if h.isDemo && h.observations.isEmpty {
           guard NavigationGeometry.allowed(V3(ar: to), house: h) else { return }

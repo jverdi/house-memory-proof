@@ -287,7 +287,10 @@ struct ExploreView: View {
           HStack {
             Text(house.isDemo ? "SYNTHETIC" : "APPROXIMATE").font(.caption.bold()).padding(8)
               .background(.black.opacity(0.6), in: Capsule())
-            Spacer()
+            if !controller.navigationNotice.isEmpty {
+            Text(controller.navigationNotice).font(.caption).padding(8).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 10))
+          }
+          Spacer()
             Button {
               layers = true
             } label: {

@@ -214,7 +214,9 @@ final class Repository {
       let r = try Repository(root: root)
       repository = r
       do {
-        let pendingWarnings = try r.recoverPendingCaptures()
+        var pendingWarnings: [String] = []
+        do { pendingWarnings = try r.recoverPendingCaptures() }
+        catch { pendingWarnings = ["Capture recovery needs attention: " + error.localizedDescription] }
         houses = try r.all()
         selected = houses.first?.id
         let warnings = pendingWarnings + r.recoveryWarnings

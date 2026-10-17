@@ -50,7 +50,7 @@ enum TourDirector {
         let samples = h.observations.filter {
           $0.roomID == r.id && $0.segmentID == obs.segmentID && !$0.documentary
         }.sorted { $0.timestamp < $1.timestamp }
-        let scene = SceneBuilder.scene(h, options: scope)
+        let clearance = SpatialClearance(features: Exporter.canonicalFeatures(h, options: scope))
         var moves: [TourShot] = []
         if samples.count >= 2 {
           for i in 1..<samples.count {
@@ -59,7 +59,7 @@ enum TourDirector {
             guard b.timestamp > a.timestamp, b.timestamp - a.timestamp < 5 else { continue }
             let start = pose(a, house: h)
             let end = pose(b, house: h)
-            guard clearPath(start.0, end.0, house: h, options: scope, scene: scene) else {
+            guard clearPath(start.0, end.0, house: h, options: scope, clearance: clearance) else {
               continue
             }
             moves.append(
@@ -113,7 +113,7 @@ enum TourDirector {
     }
     return (p, atan2(-f.x, f.y), asin(max(-1, min(1, f.normalized.z))))
   }
-  static func clearPath(_ a: V3, _ b: V3, house: House, options: SceneOptions, scene: SCNScene)
+  static func clearPath(_ a: V3, _ b: V3, house: House, options: SceneOptions, clearance: SpatialClearance)
     -> Bool
   {
     let distance = (b - a).length
@@ -123,20 +123,9 @@ enum TourDirector {
         NavigationGeometry.observed(a + (b - a) * (Double(i) / 10), house: house, options: options)
       else { return false }
     }
-    // Conservative camera clearance against observed geometry; no claim about unseen obstacles.
-    for offset in [
-      V3(), V3(0.15, 0, 0), V3(-0.15, 0, 0), V3(0, 0.15, 0), V3(0, -0.15, 0), V3(0, 0, 0.15),
-      V3(0, 0, -0.15),
-    ] {
-      if !scene.rootNode.hitTestWithSegment(
-        from: SCNVector3((a + offset).render), to: SCNVector3((b + offset).render),
-        options: [SCNHitTestOption.searchMode.rawValue: SCNHitTestSearchMode.closest.rawValue]
-      ).isEmpty {
-        return false
-      }
-    }
-    return true
+    return clearance.isClear(from: a, to: b, radius: 0.15)
   }
+
   static func camera(_ shot: TourShot, phase: Double) -> (V3, Double, Double) {
     let t = max(0, min(1, phase))
     let smooth = t * t * (3 - 2 * t)
