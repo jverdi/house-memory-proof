@@ -902,11 +902,14 @@ extension SelfTests {
         for i in 0..<4 {changed.codedDetections![changedIndex].corners[i].u+=0.02}
         conflictedHouse.observations.append(changed)
         guard !CodedReferences.build(house:conflictedHouse,segment:conflictedHouse.segments[0]).boards.contains(where:{$0.id==firstBoard}) else{throw HouseError.message("A conflicting later source frame was ignored in favor of earlier agreeing views.")}
-        var errors:[Double]=[]
+        var errors:[Double]=[],queryChecks:[[String:Any]]=[]
         for (x,y) in [(-0.06,0.02),(0.0,-0.03),(0.05,0.04),(0.09,-0.02)] {
             checkpoint("query \(errors.count)")
             let o=observation(x,y),result=try CodedReferences.localize(gray:render(o),width:width,height:height,stride:width,intrinsics:o.intrinsics,map:map)
-            guard let pose=result.pose,!result.conflict else{throw HouseError.message("Nominal finished-wall coded image was rejected.")}
+            var check:[String:Any]=["x":x,"y":y,"accepted":result.pose != nil && !result.conflict]
+            if let quality=result.quality {check["rejectionGate"]=quality.rejection;check["rmsPixels"]=quality.rms_pixels;check["maximumHeldOutPixels"]=quality.maximum_check_pixels;check["maximumLeaveOutShiftMetres"]=quality.maximum_leave_out_shift_metres}
+            queryChecks.append(check);diagnostics["queries"]=queryChecks
+            guard let pose=result.pose,!result.conflict else{continue}
             errors.append((V3(pose.values[3],pose.values[7],pose.values[11])-V3(x,0,y)).length)
             diagnostics["acceptedPositionErrorsMetres"]=errors
         }
@@ -923,7 +926,7 @@ extension SelfTests {
         var movedHouse=house;movedHouse.references[0].valid=false
         guard CodedReferences.build(house:movedHouse,segment:movedHouse.segments[0]).boards.count==5 else{throw HouseError.message("Invalidating a board did not remove its evidence.")}
         diagnostics["completed"]=true;checkpoint("completed")
-        return ["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":duplicateRejected && missing.pose==nil && errors.allSatisfy{$0<=0.01},"nominalQueries":errors.count,"acceptedPositionErrorsMetres":errors,"sourceBoardPositionErrorsMetres":measurementErrors,"oracleBoardPosesUsedForLocalization":false,"movedReferenceRejected":true,"duplicateReferenceRejected":duplicateRejected,"missingReferencesHidden":missing.pose==nil,"wrongRegionRejected":true,"physicalDeviceQualified":false,"limitations":"Synthetic raster images and known source camera calibration/poses. Board poses are estimated from pixels. Actual camera pose drift/timing, print flatness/scale and complete-house diversity remain unqualified."]
+        return ["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":errors.count==4 && duplicateRejected && missing.pose==nil && errors.allSatisfy{$0<=0.01},"nominalQueries":errors.count,"acceptedPositionErrorsMetres":errors,"sourceBoardPositionErrorsMetres":measurementErrors,"oracleBoardPosesUsedForLocalization":false,"movedReferenceRejected":true,"duplicateReferenceRejected":duplicateRejected,"missingReferencesHidden":missing.pose==nil,"wrongRegionRejected":true,"physicalDeviceQualified":false,"limitations":"Synthetic raster images and known source camera calibration/poses. Board poses are estimated from pixels. Actual camera pose drift/timing, print flatness/scale and complete-house diversity remain unqualified."]
     }
     nonisolated static func prepareLargeScene(textureKeys:[String])throws->(House,SpatialDisplayIndex,[String:Any]) {
         let started=ProcessInfo.processInfo.systemUptime

@@ -12,7 +12,6 @@ on:
       - packages/**
       - tooling/**
       - .github/workflows/ios.yml
-  pull_request:
   workflow_dispatch:
     inputs:
       ship:
@@ -75,6 +74,7 @@ jobs:
             build/evidence/self-test-partial.json
             build/evidence/coded-reference-diagnostics.json
             build/evidence/coded-source-*.png
+            build/evidence/metal-target.png
             build/evidence/incomplete-native-sample.txt
             build/evidence/HouseMemoryProof*.ips
           if-no-files-found: warn

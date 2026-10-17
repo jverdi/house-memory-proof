@@ -7,7 +7,7 @@ import simd
 enum CodedReferences {
   struct Board {var id:UUID;var code:UInt32;var corners:[V3];var pose:ReferencePose}
   struct Map {var boards:[Board];var known:[ReferenceBoard]}
-  struct Result {var pose:Rigid?;var conflict:Bool}
+  struct Result {var pose:Rigid?;var conflict:Bool;var quality:HXReferenceQuality?=nil}
   static func gray(_ buffer:CVPixelBuffer)throws->(Data,Int,Int,Int) {
     guard CVPixelBufferGetPlaneCount(buffer)>=1 else{throw HouseError.message("Camera luminance plane is unavailable.")}
     let w=CVPixelBufferGetWidthOfPlane(buffer,0),h=CVPixelBufferGetHeightOfPlane(buffer,0),stride=CVPixelBufferGetBytesPerRowOfPlane(buffer,0)
@@ -155,6 +155,6 @@ enum CodedReferences {
       hx_reference_pose(points.baseAddress,pixels.baseAddress,codes.baseAddress,UInt32(ids.count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),matrix.baseAddress,&quality)
     }}}}
     let pose=Rigid(values:values)
-    return accepted==1 && pose.valid ? Result(pose:pose,conflict:false):Result(pose:nil,conflict:true)
+    return accepted==1 && pose.valid ? Result(pose:pose,conflict:false,quality:quality):Result(pose:nil,conflict:true,quality:quality)
   }
 }
