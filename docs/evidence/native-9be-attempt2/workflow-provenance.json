@@ -1,0 +1,21 @@
+{
+  "source": "9be428c5c52eb32fcf40ae83caa66a387ca844ce",
+  "run": 39068761616,
+  "attempt": 2,
+  "artifact": 12115312778,
+  "sha256": "78773a139611de99e6013c935234c96a751a7e0a22caca2c271fdd08ca908014",
+  "independentlyVerified": true,
+  "workflowPassed": true,
+  "nativePassedChecks": 101,
+  "nativeTotalChecks": 101,
+  "uiTestsPassed": 3,
+  "processRecoveryModesPassed": 3,
+  "portableCasesPassed": 50,
+  "independentReadersPassed": true,
+  "semanticCSVPassed": true,
+  "runtimeSourceUnchangedFromAttempt1": true,
+  "priorTimeoutNotReproduced": true,
+  "priorTimeoutRootCauseEstablished": false,
+  "physicalDeviceQualified": false,
+  "testFlightUploaded": false
+}

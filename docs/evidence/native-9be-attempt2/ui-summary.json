@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "tests": [
+    {
+      "test": "testLandscapeControlsAndRotation",
+      "seconds": 85.473,
+      "passed": true
+    },
+    {
+      "test": "testPersonalHouseWorkflow",
+      "seconds": 67.727,
+      "passed": true
+    },
+    {
+      "test": "testPhotoPointWorkflow",
+      "seconds": 84.266,
+      "passed": true
+    }
+  ],
+  "totalSeconds": 237.466
+}

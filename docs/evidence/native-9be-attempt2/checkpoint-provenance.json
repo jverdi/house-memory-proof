@@ -1,0 +1,16 @@
+{
+  "source": "9be428c5c52eb32fcf40ae83caa66a387ca844ce",
+  "run": 39068761616,
+  "attempt": 2,
+  "artifact": 12114633297,
+  "sha256": "44ae17e108edbe184fab768a96bb03f7a062eb4f9e470453228d247e041f56bd",
+  "independentlyVerified": true,
+  "nativePassed": true,
+  "passedChecks": 101,
+  "totalChecks": 101,
+  "elapsedSeconds": 157.68124,
+  "fullWorkflowPending": false,
+  "runtimeSourceUnchangedFromAttempt1": true,
+  "priorTimeoutNotReproduced": true,
+  "priorTimeoutRootCauseEstablished": false
+}
