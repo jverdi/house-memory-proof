@@ -8,6 +8,9 @@ struct PoseGraphSolution: Codable, Equatable {
   var maximumEdgeResidual:Double
   var excludedFrameCount:Int?=nil
   var anchorObservationID:UUID?=nil
+  var bundleCheckRMS:Double?=nil
+  var bundleFitRMS:Double?=nil
+  var bundlePointCount:Int?=nil
   var date=Date()
 }
 enum PoseGraph {

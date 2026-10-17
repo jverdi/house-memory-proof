@@ -21,3 +21,6 @@ HouseMemoryProof/IFC/OPENCV-LICENSE.txt
 HouseMemoryProof/IFC/vision-map.hxray
 HouseMemoryProof/IFC/vision-queries.json
 HouseMemoryProof/IFC/vision-query-*.jpg
+
+HouseMemoryProof/IFC/CERES-LICENSE.txt
+HouseMemoryProof/IFC/EIGEN-LICENSE.txt

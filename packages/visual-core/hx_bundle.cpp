@@ -1,3 +1,4 @@
+#define EIGEN_MPL2_ONLY
 #include "hx_bundle.h"
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
@@ -64,6 +65,7 @@ extern "C" int32_t hx_bundle_optimize(const double* input,uint32_t nc,const doub
  for(uint32_t p=0;p<np;p++)for(int j=0;j<3;j++){double v=initial[p*3+j];if(!std::isfinite(v)||std::abs(v)>100000)return -1;points[p][j]=v;}
  for(uint32_t i=0;i<no;i++){const auto& o=obs[i];if(o.camera>=nc||o.point>=np||o.fit>1||!std::isfinite(o.u)||!std::isfinite(o.v)||!std::isfinite(o.depth)||o.depth<0||o.depth>8||!seen.insert({o.camera,o.point}).second)return -1;if(o.fit){fits[o.point]++;cameraFits[o.camera]++;}else checks[o.point]++;}
  for(uint32_t p=0;p<np;p++)if(fits[p]<2||checks[p]<1)return -1;
+ if(cameraFits[0]<20)return -1;
  auto initialCheck=score(cameras,points,k,obs,no,false);if(!initialCheck.valid)return 0;quality->initial_check_rms=initialCheck.rms;
  ceres::Problem problem;
  for(uint32_t i=0;i<no;i++){const auto& o=obs[i];if(!o.fit)continue;const double* intr=k+o.camera*4;
@@ -88,8 +90,28 @@ extern "C" int32_t hx_bundle_optimize(const double* input,uint32_t nc,const doub
  for(uint32_t p=0;p<np;p++){double change=0;for(int j=0;j<3;j++)change+=std::pow(points[p][j]-initial[p*3+j],2);if(std::sqrt(change)>.25)return 0;}
  std::copy(output.begin(),output.end(),outC);for(uint32_t p=0;p<np;p++)std::copy(points[p].begin(),points[p].end(),outP+p*3);return 1;
 } catch(...){return -2;}
+namespace {
+bool derivativeChecks() {
+ Camera camera{.03,-.07,.02,.1,-.04,.02};Point point{.4,.3,-2.4};
+ ImageFactor image{400,200,500,510,320,240};DepthFactor depth{2.5};
+ ceres::AutoDiffCostFunction<ImageFactor,2,6,3> imageCost(new ImageFactor(image));
+ ceres::AutoDiffCostFunction<DepthFactor,1,6,3> depthCost(new DepthFactor(depth));
+ for(auto* cost:std::vector<ceres::CostFunction*>{&imageCost,&depthCost}) {
+  const int rows=cost->num_residuals();std::vector<double> value(rows),cameraJ(rows*6),pointJ(rows*3);double* jacobians[]={cameraJ.data(),pointJ.data()};const double* params[]={camera.data(),point.data()};
+  if(!cost->Evaluate(params,value.data(),jacobians))return false;
+  for(int block=0;block<2;block++)for(int axis=0;axis<(block?3:6);axis++) {
+   double* parameter=block?point.data():camera.data();const double original=parameter[axis];std::vector<double> plus(rows),minus(rows);parameter[axis]=original+1e-6;cost->Evaluate(params,plus.data(),nullptr);parameter[axis]=original-1e-6;cost->Evaluate(params,minus.data(),nullptr);parameter[axis]=original;
+   for(int row=0;row<rows;row++){double numeric=(plus[row]-minus[row])/2e-6,automatic=(block?pointJ:cameraJ)[row*(block?3:6)+axis];if(std::abs(numeric-automatic)>1e-5*std::max(1.,std::abs(numeric)))return false;}
+  }
+ }
+ CameraPrior prior;prior.center={.1,.2,.3};prior.rotation={1,0,0,0,1,0,0,0,1};ceres::AutoDiffCostFunction<CameraPrior,12,6> priorCost(new CameraPrior(prior));
+ double value[12],jacobian[72];double* derivatives[]={jacobian};const double* params[]={camera.data()};if(!priorCost.Evaluate(params,value,derivatives))return false;
+ for(int axis=0;axis<6;axis++){double original=camera[axis],plus[12],minus[12];camera[axis]=original+1e-6;priorCost.Evaluate(params,plus,nullptr);camera[axis]=original-1e-6;priorCost.Evaluate(params,minus,nullptr);camera[axis]=original;for(int row=0;row<12;row++){double numeric=(plus[row]-minus[row])/2e-6;if(std::abs(numeric-jacobian[row*6+axis])>1e-5*std::max(1.,std::abs(numeric)))return false;}}
+ return true;
+}
+}
 extern "C" int32_t hx_bundle_selftest(double* maximum) try {
- if(!maximum)return -1;*maximum=0;constexpr int nc=6,np=80;std::vector<double> cameras(nc*16,0),truth(nc*16,0),points(np*3),initial(np*3),k(nc*4),outC(nc*16),outP(np*3);std::vector<HXBundleObservation> observations;
+ if(!maximum)return -1;*maximum=0;if(!derivativeChecks())return -9;constexpr int nc=6,np=80;std::vector<double> cameras(nc*16,0),truth(nc*16,0),points(np*3),initial(np*3),k(nc*4),outC(nc*16),outP(np*3);std::vector<HXBundleObservation> observations;
  for(int c=0;c<nc;c++){truth[c*16]=truth[c*16+5]=truth[c*16+10]=truth[c*16+15]=1;truth[c*16+3]=c*.15;std::copy(truth.begin()+c*16,truth.begin()+(c+1)*16,cameras.begin()+c*16);if(c>0)cameras[c*16+3]+=.01;double intr[4]={500,500,320,240};std::copy(intr,intr+4,k.begin()+c*4);}
  for(int p=0;p<np;p++){points[p*3]=(p%10)*.15-.3;points[p*3+1]=(p/10)*.12-.4;points[p*3+2]=-2.2-(p%3)*.25;for(int j=0;j<3;j++)initial[p*3+j]=points[p*3+j]+(j==0?.005:0);
   for(int c=0;c<nc;c++){double z=-points[p*3+2],x=points[p*3]-truth[c*16+3],y=points[p*3+1];observations.push_back({uint32_t(c),uint32_t(p),uint32_t(c!=(p%5+1)),500*x/z+320,-500*y/z+240,z});}

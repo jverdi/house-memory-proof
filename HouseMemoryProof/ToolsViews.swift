@@ -554,7 +554,23 @@ struct ReconstructionPage: View {
               return nil
             }
           }.disabled(model.busy)
+          Button("Jointly refine cameras and photograph points") {
+            guard let repo=model.repository else{return};let revision=house.revision
+            model.perform("Joint camera and point refinement") {
+              let result=try await LocalWorker.run{try BundleRefinement.build(house:house,segment:s,repo:repo)}
+              guard model.house?.id==house.id,model.house?.revision==revision else{throw HouseError.message("Capture changed; joint solution was not published.")}
+              model.edit {h in
+                guard let index=h.segments.firstIndex(where:{$0.id==s.id}) else{return}
+                h.segments[index].poseSolution=result.solution
+                h.visualMaps.removeAll{$0.segmentID==s.id}
+                for i in h.features.indices where h.features[i].segmentID==s.id && !h.features[i].sourceIDs.isEmpty {h.features[i].artifactValid=false;h.features[i].hidden=true}
+                h.features.removeAll{$0.segmentID==s.id && $0.name==result.feature.name}
+                h.features.append(result.feature)
+              };return nil
+            }
+          }.disabled(model.busy)
           if let solution = s.poseSolution {
+            if let rms=solution.bundleCheckRMS {Text("Joint refinement: \(solution.bundlePointCount ?? 0) points, held-out image RMS \(rms.formatted(.number.precision(.fractionLength(2)))) px. Not a physical accuracy estimate.").font(.caption)}
             if let excluded=solution.excludedFrameCount,excluded>0 {Text("\(excluded) photographs remain outside the connected camera solution; their originals are preserved.").font(.caption)}
             Text(
               "Local graph: \(solution.cameras.count) camera views, \(solution.edges) matched connections. Rebuild surfaces and visual references after refinement. Residuals do not establish accuracy."

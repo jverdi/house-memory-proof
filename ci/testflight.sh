@@ -5,6 +5,8 @@ mkdir -p build/evidence
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
+bash tooling/solver/build.sh ios
+cp build/ceres/CERES-LICENSE.txt build/ceres/EIGEN-LICENSE.txt HouseMemoryProof/IFC/
 cp build/opencv/LICENSE HouseMemoryProof/IFC/OPENCV-LICENSE.txt
 python3 ci/apple_access.py
 python3 - <<'PY'

@@ -32,7 +32,7 @@ p.write_text(s)
 
 # Native visual feature / pose core and official platform-specific static SDK.
 s=p.read_text()
-for name in ['hx_vision.cpp','hx_vision_test.cpp','hx_graph.cpp']:
+for name in ['hx_vision.cpp','hx_vision_test.cpp','hx_graph.cpp','hx_bundle.cpp']:
  rid=hashlib.sha256(('vision-file:'+name).encode()).hexdigest()[:24].upper()
  bid=hashlib.sha256(('vision-build:'+name).encode()).hexdigest()[:24].upper()
  if rid not in s:
@@ -44,4 +44,13 @@ if 'HXOPENCVFRAMEWORKFILE001' not in s:
  s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "HXOPENCVFRAMEWORKFILE001",')
  s=s.replace('"isa" = "PBXFrameworksBuildPhase";\n\t\t\t"buildActionMask" = 2147483647;\n\t\t\t"files" = (','"isa" = "PBXFrameworksBuildPhase";\n\t\t\t"buildActionMask" = 2147483647;\n\t\t\t"files" = ("HXOPENCVFRAMEWORKBUILD01",')
  s=s.replace('"CLANG_CXX_LIBRARY" = "libc++";', '"CLANG_CXX_LIBRARY" = "libc++"; "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");')
+p.write_text(s)
+
+# Static Ceres/Eigen package built for each Apple target, no runtime downloads.
+s=p.read_text()
+if 'HXCERESFRAMEWORKFILE0001' not in s:
+ s=s.replace('\t"objects" = {','\t"objects" = {\n"HXCERESFRAMEWORKFILE0001"={isa=PBXFileReference;lastKnownFileType=wrapper.xcframework;path="build/ceres/ceres.xcframework";sourceTree=SOURCE_ROOT;};\n"HXCERESFRAMEWORKBUILD01"={isa=PBXBuildFile;fileRef=HXCERESFRAMEWORKFILE0001;};')
+ s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "HXCERESFRAMEWORKFILE0001",')
+ s=s.replace('("HXOPENCVFRAMEWORKBUILD01",','("HXOPENCVFRAMEWORKBUILD01", "HXCERESFRAMEWORKBUILD01",')
+ s=s.replace('"CLANG_CXX_LIBRARY" = "libc++";', '"CLANG_CXX_LIBRARY" = "libc++"; "HEADER_SEARCH_PATHS" = ("$(inherited)", "$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include");')
 p.write_text(s)

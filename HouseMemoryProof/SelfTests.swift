@@ -48,6 +48,20 @@ import ImageIO
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))
                 return SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.rough))==[h.stages[0].id] && SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.finished))==[h.stages[1].id]
             }
+            check("Ceres joint solver checks numerical derivatives and rejects corrupted held-out evidence") {
+                var error=0.0;let status=hx_bundle_selftest(&error)
+                guard status==1 else{throw HouseError.message("Joint solver diagnostic failed at gate \(status).")};return error<0.003
+            }
+            check("Image-track joint refinement survives save/reload without changing raw cameras") {
+                let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
+                var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
+                let original=capture.observations
+                capture.segments[0].poseSolution=try PoseGraph.build(house:capture,segment:capture.segments[0],repo:repo)
+                let result=try BundleRefinement.build(house:capture,segment:capture.segments[0],repo:repo)
+                capture.segments[0].poseSolution=result.solution;capture.features=[result.feature]
+                let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(capture));try decoded.validate()
+                return decoded.observations==original && decoded.segments[0].poseSolution==result.solution && (result.solution.bundleCheckRMS ?? 100)<2 && DerivedEvidence.currentIDs(decoded).contains(result.feature.id)
+            }
             check("RGB-only multi-view triangulation retains independent point provenance") {
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)

@@ -5,6 +5,13 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+"HXCERESFRAMEWORKFILE0001"={isa=PBXFileReference;lastKnownFileType=wrapper.xcframework;path="build/ceres/ceres.xcframework";sourceTree=SOURCE_ROOT;};
+"HXCERESFRAMEWORKBUILD01"={isa=PBXBuildFile;fileRef=HXCERESFRAMEWORKFILE0001;};
+"3942A1EE43C134F128C2F780" = {isa=PBXFileReference; lastKnownFileType=sourcecode.cpp.cpp; path="../packages/visual-core/hx_bundle.cpp"; sourceTree="<group>";};
+"206167C73ABDA387E3D90511" = {isa=PBXBuildFile; fileRef="3942A1EE43C134F128C2F780";};
+		"28908C8A30FAD01DBB84F0FC" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "BundleRefinement.swift"; "sourceTree" = "<group>"; };
+		"8CD662E02DA206F8EBB7C9F8" = { "isa" = "PBXBuildFile"; "fileRef" = "28908C8A30FAD01DBB84F0FC"; };
+
 		"74DE22F5F11386AC96873E00" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "BoundaryCoverage.swift"; "sourceTree" = "<group>"; };
 		"FB8814FF2C5F3C04021282F0" = { "isa" = "PBXBuildFile"; "fileRef" = "74DE22F5F11386AC96873E00"; };
 
@@ -206,7 +213,8 @@
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
-				"534A5F435ADDB25DA9F43232",
+				"534A5F435ADDB25DA9F43232", "206167C73ABDA387E3D90511",
+				"8CD662E02DA206F8EBB7C9F8",
 				"FB8814FF2C5F3C04021282F0",
 				"C3F90EF019894D6AF32059AB",
 				"C7A860C7A2D3B19C9454ABAE",
@@ -265,14 +273,15 @@
 		"8A7588AD5FA397C62F95C6FE" = {
 			"isa" = "PBXFrameworksBuildPhase";
 			"buildActionMask" = 2147483647;
-			"files" = ("HXOPENCVFRAMEWORKBUILD01",
+			"files" = ("HXOPENCVFRAMEWORKBUILD01", "HXCERESFRAMEWORKBUILD01",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
 		"FC233BDA2344D97687F5A251" = {
 			"isa" = "PBXGroup";
 			"children" = (
-				"A33603BF79F74B056172D43B",
+				"A33603BF79F74B056172D43B", "HXCERESFRAMEWORKFILE0001", "3942A1EE43C134F128C2F780",
+				"28908C8A30FAD01DBB84F0FC",
 				"74DE22F5F11386AC96873E00",
 				"83723C20B25CB18D93B194A4",
 				"0A4D5EE4898AD07D90AB5E78",
@@ -345,7 +354,7 @@
 				"CLANG_ENABLE_MODULES" = "YES";
 				"SDKROOT" = "iphoneos";
 				"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
-				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++"; "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");
+				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++"; "HEADER_SEARCH_PATHS" = ("$(inherited)", "$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include"); "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
@@ -383,7 +392,7 @@
 				"CLANG_ENABLE_MODULES" = "YES";
 				"SDKROOT" = "iphoneos";
 				"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
-				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++"; "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");
+				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++"; "HEADER_SEARCH_PATHS" = ("$(inherited)", "$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include"); "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
