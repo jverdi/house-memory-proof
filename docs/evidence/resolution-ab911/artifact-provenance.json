@@ -1,0 +1,15 @@
+{
+  "runID": 39058172269,
+  "artifactID": 12110258703,
+  "artifactSHA256": "3aeab6a62fb0c6255ab75593887a0a49b2874e5a101cc70088fac6301aa245f2",
+  "artifactBytesVerified": true,
+  "productionAdopted": false,
+  "pairedFinishedAccepted": 4,
+  "pairedFinishedAttempts": 8,
+  "staggeredFinishedAccepted": 8,
+  "staggeredFinishedAttempts": 8,
+  "staggeredFinishedWorstMetres": 0.015687441325802937,
+  "staggeredRoughAccepted": 11,
+  "staggeredRoughAttempts": 12,
+  "pairedRejection": "Four finished queries occupy only five of the required six image cells; the gate is unchanged."
+}

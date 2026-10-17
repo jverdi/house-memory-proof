@@ -1,0 +1,29 @@
+{
+  "sourceCommit": "ffa44947575049a8e3f13226f06133b5c7728094",
+  "runID": 39057607330,
+  "artifactID": 12110921368,
+  "artifactSHA256": "cc783b735c42fe7a2a423794b277da89a4482b50fd489b2b2544bf941ee69634",
+  "artifactBytesVerified": true,
+  "nativeChecks": 93,
+  "nativePassed": true,
+  "inspectedMovieFrameSHA256": "006ef0036952a969dcfa7679594ebdbbec139826bedf817fd777d248d1d10493",
+  "movieFrameInspection": "Upright readable two-line caption, unclipped at 1920x1080. Synthetic scene.",
+  "retainedFiles": {
+    "native-self-test.json": "d159f8191ff759d01db7ac855c792e2ca6c13a7e220200afa8970dd83066af57",
+    "simulator-result.json": "8620624d7a3429e977e769d687bf237486b87d622a227b19700e654491e058f9",
+    "coded-reference-diagnostics.json": "52ec222eade89ef7964de782fb63abfd00b1ccd7d4e43b6e5a827e448d69876c",
+    "process-recovery-capture-row.json": "5898c4b6117641dc6fa44f8711e7e7211bf3c3812e6ec87e5977ecd71eaf002b",
+    "process-recovery-journal.json": "a27b383778c276dd334bd426abf7f49fcfdcf681173258a636b107ab11c38b40",
+    "process-recovery-migration.json": "39f700becd910522d4896476bd6bec0e939033339db6adde731d57db9e9658c6",
+    "archive-validation.json": "4f15d0bf93cdfc9c5757ea22f1c0b29ced0ad099c82665ee738869b624eb7f58",
+    "offline-viewer-validation.json": "087c26535251127309854fa3206de6efde3a1878748e655702e8fe0a4a294dab",
+    "test-gltf-validation.json": "315de5ecd547e254eeef66a0391842d83ed18a534848ca137c7d3585e35c8bf7",
+    "test-usd-validation.json": "fcb0c5ddf1c4f29d9a8b79d0c4b48bad913e3b9c7999f0924a0a82e1a2ce68f8",
+    "house-surface-gltf-validation.json": "b1be0f1c55ae8c81063beaad2c4472726a49550fbed1992ebd437c160dfdb41a",
+    "points-gltf-validation.json": "b7b2d86f1e44a6722a27f951db851b0b77e538edae4943f5f3b0f54f237b691d",
+    "points-usd-validation.json": "74e17bbc0160eaae8fb42bd99d4f5f9f52a0fed0da80e1a594e897c61bc0b9b8",
+    "textured-gltf-validation.json": "16aba4609d955caef6550aa747645eee8a02cd7aa9ecfdc1284f06c1d0685f55",
+    "textured-usd-validation.json": "37a7f445253e304f7193b1ef7b2a246b2aa1d33e7a483551617e66bea86fbe3d"
+  },
+  "physicalDeviceQualified": false
+}

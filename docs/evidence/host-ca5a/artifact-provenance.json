@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "ca5a28fe80df316348a10e9bae220b23e8955664",
+  "runID": 39062386773,
+  "artifactID": 12112296345,
+  "artifactSHA256": "1447aad2d4523fadf4115cadee5dfb4a68dc980f96fd59fc9b20463f4bd21429",
+  "artifactBytesVerified": true,
+  "overallPassed": false,
+  "remainingFailure": "Both natural-feature finished-stage variants accept zero of eight finished queries. Existing rough-stage and coded-reference gates pass.",
+  "retainedReports": [
+    "replay.json",
+    "house-paired.json",
+    "house-staggered.json",
+    "core-diagnostics.json",
+    "long-session.json",
+    "coded-regions.json",
+    "house-layout-905771.json",
+    "bundle-replay.json",
+    "house-layout-683431.json",
+    "diversity/matrix.json",
+    "diversity/19043/replay.json",
+    "diversity/83117/replay.json",
+    "diversity/109313/replay.json",
+    "diversity/47891/replay.json",
+    "diversity/142697/replay.json"
+  ]
+}

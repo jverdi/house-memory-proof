@@ -1,0 +1,7 @@
+{
+  "reader": "OpenUSD 25.11",
+  "passed": true,
+  "meshes": 2,
+  "units": "metres",
+  "upAxis": "Z"
+}

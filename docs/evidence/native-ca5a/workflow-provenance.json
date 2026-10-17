@@ -1,0 +1,30 @@
+{
+  "sourceCommit": "ca5a28fe80df316348a10e9bae220b23e8955664",
+  "runID": 39062386754,
+  "artifactID": 12111894138,
+  "artifactSHA256": "c1f48189f477e74344d5b80381b18416fee22ff53852f8972860a6c18baed65a",
+  "artifactBytesVerified": true,
+  "workflowPassed": true,
+  "nativeChecks": 94,
+  "uiTests": 2,
+  "uiFailures": 0,
+  "processKillRecoveryModes": 3,
+  "portableCases": 50,
+  "physicalDeviceQualified": false,
+  "testflightUploaded": false,
+  "retainedFiles": {
+    "process-recovery-capture-row.json": "4ea0f84a94ae64155a6467a24e7cd035d5846ab9bc941e8130b5863331fe27b1",
+    "process-recovery-journal.json": "99a1658d54347367b56f2b09682b3b10bc8766c24948dc8f68e53b01a7c383fd",
+    "process-recovery-migration.json": "b9f6cf5423986b18eb08aa57336cf3d68b8600c8d4838789cb9f663a6bde163f",
+    "archive-validation.json": "4f15d0bf93cdfc9c5757ea22f1c0b29ced0ad099c82665ee738869b624eb7f58",
+    "offline-viewer-validation.json": "087c26535251127309854fa3206de6efde3a1878748e655702e8fe0a4a294dab",
+    "portable-tests.json": "9fc1b911d7095312468ac57b672cba30131992d0218982c717b1323338c4ea9d",
+    "test-gltf-validation.json": "75fa7e6cbfcf56bca10e69be5426be445d72898dd544d8585c11456a02cc4ffd",
+    "test-usd-validation.json": "fcb0c5ddf1c4f29d9a8b79d0c4b48bad913e3b9c7999f0924a0a82e1a2ce68f8",
+    "house-surface-gltf-validation.json": "0ae6d5d2f022e186fc04e5baa9f8a79c51ed3de6fcc5e40c60ba4f3a044de690",
+    "points-gltf-validation.json": "18eba388a3ff9d8bf49dfe983045d15f6f1c1c43336ac75906108d95ae3bd1a7",
+    "points-usd-validation.json": "74e17bbc0160eaae8fb42bd99d4f5f9f52a0fed0da80e1a594e897c61bc0b9b8",
+    "textured-gltf-validation.json": "9660442627aec2f9f24db0f091030e10337aa3ef8e29b3d628bdc4a47fc765ec",
+    "textured-usd-validation.json": "37a7f445253e304f7193b1ef7b2a246b2aa1d33e7a483551617e66bea86fbe3d"
+  }
+}

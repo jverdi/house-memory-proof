@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "ca5a28fe80df316348a10e9bae220b23e8955664",
+  "runID": 39062386754,
+  "artifactID": 12112146331,
+  "artifactSHA256": "a34443c8025b26263de09d6e7ff05549ecca2319209b56bbf5df7990ab480c09",
+  "artifactBytesVerified": true,
+  "nativePassed": true,
+  "nativeChecks": 94,
+  "thumbnailCoordinateRegressionPassed": true,
+  "physicalDeviceQualified": false,
+  "fullWorkflowPending": false
+}

@@ -39,14 +39,15 @@
     {
       "id": 12110921368,
       "name": "simulator-evidence-147-1",
-      "reportedSHA256": "cc783b735c42fe7a2a423794b277da89a4482b50fd489b2b2544bf941ee69634"
+      "reportedSHA256": "cc783b735c42fe7a2a423794b277da89a4482b50fd489b2b2544bf941ee69634",
+      "artifactBytesVerified": true
     },
     {
       "id": 12109797967,
       "name": "native-checkpoint-147-1",
-      "reportedSHA256": "b11e45e6a5e181a2381a708943eedf823f750c5c3209caf85301bd6c5ffa2f1d"
+      "reportedSHA256": "b11e45e6a5e181a2381a708943eedf823f750c5c3209caf85301bd6c5ffa2f1d",
+      "artifactBytesVerified": false
     }
   ],
-  "artifactBytesVerified": false,
-  "evidenceSource": "GitHub job log and completed step statuses; local executor disconnected before archive retrieval"
+  "evidenceSource": "Completed GitHub job log and steps, plus downloaded full artifact with independently verified SHA-256; checkpoint archive itself was not separately downloaded."
 }
