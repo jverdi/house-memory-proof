@@ -77,6 +77,15 @@ import ImageIO
                 let unknown=try BoundaryCoverage.analyze(house:h,boundary:unseen,repo:repo)
                 return supported.supported>0 && blocked.supported==0 && blocked.states.contains(3) && unknown.states.allSatisfy{$0==0}
             }
+            check("Disconnected photograph is excluded without inventing camera corrections") {
+                let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
+                var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
+                capture.observations[0].image=try repo.put(Data(contentsOf:resources.appendingPathComponent("vision-query-3.jpg")),ext:"jpg")
+                let solution=try PoseGraph.build(house:capture,segment:capture.segments[0],repo:repo)
+                guard solution.cameras[capture.observations[0].id.uuidString]==nil,(solution.excludedFrameCount ?? 0)>=1,solution.cameras.count>=3 else{return false}
+                capture.segments[0].poseSolution=solution
+                return PoseGraph.selected(capture.observations,segment:capture.segments[0],house:capture)?.count==solution.cameras.count
+            }
             check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
             check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
             check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}

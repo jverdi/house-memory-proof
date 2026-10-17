@@ -7,6 +7,7 @@ struct PoseGraphSolution: Codable, Equatable {
   var edges:Int
   var maximumEdgeResidual:Double
   var excludedFrameCount:Int?=nil
+  var anchorObservationID:UUID?=nil
   var date=Date()
 }
 enum PoseGraph {
@@ -58,18 +59,22 @@ enum PoseGraph {
       withUnsafeMutableBytes(of:&edge.a_from_b){bytes in for i in 0..<16{bytes.storeBytes(of:transform[i],toByteOffset:i*8,as:Double.self)}}
       edges.append(edge)
     }}
-    // A sharp photograph can still have no trustworthy overlap. Refine only
-    // the connected component containing the original anchor; never interpolate
-    // unsupported camera corrections or silently move the origin to another component.
-    var connected:Set<Int>=[0],pending=[0]
-    while let node=pending.popLast() {
-      for edge in edges {
-        let next=Int(edge.a)==node ? Int(edge.b):Int(edge.b)==node ? Int(edge.a):(-1)
-        if next>=0,connected.insert(next).inserted {pending.append(next)}
+    // A sharp photograph can still have no trustworthy overlap. Use the
+    // largest connected component, anchored at its earliest original camera
+    // prior in the SAME capture frame. Other images remain explicitly unsupported.
+    var unseen=Set(ids.indices),components:[[Int]]=[]
+    while let start=unseen.min() {
+      var connected:Set<Int>=[start],pending=[start];unseen.remove(start)
+      while let node=pending.popLast() {
+        for edge in edges {
+          let next=Int(edge.a)==node ? Int(edge.b):Int(edge.b)==node ? Int(edge.a):(-1)
+          if next>=0,connected.insert(next).inserted {pending.append(next);unseen.remove(next)}
+        }
       }
+      components.append(connected.sorted())
     }
-    let kept=connected.sorted()
-    guard kept.count>=3 else{throw HouseError.message("The anchor view has fewer than three reliably connected photographs. Capture more overlapping translated views.")}
+    let kept=components.sorted{a,b in a.count==b.count ? a[0]<b[0]:a.count>b.count}.first ?? []
+    guard kept.count>=3 else{throw HouseError.message("Fewer than three photographs share reliable overlap. Capture more translated views; originals remain unchanged.")}
     if kept.count<ids.count {
       let remap=Dictionary(uniqueKeysWithValues:kept.enumerated().map{($0.element,UInt32($0.offset))})
       edges=edges.compactMap{edge in guard let a=remap[Int(edge.a)],let b=remap[Int(edge.b)] else{return nil};var changed=edge;changed.a=a;changed.b=b;return changed}
@@ -81,7 +86,7 @@ enum PoseGraph {
     guard status==1 else{throw HouseError.message("Pose graph rejected disconnected, inconsistent or excessive corrections (status \(status), \(edges.count) edges, maximum edge residual \(Int((residual*1000).rounded())) mm). Raw camera evidence is unchanged.")}
     var corrected:[String:[Double]]=[:]
     for i in ids.indices{corrected[ids[i].uuidString]=Array(output[i*16..<(i+1)*16])}
-    return PoseGraphSolution(fingerprint:try fingerprint(house:house,segment:segment),cameras:corrected,edges:edges.count,maximumEdgeResidual:residual,excludedFrameCount:max(0,input.count-ids.count))
+    return PoseGraphSolution(fingerprint:try fingerprint(house:house,segment:segment),cameras:corrected,edges:edges.count,maximumEdgeResidual:residual,excludedFrameCount:max(0,input.count-ids.count),anchorObservationID:ids.first)
   }
 }
 
