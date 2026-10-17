@@ -110,17 +110,23 @@ struct DrawingAlignmentPage: View {
 
 @MainActor enum DrawingTexture {
   static func normalizedThumbnail(_ page:PDFPage,maximumDimension:CGFloat=2048)throws->UIImage {
-    guard maximumDimension>=64,maximumDimension<=2048,let copy=page.copy() as? PDFPage else{throw HouseError.message("Unable to prepare a drawing texture.")}
-    // PDFView converts taps into unrotated page coordinates. Render a private
-    // zero-rotation copy in that same frame; keep the original PDF untouched.
-    copy.rotation=0
-    let bounds=copy.bounds(for:.cropBox)
-    guard bounds.width.isFinite,bounds.height.isFinite,bounds.width>0,bounds.height>0 else{throw HouseError.message("The drawing has invalid page bounds.")}
-    let image=copy.thumbnail(of:CGSize(width:maximumDimension,height:maximumDimension),for:.cropBox)
-    guard let cg=image.cgImage,cg.width>0,cg.height>0,cg.width*cg.height<=40_000_000 else{throw HouseError.message("Drawing preview exceeds its raster budget.")}
-    let ratio=min(1,maximumDimension/CGFloat(max(cg.width,cg.height)))
-    let size=CGSize(width:CGFloat(cg.width)*ratio,height:CGFloat(cg.height)*ratio)
+    guard maximumDimension>=64,maximumDimension<=2048,let source=page.pageRef else{throw HouseError.message("Unable to prepare a drawing texture.")}
+    // PDFView controls use unrotated page coordinates. Draw the raw content
+    // stream with an explicit crop transform; PDFKit thumbnails can retain a
+    // rotated cache even after changing a copied page's rotation.
+    let bounds=page.bounds(for:.cropBox)
+    guard bounds.minX.isFinite,bounds.minY.isFinite,bounds.width.isFinite,bounds.height.isFinite,bounds.width>0,bounds.height>0 else{throw HouseError.message("The drawing has invalid page bounds.")}
+    let ratio=maximumDimension/max(bounds.width,bounds.height)
+    let size=CGSize(width:max(1,floor(bounds.width*ratio)),height:max(1,floor(bounds.height*ratio)))
     let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
-    return UIGraphicsImageRenderer(size:size,format:format).image{_ in image.draw(in:CGRect(origin:.zero,size:size))}
+    return UIGraphicsImageRenderer(size:size,format:format).image{renderer in
+      let context=renderer.cgContext
+      UIColor.white.setFill();context.fill(CGRect(origin:.zero,size:size))
+      context.translateBy(x:0,y:size.height)
+      context.scaleBy(x:size.width/bounds.width,y:-size.height/bounds.height)
+      context.translateBy(x:-bounds.minX,y:-bounds.minY)
+      context.clip(to:bounds)
+      context.drawPDFPage(source)
+    }
   }
 }

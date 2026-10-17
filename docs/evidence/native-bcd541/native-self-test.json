@@ -1,0 +1,504 @@
+{
+  "build": "113.1",
+  "date": "2026-10-17T13:50:05Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 97.1187615,
+  "fieldAccuracyValidated": false,
+  "passed": false,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 818544640,
+    "physicalFootprintBytes": 67263808,
+    "residentBytes": 344997888
+  },
+  "sourceRevision": "bcd541b347",
+  "systemVersion": "26.5",
+  "tests": [
+    {
+      "passed": true,
+      "seconds": 0.003942458333369814,
+      "test": "Capture owns processing through final save and stale completion cannot unlock a new capture"
+    },
+    {
+      "passed": true,
+      "seconds": 0.31053608333331795,
+      "test": "Durable capture rows recover without rewriting the project and survive a stale checkpoint"
+    },
+    {
+      "passed": true,
+      "seconds": 0.00016249999998763087,
+      "test": "Reveal clips crossing triangles and rejects opposite wall and viewpoint"
+    },
+    {
+      "passed": true,
+      "seconds": 0.03106837499996118,
+      "test": "Shared reference registration checks third board and invalidates dependencies"
+    },
+    {
+      "passed": true,
+      "seconds": 0.00015395833332831899,
+      "test": "Display reduction stays bounded and preserves source triangles and UVs"
+    },
+    {
+      "passed": true,
+      "seconds": 0.031463499999972555,
+      "test": "Spatial display tiles preserve source primitives, UVs, budgets and room movement"
+    },
+    {
+      "passed": true,
+      "seconds": 0.003224708333334547,
+      "test": "Traced annotation loses eligibility when source revision or registration changes"
+    },
+    {
+      "passed": true,
+      "seconds": 0.002254791666643996,
+      "test": "Capture face labels preserve every triangle and isolate ceiling layers"
+    },
+    {
+      "passed": true,
+      "seconds": 0.007039916666656154,
+      "test": "Field evidence separates validation, preserves abstentions and never enables precision"
+    },
+    {
+      "passed": true,
+      "seconds": 0.03245666666668967,
+      "test": "Construction category survives arbitrary stage names"
+    },
+    {
+      "passed": true,
+      "seconds": 0.03445579166668722,
+      "test": "Ceres joint solver checks derivatives and rejects corrupt or disconnected evidence"
+    },
+    {
+      "passed": true,
+      "seconds": 3.2726032916667123,
+      "test": "Image-track joint refinement survives save/reload without changing raw cameras"
+    },
+    {
+      "passed": true,
+      "seconds": 1.4392317499999763,
+      "test": "RGB-only multi-view triangulation retains independent point provenance"
+    },
+    {
+      "passed": true,
+      "seconds": 0.12203587499999458,
+      "test": "Incremental snapshots deduplicate originals and reject partial or corrupt restore"
+    },
+    {
+      "passed": true,
+      "seconds": 0.13927766666665775,
+      "test": "Snapshot interruption never publishes incomplete revisions and missing arrivals preserve local projects"
+    },
+    {
+      "passed": true,
+      "seconds": 0.20690362499999537,
+      "test": "Boundary coverage counts unseen and occluded nominal patches"
+    },
+    {
+      "passed": true,
+      "seconds": 1.5598653750000153,
+      "test": "Disconnected photograph is excluded without inventing camera corrections"
+    },
+    {
+      "passed": true,
+      "seconds": 0.00048170833332505936,
+      "test": "Recorded path follows stair height without jumping to another floor"
+    },
+    {
+      "passed": true,
+      "seconds": 5.375000000640284e-06,
+      "test": "Canonical AR basis"
+    },
+    {
+      "passed": true,
+      "seconds": 1.3208333371039771e-05,
+      "test": "Identity rigid transform"
+    },
+    {
+      "passed": true,
+      "seconds": 1.1624999956438842e-05,
+      "test": "Reject scale in rigid transform"
+    },
+    {
+      "passed": true,
+      "seconds": 1.1541666651737614e-05,
+      "test": "Reject reflected transform"
+    },
+    {
+      "passed": true,
+      "seconds": 8.833333333768678e-05,
+      "test": "Reference fit and held-out point"
+    },
+    {
+      "passed": true,
+      "seconds": 1.270833331545873e-05,
+      "test": "Reject collinear controls"
+    },
+    {
+      "passed": true,
+      "seconds": 0.001139625000007527,
+      "test": "Checked registration rejects distorted fit despite matching held-out point"
+    },
+    {
+      "passed": true,
+      "seconds": 8.016666663479555e-05,
+      "test": "Drawing controls fit translated vertical plane and reject malformed coordinates"
+    },
+    {
+      "passed": false,
+      "seconds": 0.020476708333319493,
+      "test": "Rotated cropped PDF sheets retain unrotated alignment pixels and original rotation"
+    },
+    {
+      "passed": true,
+      "seconds": 0.00016562500002237357,
+      "test": "Visual pose converts canonical saved frame into live AR frame"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0021517916666766723,
+      "test": "Visual grayscale retains raw top-to-bottom camera rows"
+    },
+    {
+      "passed": true,
+      "seconds": 2.9581984999999804,
+      "test": "Rendered corner images localize held query viewpoints without pose input"
+    },
+    {
+      "passed": true,
+      "seconds": 0.20296095833333538,
+      "test": "Derived surfaces are excluded when camera inputs change"
+    },
+    {
+      "passed": true,
+      "seconds": 1.8312491249999994,
+      "test": "Image depth graph removes injected camera translation drift"
+    },
+    {
+      "passed": true,
+      "seconds": 0.009370333333322378,
+      "test": "Metric feature alignment and 120-camera pose graph closure"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0008636249999653955,
+      "test": "Pose consensus excludes isolated source errors but rejects a competing hypothesis"
+    },
+    {
+      "passed": true,
+      "seconds": 6.143295333333356,
+      "test": "Native visual feature matching and robust PnP diagnostics"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0048217083333383925,
+      "test": "Fixture has three independent rooms and paired stages"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0051260416666423225,
+      "test": "Finish switch preserves stable geometry"
+    },
+    {
+      "passed": true,
+      "seconds": 0.39985058333331835,
+      "test": "Store migration rollback, verified snapshot and future-version refusal"
+    },
+    {
+      "passed": true,
+      "seconds": 0.04723254166663082,
+      "test": "Additive schema migration preserves original identity"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0002572083333234332,
+      "test": "Stage composition isolates unfinished and finished session frames"
+    },
+    {
+      "passed": true,
+      "seconds": 0.23232433333333802,
+      "test": "Observation provenance rejects a different segment stage"
+    },
+    {
+      "passed": true,
+      "seconds": 0.034100624999950924,
+      "test": "Local store roundtrip"
+    },
+    {
+      "passed": true,
+      "seconds": 0.032975750000048265,
+      "test": "Revision recovery"
+    },
+    {
+      "passed": true,
+      "seconds": 0.03534720833334859,
+      "test": "Failed candidate does not replace committed evidence"
+    },
+    {
+      "passed": true,
+      "seconds": 0.029229291666638346,
+      "test": "Corrupt project is isolated without hiding healthy projects"
+    },
+    {
+      "passed": true,
+      "seconds": 0.022168458333339913,
+      "test": "Capture journal replays before commit and is idempotent after commit"
+    },
+    {
+      "passed": true,
+      "seconds": 0.014566708333347833,
+      "test": "Background capture save targets its original project without switching selection"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0033644583333511946,
+      "test": "Asset hash identity"
+    },
+    {
+      "passed": true,
+      "seconds": 1.9749999978557753e-05,
+      "test": "Unsafe paths rejected"
+    },
+    {
+      "passed": true,
+      "seconds": 2.8000000042993634e-05,
+      "test": "Invalid mesh indices rejected"
+    },
+    {
+      "passed": true,
+      "seconds": 2.0874999961506546e-05,
+      "test": "Empty routes remain empty without invalid ranges"
+    },
+    {
+      "passed": true,
+      "seconds": 2.0666666671331768e-05,
+      "test": "Reject nonfinite mesh"
+    },
+    {
+      "passed": true,
+      "seconds": 0.1250576666666916,
+      "test": "Archive metadata and original roundtrip"
+    },
+    {
+      "passed": true,
+      "seconds": 0.12827291666667406,
+      "test": "Coordinated folder snapshot is independently restorable"
+    },
+    {
+      "passed": true,
+      "seconds": 0.12183608333333495,
+      "test": "Corrupt archive rejected"
+    },
+    {
+      "passed": true,
+      "seconds": 0.046181208333337054,
+      "test": "GLB framing and length"
+    },
+    {
+      "passed": true,
+      "seconds": 0.002843208333331404,
+      "test": "Model export admits unique texture bytes and rejects missing, corrupt or oversized selections"
+    },
+    {
+      "passed": true,
+      "seconds": 0.036385999999993146,
+      "test": "PLY independent parser roundtrip"
+    },
+    {
+      "passed": true,
+      "seconds": 0.019067708333352584,
+      "test": "USDZ stored and 64-byte aligned"
+    },
+    {
+      "passed": true,
+      "seconds": 0.00013041666670687846,
+      "test": "No tour across absent captured rooms"
+    },
+    {
+      "passed": true,
+      "seconds": 0.023381416666666155,
+      "test": "Before-after and service tours retain stage identity and exact frame timeline"
+    },
+    {
+      "passed": true,
+      "seconds": 0.013965583333288123,
+      "test": "Deterministic tour source revision"
+    },
+    {
+      "passed": true,
+      "seconds": 6.0666666684028314e-05,
+      "test": "Clearance handles parallel rays and rejects incomplete indexes"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0018574166666667224,
+      "test": "Tour path rejects observed wall and accepts supported camera corridor"
+    },
+    {
+      "passed": true,
+      "seconds": 2.0624999990559445e-05,
+      "test": "Moving tour uses short-angle interpolation and endpoint continuity"
+    },
+    {
+      "passed": true,
+      "seconds": 0.047500333333346134,
+      "test": "Tour cache separates layers and projects"
+    },
+    {
+      "passed": true,
+      "seconds": 0.00013133333334280906,
+      "test": "Walk collision and explicit doorway"
+    },
+    {
+      "passed": true,
+      "seconds": 0.14955229166668005,
+      "test": "SceneKit offscreen render"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0011937083333464216,
+      "test": "Two-reference drift correction and inconsistent-board rejection"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0002466666666691708,
+      "test": "Reference correction preserves nontrivial camera rotation"
+    },
+    {
+      "passed": true,
+      "seconds": 0.003316250000011678,
+      "test": "Projection and occlusion rejection"
+    },
+    {
+      "extent": [
+        1,
+        2,
+        3
+      ],
+      "passed": true,
+      "test": "Bundled IFC2x3 conversion and axes"
+    },
+    {
+      "lower": [
+        9.5,
+        19,
+        30
+      ],
+      "passed": true,
+      "test": "IFC4 millimetres and nested placement",
+      "upper": [
+        10.5,
+        21,
+        33
+      ]
+    },
+    {
+      "passed": true,
+      "seconds": 0.0006307499999707034,
+      "test": "Photo triangulation uses an independent third view and rejects disagreement"
+    },
+    {
+      "passed": true,
+      "test": "Native surface checkpoint reload produces identical geometry"
+    },
+    {
+      "maxPlaneErrorMetres": 0.00029363552593109077,
+      "passed": true,
+      "syntheticOnly": true,
+      "test": "Native signed-distance surface fusion",
+      "vertices": 410880
+    },
+    {
+      "maxPlaneErrorMetres": 0.0008894999821980054,
+      "passed": true,
+      "points": 10956,
+      "syntheticOnly": true,
+      "test": "Simulated camera to fusion and photo texture pipeline"
+    },
+    {
+      "passed": true,
+      "syntheticOnly": true,
+      "test": "Paired three-room camera archive without oracle geometry"
+    },
+    {
+      "passed": true,
+      "precisionQualified": false,
+      "test": "Noisy simulated house capture to native surface",
+      "vertices": 31725
+    },
+    {
+      "levels": 5,
+      "limitations": "Synthetic tiled walls without photo textures or capture data. Offscreen snapshot time includes readback; it is not sustained display FPS, device thermal qualification, reconstruction completeness or navigation-topology evidence.",
+      "maximumResidentEntries": 373770,
+      "maximumResidentTiles": 512,
+      "memoryAfterPreparation": {
+        "lifetimeResidentPeakBytes": 818544640,
+        "physicalFootprintBytes": 124837120,
+        "residentBytes": 659193856
+      },
+      "memorySamples": [
+        {
+          "lifetimeResidentPeakBytes": 818544640,
+          "physicalFootprintBytes": 104258816,
+          "residentBytes": 644628480
+        },
+        {
+          "lifetimeResidentPeakBytes": 818544640,
+          "physicalFootprintBytes": 103505152,
+          "residentBytes": 643907584
+        },
+        {
+          "lifetimeResidentPeakBytes": 818544640,
+          "physicalFootprintBytes": 103505152,
+          "residentBytes": 643907584
+        },
+        {
+          "lifetimeResidentPeakBytes": 818544640,
+          "physicalFootprintBytes": 97295616,
+          "residentBytes": 639631360
+        },
+        {
+          "lifetimeResidentPeakBytes": 818544640,
+          "physicalFootprintBytes": 96394496,
+          "residentBytes": 638730240
+        },
+        {
+          "lifetimeResidentPeakBytes": 818544640,
+          "physicalFootprintBytes": 96394496,
+          "residentBytes": 638730240
+        }
+      ],
+      "metadataBytes": 29220572,
+      "offscreenFrames": 60,
+      "offscreenP50Milliseconds": 4.993624999997337,
+      "offscreenP95Milliseconds": 10.21850000000768,
+      "offscreenSize": [
+        640,
+        360
+      ],
+      "passed": true,
+      "physicalDeviceQualified": false,
+      "planP95Milliseconds": 5.543583333349034,
+      "preparationSeconds": 15.60209441666666,
+      "residencyLoadSeconds": [
+        0.14569045833331984,
+        0.21445566666665172
+      ],
+      "rooms": 100,
+      "sourceTriangles": 1000000,
+      "stages": 2,
+      "test": "100-space two-stage capacity and native streamed render",
+      "tiles": 1320
+    },
+    {
+      "durationSeconds": 10,
+      "height": 1080,
+      "passed": true,
+      "seconds": 43.58562562499998,
+      "test": "1080p30 MP4 encode, decode and verified chunk reuse",
+      "width": 1920
+    }
+  ]
+}

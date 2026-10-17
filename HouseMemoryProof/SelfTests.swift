@@ -305,11 +305,15 @@ import Darwin
                 guard let page=PDFDocument(data:data)?.page(at:0) else{return false}
                 page.setBounds(CGRect(x:20,y:10,width:200,height:120),for:.cropBox)
                 let baseline=try DrawingTexture.normalizedThumbnail(page,maximumDimension:320)
-                guard let expected=baseline.pngData(),let cg=baseline.cgImage,CaptureController.sharpness(cg)>0.002 else{return false}
+                guard let expected=baseline.pngData(),let cg=baseline.cgImage,CaptureController.sharpness(cg)>0.002 else{throw HouseError.message("Drawing baseline was empty or could not encode.")}
+                try expected.write(to:mainRepo.root.appendingPathComponent("drawing-baseline.png"))
                 for angle in [90,180,270] {
                     page.rotation=angle
                     let image=try DrawingTexture.normalizedThumbnail(page,maximumDimension:320)
-                    guard page.rotation==angle,image.pngData()==expected,image.cgImage!.width<=320,image.cgImage!.height<=320 else{return false}
+                    try image.pngData()?.write(to:mainRepo.root.appendingPathComponent("drawing-rotated-\(angle).png"))
+                    guard page.rotation==angle else{throw HouseError.message("Rendering changed the original drawing rotation.")}
+                    guard image.pngData()==expected else{throw HouseError.message("Drawing pixels changed at \(angle) degrees; baseline \(cg.width)×\(cg.height), candidate \(image.cgImage!.width)×\(image.cgImage!.height).")}
+                    guard image.cgImage!.width<=320,image.cgImage!.height<=320 else{throw HouseError.message("Drawing exceeded the raster budget.")}
                 }
                 return true
             }

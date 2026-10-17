@@ -1,0 +1,12 @@
+{
+  "sourceRevision": "bcd541b3477480c90817378ef5e27dcc34534941",
+  "runID": 39037703843,
+  "jobID": 117410966155,
+  "artifactID": 12103118175,
+  "artifactSHA256": "380d0cc87389138446d9b33dda2272d3051fa8e794123d85b76a4c9ed777c904",
+  "conclusion": "failure",
+  "nativePassed": 80,
+  "nativeTotal": 81,
+  "uiPassed": 2,
+  "scope": "Report extracted from native job assertion; complete run artifact retained by GitHub. Simulator only."
+}
