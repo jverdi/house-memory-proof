@@ -45,8 +45,11 @@ jobs:
       - name: Verify portable core and independent export readers
         run: |
           python3 tooling/hm test
-          npm install --prefix build/validation --ignore-scripts gltf-validator@2.0.0-dev.3.10
+          npm install --prefix build/validation --ignore-scripts gltf-validator@2.0.0-dev.3.10 playwright@1.56.1
           node tooling/check_exports.cjs
+          python3 -c "import zipfile; z=zipfile.ZipFile('build/evidence/test.hxray'); open('build/evidence/offline-viewer.html','wb').write(z.read('viewer.html'))"
+          build/validation/node_modules/.bin/playwright install chromium
+          node tooling/check_viewer.cjs
           python3 -m venv build/usd-env
           build/usd-env/bin/pip install usd-core==25.11
           build/usd-env/bin/python tooling/check_usd.py

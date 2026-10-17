@@ -433,6 +433,10 @@ enum Exporter {
     guard UInt64(max(0, repo.freeBytes())) > required + 200_000_000 else {
       throw HouseError.message("Not enough free space for the complete archive.")
     }
+    let viewer=try ArchiveViewer.html(h)
+    let viewerURL=staging.appendingPathComponent("viewer.html");try viewer.write(to:viewerURL)
+    hashes["viewer.html"]=SHA256.hash(data:viewer).map{String(format:"%02x",$0)}.joined()
+    items.append(.init(name:"viewer.html",url:viewerURL))
     let manifest = staging.appendingPathComponent("manifest.json")
     try JSONSerialization.data(
       withJSONObject: ["format": "HouseXray", "version": 1, "sha256": hashes],
@@ -440,7 +444,7 @@ enum Exporter {
     ).write(to: manifest)
     items.append(.init(name: "manifest.json", url: manifest))
     let html =
-      "<!doctype html><meta charset=utf-8><title>House Xray evidence</title><style>body{font:16px system-ui;max-width:960px;margin:40px auto;background:#101923;color:#eee}img{max-width:100%;max-height:700px}article{margin:32px 0}</style><h1>House Xray evidence archive</h1><p>Unzip all files together. Coordinates in house.json are metres, Z-up. Photographs are historical evidence; placement is uncalibrated.</p><a href=house.json>Complete project metadata</a>"
+      "<!doctype html><meta charset=utf-8><title>House Xray evidence</title><style>body{font:16px system-ui;max-width:960px;margin:40px auto;background:#101923;color:#eee}img{max-width:100%;max-height:700px}article{margin:32px 0}</style><h1>House Xray evidence archive</h1><p>Unzip all files together. Coordinates in house.json are metres, Z-up. Photographs are historical evidence; placement is uncalibrated.</p><a href=viewer.html>Explore offline 3D</a> · <a href=house.json>Complete project metadata</a>"
       + h.observations.map {
         "<article><h2>\($0.date.formatted())</h2><img src=\"assets/\($0.image)\"><p>Observation \($0.id)</p></article>"
       }.joined()
