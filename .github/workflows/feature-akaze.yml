@@ -1,8 +1,5 @@
 name: Diagnose nonlinear feature support
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/feature-akaze.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,6 +12,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 7ba4169d70d58e9cc4ce0307fe71d339eb0d9a4c
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

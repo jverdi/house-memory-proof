@@ -1,8 +1,5 @@
 name: Diagnose natural-feature patch support
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/feature-diagnostic.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,6 +16,8 @@ jobs:
         patch: [15, 21, 25]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: db5d1f6cae2764fb863dbcaf046968a88bc987e6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -69,3 +68,4 @@ jobs:
           name: feature-patch-${{ matrix.patch }}
           path: build/vision-evaluation/
           retention-days: 14
+

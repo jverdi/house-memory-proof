@@ -1,0 +1,10 @@
+{
+  "case": "development-36",
+  "seed": 1562725033,
+  "split": "development",
+  "positiveQueries": 12,
+  "negativeQueries": 20,
+  "sourceRevision": "bf7e1b9968c68c7a02cad901efb91865ede6ed3f",
+  "candidateSHA256": "9a1f812365cc01ead19c8eaf0e7592dcde8e19b2f46163634067f726cf581bd8",
+  "driftMetres": 0.03
+}

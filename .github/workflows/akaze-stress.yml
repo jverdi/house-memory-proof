@@ -1,9 +1,5 @@
 name: Qualify experimental nonlinear features
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/akaze-stress.yml
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,6 +17,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: bf7e1b9968c68c7a02cad901efb91865ede6ed3f
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -60,7 +58,7 @@ jobs:
         run: |
           python3 -m venv build/stress-env
           build/stress-env/bin/pip install --timeout 30 numpy==2.3.5 pillow==11.3.0
-          build/stress-env/bin/python tooling/simulation/qualification_sweep.py --executable build/vision-replay --shard ${{ matrix.shard }} --output build/stress-evidence
+          GITHUB_SHA="$(git rev-parse HEAD)" build/stress-env/bin/python tooling/simulation/qualification_sweep.py --executable build/vision-replay --shard ${{ matrix.shard }} --output build/stress-evidence
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -79,6 +77,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: bf7e1b9968c68c7a02cad901efb91865ede6ed3f
       - uses: actions/download-artifact@v4
         with:
           pattern: akaze-spatial-stress-*

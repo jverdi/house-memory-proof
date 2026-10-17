@@ -1,0 +1,59 @@
+{
+  "cases": 70,
+  "positiveQueries": 1000,
+  "positiveAccepted": 1000,
+  "availability": 1.0,
+  "unrelatedNegativeQueries": 1400,
+  "repeatedRoomAndFloorChallenges": 2000,
+  "criticalChallenges": 3400,
+  "executedUnrelatedQueries": 1400,
+  "criticalFalseAccepts": 0,
+  "oracleControlFailures": 0,
+  "p50Metres": 0.002440177959121132,
+  "p95Metres": 0.004570020166958207,
+  "worstMetres": 0.006989958347744116,
+  "spatialTargetsPassed": true,
+  "sourceRevisions": [
+    "bf7e1b9968c68c7a02cad901efb91865ede6ed3f"
+  ],
+  "development": {
+    "cases": 50,
+    "positiveQueries": 600,
+    "positiveAccepted": 600,
+    "availability": 1.0,
+    "unrelatedNegativeQueries": 1000,
+    "repeatedRoomAndFloorChallenges": 1200,
+    "criticalChallenges": 2200,
+    "executedUnrelatedQueries": 1000,
+    "criticalFalseAccepts": 0,
+    "oracleControlFailures": 0,
+    "p50Metres": 0.0024344082862618652,
+    "p95Metres": 0.004574128635701268,
+    "worstMetres": 0.006989958347744116,
+    "spatialTargetsPassed": true
+  },
+  "protected": {
+    "cases": 20,
+    "positiveQueries": 400,
+    "positiveAccepted": 400,
+    "availability": 1.0,
+    "unrelatedNegativeQueries": 400,
+    "repeatedRoomAndFloorChallenges": 800,
+    "criticalChallenges": 1200,
+    "executedUnrelatedQueries": 400,
+    "criticalFalseAccepts": 0,
+    "oracleControlFailures": 0,
+    "p50Metres": 0.002441401621227804,
+    "p95Metres": 0.0045461855048700905,
+    "worstMetres": 0.006257191471748469,
+    "spatialTargetsPassed": true
+  },
+  "passed": true,
+  "productionQualified": false,
+  "limitations": [
+    "Analytic textured corners, not 70 complete house topologies",
+    "Room geometry and texture vary; no calibrated iPhone sensor model",
+    "Repeated-room and floor clones test conservative abstention",
+    "Thin-service geometry, camera integration and physical uncertainty are separate gates"
+  ]
+}

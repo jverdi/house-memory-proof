@@ -1,0 +1,52 @@
+{
+  "sourceRevision": "bf7e1b9968c68c7a02cad901efb91865ede6ed3f",
+  "runID": 39055638533,
+  "allWholeArtifactDigestsVerified": true,
+  "artifacts": [
+    {
+      "artifactID": 12110275105,
+      "name": "akaze-spatial-replay-records-0",
+      "verifiedSHA256": "55403b110e18612dfa3513b4f7eb727c638f15fceb42e351371f238228da7ea1"
+    },
+    {
+      "artifactID": 12110061365,
+      "name": "akaze-spatial-stress-3",
+      "verifiedSHA256": "a65f9d9dfd81e47ad2c7b4e025a284aab759de71f07b577a6360140661c576a9"
+    },
+    {
+      "artifactID": 12109658595,
+      "name": "akaze-spatial-stress-2",
+      "verifiedSHA256": "bf8a05eb9251b4ababe2fbdb1a0d8a1c11160fdec51e9b12e12f08881b9aad83"
+    },
+    {
+      "artifactID": 12109617882,
+      "name": "akaze-spatial-replay-records-1",
+      "verifiedSHA256": "afbf525cd97857261ad1429be2e49f8729b8265b69d5dd1c2b005d18b0d16ea6"
+    },
+    {
+      "artifactID": 12109529301,
+      "name": "akaze-spatial-replay-records-2",
+      "verifiedSHA256": "e26df8687b38bdd64dc9ee3c0aea7ea7549018146a3b787a464db7121bd19edc"
+    },
+    {
+      "artifactID": 12109519612,
+      "name": "akaze-spatial-stress-summary",
+      "verifiedSHA256": "2760bd13820c03e0f15d934520fbcd787d8a468efbff78799113a9ac590d9fb1"
+    },
+    {
+      "artifactID": 12109418720,
+      "name": "akaze-spatial-stress-1",
+      "verifiedSHA256": "1b0bcdb81a0423388bd8e537d0169939ed466c6709416159407839f5fe0c9b0a"
+    },
+    {
+      "artifactID": 12109349469,
+      "name": "akaze-spatial-stress-0",
+      "verifiedSHA256": "1942dbe8bd913fb32f6d17d550fe90ab757b5652564faed99318e045fa6fb6af"
+    },
+    {
+      "artifactID": 12109239396,
+      "name": "akaze-spatial-replay-records-3",
+      "verifiedSHA256": "453d2751f4f78245f8ffc7d5fae2d7dfb4da9b8a8370e33c6541817739f7085e"
+    }
+  ]
+}
