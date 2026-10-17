@@ -1,0 +1,14 @@
+{
+  "source_commit": "7461c600eb90a4cd2bf30d7a858f5ba15fd4c461",
+  "build_number": "1.1",
+  "xcode_version": "26.6 (17F113)",
+  "workflow_run_id": 38999745161,
+  "workflow_url": "https://github.com/jverdi/house-memory-proof/actions/runs/38999745161",
+  "compilation": "passed",
+  "simulator_launch": "passed",
+  "screenshot_visually_verified": true,
+  "artifact_sha256": "882350928a0d8b7b9cfe1259bd94b94701c68f82f22a58f5d337a66c2086b5c5",
+  "apple_signing": "not_run",
+  "testflight_upload": "not_run",
+  "physical_device_install": "not_run"
+}

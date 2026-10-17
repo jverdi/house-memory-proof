@@ -1,7 +1,7 @@
 {
   "configuration_validation": "passed",
   "xcode_project_references": "passed",
-  "native_build": "not_run",
+  "native_build": "passed",
   "signed_archive": "not_run",
   "testflight_upload": "not_run",
   "device_install": "not_run",
@@ -9,10 +9,12 @@
     "url": "https://github.com/jverdi/house-memory-proof",
     "visibility": "private",
     "created": true,
-    "app_source_committed": false,
+    "app_source_committed": true,
     "connector_push_access": true
   },
   "blockers": [
     "Apple Developer and App Store Connect signing access not yet authorized"
-  ]
+  ],
+  "simulator_launch": "passed",
+  "evidence": "docs/evidence/build-1.1.json"
 }

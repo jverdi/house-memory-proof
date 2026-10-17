@@ -1,12 +1,18 @@
 # House Memory — tiny native delivery proof
 
-This is the source for a small iPhone app intended to prove delivery from this ChatGPT conversation through a managed macOS build runner to TestFlight. It is **not a compiled or delivered app yet**.
+This is the source for a small iPhone app intended to prove delivery from this ChatGPT conversation through a managed macOS build runner to TestFlight. It has now been **compiled and launched on a cloud-hosted iPhone simulator**. It has **not been delivered through TestFlight yet**.
 
 The app has a framing illustration toggle, a tap counter, and visible build/revision identifiers. It uses SwiftUI, supports iOS 18 and later, and has no external packages, camera access, sign-in, storage service, or network calls. The illustration is explicitly labeled; it does not reconstruct a house.
 
 ## Current evidence
 
-The private repository `jverdi/house-memory-proof` has been created and the GitHub connection now has push access. The source and CI configuration passed local structural checks. Native compilation, simulator launch, signing, and TestFlight availability must still be verified from actual runs. Apple Developer membership and signing access have not yet been authorized.
+**The first real cloud build passed.** [GitHub Actions run 38999745161](https://github.com/jverdi/house-memory-proof/actions/runs/38999745161) compiled source revision `7461c600eb90a4cd2bf30d7a858f5ba15fd4c461` with Xcode 26.6 (17F113), installed it on an iPhone simulator, launched it, and captured a screenshot. The screenshot was visually checked and shows build `1.1` and source `7461c600eb`.
+
+![Actual iPhone simulator capture](docs/evidence/simulator-build-1.1.png)
+
+The private repository is accessible with push permission. **Signing, Apple upload, TestFlight availability, and physical iPhone installation are not yet proven.** The signing job was skipped because Apple credentials are not configured. The cloud browser cannot currently resume its secure credential session, so Apple account sign-in could not proceed.
+
+The machine-readable result is in [docs/evidence/build-1.1.json](docs/evidence/build-1.1.json). This is a real simulator capture, not a design mockup or physical iPhone screenshot.
 
 ## Continuation from ChatGPT on the iPhone
 
@@ -42,8 +48,8 @@ Upload happens only from `main`, after the simulator job succeeds and the upload
 
 | Checkpoint | Required evidence | Initial status |
 |---|---|---|
-| Native compilation | Successful macOS `xcodebuild` log for the revision | Not run |
-| Simulator launch | Successful launch log and inspected simulator screenshot | Not run |
+| Native compilation | Successful macOS `xcodebuild` log for the revision | Passed, build 1.1 |
+| Simulator launch | Successful launch log and inspected simulator screenshot | Passed, build 1.1 |
 | Signed archive | Successful archive/export logs for the actual Apple team | Not run |
 | Apple acceptance | Uploaded build visible in App Store Connect | Not run |
 | TestFlight readiness | Processed build assigned to the owner's internal group | Not run |
