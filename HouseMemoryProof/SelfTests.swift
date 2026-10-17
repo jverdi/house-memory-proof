@@ -48,6 +48,18 @@ import SQLite3
                 guard sqlite3_exec(db,"UPDATE projects SET json='broken' WHERE id='\(bad.id.uuidString)'",nil,nil,nil)==SQLITE_OK else{return false}
                 let remaining=try isolated.all();return remaining.map{$0.id}==[good.id] && isolated.recoveryWarnings.count==1 && FileManager.default.fileExists(atPath:isolated.root.appendingPathComponent("recovery/"+bad.id.uuidString+".json").path)
             }
+            check("Capture journal replays before commit and is idempotent after commit"){
+                let store=try Repository(root:folder.appendingPathComponent("journal"));var h=House.empty("Recovery")
+                let segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments=[segment];try store.save(h)
+                let key=try store.put(Data("original camera bytes".utf8),ext:"jpg")
+                let o=Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:1,image:key,width:64,height:64,camera:Rigid().values,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1)
+                try store.journalCapture(projectID:h.id,observation:o)
+                guard try store.recoverPendingCaptures().isEmpty,let recovered=try store.all().first,recovered.observations==[o] else{return false}
+                try store.journalCapture(projectID:h.id,observation:o)
+                guard try store.recoverPendingCaptures().isEmpty,try store.all().first?.observations==[o] else{return false}
+                let bad=store.captureJournal.appendingPathComponent("broken.json");try Data("broken".utf8).write(to:bad)
+                return try !store.recoverPendingCaptures().isEmpty && FileManager.default.fileExists(atPath:bad.path)
+            }
             check("Asset hash identity"){let a=try repo.put(Data("original".utf8),ext:"txt"),b=try repo.put(Data("original".utf8),ext:"txt");let read=try repo.read(a);return a==b && read==Data("original".utf8)}
             check("Unsafe paths rejected"){do{_=try repo.assetURL("../escape");return false}catch{return true}}
             check("Invalid mesh indices rejected"){!Mesh(vertices:[V3()],triangles:[0,1,2]).valid}
