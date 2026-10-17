@@ -326,10 +326,12 @@ enum TourDirector {
             throw HouseError.message(
               "Movie checkpoint saved. Keep the app open and cool, then export again to resume.")
           }
+          let readyDeadline=ProcessInfo.processInfo.systemUptime+15
           while !input.isReadyForMoreMediaData {
             guard writer.status == .writing else {
               throw writer.error ?? HouseError.message("Movie encoder stopped.")
             }
+            guard ProcessInfo.processInfo.systemUptime<readyDeadline else{throw HouseError.message("Movie encoder timed out. Completed shots are saved; export again to resume.")}
             try await Task.sleep(nanoseconds: 10_000_000)
           }
           let phase =
@@ -393,7 +395,11 @@ enum TourDirector {
         // accumulate missing frame durations during passthrough assembly.
         writer.endSession(atSourceTime:CMTime(value:Int64(frames),timescale:30))
         input.markAsFinished()
-        await writer.finishWriting()
+        let finishWatchdog=Task {
+          do{try await Task.sleep(nanoseconds:30_000_000_000);writer.cancelWriting()}catch{}
+        }
+        await withTaskCancellationHandler(operation:{await writer.finishWriting()},onCancel:{writer.cancelWriting()})
+        finishWatchdog.cancel()
         guard writer.status == .completed else {
           throw writer.error ?? HouseError.message("Movie segment did not finish.")
         }
@@ -430,7 +436,12 @@ enum TourDirector {
       let export = AVAssetExportSession(
         asset: composition, presetName: AVAssetExportPresetPassthrough)
     else { throw HouseError.message("Movie assembly unavailable.") }
-    try await export.export(to: output, as: .mp4)
+    let assemblyWatchdog=Task {
+      do{try await Task.sleep(nanoseconds:60_000_000_000);export.cancelExport()}catch{}
+    }
+    defer{assemblyWatchdog.cancel()}
+    do{try await export.export(to: output, as: .mp4)}
+    catch{try? FileManager.default.removeItem(at:output);throw error}
     if let issue=await clipIssue(output,frames:total,width:width,height:height){throw HouseError.message("Final movie: "+issue)}
     try planData.write(to: output.deletingPathExtension().appendingPathExtension("json"))
     try repo.job(hash, state: "succeeded", data: planData)

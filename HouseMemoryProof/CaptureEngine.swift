@@ -67,6 +67,17 @@ import Vision
           "Camera permission is denied. Enable it in iPhone Settings to capture; saved projects remain available."
         return
       }
+      // Capture owns the next heavy-work interval. Let reconstruction/movie
+      // work reach its existing cancellation checkpoint before starting AR.
+      if model?.busy==true {
+        model?.cancelOperation()
+        message="Finishing the previous operation before starting capture…"
+        let deadline=ProcessInfo.processInfo.systemUptime+10
+        while model?.busy==true,starting==startToken,!Task.isCancelled,ProcessInfo.processInfo.systemUptime<deadline {
+          try? await Task.sleep(nanoseconds:50_000_000)
+        }
+        guard model?.busy != true else{message="The previous operation is still stopping safely. Start capture again when it finishes.";return}
+      }
       guard starting == startToken, model?.selected == h.id, UIApplication.shared.applicationState == .active else { return }
       guard let repo = model?.repository, repo.freeBytes() > 750_000_000 else {
         message = "Free at least 750 MB before starting a capture."
