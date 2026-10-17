@@ -1,0 +1,90 @@
+name: Evaluate precise SIFT image correspondence candidate
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/feature-sift.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: feature-sift
+  cancel-in-progress: true
+jobs:
+  replay:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ca5a28fe80df316348a10e9bae220b23e8955664
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Record isolated candidate diff and build exact adapter
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          p=pathlib.Path('packages/visual-core/hx_vision.cpp')
+          s=p.read_text()
+          before='cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,256,3,0.001f,4,4,cv::KAZE::DIFF_PM_G2,int(capacity))'
+          assert s.count(before)==1
+          # OpenCV's 128-byte SIFT representation uses L2 distance, not Hamming.
+          # Precise pyramid upscaling preserves integer pixel centres.
+          s=s.replace(before,'cv::SIFT::create(int(capacity),3,0.04,10,1.6,CV_8U,true)')
+          s=re.sub(r'\b32\b','128',s)
+          assert s.count('cv::NORM_HAMMING')==1 and s.count('best.distance>64')==1
+          s=s.replace('cv::NORM_HAMMING','cv::NORM_L2').replace('best.distance>64','best.distance>256')
+          s=s.replace('std::set<std::array<uint8_t,128>> unique;','std::set<std::array<uint8_t,128>> unique;std::set<std::pair<float,float>> uniqueLocations;')
+          beforeLoop='for(size_t i=0;i<keys.size()&&n<capacity;i++){'
+          assert s.count(beforeLoop)==1
+          # SIFT may emit multiple orientations at one keypoint. They cannot
+          # count as independent geometric votes in the existing pose gates.
+          s=s.replace(beforeLoop,beforeLoop+'\n  if(!uniqueLocations.emplace(keys[i].pt.x,keys[i].pt.y).second)continue;')
+          p.write_text(s)
+          for name in ['HouseMemoryProof/VisualMapping.swift','packages/visual-core/hx_vision_test.cpp']:
+              p=pathlib.Path(name);s=p.read_text();assert re.search(r'\b32\b',s)
+              s=re.sub(r'\b32\b','128',s)
+              if name.endswith('.swift'):
+                  s=s.replace('visual-v12-camera-pixel-centres','isolated-sift128-precise-v1')
+              p.write_text(s)
+          p=pathlib.Path('packages/visual-core/hx_vision.h');s=p.read_text()
+          p.write_text(s.replace('32 descriptor bytes per point','128 SIFT descriptor bytes per point (isolated candidate)'))
+          PY
+          mkdir -p build/vision-evaluation
+          git diff -- packages/visual-core HouseMemoryProof/VisualMapping.swift > build/vision-evaluation/candidate.diff
+          bash tooling/opencv/build-host.sh
+          python3 -m venv build/vision-env
+          build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+      - name: Preserve all four unchanged house diagnostics
+        run: |
+          failed=0
+          bundle=--bundle
+          for spec in 'rough-a 905771' 'rough-b 683431' 'paired 905771 --paired' 'staggered 905771 --paired --staggered'; do
+            read -r name seed arg1 arg2 <<< "$spec"
+            if build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/$name" --seed "$seed" ${arg1:-} ${arg2:-}; then
+              python3 ci/run_bounded.py 600 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/$name" --output "build/vision-evaluation/$name.json" --refine ${bundle:-} --house || failed=1
+            else
+              failed=1
+            fi
+          done
+          exit "$failed"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: feature-sift
+          path: build/vision-evaluation/
+          retention-days: 14
+
+
