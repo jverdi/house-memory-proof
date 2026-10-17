@@ -15,25 +15,26 @@ struct VisualMap: Codable {
   var schema=1;var segmentID:UUID;var roomID:UUID;var stageID:UUID;var frameID:UUID?
   var fingerprint:String;var points:[V3];var descriptors:Data;var views:[View]
   var valid:Bool {
-    schema==1 && points.count<=144000 && descriptors.count==points.count*32
+    schema==1 && points.count<=240000 && descriptors.count==points.count*32
       && points.allSatisfy{$0.finite} && views.count>=2 && views.count<=120
       && Set(views.map{$0.observationID}).count==views.count
       && views.allSatisfy{$0.start>=0 && $0.count>=0 && $0.start<=points.count && $0.count<=points.count-$0.start && $0.position.finite}
   }
 }
 enum VisualMapping {
+  static let featureLimit=2000
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v4-refined-descriptors";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v5-refined-2000";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
     return SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
   }
   static func detect(gray:Data,width:Int,height:Int,stride:Int)throws->Features {
-    var xy=[Float](repeating:0,count:2400),bytes=[UInt8](repeating:0,count:38400)
+    var xy=[Float](repeating:0,count:featureLimit*2),bytes=[UInt8](repeating:0,count:featureLimit*32)
     let count=gray.withUnsafeBytes{p in xy.withUnsafeMutableBufferPointer{x in bytes.withUnsafeMutableBufferPointer{d in
-      hx_vision_detect(p.bindMemory(to:UInt8.self).baseAddress,UInt32(gray.count),UInt32(width),UInt32(height),UInt32(stride),x.baseAddress,d.baseAddress,1200)
+      hx_vision_detect(p.bindMemory(to:UInt8.self).baseAddress,UInt32(gray.count),UInt32(width),UInt32(height),UInt32(stride),x.baseAddress,d.baseAddress,UInt32(featureLimit))
     }}}
     guard count>=0 else{throw HouseError.message("Visual feature extraction rejected the image.")}
     return Features(xy:Array(xy.prefix(Int(count)*2)),descriptors:Data(bytes.prefix(Int(count)*32)),count:Int(count))
@@ -115,8 +116,8 @@ enum VisualMapping {
       var supported:[V3]=[]
       for view in map.views {
         let bytes=map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32)
-        var pairs=[UInt32](repeating:0,count:2400)
-        let count=bytes.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,1200)}}}
+        var pairs=[UInt32](repeating:0,count:featureLimit*2)
+        let count=bytes.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,UInt32(featureLimit))}}}
         guard count>=30 else{continue}
         var cells=Set<Int>(),loU=1.0,loV=1.0,hiU=0.0,hiV=0.0
         for i in 0..<Int(count) {let index=Int(pairs[i*2+1]),u=Double(features.xy[index*2]),v=Double(features.xy[index*2+1]);cells.insert(min(3,Int(u*4))+4*min(2,Int(v*3)));loU=min(loU,u);loV=min(loV,v);hiU=max(hiU,u);hiV=max(hiV,v)}
@@ -133,9 +134,9 @@ enum VisualMapping {
     var candidates:[Candidate]=[]
     for view in map.views {
       let descriptors=map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32)
-      var pairs=[UInt32](repeating:0,count:2400)
+      var pairs=[UInt32](repeating:0,count:featureLimit*2)
       let count=descriptors.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in
-        hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,1200)
+        hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,UInt32(featureLimit))
       }}}
       guard count>=30 else{diagnostic?("view \(view.observationID): insufficient matches \(count)");continue}
       var xyz:[Double]=[],xy:[Double]=[],matches:[Int:V3]=[:]
