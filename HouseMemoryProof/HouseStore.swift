@@ -160,7 +160,9 @@ final class Repository: EvidenceAssetReader {
     let key = hash + "." + suffix
     let url = try assetURL(key)
     if !FileManager.default.fileExists(atPath: url.path) {
-      try bytes.write(to: url, options: .atomic)
+      try DurableFiles.write(bytes,to:url)
+    } else {
+      guard try StreamingArchive.digest(url).sha==hash else{throw HouseError.message("An existing original failed its checksum. It was preserved for recovery; new evidence was not linked to it.")}
     }
     return key
   }

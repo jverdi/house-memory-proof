@@ -13,7 +13,7 @@ enum IncrementalSnapshots {
     let coordinator=NSFileCoordinator(filePresenter:nil);var coordinationError:NSError?,operationError:Error?
     coordinator.coordinate(writingItemAt:destination,options:[],error:&coordinationError){url in
       let temporary=url.deletingLastPathComponent().appendingPathComponent(UUID().uuidString+".partial")
-      do {try Task.checkCancellation();try FileManager.default.copyItem(at:source,to:temporary);let a=try StreamingArchive.digest(source),b=try StreamingArchive.digest(temporary);guard a.sha==b.sha,expected==nil || b.sha==expected else{throw HouseError.message("Snapshot copy did not verify.")};try Task.checkCancellation();try FileManager.default.moveItem(at:temporary,to:url)}
+      do {try Task.checkCancellation();try FileManager.default.copyItem(at:source,to:temporary);let a=try StreamingArchive.digest(source),b=try StreamingArchive.digest(temporary);guard a.sha==b.sha,expected==nil || b.sha==expected else{throw HouseError.message("Snapshot copy did not verify.")};let handle=try FileHandle(forWritingTo:temporary);try handle.synchronize();try handle.close();try Task.checkCancellation();try FileManager.default.moveItem(at:temporary,to:url)}
       catch {try? FileManager.default.removeItem(at:temporary);operationError=error}
     }
     if let coordinationError {throw coordinationError};if let operationError {throw operationError}
