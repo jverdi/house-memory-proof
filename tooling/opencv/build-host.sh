@@ -18,6 +18,9 @@ if [ ! -f build/opencv-host/opencv2.framework/opencv2 ]; then
     2>&1 | tee build/vision-evaluation/sdk-build.log
 fi
 bash tooling/solver/build.sh host
+bash tooling/references/build.sh host
+clang -std=c11 -O2 -arch arm64 -mmacosx-version-min=14.0 -I build/apriltag/host/include \
+  -c packages/reference-core/hx_tags.c -o build/reference-tags.o
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 \
   -F build/opencv-host -c packages/visual-core/hx_vision.cpp -o build/vision-core.o
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 \
@@ -28,8 +31,8 @@ clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-hos
 swiftc -O -swift-version 5 -parse-as-library -target arm64-apple-macos14.0 \
   -import-objc-header packages/visual-core/hx_replay.h \
   HouseMemoryProof/Domain.swift HouseMemoryProof/EvidenceModels.swift \
-  HouseMemoryProof/PoseRefinement.swift HouseMemoryProof/VisualMapping.swift HouseMemoryProof/PoseGraph.swift HouseMemoryProof/ReferenceRegistration.swift HouseMemoryProof/PhotoReconstruction.swift HouseMemoryProof/BundleRefinement.swift \
-  tooling/simulation/VisionReplay.swift build/vision-core.o build/vision-core-test.o build/graph-core.o build/bundle-core.o build/reference-pose.o build/ceres/host/lib/libceres.a \
+  HouseMemoryProof/PoseRefinement.swift HouseMemoryProof/VisualMapping.swift HouseMemoryProof/PoseGraph.swift HouseMemoryProof/ReferenceRegistration.swift HouseMemoryProof/PhotoReconstruction.swift HouseMemoryProof/BundleRefinement.swift HouseMemoryProof/CodedReferences.swift \
+  tooling/simulation/VisionReplay.swift build/vision-core.o build/vision-core-test.o build/graph-core.o build/bundle-core.o build/reference-pose.o build/reference-tags.o build/apriltag/host/lib/libapriltag.a build/ceres/host/lib/libceres.a \
   -F build/opencv-host -framework opencv2 -framework Accelerate -framework OpenCL \
   -framework Foundation -framework CoreGraphics -framework ImageIO -lc++ -lz \
   -o build/vision-replay

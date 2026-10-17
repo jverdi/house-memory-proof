@@ -151,3 +151,11 @@ Run 39040257844 passed 89 native checks, both UI workflows, all three real proce
 ### Full-height walking and scene preparation lifecycle
 
 Walking now checks a conservative upright body envelope (20 cm horizontal radius, 1.55 m below the eye and 22 cm above) against full original collision bounds. It still requires the captured camera corridor and does not infer an unseen floor or portal. Native regressions cover low obstacles, overhead beams, narrow doorways and the body leaving the locally checked region. Large-scene preparation now cancels on close/background or replacement and restarts on foreground without allowing obsolete publication. Native validation is pending. The separate e688 host run passed 25 analytic single-board pose cases; unchanged natural-image house/finished-stage failures remain release blockers.
+
+### Isolated coded-reference image replay
+
+The host candidate now runs the same coded detection, source-pose estimation, conflict quarantine and map/query adapter as capture. A new independent ray/plane fixture supplies four regions across two level identities, 16 rough/finished nominal queries and 20 moved/missing/duplicate/wrong-region challenges; measured marker sizes and noisy source-camera priors are inputs, while all marker/world truth and query labels stay evaluator-only behind the existing OS sandbox. Five renderer contracts pass locally, including scale/orientation, foreground occlusion and cardinal rotation invariance. This is a new development candidate awaiting compiled image replay; it does not replace the unchanged natural-feature failures or satisfy protected house/sensor qualification. Capture now preserves the message when a conflicting marker is excluded instead of overwriting it with generic photo guidance.
+
+### Review-branch continuation
+
+Automatic approval review rejected the next default-main ref update because it requires explicit default-branch authorization. Main remains at a1d3ba4ae156be4db9d582c7d9a0a672658b7410. Further implementation continues on agent/house-xray-qualification-20261017 with read-only pull-request CI; no merge or final upload is attempted without resolving that approval. This does not block local development, feature-branch commits or validation.

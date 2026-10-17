@@ -12,6 +12,15 @@ final class DiskEvidence:EvidenceAssetReader {
 }
 @main struct VisionReplay {
   static func main() throws {
+    if CommandLine.arguments.count==3,CommandLine.arguments[1]=="--reference-codebook" {
+      var book:[String:[UInt8]]=[:]
+      for code in 0..<587 {
+        var raster=[UInt8](repeating:0,count:100)
+        guard raster.withUnsafeMutableBufferPointer({hx_tag_image(UInt32(code),$0.baseAddress,100)})==10 else{throw HouseError.message("Tag family raster failed.")}
+        book[String(code)]=raster
+      }
+      try JSONSerialization.data(withJSONObject:book,options:[.sortedKeys]).write(to:URL(fileURLWithPath:CommandLine.arguments[2]));return
+    }
     if CommandLine.arguments.contains("--self-test") {
       var maximum=0.0;var falseAccepts:UInt32=0
       let status=hx_vision_selftest(&maximum,&falseAccepts)
@@ -23,8 +32,9 @@ final class DiskEvidence:EvidenceAssetReader {
       guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed at gate \(graphStatus).")}
       guard status==1 else{throw HouseError.message("Native vision diagnostics failed.")};return
     }
-    guard (3...6).contains(CommandLine.arguments.count),CommandLine.arguments.dropFirst(3).allSatisfy({["--refine","--bundle","--house"].contains($0)}) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
+    guard (3...7).contains(CommandLine.arguments.count),CommandLine.arguments.dropFirst(3).allSatisfy({["--refine","--bundle","--house","--coded"].contains($0)}) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
     let root=URL(fileURLWithPath:CommandLine.arguments[1]),queriesURL=URL(fileURLWithPath:CommandLine.arguments[2])
+    if CommandLine.arguments.contains("--coded"){try runCodedHouse(root:root,queriesURL:queriesURL);return}
     if CommandLine.arguments.contains("--house"){try runHouse(root:root,queriesURL:queriesURL);return}
     var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
     guard let segment=house.segments.first else{throw HouseError.message("No mapping segment.")}
@@ -57,6 +67,47 @@ final class DiskEvidence:EvidenceAssetReader {
       output.append(result)
     }
     print(String(data:try JSONSerialization.data(withJSONObject:["candidateFingerprint":map.fingerprint,"mapFeatures":map.points.count,"mapViews":map.views.count,"queries":output,"optimizedCameras":activeSegment.poseSolution?.cameras ?? [:],"bundleCheckRMS":activeSegment.poseSolution?.bundleCheckRMS as Any? ?? NSNull(),"bundlePointCount":activeSegment.poseSolution?.bundlePointCount as Any? ?? NSNull()],options:[.sortedKeys]),encoding:.utf8)!)
+  }
+  static func runCodedHouse(root:URL,queriesURL:URL)throws {
+    var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
+    let assets=DiskEvidence(root)
+    var maps:[UUID:CodedReferences.Map]=[:],mapDiagnostics:[[String:Any]]=[]
+    for segmentIndex in house.segments.indices {
+      let segmentID=house.segments[segmentIndex].id
+      var measured:[UUID:ReferencePose]=[:],conflicted=Set<UUID>(),decoded=0,estimated=0
+      // Treat all recorded marker poses/corners as untrusted input to this replay:
+      // regenerate them from source pixels with the shipping capture adapter.
+      house.segments[segmentIndex].referencePoses=[]
+      for index in house.observations.indices where house.observations[index].segmentID==segmentID && !house.observations[index].documentary {
+        var observation=house.observations[index]
+        let (gray,w,h)=try VisualMapping.image(assets.read(observation.image))
+        guard w==observation.width,h==observation.height else{throw HouseError.message("Capture dimensions differ from image pixels.")}
+        let detections=try CodedReferences.detect(gray:gray,width:w,height:h,stride:w,boards:house.references)
+        let poses=CodedReferences.measure(detections,camera:observation.camera,intrinsics:observation.intrinsics,width:w,height:h,boards:house.references)
+        CodedReferences.accumulate(poses,current:&measured,conflicted:&conflicted)
+        observation.codedDetections=detections;observation.referenceObservations=poses
+        house.observations[index]=observation;decoded+=detections.count;estimated+=poses.count
+      }
+      house.segments[segmentIndex].referencePoses=Array(measured.values)
+      let map=CodedReferences.build(house:house,segment:house.segments[segmentIndex]);maps[segmentID]=map
+      mapDiagnostics.append(["segmentID":segmentID.uuidString,"decodedSourceDetections":decoded,"estimatedSourceBoards":estimated,"conflictedBoards":conflicted.count,"eligibleBoards":map.boards.count])
+    }
+    let queries=try JSONDecoder().decode(ReplayQueries.self,from:Data(contentsOf:queriesURL));var output:[[String:Any]]=[]
+    for query in queries.queries {
+      guard !query.image.contains("/"),!query.image.contains("..") else{throw HouseError.message("Unsafe query path.")}
+      guard let selected=query.segmentID,let map=maps[selected] else{output.append(["image":query.image,"accepted":false,"reason":"No selected reference map"]);continue}
+      let (gray,w,h)=try VisualMapping.image(Data(contentsOf:root.appendingPathComponent(query.image)))
+      guard w==query.width,h==query.height else{throw HouseError.message("Query dimensions differ from pixels.")}
+      let start=Date();var row:[String:Any]=["image":query.image,"accepted":false,"selectedSegmentID":selected.uuidString]
+      do {
+        let result=try CodedReferences.localize(gray:gray,width:w,height:h,stride:w,intrinsics:query.intrinsics,map:map)
+        row["conflict"]=result.conflict
+        if let pose=result.pose,!result.conflict {row["accepted"]=true;row["worldFromARCamera"]=pose.values}
+      }catch{row["reason"]=error.localizedDescription}
+      row["seconds"]=Date().timeIntervalSince(start);output.append(row)
+    }
+    let report:[String:Any]=["queries":output,"mapCount":maps.values.filter{$0.boards.count>=4}.count,"mapDiagnostics":mapDiagnostics,"mapFeatures":maps.values.reduce(0){$0+$1.boards.count*4},"mapViews":house.observations.count,"optimizedCameras":[String:[Double]](),"sourceBoardPosesFromPixels":true,"productionQualified":false]
+    print(String(data:try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]),encoding:.utf8)!)
   }
   static func runHouse(root:URL,queriesURL:URL)throws {
     var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()

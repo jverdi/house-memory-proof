@@ -2,7 +2,7 @@
 """Run exact Swift/C++ map/query code with the oracle denied by the OS sandbox."""
 import argparse,hashlib,json,math,shutil,subprocess,tempfile,zipfile
 from pathlib import Path
-p=argparse.ArgumentParser();p.add_argument('--executable',type=Path,required=True);p.add_argument('--fixture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--refine',action='store_true');p.add_argument('--bundle',action='store_true');p.add_argument('--house',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--executable',type=Path,required=True);p.add_argument('--fixture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--refine',action='store_true');p.add_argument('--bundle',action='store_true');p.add_argument('--house',action='store_true');p.add_argument('--coded',action='store_true');a=p.parse_args()
 exe=a.executable.resolve();fixture=a.fixture.resolve();oracle=json.loads((fixture/'vision-queries.json').read_text())
 with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
  root=Path(temporary).resolve();candidate=root/'candidate';candidate.mkdir();(candidate/'temp').mkdir()
@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
   diagnostics=subprocess.run(['/usr/bin/log','show','--last','1m','--style','compact','--predicate','process == "cat" OR eventMessage CONTAINS "Sandbox: cat(" OR eventMessage CONTAINS "Sandbox: vision-replay("'],capture_output=True,text=True,timeout=20)
   a.output.parent.mkdir(parents=True,exist_ok=True);a.output.with_suffix('.sandbox.log').write_text(diagnostics.stdout[-30000:]+diagnostics.stderr[-3000:])
  assert positive.returncode==0 and negative.returncode!=0, f'Oracle exclusion controls failed: permitted={positive.returncode} ({positive.stderr.decode()[-1000:]}), denied={negative.returncode} ({negative.stderr.decode()[-1000:]})'
- result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')]+(['--refine'] if a.refine else [])+(['--bundle'] if a.bundle else [])+(['--house'] if a.house else []),capture_output=True,text=True,timeout=600 if a.house else 180,cwd=candidate)
+ result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')]+(['--refine'] if a.refine else [])+(['--bundle'] if a.bundle else [])+(['--house'] if a.house else [])+(['--coded'] if a.coded else []),capture_output=True,text=True,timeout=600 if a.house else 180,cwd=candidate)
  if result.returncode:
   a.output.parent.mkdir(parents=True,exist_ok=True)
   a.output.write_text(json.dumps(dict(passed=False,oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),candidateRejected=True,error=result.stderr[-5000:],productionQualified=False),indent=2))

@@ -61,6 +61,18 @@ enum CodedReferences {
     }
     return result
   }
+  @discardableResult static func accumulate(_ poses:[ReferencePose],current:inout [UUID:ReferencePose],conflicted:inout Set<UUID>)->Bool {
+    var rejected=false
+    for pose in poses where pose.method=="coded-corners" && !conflicted.contains(pose.boardID) {
+      if let old=current[pose.boardID],old.method=="coded-corners" {
+        guard VisualMapping.agree(Rigid(values:old.matrix),Rigid(values:pose.matrix)) else {
+          current.removeValue(forKey:pose.boardID);conflicted.insert(pose.boardID);rejected=true;continue
+        }
+        if (pose.imageFitRMS ?? .infinity)<(old.imageFitRMS ?? .infinity) {current[pose.boardID]=pose}
+      }else{current[pose.boardID]=pose}
+    }
+    return rejected
+  }
   static func build(house:House,segment:Segment)->Map {
     let known=house.references.filter{$0.valid && $0.tagID != nil}
     let captures=house.observations.filter{$0.segmentID==segment.id && !$0.documentary && $0.codedDetections?.isEmpty==false}
@@ -71,7 +83,7 @@ enum CodedReferences {
       var supported:[V3]=[],conflicted=false
       for observation in captures {
         guard let detection=observation.codedDetections?.first(where:{$0.boardID==board.id && $0.tagID==board.tagID}),detection.valid else{continue}
-        let projected=points.compactMap{TextureBuilder.project($0,through:observation)?.0}
+        let projected=points.compactMap{CameraProjection.project($0,through:observation)?.0}
         guard projected.count==4 else{conflicted=true;break}
         let errors=zip(projected,detection.corners).map{a,b in hypot((a.u-b.u)*Double(observation.width),(a.v-b.v)*Double(observation.height))}
         guard errors.allSatisfy({$0<=4}) else{conflicted=true;break}

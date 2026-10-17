@@ -4,3 +4,5 @@
 #include "hx_bundle.h"
 
 #include "../reference-core/hx_reference_pose.h"
+
+#include "../reference-core/hx_tags.h"

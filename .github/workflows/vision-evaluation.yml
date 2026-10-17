@@ -13,8 +13,11 @@ on:
       - tooling/simulation/test_render_contract.py
       - tooling/simulation/house.py
       - tooling/simulation/house_layout_fixture.py
+      - tooling/simulation/coded_layout_fixture.py
+      - tooling/simulation/test_coded_render_contract.py
       - packages/visual-core/**
-      - packages/reference-core/hx_reference_pose*
+      - packages/reference-core/**
+      - tooling/references/**
       - HouseMemoryProof/VisualMapping.swift
       - HouseMemoryProof/EvidenceModels.swift
       - HouseMemoryProof/Domain.swift
@@ -23,11 +26,20 @@ on:
       - HouseMemoryProof/ReferenceRegistration.swift
       - HouseMemoryProof/BundleRefinement.swift
       - HouseMemoryProof/PhotoReconstruction.swift
+      - HouseMemoryProof/CodedReferences.swift
+  pull_request:
+    paths:
+      - HouseMemoryProof/**
+      - packages/**
+      - tooling/simulation/**
+      - tooling/opencv/**
+      - tooling/references/**
+      - .github/workflows/vision-evaluation.yml
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: visual-evaluation
+  group: visual-evaluation-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   replay:
@@ -43,6 +55,10 @@ jobs:
           path: build/opencv-host
           key: opencv-4.13.0-macos14-arm64-v1-sdk
           restore-keys: opencv-4.13.0-macos14-arm64-v1-
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
       - uses: actions/cache@v4
         with:
           path: build/ceres
@@ -98,6 +114,14 @@ jobs:
         run: |
           python3 ci/run_bounded.py 300 build/vision-env/bin/python tooling/simulation/house_layout_fixture.py build/house-staggered --seed 905771 --paired --staggered
           python3 ci/run_bounded.py 660 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/house-staggered --output build/vision-evaluation/house-staggered.json --refine --bundle --house
+      - name: Evaluate pixel-derived coded capture across rough and finished regions
+        if: always() && !cancelled() && steps.candidate.outcome == 'success'
+        timeout-minutes: 15
+        run: |
+          build/vision-env/bin/python tooling/simulation/test_coded_render_contract.py
+          build/vision-replay --reference-codebook build/reference-codebook.json
+          python3 ci/run_bounded.py 420 build/vision-env/bin/python tooling/simulation/coded_layout_fixture.py build/coded-regions --codebook build/reference-codebook.json
+          python3 ci/run_bounded.py 600 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/coded-regions --output build/vision-evaluation/coded-regions.json --house --coded
       - uses: actions/upload-artifact@v4
         if: always()
         with:

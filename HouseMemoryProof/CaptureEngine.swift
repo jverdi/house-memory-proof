@@ -455,16 +455,7 @@ import Vision
           guard let self else { return }
           self.pending -= 1
           guard self.generation == token else { return }
-          for pose in measured where !self.conflictedCodedReferences.contains(pose.boardID) {
-            if let old=self.currentReferencePoses[pose.boardID],old.method=="coded-corners" {
-              guard VisualMapping.agree(Rigid(values:old.matrix),Rigid(values:pose.matrix)) else {
-                self.currentReferencePoses.removeValue(forKey:pose.boardID);self.conflictedCodedReferences.insert(pose.boardID)
-                self.message="A coded reference changed or disagreed across views. It was excluded; verify that it is flat and fixed."
-                continue
-              }
-              if (pose.imageFitRMS ?? .infinity)<(old.imageFitRMS ?? .infinity) {self.currentReferencePoses[pose.boardID]=pose}
-            }else {self.currentReferencePoses[pose.boardID]=pose}
-          }
+          let referenceConflict=CodedReferences.accumulate(measured,current:&self.currentReferencePoses,conflicted:&self.conflictedCodedReferences)
           var saved = self.model?.acceptStagedCapture(obs,projectID:houseID) == true
           if saved,self.count % 5 == 0 {
             saved = self.model?.edit(projectID: houseID) { h in
@@ -483,8 +474,9 @@ import Vision
           let p = self.lastPosition
           self.cellSet.insert("\(Int(floor(p.x/0.25))):\(Int(floor(p.z/0.25)))")
           self.coverageCells = self.cellSet.count
-          self.message =
-            obs.light < 150
+          self.message = referenceConflict
+            ? "A coded reference disagreed across views and was excluded. Verify that it is flat and fixed; review the saved reference inventory."
+            : obs.light < 150
             ? "Low light: add illumination and revisit dark cavities."
             : quality < 0.02
               ? "Low detail or blur: hold still and move closer."
