@@ -114,7 +114,8 @@ jobs:
   testflight:
     name: Archive and upload to Apple
     needs: simulator
-    if: false # Release held during implementation; enable once for final candidate.
+    # One owner-requested snapshot; subsequent implementation commits do not upload.
+    if: github.event_name == 'push' && github.event.head_commit.message == '[release] Ship current-state TestFlight e08d4768'
     runs-on: macos-26
     timeout-minutes: 60
     steps:
