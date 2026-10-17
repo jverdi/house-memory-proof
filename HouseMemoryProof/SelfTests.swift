@@ -717,8 +717,8 @@ extension SelfTests {
         var cells:[[UInt8]]=[]
         for i in centres.indices {
             let board=try BoardGenerator.make(name:"Test reference \(i+1)",repo:repo,tagID:codes[i]);house.references.append(board)
-            let c=centres[i]
-            let pose=ReferencePose(boardID:board.id,matrix:[1,0,0,c.x, 0,0,-1,-c.y, 0,1,0,-c.z, 0,0,0,1])
+            let c=centres[i],angle=i%2==0 ? 0.5:-0.5,co=cos(angle),si=sin(angle)
+            let pose=ReferencePose(boardID:board.id,matrix:[co,-si,0,c.x, 0,0,-1,-c.y, si,co,0,-c.z, 0,0,0,1])
             segment.referencePoses.append(pose)
             var bytes=[UInt8](repeating:0,count:100)
             guard bytes.withUnsafeMutableBufferPointer({hx_tag_image(UInt32(codes[i]),$0.baseAddress,100)})==10 else{throw HouseError.message("Reference raster failed.")};cells.append(bytes)
@@ -758,15 +758,34 @@ extension SelfTests {
             }
             return data
         }
+        var measured:[UUID:ReferencePose]=[:],measurementErrors:[Double]=[]
         for x in [-0.12,0.12] {
             var o=observation(x);o.codedDetections=try CodedReferences.detect(gray:render(o),width:width,height:height,stride:width,boards:house.references)
             guard o.codedDetections?.count==6 else{throw HouseError.message("Known source image did not decode all six separated boards.")}
+            let poses=CodedReferences.measure(o.codedDetections ?? [],camera:o.camera,intrinsics:o.intrinsics,width:width,height:height,boards:house.references)
+            guard poses.count==6 else{throw HouseError.message("Source corner geometry did not resolve all six board poses: \(poses.count).")}
+            o.referenceObservations=poses
+            for pose in poses {
+                let truth=segment.referencePoses.first{$0.boardID==pose.boardID}!
+                measurementErrors.append((V3(pose.matrix[3],pose.matrix[7],pose.matrix[11])-V3(truth.matrix[3],truth.matrix[7],truth.matrix[11])).length)
+                if let prior=measured[pose.boardID] {
+                    guard VisualMapping.agree(Rigid(values:prior.matrix),Rigid(values:pose.matrix)) else{throw HouseError.message("Independent source images disagree about a fixed coded board.")}
+                    if (pose.imageFitRMS ?? .infinity)<(prior.imageFitRMS ?? .infinity) {measured[pose.boardID]=pose}
+                }else{measured[pose.boardID]=pose}
+            }
             house.observations.append(o)
         }
+        house.segments[0].referencePoses=measured.values.sorted{$0.boardID.uuidString<$1.boardID.uuidString}
         try house.validate()
         let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(house));try restored.validate()
         let map=CodedReferences.build(house:restored,segment:restored.segments[0])
         guard map.boards.count==6 else{throw HouseError.message("Translated source-corner evidence did not qualify the saved board geometry.")}
+        var conflictedHouse=restored,changed=restored.observations[0];changed.id=UUID()
+        let firstBoard=house.references[0].id
+        let changedIndex=changed.codedDetections!.firstIndex{$0.boardID==firstBoard}!
+        for i in 0..<4 {changed.codedDetections![changedIndex].corners[i].u+=0.02}
+        conflictedHouse.observations.append(changed)
+        guard !CodedReferences.build(house:conflictedHouse,segment:conflictedHouse.segments[0]).boards.contains(where:{$0.id==firstBoard}) else{throw HouseError.message("A conflicting later source frame was ignored in favor of earlier agreeing views.")}
         var errors:[Double]=[]
         for (x,y) in [(-0.06,0.02),(0.0,-0.03),(0.05,0.04),(0.09,-0.02)] {
             let o=observation(x,y),result=try CodedReferences.localize(gray:render(o),width:width,height:height,stride:width,intrinsics:o.intrinsics,map:map)
@@ -783,8 +802,8 @@ extension SelfTests {
         let wrong=try CodedReferences.localize(gray:render(q),width:width,height:height,stride:width,intrinsics:q.intrinsics,map:otherRegion)
         guard wrong.conflict,wrong.pose==nil else{throw HouseError.message("References from another saved region did not hide alignment.")}
         var movedHouse=house;movedHouse.references[0].valid=false
-        guard CodedReferences.build(house:movedHouse,segment:segment).boards.count==5 else{throw HouseError.message("Invalidating a board did not remove its evidence.")}
-        return ["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":duplicateRejected && missing.pose==nil && errors.allSatisfy{$0<=0.01},"nominalQueries":errors.count,"acceptedPositionErrorsMetres":errors,"movedReferenceRejected":true,"duplicateReferenceRejected":duplicateRejected,"missingReferencesHidden":missing.pose==nil,"wrongRegionRejected":true,"physicalDeviceQualified":false,"limitations":"Analytic fixed-board geometry, raster images and camera calibration. Actual ARKit anchor orientation/timing, board position/flatness/scale and complete-house diversity remain unqualified."]
+        guard CodedReferences.build(house:movedHouse,segment:movedHouse.segments[0]).boards.count==5 else{throw HouseError.message("Invalidating a board did not remove its evidence.")}
+        return ["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":duplicateRejected && missing.pose==nil && errors.allSatisfy{$0<=0.01},"nominalQueries":errors.count,"acceptedPositionErrorsMetres":errors,"sourceBoardPositionErrorsMetres":measurementErrors,"oracleBoardPosesUsedForLocalization":false,"movedReferenceRejected":true,"duplicateReferenceRejected":duplicateRejected,"missingReferencesHidden":missing.pose==nil,"wrongRegionRejected":true,"physicalDeviceQualified":false,"limitations":"Synthetic raster images and known source camera calibration/poses. Board poses are estimated from pixels. Actual camera pose drift/timing, print flatness/scale and complete-house diversity remain unqualified."]
     }
     nonisolated static func prepareLargeScene(textureKeys:[String])throws->(House,SpatialDisplayIndex,[String:Any]) {
         let started=ProcessInfo.processInfo.systemUptime

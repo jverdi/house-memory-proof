@@ -1,0 +1,13 @@
+{
+  "commit": "4a3074d128136763c7fcff7c7d8c5698440340e0",
+  "run": 39040257796,
+  "job": 117418161569,
+  "artifact": 12103544048,
+  "artifactSHA256": "d4e20a946170847fbbce7bdf43b91a752ed58082e67f3353b1979d999fe05ddf",
+  "coreDiagnosticsPassed": true,
+  "referenceAnalyticCases": 50,
+  "referenceMaximumPositionErrorMetres": 0.0007624676722658085,
+  "overallWorkflowPassed": false,
+  "fieldQualified": false,
+  "limitations": "Only the known-geometry multi-board analytic pose test is represented here. Natural-image rough and finished house gates still fail. This evidence predates pixel-based source-board pose estimation and the native coded-image integration test."
+}

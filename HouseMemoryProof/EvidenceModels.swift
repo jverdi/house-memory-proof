@@ -19,6 +19,8 @@ struct ReferencePose: Codable, Equatable {
   var boardID: UUID
   var matrix: [Double]
   var observed = Date()
+  var method:String?=nil
+  var imageFitRMS:Double?=nil
 }
 
 struct ServiceConnection: Codable, Identifiable, Equatable {

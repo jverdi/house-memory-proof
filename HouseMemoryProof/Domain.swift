@@ -159,6 +159,11 @@ struct House:Codable,Identifiable,Equatable {
         let codes=references.compactMap{$0.tagID}
         guard references.count<=1000,Set(references.map{$0.id}).count==references.count,Set(codes).count==codes.count,codes.allSatisfy({(0..<587).contains($0)}),references.allSatisfy({$0.roomID==nil || roomIDs.contains($0.roomID!)}) else{throw HouseError.message("Reference identities must be unique, within the supported dictionary and assigned to an existing room.")}
         let boardIDs=Set(references.map{$0.id})
+        for poses in segments.map({$0.referencePoses})+observations.map({$0.referenceObservations ?? []}) {
+          guard poses.count<=1000,Set(poses.map{$0.boardID}).count==poses.count,poses.allSatisfy({pose in
+            boardIDs.contains(pose.boardID) && Rigid(values:pose.matrix).valid && (pose.method==nil || pose.method=="coded-corners") && (pose.imageFitRMS==nil || (pose.imageFitRMS!.isFinite && (0...0.8).contains(pose.imageFitRMS!))) && (pose.method != "coded-corners" || pose.imageFitRMS != nil)
+          }) else{throw HouseError.message("Invalid recorded reference pose or pixel-fit provenance.")}
+        }
         for observation in observations {if let detections=observation.codedDetections {
           guard detections.count<=64,Set(detections.map{$0.tagID}).count==detections.count,detections.allSatisfy({detection in detection.valid && boardIDs.contains(detection.boardID) && references.first(where:{$0.id==detection.boardID})?.tagID==detection.tagID}) else{throw HouseError.message("Invalid coded-reference capture provenance.")}
         }}

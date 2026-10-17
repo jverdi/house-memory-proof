@@ -65,7 +65,7 @@ import SwiftUI
       image.draw(in: CGRect(x: 42, y: 90, width: points, height: points))
       let instructions =
         "Print at 100% / actual size. The outer image must measure 180 mm wide. Measure the physical print and enter its actual width. Mount flat on stable structure that remains accessible after finishing. Never move a registered board; mark it invalid if moved. Image tracking is approximate and is not a surveyed precision reference.\n\nID: \(id.uuidString)"
-      let coded=tagID.map{"\nAprilTag 36h11 code \($0). The black-border square is 144 mm wide when the outer image is 180 mm. Keep the complete white margin visible. Use at least four spatially distributed fixed boards; placement remains uncalibrated."} ?? ""
+      let coded=tagID.map{"\nAprilTag 36h11 code \($0). Black border: 144 mm at 180 mm outer width. Keep the white margin visible. Capture oblique views separated by at least 15 cm. Use four or more distributed fixed boards at different depths; placement remains uncalibrated."} ?? ""
       ((instructions+coded) as NSString).draw(
         in: CGRect(x: 30, y: 640, width: 535, height: 180),
         withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
@@ -115,7 +115,7 @@ struct ReferencesPage: View {
             model.edit{$0.references.append(board)};model.shareURL=try repo.assetURL(board.pdf)
           }catch{model.error=error.localizedDescription}
         }
-        Text("Coded references retain detected image corners and support a separate multi-board consistency check. They still use approximate ARKit board positions until independently validated.").font(.footnote)
+        Text("Coded references estimate board geometry from their measured size and detected corners. Capture oblique views to resolve planar ambiguity. Multiple boards and translated views must agree; fitting alone does not establish physical accuracy.").font(.footnote)
         Button("Create legacy image reference") {
           guard let repo = model.repository else { return }
           do {

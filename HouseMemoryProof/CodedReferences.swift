@@ -2,8 +2,8 @@ import Foundation
 import CoreVideo
 import simd
 
-// Metric code geometry and recorded ARKit board poses remain separate evidence.
-// This adapter never promotes an ARKit pose to a physically surveyed reference.
+// Metric code geometry and camera/board estimates remain separate evidence.
+// Pixel fitting never promotes a board estimate to a physically surveyed reference.
 enum CodedReferences {
   struct Board {var id:UUID;var code:UInt32;var corners:[V3]}
   struct Map {var boards:[Board];var known:[ReferenceBoard]}
@@ -40,29 +40,44 @@ enum CodedReferences {
   static func corners(board:ReferenceBoard,pose:ReferencePose)->[V3] {
     guard board.tagID != nil,let matrix=PoseRefinement.matrix(pose.matrix) else{return []}
     // The generated image is ten cells wide; the black tag border spans eight.
-    // ARKit's image plane is X/Z, with image-bottom along local +Z.
+    // Our stored board frame uses X/Z, with image-bottom along local +Z.
     let half=board.width*0.8/2
     return [SIMD4<Double>(-half,0,half,1),SIMD4(half,0,half,1),SIMD4(half,0,-half,1),SIMD4(-half,0,-half,1)].map {p in
       let world=matrix*p;return V3(world.x,-world.z,world.y)
     }
+  }
+  static func measure(_ detections:[CodedDetection],camera:[Double],intrinsics:[Double],width:Int,height:Int,boards:[ReferenceBoard])->[ReferencePose] {
+    guard let worldFromCamera=PoseRefinement.matrix(camera),intrinsics.count==9,width>=64,height>=64,width<=4096,height<=4096 else{return []}
+    var result:[ReferencePose]=[]
+    for detection in detections where detection.valid {
+      guard let board=boards.first(where:{$0.id==detection.boardID && $0.tagID==detection.tagID && $0.valid}) else{continue}
+      let xy=detection.corners.flatMap{[$0.u*Double(width),$0.v*Double(height)]}
+      var values=[Double](repeating:0,count:16),quality=HXTagPoseQuality()
+      let accepted=xy.withUnsafeBufferPointer{pixels in values.withUnsafeMutableBufferPointer{matrix in
+        hx_reference_measure_tag(pixels.baseAddress,board.width*0.8,intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),matrix.baseAddress,&quality)
+      }}
+      guard accepted==1,let cameraFromBoard=PoseRefinement.matrix(values) else{continue}
+      result.append(ReferencePose(boardID:board.id,matrix:PoseRefinement.array(worldFromCamera*cameraFromBoard),method:"coded-corners",imageFitRMS:quality.rms_pixels))
+    }
+    return result
   }
   static func build(house:House,segment:Segment)->Map {
     let known=house.references.filter{$0.valid && $0.tagID != nil}
     let captures=house.observations.filter{$0.segmentID==segment.id && !$0.documentary && $0.codedDetections?.isEmpty==false}
     var boards:[Board]=[]
     for board in known {
-      guard let pose=segment.referencePoses.first(where:{$0.boardID==board.id}) else{continue}
+      guard let pose=segment.referencePoses.first(where:{$0.boardID==board.id && $0.method=="coded-corners"}) else{continue}
       let points=corners(board:board,pose:pose);guard points.count==4 else{continue}
-      var supported:[V3]=[]
+      var supported:[V3]=[],conflicted=false
       for observation in captures {
         guard let detection=observation.codedDetections?.first(where:{$0.boardID==board.id && $0.tagID==board.tagID}),detection.valid else{continue}
         let projected=points.compactMap{TextureBuilder.project($0,through:observation)?.0}
-        guard projected.count==4 else{continue}
+        guard projected.count==4 else{conflicted=true;break}
         let errors=zip(projected,detection.corners).map{a,b in hypot((a.u-b.u)*Double(observation.width),(a.v-b.v)*Double(observation.height))}
-        guard errors.allSatisfy({$0<=4}) else{continue}
+        guard errors.allSatisfy({$0<=4}) else{conflicted=true;break}
         supported.append(V3(observation.camera[3],-observation.camera[11],observation.camera[7]))
       }
-      guard supported.count>=2,supported.contains(where:{a in supported.contains{($0-a).length>=0.15}}) else{continue}
+      guard !conflicted,supported.count>=2,supported.contains(where:{a in supported.contains{($0-a).length>=0.15}}) else{continue}
       boards.append(Board(id:board.id,code:UInt32(board.tagID!),corners:points))
     }
     // A large reference inventory needs scoped capture; never search a prefix.

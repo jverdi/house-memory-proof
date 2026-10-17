@@ -48,6 +48,7 @@ import Vision
   private var codedMap:CodedReferences.Map?
   private var revealSourceRevision:Int?
   private var currentReferencePoses: [UUID: ReferencePose] = [:]
+  private var conflictedCodedReferences=Set<UUID>()
   init(model: AppModel) {
     self.model = model
     super.init()
@@ -111,12 +112,13 @@ import Vision
       let config = ARWorldTrackingConfiguration()
       config.planeDetection = [.horizontal, .vertical]
       var referenceScope=h
-      referenceScope.references=h.references.filter{$0.valid && ($0.roomID==nil || $0.roomID==room.id)}
+      referenceScope.references=h.references.filter{$0.valid && $0.tagID==nil && ($0.roomID==nil || $0.roomID==room.id)}
       guard referenceScope.references.count<=20 else{message="This room has more than 20 active references. Assign unused boards to their rooms before capturing.";return}
       config.detectionImages = await BoardGenerator.images(referenceScope, repo: repo)
       guard starting == startToken, model?.selected == h.id, UIApplication.shared.applicationState == .active else { return }
       config.maximumNumberOfTrackedImages = 2
       currentReferencePoses = [:]
+      conflictedCodedReferences=[]
       markerTransform = nil
       markerSeen = 0
       visualTransform = nil; visualSeen = 0; lastVisualQuery = 0; visualBusy = false; visualReferences = []; competingVisualReferences = []; visualConflict = false
@@ -414,6 +416,9 @@ import Vision
           let (gray,w,h,stride)=try? CodedReferences.gray(frame.capturedImage) {
           coded=(try? CodedReferences.detect(gray:gray,width:w,height:h,stride:stride,boards:project.references)) ?? []
         }
+        let measured=CodedReferences.measure(coded,camera:camera,intrinsics:intrinsics,width:image.width,height:image.height,boards:project.references)
+        let measuredIDs=Set(measured.map{$0.boardID})
+        let referencePoses=observedReferences.filter{!measuredIDs.contains($0.boardID)}+measured
         let obs = Observation(
           roomID: segment.roomID, stageID: segment.stageID, segmentID: segment.id,
           timestamp: frame.timestamp, image: imageKey, depth: depthKey, confidence: confidenceKey,
@@ -421,7 +426,7 @@ import Vision
           intrinsics: intrinsics, tracking: String(describing: frame.camera.trackingState),
           light: Double(frame.lightEstimate?.ambientIntensity ?? 0), sharpness: quality,
           documentary: documentary, imageOrientation: orientation,
-          referenceObservations: observedReferences,codedDetections:coded.isEmpty ? nil:coded)
+          referenceObservations: referencePoses,codedDetections:coded.isEmpty ? nil:coded)
         try repo.journalCapture(projectID: houseID, observation: obs)
         try repo.stageCapture(obs,projectID:houseID,room:room,stage:stage,segment:segment)
         try repo.finishCaptureJournal(obs.id)
@@ -429,6 +434,16 @@ import Vision
           guard let self else { return }
           self.pending -= 1
           guard self.generation == token else { return }
+          for pose in measured where !self.conflictedCodedReferences.contains(pose.boardID) {
+            if let old=self.currentReferencePoses[pose.boardID],old.method=="coded-corners" {
+              guard VisualMapping.agree(Rigid(values:old.matrix),Rigid(values:pose.matrix)) else {
+                self.currentReferencePoses.removeValue(forKey:pose.boardID);self.conflictedCodedReferences.insert(pose.boardID)
+                self.message="A coded reference changed or disagreed across views. It was excluded; verify that it is flat and fixed."
+                continue
+              }
+              if (pose.imageFitRMS ?? .infinity)<(old.imageFitRMS ?? .infinity) {self.currentReferencePoses[pose.boardID]=pose}
+            }else {self.currentReferencePoses[pose.boardID]=pose}
+          }
           var saved = self.model?.acceptStagedCapture(obs,projectID:houseID) == true
           if saved,self.count % 5 == 0 {
             saved = self.model?.edit(projectID: houseID) { h in
