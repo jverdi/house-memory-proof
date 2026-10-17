@@ -9,3 +9,7 @@ xcuserdata/
 *.keychain-db
 .env
 __pycache__/
+HouseMemoryProof/IFC/web-ifc-api-iife.js
+HouseMemoryProof/IFC/web-ifc.wasm
+HouseMemoryProof/IFC/LICENSE.md
+HouseMemoryProof/IFC/test-block.ifc

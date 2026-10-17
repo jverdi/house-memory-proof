@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
+bash tooling/prepare-ifc.sh
 python3 ci/apple_access.py
 python3 - <<'PY'
 import json

@@ -16,14 +16,28 @@ enum SceneBuilder {
         case .finished:return f.trade == .finish || f.trade == .ceiling || f.trade == .floor || f.trade == .unknown
         case .ghost,.evidence:return true}
     }
-    static func geometry(_ mesh:Mesh)->SCNGeometry {
+    static func features(_ h:House,options:SceneOptions)->[Feature] {
+        let relevant=h.segments.filter{options.room==nil || $0.roomID==options.room}
+        let unregistered=relevant.last(where:{$0.registration==nil})?.id
+        return h.features.filter { f in
+            guard visible(f,options) else{return false}
+            if let sid=f.segmentID {
+                if let unregistered {return sid==unregistered}
+                return h.segments.first(where:{$0.id==sid})?.registration != nil
+            }
+            return unregistered==nil || h.isDemo
+        }
+    }
+    static func geometry(_ mesh:Mesh,uv:[UV]?=nil)->SCNGeometry {
         let points=mesh.vertices.map{SCNVector3($0.render)}
         let source=SCNGeometrySource(vertices:points)
         let data=mesh.triangles.withUnsafeBytes{Data($0)}
         let indices:Data = mesh.triangles.isEmpty ? (0..<mesh.vertices.count).map{Int32($0)}.withUnsafeBytes{Data($0)} : data
         let element=SCNGeometryElement(data:indices,primitiveType:mesh.triangles.isEmpty ? .point:.triangles,primitiveCount:mesh.triangles.isEmpty ? mesh.vertices.count:mesh.triangles.count/3,bytesPerIndex:4)
         element.pointSize=3; element.minimumPointScreenSpaceRadius=1; element.maximumPointScreenSpaceRadius=5
-        return SCNGeometry(sources:[source],elements:[element])
+        var sources=[source]
+        if let uv,uv.count==mesh.vertices.count {sources.append(SCNGeometrySource(textureCoordinates:uv.map{CGPoint(x:$0.u,y:1-$0.v)}))}
+        return SCNGeometry(sources:sources,elements:[element])
     }
     static func scene(_ h:House,options:SceneOptions)->SCNScene {
         let scene=SCNScene();scene.background.contents=UIColor(red:0.035,green:0.055,blue:0.08,alpha:1)
@@ -31,14 +45,16 @@ enum SceneBuilder {
         let ambient=SCNNode();ambient.light=SCNLight();ambient.light?.type = .ambient;ambient.light?.intensity=650;scene.rootNode.addChildNode(ambient)
         let sun=SCNNode();sun.light=SCNLight();sun.light?.type = .directional;sun.light?.intensity=1100;sun.eulerAngles=SCNVector3(-0.7,-0.5,0);scene.rootNode.addChildNode(sun)
         // Unregistered sessions have independent frames; never silently overlay them.
+        var textureCache:[String:UIImage]=[:]
         var latest:[UUID:UUID]=[:];for s in h.segments {latest[s.roomID]=s.id}
-        for f in h.features where visible(f,options) {
+        for f in features(h,options:options) {
             if let sid=f.segmentID,let seg=h.segments.first(where:{$0.id==sid}),seg.registration==nil,latest[f.roomID] != sid {continue}
             var mesh=f.mesh
             if let sid=f.segmentID,let t=h.segments.first(where:{$0.id==sid})?.registration {mesh.vertices=mesh.vertices.map{t.apply($0)}}
-            let n=SCNNode(geometry:geometry(mesh));n.name=f.id.uuidString
+            let n=SCNNode(geometry:geometry(mesh,uv:f.uv));n.name=f.id.uuidString
             let m=SCNMaterial();m.lightingModel = .physicallyBased;m.diffuse.contents=UIColor(rgb:f.trade.hex);m.roughness.contents=0.8;m.isDoubleSided=true
             if options.mode == .ghost && (f.trade == .finish || f.trade == .ceiling) {m.transparency=0.17;m.writesToDepthBuffer=false}
+            if let key=f.texture {let root=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("HouseXray/assets");if textureCache[key]==nil,let source=CGImageSourceCreateWithURL(root.appendingPathComponent(key) as CFURL,nil),let cg=CGImageSourceCreateThumbnailAtIndex(source,0,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:1024] as CFDictionary){textureCache[key]=UIImage(cgImage:cg)};if let image=textureCache[key]{m.diffuse.contents=image}}
             n.geometry?.materials=[m];scene.rootNode.addChildNode(n)
         }
         return scene
@@ -73,7 +89,11 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
         let scene=SceneBuilder.scene(h,options:o);scene.rootNode.addChildNode(camera);view.scene=scene;view.pointOfView=camera
         if fresh,let room=h.rooms.first {jump(room)}
     }
-    func jump(_ room:Room){camera.simdPosition=(room.origin+V3(room.size.x/2,room.size.y/2,1.6)).render;yaw=0;pitch=0;camera.eulerAngles=SCNVector3Zero;move = .zero}
+    func jump(_ room:Room){
+        var p=room.origin+V3(room.size.x/2,room.size.y/2,1.6)
+        if let h=house,!h.isDemo,let observation=h.observations.last(where:{$0.roomID==room.id}) {let m=observation.camera;p=V3(m[3],-m[11],m[7]);if let t=h.segments.first(where:{$0.id==observation.segmentID})?.registration{p=t.apply(p)}}
+        camera.simdPosition=p.render;yaw=0;pitch=0;camera.eulerAngles=SCNVector3Zero;move = .zero
+    }
     func bookmark(_ b:Bookmark){camera.simdPosition=b.position.render;yaw=Float(b.yaw);pitch=Float(b.pitch);camera.eulerAngles=SCNVector3(pitch,yaw,0)}
     @objc func pan(_ g:UIPanGestureRecognizer){guard !orbit else{return};let p=g.translation(in:view);if g.state == .began {panStart=p};yaw-=Float(p.x-panStart.x)*0.004;pitch=max(-1.35,min(1.35,pitch-Float(p.y-panStart.y)*0.004));panStart=p;camera.eulerAngles=SCNVector3(pitch,yaw,0)}
     @objc func tap(_ g:UITapGestureRecognizer){let p=g.location(in:view);guard let hit=view.hitTest(p,options:[.searchMode:SCNHitTestSearchMode.closest.rawValue]).first else{return};selection=hit.node.name.flatMap(UUID.init(uuidString:));let v=V3(ar:SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z));if tool != "Inspect" {if tool=="Measure" && points.count>=2{points=[]};points.append(v);drawPoints()}}
@@ -86,7 +106,7 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
         if flying{camera.simdPosition=to;return}
         let direction=simd_normalize(delta),ahead=to+direction*0.23
         let hits=view.scene?.rootNode.hitTestWithSegment(from:SCNVector3(from),to:SCNVector3(ahead),options:[SCNHitTestOption.searchMode.rawValue:SCNHitTestSearchMode.closest.rawValue]) ?? []
-        if hits.isEmpty {camera.simdPosition=to}
+        if hits.isEmpty {if let h=house,h.isDemo,!NavigationGeometry.allowed(V3(ar:to),house:h){return};camera.simdPosition=to}
     }
 }
 struct WalkSurface:UIViewRepresentable {
@@ -101,4 +121,17 @@ struct Joystick:View {
     var body:some View {Circle().fill(.black.opacity(0.5)).overlay(Circle().stroke(.white.opacity(0.3))).frame(width:112,height:112).overlay(Circle().fill(.white.opacity(0.7)).frame(width:42,height:42).offset(offset)).gesture(DragGesture(minimumDistance:0).onChanged{v in
         let x=max(-35,min(35,v.translation.width)),y=max(-35,min(35,v.translation.height));offset=CGSize(width:x,height:y);action(SIMD2(Float(x/35),Float(-y/35)))
     }.onEnded{_ in offset = .zero;action(.zero)}).accessibilityLabel("Move joystick").accessibilityHint("Drag to walk. Drag the scene to look.")}
+}
+
+enum NavigationGeometry {
+    static func allowed(_ p:V3,house:House)->Bool {
+        let rooms=house.rooms.filter{abs(($0.origin.z+1.6)-p.z)<0.5}
+        for r in rooms {let q=p-r.origin;if q.x>=0.2 && q.x<=r.size.x-0.2 && q.y>=0.2 && q.y<=r.size.y-0.2{return true}}
+        // Only geometrically adjacent doorways form a connection; floors never do.
+        for a in rooms {for b in rooms where a.id != b.id {
+            let left=a.origin.x+a.size.x,right=b.origin.x
+            if right-left>=0 && right-left<0.5 && abs(a.origin.y-b.origin.y)<0.01 && p.x>=left-0.3 && p.x<=right+0.3 && p.y>=a.origin.y+1.95 && p.y<=a.origin.y+2.55{return true}
+        }}
+        return false
+    }
 }

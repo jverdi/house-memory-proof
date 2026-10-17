@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; connect-src hxlocal:;">
+<script src="web-ifc-api-iife.js"></script><script>
+const send=x=>window.webkit.messageHandlers.ifc.postMessage(x);
+(async()=>{try{
+ const api=new WebIFC.IfcAPI();api.SetWasmPath('hxlocal://bundle/');await api.Init();
+ const bytes=new Uint8Array(await (await fetch('hxlocal://input/model.ifc')).arrayBuffer());
+ const id=api.OpenModel(bytes,{COORDINATE_TO_ORIGIN:false});if(id<0)throw Error('IFC parsing failed');
+ let total=0,parts=0;
+ api.StreamAllMeshes(id,mesh=>{
+  const line=api.GetLine(id,mesh.expressID,false);let name=line?.Name?.value||('IFC element '+mesh.expressID),guid=line?.GlobalId?.value||'';
+  for(let j=0;j<mesh.geometries.size();j++){
+   const placed=mesh.geometries.get(j),g=api.GetGeometry(id,placed.geometryExpressID);
+   const v=api.GetVertexArray(g.GetVertexData(),g.GetVertexDataSize()),indices=api.GetIndexArray(g.GetIndexData(),g.GetIndexDataSize()),m=placed.flatTransformation;
+   total+=v.length/6;if(total>200000||indices.length>1200000)throw Error('IFC exceeds the 200,000-vertex admission limit');
+   let vertices=[];for(let k=0;k<v.length;k+=6){let x=v[k],y=v[k+1],z=v[k+2];vertices.push([m[0]*x+m[4]*y+m[8]*z+m[12],m[1]*x+m[5]*y+m[9]*z+m[13],m[2]*x+m[6]*y+m[10]*z+m[14]])}
+   send({type:'mesh',name,guid,vertices,indices:Array.from(indices)});g.delete();parts++;
+  }
+ });api.CloseModel(id);send({type:'done',parts,vertices:total,version:api.GetVersion()});
+}catch(e){send({type:'error',message:String(e.message||e)})}})();
+</script>

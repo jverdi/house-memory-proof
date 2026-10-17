@@ -46,21 +46,28 @@ enum StoredZip {
 }
 enum Exporter {
     static func destination(_ name:String)->URL {let dir=FileManager.default.temporaryDirectory.appendingPathComponent("exports",isDirectory:true);try? FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);return dir.appendingPathComponent(UUID().uuidString.prefix(8)+"-"+name)}
-    static func canonicalFeatures(_ h:House,options:SceneOptions)->[Feature] {h.features.filter{SceneBuilder.visible($0,options)}.map{f in var f=f;if let sid=f.segmentID,let t=h.segments.first(where:{$0.id==sid})?.registration {f.mesh.vertices=f.mesh.vertices.map{t.apply($0)}};return f}}
+    static func canonicalFeatures(_ h:House,options:SceneOptions)->[Feature] {SceneBuilder.features(h,options:options).map{f in var f=f;if let sid=f.segmentID,let t=h.segments.first(where:{$0.id==sid})?.registration {f.mesh.vertices=f.mesh.vertices.map{t.apply($0)}};return f}}
     static func glb(_ h:House,options:SceneOptions)throws->URL {
-        let features=canonicalFeatures(h,options:options);var bin=Data(),views:[[String:Any]]=[],accessors:[[String:Any]]=[],meshes:[[String:Any]]=[],nodes:[[String:Any]]=[],materials:[[String:Any]]=[]
+        let features=canonicalFeatures(h,options:options);var bin=Data(),views:[[String:Any]]=[],accessors:[[String:Any]]=[],meshes:[[String:Any]]=[],nodes:[[String:Any]]=[],materials:[[String:Any]]=[],images:[[String:Any]]=[],textures:[[String:Any]]=[];var textureIDs:[String:Int]=[:]
         for f in features where !f.mesh.vertices.isEmpty {
             let posOffset=bin.count;var lo=[Double](repeating:Double.infinity,count:3),hi=[Double](repeating:-Double.infinity,count:3)
             for p in f.mesh.vertices {let v=[p.x,p.z,-p.y];for j in 0..<3{bin.float(Float(v[j]));lo[j]=min(lo[j],v[j]);hi[j]=max(hi[j],v[j])}}
             views.append(["buffer":0,"byteOffset":posOffset,"byteLength":bin.count-posOffset,"target":34962]);let pi=accessors.count;accessors.append(["bufferView":views.count-1,"componentType":5126,"count":f.mesh.vertices.count,"type":"VEC3","min":lo,"max":hi])
             let indices=f.mesh.triangles.isEmpty ? Array(0..<Int32(f.mesh.vertices.count)):f.mesh.triangles
+            var attributes:[String:Int] = ["POSITION":pi]
+            if let uv=f.uv,uv.count==f.mesh.vertices.count{let offset=bin.count;for p in uv{bin.float(Float(p.u));bin.float(Float(p.v))};views.append(["buffer":0,"byteOffset":offset,"byteLength":bin.count-offset,"target":34962]);attributes["TEXCOORD_0"]=accessors.count;accessors.append(["bufferView":views.count-1,"componentType":5126,"count":uv.count,"type":"VEC2"])}
             let idxOffset=bin.count;for i in indices{bin.le(UInt32(i))};views.append(["buffer":0,"byteOffset":idxOffset,"byteLength":bin.count-idxOffset,"target":34963]);let ii=accessors.count;accessors.append(["bufferView":views.count-1,"componentType":5125,"count":indices.count,"type":"SCALAR"])
             let c=f.trade.hex;materials.append(["name":f.trade.rawValue,"doubleSided":true,"pbrMetallicRoughness":["baseColorFactor":[Double((c>>16)&255)/255,Double((c>>8)&255)/255,Double(c&255)/255,1],"metallicFactor":0,"roughnessFactor":0.8]])
-            meshes.append(["primitives":[["attributes":["POSITION":pi],"indices":ii,"material":materials.count-1,"mode":f.mesh.triangles.isEmpty ? 0:4]]])
+            if let key=f.texture,attributes["TEXCOORD_0"] != nil {
+                if textureIDs[key]==nil{let root=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("HouseXray/assets");if let bytes=try? Data(contentsOf:root.appendingPathComponent(key)),bytes.count<25_000_000{let offset=bin.count;bin.append(bytes);views.append(["buffer":0,"byteOffset":offset,"byteLength":bytes.count]);while bin.count%4 != 0{bin.append(0)};images.append(["bufferView":views.count-1,"mimeType":key.hasSuffix("png") ? "image/png":"image/jpeg"]);textureIDs[key]=textures.count;textures.append(["source":images.count-1])}}
+                if let index=textureIDs[key]{materials[materials.count-1]["pbrMetallicRoughness"]=["baseColorFactor":[1,1,1,1],"baseColorTexture":["index":index],"metallicFactor":0,"roughnessFactor":0.8]}
+            }
+            meshes.append(["primitives":[["attributes":attributes,"indices":ii,"material":materials.count-1,"mode":f.mesh.triangles.isEmpty ? 0:4]]])
             nodes.append(["name":f.name,"mesh":meshes.count-1,"extras":["id":f.id.uuidString,"room":f.roomID.uuidString,"stage":f.stageID.uuidString,"evidence":f.kind.rawValue,"trade":f.trade.rawValue,"notes":f.notes]])
         }
         guard !meshes.isEmpty else{throw HouseError.message("No geometry in the selected layers.")}
-        let json:[String:Any]=["asset":["version":"2.0","generator":"House Xray","extras":["units":"metres","sourceRevision":h.revision,"accuracy":"Uncalibrated"]],"scene":0,"scenes":[["nodes":Array(nodes.indices)]],"nodes":nodes,"meshes":meshes,"materials":materials,"buffers":[["byteLength":bin.count]],"bufferViews":views,"accessors":accessors]
+        var json:[String:Any]=["asset":["version":"2.0","generator":"House Xray","extras":["units":"metres","sourceRevision":h.revision,"accuracy":"Uncalibrated"]],"scene":0,"scenes":[["nodes":Array(nodes.indices)]],"nodes":nodes,"meshes":meshes,"materials":materials,"images":images,"textures":textures,"buffers":[["byteLength":bin.count]],"bufferViews":views,"accessors":accessors]
+        if images.isEmpty {json.removeValue(forKey:"images");json.removeValue(forKey:"textures")}
         var j=try JSONSerialization.data(withJSONObject:json,options:[.sortedKeys]);while j.count%4 != 0{j.append(0x20)};while bin.count%4 != 0{bin.append(0)}
         var output=Data();output.le(UInt32(0x46546c67));output.le(UInt32(2));output.le(UInt32(12+8+j.count+8+bin.count));output.le(UInt32(j.count));output.le(UInt32(0x4e4f534a));output.append(j);output.le(UInt32(bin.count));output.le(UInt32(0x004e4942));output.append(bin)
         let url=destination("House-Xray.glb");try output.write(to:url,options:.atomic);return url

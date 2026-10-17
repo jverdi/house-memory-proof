@@ -69,7 +69,7 @@ struct Stage:Codable,Identifiable,Equatable { var id=UUID();var name:String;var 
 struct Feature:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var trade:Trade;var roomID:UUID;var stageID:UUID;var kind:EvidenceKind
     var mesh:Mesh;var route:[V3]=[];var sourceIDs:[UUID]=[];var notes="";var endpoint="";var reviewed=false
-    var segmentID:UUID?=nil;var hidden=false;var revision=1
+    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil
 }
 struct Observation:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var segmentID:UUID;var timestamp:Double;var date=Date()
@@ -93,7 +93,7 @@ struct House:Codable,Identifiable,Equatable {
     var schema=1;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
     var references:[ReferenceBoard]=[];var isDemo=false;var notes="";var closureNotes=""
-    var assets:Set<String> { Set(observations.flatMap{[$0.image,$0.depth,$0.confidence].compactMap{$0}}+drawings.map{$0.asset}+segments.compactMap{$0.worldMap}+references.flatMap{[$0.image,$0.pdf]}) }
+    var assets:Set<String> { Set(observations.flatMap{[$0.image,$0.depth,$0.confidence].compactMap{$0}}+drawings.map{$0.asset}+segments.compactMap{$0.worldMap}+references.flatMap{[$0.image,$0.pdf]}+features.compactMap{$0.texture}) }
     func validate() throws {
         guard schema==1 else {throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
         guard rooms.count<=100,features.count<=10000,observations.count<=50000 else{throw HouseError.message("Project exceeds this build's tested limits.")}

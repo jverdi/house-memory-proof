@@ -22,3 +22,10 @@ if 'HXCORECPP0000000000000001' not in s:
  s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "HXCORECPP0000000000000001",')
  s=s.replace('"SWIFT_VERSION" = "5.0";', '"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++";')
 p.write_text(s)
+
+s=p.read_text()
+if 'IFCFOLDER0000000000000001' not in s:
+ s=s.replace('\t"objects" = {','\t"objects" = {\n"IFCFOLDER0000000000000001" = {isa = PBXFileReference; lastKnownFileType = folder; path = IFC; sourceTree = "<group>"; };\n"IFCRESOURCE00000000000001" = {isa = PBXBuildFile; fileRef = IFCFOLDER0000000000000001; };')
+ s=s.replace('"6D3E1FE7B9D4981A01FED2ED",','"6D3E1FE7B9D4981A01FED2ED", "IFCRESOURCE00000000000001",')
+ s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "IFCFOLDER0000000000000001",')
+p.write_text(s)

@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
+bash tooling/prepare-ifc.sh
 xcodebuild -version | tee build/evidence/xcode-version.txt
 xcrun simctl list devices available --json > build/evidence/simulator-inventory.json
 device_id="$(python3 - <<'PY'
