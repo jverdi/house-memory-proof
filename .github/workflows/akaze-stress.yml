@@ -1,0 +1,95 @@
+name: Qualify experimental nonlinear features
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/akaze-stress.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: akaze-stress
+  cancel-in-progress: true
+jobs:
+  evaluate:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+          restore-keys: ceres-2.2.0-eigen3.4-arm64-v3
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - name: Compile frozen experimental candidate before drawing configurations
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p=pathlib.Path('packages/visual-core/hx_vision.cpp')
+          s=p.read_text()
+          start=s.index(' auto detector=cv::ORB::create')
+          end=s.index(' std::set<std::array<uint8_t,32>> unique;',start)
+          replacement=""" auto detector=cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,256,3,0.001f,4,4,cv::KAZE::DIFF_PM_G2,int(capacity));
+           std::vector<cv::KeyPoint> keys;cv::Mat desc;
+           detector->detectAndCompute(image,cv::noArray(),keys,desc);
+           if(keys.empty())return 0;
+           if(desc.type()!=CV_8U||desc.cols!=32||desc.rows!=int(keys.size()))return -2;
+          """
+          p.write_text(s[:start]+replacement+s[end:])
+          PY
+          mkdir -p build/stress-evidence
+          git diff -- packages/visual-core/hx_vision.cpp > build/stress-evidence/candidate-${{ matrix.shard }}.diff
+          bash tooling/opencv/build-host.sh
+      - name: Run isolated analytic stress shard
+        run: |
+          python3 -m venv build/stress-env
+          build/stress-env/bin/pip install --timeout 30 numpy==2.3.5 pillow==11.3.0
+          build/stress-env/bin/python tooling/simulation/qualification_sweep.py --executable build/vision-replay --shard ${{ matrix.shard }} --output build/stress-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: akaze-spatial-stress-${{ matrix.shard }}
+          path: build/stress-evidence/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: akaze-spatial-replay-records-${{ matrix.shard }}
+          path: build/replay-records-${{ matrix.shard }}/
+          retention-days: 90
+  score:
+    needs: evaluate
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: akaze-spatial-stress-*
+          path: build/stress-evidence
+          merge-multiple: true
+      - name: Enforce complete denominators and unchanged spatial targets
+        run: python3 tooling/simulation/qualification_sweep.py --aggregate --output build/stress-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: akaze-spatial-stress-summary
+          path: build/stress-evidence/summary.json
+          retention-days: 90
+

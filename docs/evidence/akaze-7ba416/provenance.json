@@ -1,0 +1,9 @@
+{
+  "sourceRevision": "7ba4169d70d58e9cc4ce0307fe71d339eb0d9a4c",
+  "runID": 39055131621,
+  "artifactID": 12109043666,
+  "verifiedSHA256": "5ae218e572dfc729043bdc195cd8658cd238ead451d0b15ead7c03736332a6bb",
+  "adopted": false,
+  "productionExtractor": "ORB",
+  "conclusion": "Both rough house layouts pass; finished-stage availability remains zero. Broader stress evaluation required."
+}
