@@ -9,6 +9,8 @@ bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
 bash tooling/solver/build.sh ios
+bash tooling/references/build.sh ios
+cp build/apriltag/APRILTAG-LICENSE.txt HouseMemoryProof/IFC/
 cp build/ceres/CERES-LICENSE.txt build/ceres/EIGEN-LICENSE.txt HouseMemoryProof/IFC/
 cp build/opencv/LICENSE HouseMemoryProof/IFC/OPENCV-LICENSE.txt
 fi

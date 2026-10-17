@@ -5,6 +5,10 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+"HXTAGFRAMEWORKFILE000001"={isa=PBXFileReference;lastKnownFileType=wrapper.xcframework;path="build/apriltag/apriltag.xcframework";sourceTree=SOURCE_ROOT;};
+"HXTAGFRAMEWORKBUILD0001"={isa=PBXBuildFile;fileRef=HXTAGFRAMEWORKFILE000001;};
+"HXTAGBRIDGEFILE00000001"={isa=PBXFileReference;lastKnownFileType=sourcecode.c.c;path="../packages/reference-core/hx_tags.c";sourceTree="<group>";};
+"HXTAGBRIDGEBUILD0000001"={isa=PBXBuildFile;fileRef=HXTAGBRIDGEFILE00000001;};
 "A5A86178B58ADF9C81F1A6C6"={isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path="FieldChecks.swift";sourceTree="<group>";};
 "C14488B26BF63144DC0F21C0"={isa=PBXBuildFile;fileRef="A5A86178B58ADF9C81F1A6C6";};
 "HXCERESFRAMEWORKFILE0001"={isa=PBXFileReference;lastKnownFileType=wrapper.xcframework;path="build/ceres/ceres.xcframework";sourceTree=SOURCE_ROOT;};
@@ -215,7 +219,7 @@
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
-				"534A5F435ADDB25DA9F43232", "206167C73ABDA387E3D90511", "C14488B26BF63144DC0F21C0",
+				"534A5F435ADDB25DA9F43232", "HXTAGBRIDGEBUILD0000001", "206167C73ABDA387E3D90511", "C14488B26BF63144DC0F21C0",
 				"8CD662E02DA206F8EBB7C9F8",
 				"FB8814FF2C5F3C04021282F0",
 				"C3F90EF019894D6AF32059AB",
@@ -275,14 +279,14 @@
 		"8A7588AD5FA397C62F95C6FE" = {
 			"isa" = "PBXFrameworksBuildPhase";
 			"buildActionMask" = 2147483647;
-			"files" = ("HXOPENCVFRAMEWORKBUILD01", "HXCERESFRAMEWORKBUILD01",
+			"files" = ("HXOPENCVFRAMEWORKBUILD01", "HXTAGFRAMEWORKBUILD0001", "HXCERESFRAMEWORKBUILD01",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
 		"FC233BDA2344D97687F5A251" = {
 			"isa" = "PBXGroup";
 			"children" = (
-				"A33603BF79F74B056172D43B", "A5A86178B58ADF9C81F1A6C6", "HXCERESFRAMEWORKFILE0001", "3942A1EE43C134F128C2F780",
+				"A33603BF79F74B056172D43B", "HXTAGFRAMEWORKFILE000001", "HXTAGBRIDGEFILE00000001", "A5A86178B58ADF9C81F1A6C6", "HXCERESFRAMEWORKFILE0001", "3942A1EE43C134F128C2F780",
 				"28908C8A30FAD01DBB84F0FC",
 				"74DE22F5F11386AC96873E00",
 				"83723C20B25CB18D93B194A4",
@@ -356,7 +360,7 @@
 				"CLANG_ENABLE_MODULES" = "YES";
 				"SDKROOT" = "iphoneos";
 				"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
-				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++"; "HEADER_SEARCH_PATHS" = ("$(inherited)", "$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include"); "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");
+				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++"; "HEADER_SEARCH_PATHS" = ("$(inherited)", "$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include", "$(SRCROOT)/build/apriltag/$(PLATFORM_NAME)/include"); "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
@@ -394,7 +398,7 @@
 				"CLANG_ENABLE_MODULES" = "YES";
 				"SDKROOT" = "iphoneos";
 				"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
-				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++"; "HEADER_SEARCH_PATHS" = ("$(inherited)", "$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include"); "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");
+				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++"; "HEADER_SEARCH_PATHS" = ("$(inherited)", "$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include", "$(SRCROOT)/build/apriltag/$(PLATFORM_NAME)/include"); "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-O";

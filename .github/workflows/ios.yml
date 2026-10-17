@@ -43,6 +43,10 @@ jobs:
           key: opencv-4.13.0-ios26-arm64-v1-${{ hashFiles('tooling/opencv/build.sh') }}
       - uses: actions/cache@v4
         with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
           path: build/ceres
           key: ceres-2.2.0-eigen3.4-arm64-v2-${{ hashFiles('tooling/solver/build.sh') }}
           restore-keys: |
@@ -95,6 +99,10 @@ jobs:
         with:
           path: build/opencv
           key: opencv-4.13.0-ios26-arm64-v1-${{ hashFiles('tooling/opencv/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
       - uses: actions/cache@v4
         with:
           path: build/ceres

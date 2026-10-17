@@ -54,3 +54,13 @@ if 'HXCERESFRAMEWORKFILE0001' not in s:
  s=s.replace('("HXOPENCVFRAMEWORKBUILD01",','("HXOPENCVFRAMEWORKBUILD01", "HXCERESFRAMEWORKBUILD01",')
  s=s.replace('"CLANG_CXX_LIBRARY" = "libc++";', '"CLANG_CXX_LIBRARY" = "libc++"; "HEADER_SEARCH_PATHS" = ("$(inherited)", "$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include");')
 p.write_text(s)
+
+# Pinned AprilTag C library and bounded C bridge.
+s=p.read_text()
+if 'HXTAGFRAMEWORKFILE000001' not in s:
+ s=s.replace('\t"objects" = {','\t"objects" = {\n"HXTAGFRAMEWORKFILE000001"={isa=PBXFileReference;lastKnownFileType=wrapper.xcframework;path="build/apriltag/apriltag.xcframework";sourceTree=SOURCE_ROOT;};\n"HXTAGFRAMEWORKBUILD0001"={isa=PBXBuildFile;fileRef=HXTAGFRAMEWORKFILE000001;};\n"HXTAGBRIDGEFILE00000001"={isa=PBXFileReference;lastKnownFileType=sourcecode.c.c;path="../packages/reference-core/hx_tags.c";sourceTree="<group>";};\n"HXTAGBRIDGEBUILD0000001"={isa=PBXBuildFile;fileRef=HXTAGBRIDGEFILE00000001;};')
+ s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "HXTAGFRAMEWORKFILE000001", "HXTAGBRIDGEFILE00000001",')
+ s=s.replace('"534A5F435ADDB25DA9F43232",','"534A5F435ADDB25DA9F43232", "HXTAGBRIDGEBUILD0000001",')
+ s=s.replace('("HXOPENCVFRAMEWORKBUILD01",','("HXOPENCVFRAMEWORKBUILD01", "HXTAGFRAMEWORKBUILD0001",')
+ s=s.replace('"$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include"','"$(SRCROOT)/build/ceres/$(PLATFORM_NAME)/include", "$(SRCROOT)/build/apriltag/$(PLATFORM_NAME)/include"')
+p.write_text(s)

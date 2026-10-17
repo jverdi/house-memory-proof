@@ -34,6 +34,7 @@ import Darwin
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
+            await check("Pinned AprilTag identity, corner coordinates, rotation and duplicate rejection") {hx_tag_selftest()==1}
             await check("Capture owns processing through final save and stale completion cannot unlock a new capture") {
                 let isolated=AppModel(root:folder.appendingPathComponent("capture-lease")),first=UUID(),second=UUID()
                 guard isolated.beginCapture(first),!isolated.beginCapture(second) else{return false}

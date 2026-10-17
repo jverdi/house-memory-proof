@@ -1,0 +1,49 @@
+name: Verify metric reference detector packaging
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/references.yml
+      - tooling/references/**
+      - packages/reference-core/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: reference-detector
+  cancel-in-progress: true
+jobs:
+  package:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - run: bash tooling/references/build.sh host
+      - name: Test exact production detector bridge
+        run: |
+          mkdir -p build/reference-evidence
+          clang -std=c11 -O2 -arch arm64 -mmacosx-version-min=14.0 -DHX_TAG_TEST_MAIN \
+            -I build/apriltag/host/include packages/reference-core/hx_tags.c \
+            build/apriltag/host/lib/libapriltag.a -o build/tag-test
+          build/tag-test | tee build/reference-evidence/host.json
+      - run: bash tooling/references/build.sh ios
+      - name: Record pinned platform libraries
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          libraries=[]
+          for platform in ['host','iphoneos','iphonesimulator']:
+            p=pathlib.Path('build/apriltag')/platform/'lib/libapriltag.a'
+            libraries.append(dict(platform=platform,bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest()))
+          pathlib.Path('build/reference-evidence/package.json').write_text(json.dumps(dict(sourceRevision='94be783968e5091bcc9972c72c84fd63efce2935',version='3.4.5',family='tag36h11',libraries=libraries,fieldQualified=False),indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: metric-reference-detector-evidence
+          path: build/reference-evidence/
+          retention-days: 30
