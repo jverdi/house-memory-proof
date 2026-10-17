@@ -2,7 +2,7 @@ name: Check personal beta renewal
 on:
   push:
     branches: [main]
-    paths: [ci/renewal.py, ci/test_renewal.py, ci/upload_preflight.py, ci/test_upload_preflight.py, .github/workflows/renew-testflight.yml]
+    paths: [ci/renewal.py, ci/test_renewal.py, ci/upload_preflight.py, ci/test_upload_preflight.py, ci/verify_archive.py, ci/test_verify_archive.py, .github/workflows/renew-testflight.yml]
   schedule:
     - cron: '17 8 * * *'
   workflow_dispatch:

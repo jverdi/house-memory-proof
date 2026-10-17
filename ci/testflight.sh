@@ -66,6 +66,8 @@ xcodebuild archive \
   CODE_SIGN_STYLE=Automatic "${auth[@]}" \
   2>&1 | python3 ci/sanitize_signing_log.py "$key_path" | tee build/evidence/archive.log
 
+python3 ci/verify_archive.py
+
 python3 - <<'PY'
 import os, plistlib
 with open('build/ExportOptions.plist', 'wb') as out:
