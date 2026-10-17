@@ -1,0 +1,33 @@
+{
+  "personal_account_holder_verified": true,
+  "app_id": "6823862609",
+  "app_name": "House Xray",
+  "bundle_id": "com.jverdi.housememoryproof",
+  "target_build": "",
+  "builds": [
+    {
+      "id": "87c22c31-9565-4b97-855a-a3eae7c158e9",
+      "version": "2.1",
+      "processing_state": "VALID",
+      "expired": false,
+      "beta_state": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "IN_BETA_TESTING",
+        "externalBuildState": "NOT_APPLICABLE"
+      },
+      "groups": [
+        {
+          "id": "e3482608-5acb-43b9-8c40-a9ec4a5096bd",
+          "name": "Personal iPhone",
+          "internal": true
+        }
+      ]
+    }
+  ],
+  "owner_has_testflight_access": true,
+  "owner_invitation_state": null,
+  "physical_iphone_installation": "confirmed_by_user",
+  "confirmed_at": "2026-10-17T00:20:04-04:00",
+  "build_run": "https://github.com/jverdi/house-memory-proof/actions/runs/39001729914",
+  "readiness_run": "https://github.com/jverdi/house-memory-proof/actions/runs/39002137648"
+}
