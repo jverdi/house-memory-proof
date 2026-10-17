@@ -559,6 +559,90 @@ enum Exporter {
   static func restore(_ url: URL, repo: Repository) throws -> House {
     try StreamingArchive.restore(url, repo: repo)
   }
+  // A streamed semantic summary. Detailed mesh/photo-track data stays in JSON/archive.
+  static func semanticCSV(_ h:House, maximumBytes:Int=128_000_000)throws->URL {
+    try h.validate()
+    let url=destination("House-Xray-records.csv")
+    guard FileManager.default.createFile(atPath:url.path,contents:nil) else{throw HouseError.message("Could not create CSV export.")}
+    var complete=false
+    defer {if !complete{try? FileManager.default.removeItem(at:url)}}
+    let file=try FileHandle(forWritingTo:url)
+    defer {try? file.close()}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys];encoder.dateEncodingStrategy = .iso8601
+    let dates=ISO8601DateFormatter();dates.formatOptions=[.withInternetDateTime,.withFractionalSeconds]
+    let columns=["schema_version","house_id","house_revision","record_type","id","parent_id","index","name","room_id","room_name","level","stage_id","stage_name","stage_date","evidence_kind","trade","coordinate_frame","segment_id","registration_json","x_m","y_m","z_m","x2_m","y2_m","z2_m","length_m","endpoint_label","from_feature_id","from_end","to_feature_id","to_end","confirmed","reviewed","hidden","date","source","source_ids_json","provenance_json","notes"]
+    let numeric=Set(["schema_version","house_revision","index","level","x_m","y_m","z_m","x2_m","y2_m","z2_m","length_m","from_end","to_end"])
+    let rooms=Dictionary(uniqueKeysWithValues:h.rooms.map{($0.id,$0)})
+    let stages=Dictionary(uniqueKeysWithValues:h.stages.map{($0.id,$0)})
+    let segments=Dictionary(uniqueKeysWithValues:h.segments.map{($0.id,$0)})
+    var total=0
+    func json<T:Encodable>(_ value:T)throws->String {String(decoding:try encoder.encode(value),as:UTF8.self)}
+    func write(_ fields:[String])throws {
+      try Task.checkCancellation()
+      guard fields.allSatisfy({$0.utf8.count<=2_000_000}) else{throw HouseError.message("A CSV record exceeds the supported field size. Use the complete archive.")}
+      let data=Data((fields.map{"\""+$0.replacingOccurrences(of:"\"",with:"\"\"")+"\""}.joined(separator:",")+"\r\n").utf8)
+      guard data.count<=maximumBytes-total else{throw HouseError.message("CSV export exceeds the supported size. Use the complete archive.")}
+      try file.write(contentsOf:data);total+=data.count
+    }
+    func row(_ values:[String:String])throws {
+      var values=values
+      values["schema_version"]="1";values["house_id"]=h.id.uuidString;values["house_revision"]=String(h.revision)
+      for key in numeric {if let value=values[key],!value.isEmpty {
+        guard let number=Double(value),number.isFinite else{throw HouseError.message("CSV contains a non-finite numeric value.")}
+      }}
+      try write(columns.map{key in
+        let text=values[key] ?? ""
+        guard !numeric.contains(key),let first=text.trimmingCharacters(in:.whitespacesAndNewlines).first else{return text}
+        // Reversible text escaping for spreadsheet formula cells, including literal apostrophes.
+        return "=+-@'".contains(first) || text.first=="\t" || text.first=="\r" || text.first=="\n" ? "'"+text:text
+      })
+    }
+    struct Frame:Encodable {var segmentID:UUID;var transform:Rigid?;var approved:Bool;var residualMetres:Double?}
+    func location(_ roomID:UUID,_ stageID:UUID?,_ segmentID:UUID?)throws->[String:String] {
+      var out=["room_id":roomID.uuidString,"room_name":rooms[roomID]?.name ?? "","level":rooms[roomID].map{String($0.level)} ?? "","coordinate_frame":segmentID.map{"segment:"+$0.uuidString} ?? "house","segment_id":segmentID?.uuidString ?? ""]
+      if let stageID,let stage=stages[stageID] {out["stage_id"]=stageID.uuidString;out["stage_name"]=stage.name;out["stage_date"]=dates.string(from:stage.date)}
+      if let segmentID,let segment=segments[segmentID] {out["registration_json"]=try json(Frame(segmentID:segment.id,transform:segment.registration,approved:segment.approved,residualMetres:segment.registrationResidual))}
+      return out
+    }
+    func point(_ p:V3,second:Bool=false)->[String:String] {
+      let suffix=second ? "2_m":"_m"
+      return ["x"+suffix:String(p.x),"y"+suffix:String(p.y),"z"+suffix:String(p.z)]
+    }
+    try write(columns)
+    for feature in h.features {
+      var values=try location(feature.roomID,feature.stageID,feature.segmentID)
+      values.merge(["record_type":"feature","id":feature.id.uuidString,"name":feature.name,"trade":feature.trade.rawValue,"evidence_kind":feature.kind.rawValue,"endpoint_label":feature.endpoint,"reviewed":String(feature.reviewed),"hidden":String(feature.hidden),"source_ids_json":try json(feature.sourceIDs),"notes":feature.notes],uniquingKeysWith:{$1})
+      var provenance=feature;provenance.mesh=Mesh();provenance.route=[];provenance.uv=nil;provenance.pointTracks=nil
+      values["provenance_json"]=try json(provenance)
+      try row(values)
+      // Child records link back to the feature; do not duplicate large provenance per point.
+      var child=try location(feature.roomID,feature.stageID,feature.segmentID)
+      child["registration_json"]=nil;child["parent_id"]=feature.id.uuidString
+      for (index,p) in feature.route.enumerated() {
+        var vertex=child;vertex.merge(point(p),uniquingKeysWith:{$1})
+        vertex["record_type"]="route_point";vertex["index"]=String(index);vertex["id"]="\(feature.id):route:\(index)"
+        try row(vertex)
+      }
+      if let start=feature.route.first,let end=feature.route.last {
+        for (index,p) in [start,end].enumerated() {
+          var endpoint=child;endpoint.merge(point(p),uniquingKeysWith:{$1})
+          endpoint["record_type"]="endpoint";endpoint["index"]=String(index);endpoint["id"]="\(feature.id):endpoint:\(index)";endpoint["endpoint_label"]=feature.endpoint
+          try row(endpoint)
+        }
+      }
+    }
+    for dimension in h.dimensions {
+      var values=try location(dimension.roomID,nil,dimension.segmentID)
+      values.merge(point(dimension.a),uniquingKeysWith:{$1});values.merge(point(dimension.b,second:true),uniquingKeysWith:{$1})
+      values.merge(["record_type":"measurement","id":dimension.id.uuidString,"name":dimension.name,"length_m":String(dimension.metres),"date":dates.string(from:dimension.date),"source":dimension.source,"provenance_json":try json(dimension)],uniquingKeysWith:{$1})
+      try row(values)
+    }
+    for connection in h.connections {
+      try row(["record_type":"connection","id":connection.id.uuidString,"from_feature_id":connection.fromFeature.uuidString,"from_end":String(connection.fromEnd),"to_feature_id":connection.toFeature.uuidString,"to_end":String(connection.toEnd),"confirmed":String(connection.confirmed),"date":dates.string(from:connection.date),"notes":connection.notes,"provenance_json":try json(connection)])
+    }
+    try file.synchronize();try file.close();complete=true
+    return url
+  }
   static func metadata(_ h: House) throws -> URL {
     let url = destination("House-Xray.json")
     let enc = JSONEncoder()
@@ -567,3 +651,4 @@ enum Exporter {
     return url
   }
 }
+

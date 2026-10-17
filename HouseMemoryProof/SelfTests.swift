@@ -603,6 +603,31 @@ import Darwin
                 }
                 return true
             }
+            await check("Semantic CSV preserves frames and relationships with bounded failure cleanup") {
+                var fixture=House.empty("CSV synthetic fixture")
+                let room=fixture.rooms[0].id,stage=fixture.stages[0].id
+                fixture.rooms[0].name="Kitchen, café\nNorth";fixture.rooms[0].level = -1
+                fixture.stages[0].date=Date(timeIntervalSince1970:1_700_000_000)
+                let registered=Segment(roomID:room,stageID:stage,registration:Rigid(values:[0,-1,0,4, 1,0,0,-2, 0,0,1,3, 0,0,0,1]),approved:true)
+                let separate=Segment(roomID:room,stageID:stage)
+                fixture.segments=[registered,separate]
+                var a=Feature(id:UUID(uuidString:"11111111-1111-4111-8111-111111111111")!,name:"=1+1",trade:.plumbing,roomID:room,stageID:stage,kind:.synthetic,mesh:Mesh(),route:[V3(-1,2,3),V3(4,5,6)],notes:"Quoted \"valve\", next\r\nline",endpoint:"Sink, \"cold\"")
+                a.segmentID=registered.id;a.hidden=true;a.reviewed=true
+                var b=a;b.id=UUID(uuidString:"22222222-2222-4222-8222-222222222222")!;b.segmentID=separate.id;b.name="'literal";b.hidden=false
+                var c=a;c.id=UUID(uuidString:"33333333-3333-4333-8333-333333333333")!;c.segmentID=nil;c.name="House route";c.route=[V3(),V3(0,0,2)]
+                fixture.features=[a,b,c]
+                fixture.dimensions=[Dimension(name:"Measured span",a:V3(-1,2,3),b:V3(2,6,3),roomID:room,date:Date(timeIntervalSince1970:1_700_000_000),sourceRevision:1,segmentID:separate.id)]
+                fixture.connections=[ServiceConnection(fromFeature:a.id,fromEnd:1,toFeature:b.id,toEnd:0,confirmed:true,notes:"\t=HYPERLINK()",date:Date(timeIntervalSince1970:1_700_000_000))]
+                let url=try Exporter.semanticCSV(fixture)
+                let data=try Data(contentsOf:url)
+                try data.write(to:mainRepo.root.appendingPathComponent("semantic.csv"))
+                try Data(contentsOf:Exporter.metadata(fixture)).write(to:mainRepo.root.appendingPathComponent("semantic-source.json"))
+                let directory=url.deletingLastPathComponent()
+                let before=Set(try FileManager.default.contentsOfDirectory(atPath:directory.path))
+                do{_=try Exporter.semanticCSV(fixture,maximumBytes:1);return false}catch{}
+                guard Set(try FileManager.default.contentsOfDirectory(atPath:directory.path))==before else{return false}
+                return !data.isEmpty && Set(try FileManager.default.contentsOfDirectory(atPath:directory.path))==before
+            }
             await check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
             await check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}
             await check("Before-after and service tours retain stage identity and exact frame timeline") {

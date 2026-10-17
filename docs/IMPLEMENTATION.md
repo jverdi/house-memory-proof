@@ -403,3 +403,8 @@ Most finished rejections lack 30 repeated features or sufficient independent sou
 ### Complete 100-check runtime and landscape workflow passed
 
 Source `0056098e`, run 39066800878, passed the entire workflow: **100 native checks, all three UI tests, all three process-kill recovery modes, 50 portable cases, GLB/USDZ/ZIP64/offline-viewer validation and enhanced PLY/OBJ group-geometry verification**. The complete artifact SHA-256 was independently verified (`6ccb71169da1c8ff103cf7b7455c776887e2bf2f85aff79bb609aaae7bd8cb80`). Visual inspection confirms the compact landscape controls fit without overlap and the selected finished/measurement modes persist after rotation to portrait. Reports and screenshot hashes are retained under `docs/evidence/native-0056/`. This verifies the current runtime changes, not the full accessibility/device/sensor/field acceptance matrix. No TestFlight upload occurred.
+
+
+### Streamed semantic CSV export
+
+The missing semantic CSV profile is implemented alongside metadata JSON. It includes all features (including hidden records), ordered route points, endpoint identities, explicit connections and measurements, with source IDs, stage/record dates and semantic provenance. Local capture coordinates remain local and carry explicit frame IDs plus optional registration metadata. The UI states that metadata exports include the whole project. The writer streams bounded records, escapes spreadsheet formulas reversibly and deletes incomplete output. `docs/SEMANTIC_CSV.md` specifies the contract. A native mixed-frame/text fixture and independent Python CSV reader are wired into CI; native validation is pending.

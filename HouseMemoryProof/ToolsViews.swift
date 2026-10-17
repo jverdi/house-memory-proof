@@ -106,6 +106,10 @@ struct ToolsPage: View {
           Button("Export OBJ") {
             export("Writing OBJ") { try Exporter.meshText(house, options: options, ply: false) }
           }
+          Text("Metadata JSON and semantic CSV include all project records, including hidden features and separate capture frames.").font(.caption)
+          Button("Export semantic CSV") {
+            export("Writing semantic records") { try Exporter.semanticCSV(house) }
+          }
           Button("Export metadata JSON") {
             export("Writing metadata") { try Exporter.metadata(house) }
           }
