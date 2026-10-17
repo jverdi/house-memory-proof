@@ -24,7 +24,7 @@ permissions:
   contents: read
 concurrency:
   group: visual-evaluation
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   replay:
     runs-on: macos-26
