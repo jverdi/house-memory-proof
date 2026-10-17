@@ -1,0 +1,137 @@
+{
+  "date" : "2026-10-17T04:59:25Z",
+  "fieldAccuracyValidated" : false,
+  "passed" : true,
+  "platform" : "iPhone simulator",
+  "precisionProfileEnabled" : false,
+  "tests" : [
+    {
+      "passed" : true,
+      "test" : "Canonical AR basis"
+    },
+    {
+      "passed" : true,
+      "test" : "Identity rigid transform"
+    },
+    {
+      "passed" : true,
+      "test" : "Reject scale in rigid transform"
+    },
+    {
+      "passed" : true,
+      "test" : "Reject reflected transform"
+    },
+    {
+      "passed" : true,
+      "test" : "Reference fit and held-out point"
+    },
+    {
+      "passed" : true,
+      "test" : "Reject collinear controls"
+    },
+    {
+      "passed" : true,
+      "test" : "Fixture has three independent rooms and paired stages"
+    },
+    {
+      "passed" : true,
+      "test" : "Finish switch preserves stable geometry"
+    },
+    {
+      "passed" : true,
+      "test" : "Additive schema migration preserves original identity"
+    },
+    {
+      "passed" : true,
+      "test" : "Stage composition isolates unfinished and finished session frames"
+    },
+    {
+      "passed" : true,
+      "test" : "Local store roundtrip"
+    },
+    {
+      "passed" : true,
+      "test" : "Revision recovery"
+    },
+    {
+      "passed" : true,
+      "test" : "Asset hash identity"
+    },
+    {
+      "passed" : true,
+      "test" : "Unsafe paths rejected"
+    },
+    {
+      "passed" : true,
+      "test" : "Invalid mesh indices rejected"
+    },
+    {
+      "passed" : true,
+      "test" : "Reject nonfinite mesh"
+    },
+    {
+      "passed" : true,
+      "test" : "Archive metadata and original roundtrip"
+    },
+    {
+      "passed" : true,
+      "test" : "Corrupt archive rejected"
+    },
+    {
+      "passed" : true,
+      "test" : "GLB framing and length"
+    },
+    {
+      "passed" : true,
+      "test" : "PLY independent parser roundtrip"
+    },
+    {
+      "passed" : true,
+      "test" : "USDZ stored and 64-byte aligned"
+    },
+    {
+      "passed" : true,
+      "test" : "No tour across absent captured rooms"
+    },
+    {
+      "passed" : true,
+      "test" : "Deterministic tour source revision"
+    },
+    {
+      "passed" : true,
+      "test" : "Tour cache separates layers and projects"
+    },
+    {
+      "passed" : true,
+      "test" : "Walk collision and explicit doorway"
+    },
+    {
+      "passed" : true,
+      "test" : "SceneKit offscreen render"
+    },
+    {
+      "passed" : true,
+      "test" : "Projection and occlusion rejection"
+    },
+    {
+      "extent" : [
+        1,
+        2,
+        3
+      ],
+      "passed" : true,
+      "test" : "Bundled IFC2x3 conversion and axes"
+    },
+    {
+      "maxPlaneErrorMetres" : 0.00088949998219800541,
+      "passed" : true,
+      "points" : 10956,
+      "syntheticOnly" : true,
+      "test" : "Simulated camera to fusion and photo texture pipeline"
+    },
+    {
+      "passed" : true,
+      "test" : "Native MP4 encode, assembly and duration"
+    }
+  ]
+}

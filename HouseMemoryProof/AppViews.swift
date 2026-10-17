@@ -66,7 +66,7 @@ struct OverviewView:View {
 struct ScenePreview:UIViewRepresentable {
     var house:House
     func makeUIView(context:Context)->SCNView{let v=SCNView();v.backgroundColor = .clear;v.allowsCameraControl=true;v.autoenablesDefaultLighting=true;return v}
-    func updateUIView(_ v:SCNView,context:Context){guard v.accessibilityIdentifier != "\(house.id)-\(house.revision)" else{return};v.accessibilityIdentifier="\(house.id)-\(house.revision)";let s=SceneBuilder.scene(house,options:SceneOptions());let c=SceneBuilder.camera(at:V3(12,-9,9));c.look(at:SCNVector3(4,1,-2));s.rootNode.addChildNode(c);v.scene=s;v.pointOfView=c}
+    func updateUIView(_ v:SCNView,context:Context){guard v.accessibilityIdentifier != "\(house.id)-\(house.revision)" else{return};v.accessibilityIdentifier="\(house.id)-\(house.revision)";let s=SceneBuilder.scene(house,options:SceneOptions());let points=Exporter.canonicalFeatures(house,options:SceneOptions()).flatMap{$0.mesh.vertices};let low=V3(points.map{$0.x}.min() ?? 0,points.map{$0.y}.min() ?? 0,points.map{$0.z}.min() ?? 0),high=V3(points.map{$0.x}.max() ?? 6,points.map{$0.y}.max() ?? 5,points.map{$0.z}.max() ?? 3);let center=(low+high)*0.5,radius=max(3,(high-low).length*0.9);let c=SceneBuilder.camera(at:center+V3(radius*0.75,-radius,radius*0.7));c.look(at:SCNVector3(center.render));s.rootNode.addChildNode(c);v.scene=s;v.pointOfView=c}
 }
 struct RoomEditor:View {
     @EnvironmentObject var model:AppModel;@Environment(\.dismiss) var dismiss

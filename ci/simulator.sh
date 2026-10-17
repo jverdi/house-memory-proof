@@ -76,3 +76,5 @@ xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO \
   2>&1 | tee build/evidence/ui-tests.log
+
+xcrun xcresulttool export attachments --path build/evidence/ui-tests.xcresult --output-path build/evidence/ui-attachments

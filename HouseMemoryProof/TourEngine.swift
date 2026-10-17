@@ -18,7 +18,7 @@ enum TourDirector {
                 let m=obs.camera;var position=V3(m[3],-m[11],m[7]);var forward=V3(-m[2],m[10],-m[6])
                 if let registration=h.segments.first(where:{$0.id==obs.segmentID})?.registration {forward=registration.apply(forward)-registration.apply(V3());position=registration.apply(position)}
                 let yaw=atan2(-forward.x,forward.y)
-                shots.append(TourShot(roomID:r.id,position:position,yaw:yaw,pitch:0,caption:r.name+" · approximate captured geometry",duration:5))
+                shots.append(TourShot(roomID:r.id,position:position,yaw:yaw,pitch:asin(max(-1,min(1,forward.normalized.z))),caption:r.name+" · approximate captured geometry",duration:5))
             }else {excluded.append(r.name+": no captured camera viewpoint")}
         }
         let length=max(5,min(60,duration))/Double(max(1,shots.count));for i in shots.indices{shots[i].duration=length}

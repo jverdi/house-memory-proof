@@ -1,0 +1,16 @@
+{
+  "source": "94b6decb2ebee8e09d42497da8160fae80bc0a98",
+  "run_id": 39004499104,
+  "artifact_id": 12090367688,
+  "artifact_sha256": "27c66c81955a36ea1d3fac34e7cad980af140d1c10d522a8876b81df7323c014",
+  "native_tests": 30,
+  "xctest_navigation": "passed",
+  "portable_cases": 50,
+  "gltf_errors": 0,
+  "gltf_warnings": 0,
+  "openusd": "passed",
+  "zip64_independent_reader": "passed",
+  "physical_device_tested": false,
+  "testflight_uploaded": false,
+  "runbook_release_gate": "not_passed"
+}

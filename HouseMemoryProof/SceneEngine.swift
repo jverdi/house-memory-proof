@@ -98,12 +98,20 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
         let fresh=house?.id != h.id || oldFrame != SceneBuilder.activeUnregisteredSegment(h,options:o)
         points=[];selection=nil;house=h;options=o;revision=h.revision
         let scene=SceneBuilder.scene(h,options:o);scene.rootNode.addChildNode(camera);view.scene=scene;view.pointOfView=camera
-        if fresh,let room=h.rooms.first(where:{$0.id==o.room}) ?? h.rooms.first {jump(room)}
+        if fresh,let room=h.rooms.first(where:{$0.id==o.room}) ?? h.rooms.first {jump(room)
+            if !h.isDemo,h.observations.isEmpty {
+                let vertices=Exporter.canonicalFeatures(h,options:o).flatMap{$0.mesh.vertices}
+                if !vertices.isEmpty {let low=V3(vertices.map{$0.x}.min()!,vertices.map{$0.y}.min()!,vertices.map{$0.z}.min()!),high=V3(vertices.map{$0.x}.max()!,vertices.map{$0.y}.max()!,vertices.map{$0.z}.max()!);let center=(low+high)*0.5,radius=max(2,(high-low).length);camera.simdPosition=(center+V3(0,-radius,radius*0.35)).render;camera.look(at:SCNVector3(center.render));yaw=camera.eulerAngles.y;pitch=camera.eulerAngles.x;flying=true}
+            }
+        }
     }
     func jump(_ room:Room){
-        var p=room.origin+V3(room.size.x/2,room.size.y/2,1.6)
-        if let h=house,!h.isDemo,let observation=h.observations.last(where:{$0.roomID==room.id && SceneBuilder.eligibleStages(h,options:options).contains($0.stageID) && !$0.documentary}) {let m=observation.camera;p=V3(m[3],-m[11],m[7]);if let t=h.segments.first(where:{$0.id==observation.segmentID})?.registration{p=t.apply(p)}}
-        camera.simdPosition=p.render;yaw=0;pitch=0;camera.eulerAngles=SCNVector3Zero;move = .zero
+        var p=room.origin+V3(room.size.x/2,room.size.y/2,1.6),direction=V3(0,1,0)
+        if let h=house,!h.isDemo,let observation=h.observations.last(where:{$0.roomID==room.id && SceneBuilder.eligibleStages(h,options:options).contains($0.stageID) && !$0.documentary}) {
+            let m=observation.camera;p=V3(m[3],-m[11],m[7]);direction=V3(-m[2],m[10],-m[6])
+            if let t=h.segments.first(where:{$0.id==observation.segmentID})?.registration{p=t.apply(p);direction=t.apply(direction)-t.apply(V3())}
+        }
+        camera.simdPosition=p.render;yaw=Float(atan2(-direction.x,direction.y));pitch=Float(asin(max(-1,min(1,direction.normalized.z))));camera.eulerAngles=SCNVector3(pitch,yaw,0);move = .zero
     }
     func bookmark(_ b:Bookmark){camera.simdPosition=b.position.render;yaw=Float(b.yaw);pitch=Float(b.pitch);camera.eulerAngles=SCNVector3(pitch,yaw,0)}
     @objc func pan(_ g:UIPanGestureRecognizer){guard !orbit else{return};let p=g.translation(in:view);if g.state == .began {panStart=p};yaw-=Float(p.x-panStart.x)*0.004;pitch=max(-1.35,min(1.35,pitch-Float(p.y-panStart.y)*0.004));panStart=p;camera.eulerAngles=SCNVector3(pitch,yaw,0)}

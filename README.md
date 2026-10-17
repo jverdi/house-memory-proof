@@ -1,35 +1,45 @@
-# House Xray — native iPhone delivery proof
+# House Xray
 
-**Delivered and installed successfully on the owner's iPhone on October 17, 2026.**
+Personal, local-first native iPhone construction record. SwiftUI + ARKit + SceneKit/Metal, SQLite, a portable C++ depth-fusion core, and an offline bundled IFC parser. No application server, account system, billing, or runtime reconstruction service.
 
-This tiny SwiftUI app proves the delivery path from ChatGPT Mobile through a private GitHub repository, a hosted macOS runner, Apple signing, and internal TestFlight distribution. No personal Mac, self-hosted runner, or app backend was required.
+**The source now contains a substantial experimental application. It does not yet satisfy the production/precision gates in the [architecture runbook](docs/architecture-runbook.md).** The installed delivery proof was build 2.1; implementation builds have not been uploaded to TestFlight.
 
-The proof app contains a framing illustration toggle, tap counter, and build/revision identifiers. It supports iOS 18 and later. It does not capture or reconstruct a house.
+## Implemented paths
 
-## Verified evidence
+- Local house/room/stage records, immutable hashed originals, transactional revisions and recovery copies.
+- ARKit photographs, camera calibration/poses, raw LiDAR depth/confidence, mesh checkpoints, saved maps and image-reference associations.
+- Existing-photo import as explicitly unposed documentary evidence.
+- First-person touch/controller navigation, free flight, room jumps, bookmarks, object picking, layer/ceiling switches and ghost views.
+- Approximate point measurements, route tracing, trade/endpoint labels, explicit service links, source/session photographs and on-device OCR.
+- PDF/image scale calibration, independent source preservation, offline bounded IFC and ASCII PLY import.
+- Bounded local depth fusion, visibility-tested photo textures, photo-support coverage checks and an in-app simulated camera dataset.
+- Automatic offscreen MP4 tours with five-second checkpoints; GLB, textured USDZ, PLY, OBJ and metadata output.
+- Streaming ZIP64 complete archives, independent offline photo index and restore into a fresh project identity.
 
-- [Build and upload run](https://github.com/jverdi/house-memory-proof/actions/runs/39001729914): simulator compilation and launch, signed archive, and successful Apple upload.
-- Build **2.1**, source revision **826c2fbad4**.
-- [TestFlight readiness](https://github.com/jverdi/house-memory-proof/actions/runs/39002137648): Apple processing **VALID**, internal state **IN_BETA_TESTING**, owner membership verified in **Personal iPhone**.
-- Owner confirmed receiving and successfully installing the app at **2026-10-17 00:20 EDT**.
-- [Machine-readable delivery evidence](docs/evidence/testflight-delivery-2.1.json).
-- Physical-device interaction tests and an independently read device build number have not been verified.
+These paths have different validation maturity. See [implementation and acceptance status](docs/IMPLEMENTATION.md), not just the feature list, before relying on them.
 
-## Delivery configuration
+## Development and verification
 
-App Store Connect name: **House Xray**  
-App ID: **6823862609**  
-Bundle ID: **com.jverdi.housememoryproof**  
-Apple team: **4RLZ6F3UA4**
+Native source targets iOS 26+. Runtime hardware checks determine whether ARKit, scene depth and mesh capture are available. Imports, browsing and exports do not require LiDAR.
 
-Repository secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_PRIVATE_KEY_P8`. Credentials remain in GitHub secrets and ephemeral runner files, never evidence or source.
+`python3 tooling/hm test` builds the portable C++ core and runs 50 analytic noisy-depth cases. Those cases are **not** 50 distinct houses or field/localization qualification.
 
-The native workflow builds relevant source changes on `main`, verifies simulator launch, and signs/uploads using Xcode on `macos-26`. Team and bundle values have verified defaults; repository variables can override them. Set `ENABLE_TESTFLIGHT_UPLOAD=false` to disable uploads. Pull requests do not run the upload job.
+The managed macOS workflow compiles the app, launches the iPhone simulator, runs native self-tests and XCUITest navigation, and validates output with Khronos glTF Validator, OpenUSD and Python's independent ZIP reader. CI artifacts distinguish simulator results from physical-device results. Exact evidence and limitations are recorded in the implementation ledger.
 
-The readiness workflow runs after successful native delivery, polls Apple processing for up to ten minutes, and assigns valid builds to the uniquely verified owner's internal testing group. It does not invite other people or publish to the App Store. It records status without account email addresses.
+`python3 tooling/project.py` and `python3 tooling/ui-project.py` maintain the checked-in Xcode source/test references. `tooling/prepare-ifc.sh` downloads pinned web-ifc 0.0.72 during builds; the resulting parser runs entirely offline inside the app. See [third-party notices](docs/THIRD_PARTY.md).
 
-The original Apple credential setup and app-record creation required owner interaction. Subsequent source-to-TestFlight delivery is automated, subject to Apple processing, account permissions, runner availability, and quotas. TestFlight builds expire; no scheduled renewal has been configured.
+## Delivery
 
-## Scope
+The private repository and hosted macOS runner previously delivered signed **House Xray build 2.1** to the owner's internal TestFlight group. The owner confirmed installation on October 17, 2026. [Proof evidence](docs/evidence/testflight-delivery-2.1.json) is separate from application acceptance.
 
-This completes the delivery experiment, not the house-scanning application. Capture, reconstruction, AR alignment, drawings, measurement, labeling, walkthroughs, and exports remain the larger project's implementation work.
+- App ID: `6823862609`
+- Bundle: `com.jverdi.housememoryproof`
+- Team: `4RLZ6F3UA4`
+- Internal group: `Personal iPhone`, owner only
+- Secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_P8`
+
+Intermediate uploads are disabled in `.github/workflows/ios.yml`. A successful simulator build alone does not authorize or establish a qualified release. Readiness polling is gated to release commits. No public App Store submission or renewal schedule is configured.
+
+## Keeping evidence
+
+Originals live in the app's local Application Support directory and are never automatically evicted. Export a complete archive through Tools and save it using Files, including to iCloud Drive if desired. Automatic iCloud synchronization is not implemented. Do not delete the app as a recovery step without an independently verified archive.

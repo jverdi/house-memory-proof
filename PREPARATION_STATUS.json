@@ -1,17 +1,33 @@
 {
-  "configuration_validation": "passed",
-  "native_build": "passed",
-  "simulator_launch": "passed",
-  "signed_archive": "passed",
-  "testflight_upload": "passed",
-  "apple_processing": "VALID",
-  "internal_testing": "IN_BETA_TESTING",
-  "device_install": "confirmed_by_user",
-  "physical_device_interaction_tests": "not_verified",
-  "repository": {
-    "url": "https://github.com/jverdi/house-memory-proof",
-    "visibility": "private"
+  "delivery_proof": {
+    "configuration_validation": "passed",
+    "native_build": "passed",
+    "simulator_launch": "passed",
+    "signed_archive": "passed",
+    "testflight_upload": "passed",
+    "apple_processing": "VALID",
+    "internal_testing": "IN_BETA_TESTING",
+    "device_install": "confirmed_by_user",
+    "physical_device_interaction_tests": "not_verified",
+    "repository": {
+      "url": "https://github.com/jverdi/house-memory-proof",
+      "visibility": "private"
+    },
+    "blockers": [],
+    "evidence": "docs/evidence/testflight-delivery-2.1.json"
   },
-  "blockers": [],
-  "evidence": "docs/evidence/testflight-delivery-2.1.json"
+  "application": {
+    "state": "experimental_integration",
+    "runbook_complete": false,
+    "production_ready": false,
+    "field_accuracy_validated": false,
+    "intermediate_uploads_enabled": false,
+    "status_document": "docs/IMPLEMENTATION.md",
+    "critical_open_gates": [
+      "robust reconstruction and finished-stage localization",
+      "protected synthetic qualification",
+      "large-house resource and navigation qualification",
+      "owner-device lifecycle and field calibration"
+    ]
+  }
 }
