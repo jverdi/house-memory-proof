@@ -1,0 +1,19 @@
+{
+  "source": "9be428c5c52eb32fcf40ae83caa66a387ca844ce",
+  "run": 39068761616,
+  "attempt": 1,
+  "artifact": 12115410424,
+  "sha256": "dc8e2c5ae1963ab9cc5fc4b0d8ca4a549fcd5e445e4107190fd5c5608162c63c",
+  "independentlyVerified": true,
+  "workflowPassed": false,
+  "nativePassedChecks": 100,
+  "nativeTotalChecks": 101,
+  "failure": "1080p encoder readiness timeout",
+  "uiTestsPassed": 3,
+  "processRecoveryModesPassed": 3,
+  "portableCasesPassed": 50,
+  "independentReadersPassed": true,
+  "semanticCSVPassed": true,
+  "retryRequested": true,
+  "runtimeChangesForRetry": false
+}

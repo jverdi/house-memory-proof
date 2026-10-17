@@ -1,0 +1,54 @@
+{
+  "passed": true,
+  "reader": "trimesh 5.1.1",
+  "units": "metres",
+  "upAxis": "Z",
+  "registrationAppliedExactlyOnce": true,
+  "hiddenGeometryExcluded": true,
+  "physicalPrecisionQualified": false,
+  "files": [
+    {
+      "file": "interchange.ply",
+      "sha256": "73ae09cb7e26db782b69d94a51a9d600f44c8745b3a7fc5857bd45b201225b2d",
+      "vertices": 7,
+      "triangles": 5,
+      "boundsMetres": [
+        [
+          0.0,
+          -3.0,
+          0.0
+        ],
+        [
+          4.0,
+          2.0,
+          4.0
+        ]
+      ],
+      "orientedGeometryMatches": true
+    },
+    {
+      "file": "interchange.obj",
+      "sha256": "8e6dcab7d7e07e9a941a2865aabe6080be3ea70e590554a615dd3614b5ff1ff8",
+      "vertices": 7,
+      "triangles": 5,
+      "boundsMetres": [
+        [
+          0.0,
+          -3.0,
+          0.0
+        ],
+        [
+          4.0,
+          2.0,
+          4.0
+        ]
+      ],
+      "orientedGeometryMatches": true
+    }
+  ],
+  "objGroups": [
+    "feature_11111111_1111_4111_8111_111111111111",
+    "feature_22222222_2222_4222_8222_222222222222"
+  ],
+  "objGroupGeometryMatches": true
+}

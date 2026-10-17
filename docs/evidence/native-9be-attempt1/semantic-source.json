@@ -1,0 +1,258 @@
+{
+  "bookmarks" : [
+
+  ],
+  "boundaries" : [
+
+  ],
+  "closureNotes" : "",
+  "connections" : [
+    {
+      "confirmed" : true,
+      "date" : 721692800,
+      "fromEnd" : 1,
+      "fromFeature" : "11111111-1111-4111-8111-111111111111",
+      "id" : "241E95F4-BA49-43DC-91A6-B2F9D455A145",
+      "notes" : "\t=HYPERLINK()",
+      "toEnd" : 0,
+      "toFeature" : "22222222-2222-4222-8222-222222222222"
+    }
+  ],
+  "created" : 813963831.713845,
+  "dimensions" : [
+    {
+      "a" : {
+        "x" : -1,
+        "y" : 2,
+        "z" : 3
+      },
+      "b" : {
+        "x" : 2,
+        "y" : 6,
+        "z" : 3
+      },
+      "date" : 721692800,
+      "id" : "40CC79E4-6217-4406-9D1E-4441AFAA01D2",
+      "name" : "Measured span",
+      "roomID" : "A8D1EF3C-CBBE-4C4B-9774-7BAACBED69F1",
+      "segmentID" : "07E2C138-CD21-41F9-894A-0C762EA7F38B",
+      "source" : "Approximate geometry",
+      "sourceRevision" : 1
+    }
+  ],
+  "documentaryPhotos" : [
+
+  ],
+  "drawings" : [
+
+  ],
+  "features" : [
+    {
+      "endpoint" : "Sink, \"cold\"",
+      "hidden" : true,
+      "id" : "11111111-1111-4111-8111-111111111111",
+      "kind" : "synthetic",
+      "mesh" : {
+        "triangles" : [
+
+        ],
+        "vertices" : [
+
+        ]
+      },
+      "name" : "=1+1",
+      "notes" : "Quoted \"valve\", next\r\nline",
+      "reviewed" : true,
+      "revision" : 1,
+      "roomID" : "A8D1EF3C-CBBE-4C4B-9774-7BAACBED69F1",
+      "route" : [
+        {
+          "x" : -1,
+          "y" : 2,
+          "z" : 3
+        },
+        {
+          "x" : 4,
+          "y" : 5,
+          "z" : 6
+        }
+      ],
+      "segmentID" : "A89C3B01-49BC-46A6-996C-F6E677A82553",
+      "sourceIDs" : [
+
+      ],
+      "stageID" : "A4B2209C-B9B2-4CCE-8B49-5C3ABA74CE37",
+      "trade" : "Plumbing"
+    },
+    {
+      "endpoint" : "Sink, \"cold\"",
+      "hidden" : false,
+      "id" : "22222222-2222-4222-8222-222222222222",
+      "kind" : "synthetic",
+      "mesh" : {
+        "triangles" : [
+
+        ],
+        "vertices" : [
+
+        ]
+      },
+      "name" : "'literal",
+      "notes" : "Quoted \"valve\", next\r\nline",
+      "reviewed" : true,
+      "revision" : 1,
+      "roomID" : "A8D1EF3C-CBBE-4C4B-9774-7BAACBED69F1",
+      "route" : [
+        {
+          "x" : -1,
+          "y" : 2,
+          "z" : 3
+        },
+        {
+          "x" : 4,
+          "y" : 5,
+          "z" : 6
+        }
+      ],
+      "segmentID" : "07E2C138-CD21-41F9-894A-0C762EA7F38B",
+      "sourceIDs" : [
+
+      ],
+      "stageID" : "A4B2209C-B9B2-4CCE-8B49-5C3ABA74CE37",
+      "trade" : "Plumbing"
+    },
+    {
+      "endpoint" : "Sink, \"cold\"",
+      "hidden" : true,
+      "id" : "33333333-3333-4333-8333-333333333333",
+      "kind" : "synthetic",
+      "mesh" : {
+        "triangles" : [
+
+        ],
+        "vertices" : [
+
+        ]
+      },
+      "name" : "House route",
+      "notes" : "Quoted \"valve\", next\r\nline",
+      "reviewed" : true,
+      "revision" : 1,
+      "roomID" : "A8D1EF3C-CBBE-4C4B-9774-7BAACBED69F1",
+      "route" : [
+        {
+          "x" : 0,
+          "y" : 0,
+          "z" : 0
+        },
+        {
+          "x" : 0,
+          "y" : 0,
+          "z" : 2
+        }
+      ],
+      "sourceIDs" : [
+
+      ],
+      "stageID" : "A4B2209C-B9B2-4CCE-8B49-5C3ABA74CE37",
+      "trade" : "Plumbing"
+    }
+  ],
+  "fieldChecks" : [
+
+  ],
+  "id" : "A6179C78-0069-489B-AC2F-B8D6A42CA420",
+  "isDemo" : false,
+  "name" : "CSV synthetic fixture",
+  "notes" : "",
+  "observations" : [
+
+  ],
+  "processingReports" : [
+
+  ],
+  "references" : [
+
+  ],
+  "revision" : 1,
+  "rooms" : [
+    {
+      "id" : "A8D1EF3C-CBBE-4C4B-9774-7BAACBED69F1",
+      "isDesign" : true,
+      "level" : -1,
+      "name" : "Kitchen, café\nNorth",
+      "origin" : {
+        "x" : 0,
+        "y" : 0,
+        "z" : 0
+      },
+      "size" : {
+        "x" : 5,
+        "y" : 4,
+        "z" : 2.74
+      }
+    }
+  ],
+  "schema" : 1,
+  "segments" : [
+    {
+      "approved" : true,
+      "id" : "A89C3B01-49BC-46A6-996C-F6E677A82553",
+      "interrupted" : false,
+      "referencePoses" : [
+
+      ],
+      "registration" : {
+        "values" : [
+          0,
+          -1,
+          0,
+          4,
+          1,
+          0,
+          0,
+          -2,
+          0,
+          0,
+          1,
+          3,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "roomID" : "A8D1EF3C-CBBE-4C4B-9774-7BAACBED69F1",
+      "stageID" : "A4B2209C-B9B2-4CCE-8B49-5C3ABA74CE37",
+      "started" : 813963831.713873
+    },
+    {
+      "approved" : false,
+      "id" : "07E2C138-CD21-41F9-894A-0C762EA7F38B",
+      "interrupted" : false,
+      "referencePoses" : [
+
+      ],
+      "roomID" : "A8D1EF3C-CBBE-4C4B-9774-7BAACBED69F1",
+      "stageID" : "A4B2209C-B9B2-4CCE-8B49-5C3ABA74CE37",
+      "started" : 813963831.713878
+    }
+  ],
+  "stages" : [
+    {
+      "date" : 721692800,
+      "id" : "A4B2209C-B9B2-4CCE-8B49-5C3ABA74CE37",
+      "kind" : "observed",
+      "name" : "Rough-in"
+    },
+    {
+      "date" : 813963831.713864,
+      "id" : "56BF754A-1201-4272-9AAF-AA375C542483",
+      "kind" : "observed",
+      "name" : "Finished"
+    }
+  ],
+  "visualMaps" : [
+
+  ]
+}

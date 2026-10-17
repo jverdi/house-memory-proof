@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "reader": "Python standard-library csv",
+  "records": 17,
+  "sha256": "39d3ad586be07a5d55d30cbd4d9ec90747d61d595d4499e2ae2534807968d9a1",
+  "separateFramesPreserved": true,
+  "registrationNotAppliedToSourceCoordinates": true,
+  "unicodeMultilineAndQuotedTextPreserved": true,
+  "formulaTextEscaped": true,
+  "sourceRelationshipsPreserved": true,
+  "physicalPrecisionQualified": false
+}

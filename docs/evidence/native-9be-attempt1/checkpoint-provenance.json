@@ -10,5 +10,5 @@
   "totalChecks": 101,
   "failure": "1080p30 movie encoder readiness exceeded unchanged 15-second timeout",
   "semanticCSVNativePassed": true,
-  "fullWorkflowPending": true
+  "fullWorkflowPending": false
 }
