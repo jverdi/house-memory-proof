@@ -530,6 +530,11 @@ struct ReconstructionPage: View {
         VStack(alignment: .leading) {
           Button("Process this capture") {model.processCapture(projectID:house.id,segmentID:s.id)}
             .buttonStyle(.borderedProminent).disabled(model.busy || model.captureInProgress)
+          if let work=model.captureJobs.first(where:{$0.projectID==house.id && $0.segmentID==s.id}) {
+            Text(work.label).font(.caption)
+            Text(work.detail).font(.caption).foregroundStyle(.secondary)
+            if work.resumable {Button("Pause queued processing"){model.pauseCaptureJob(work.id)}}
+          }
           if let report=house.processingReports.first(where:{$0.segmentID==s.id}) {
             NavigationLink(report.complete ? "Processing report":"Processing report · needs attention") {CaptureProcessingReportPage(report:report)}
           }

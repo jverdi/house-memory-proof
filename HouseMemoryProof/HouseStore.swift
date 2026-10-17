@@ -280,7 +280,21 @@ final class Repository: EvidenceAssetReader {
     let count=Int(sqlite3_column_bytes(s,0));guard count<=1_000_000 else{throw HouseError.message("Job metadata exceeds its budget.")}
     return Data(bytes:bytes,count:count)
   }
+  func captureJobData()throws->[Data] {
+    lock.lock();defer{lock.unlock()}
+    let statement=try statement("SELECT json FROM jobs WHERE id LIKE 'capture-v1:%' ORDER BY id LIMIT 1001")
+    defer{sqlite3_finalize(statement)}
+    var result:[Data]=[]
+    while true {
+      let status=sqlite3_step(statement)
+      if status==SQLITE_DONE {return result}
+      guard status==SQLITE_ROW,result.count<1000,let bytes=sqlite3_column_blob(statement,0) else{throw HouseError.message("Capture processing queue could not be read within its budget.")}
+      let count=Int(sqlite3_column_bytes(statement,0));guard count>=0,count<=65536 else{throw HouseError.message("Capture processing queue metadata is invalid.")}
+      result.append(Data(bytes:bytes,count:count))
+    }
+  }
   func job(_ id: String, state: String, data: Data) throws {
+    guard data.count<=1_000_000,id.count<=256,state.count<=100 else{throw HouseError.message("Job checkpoint exceeds its metadata budget.")}
     lock.lock()
     defer { lock.unlock() }
     let s = try statement("INSERT OR REPLACE INTO jobs VALUES(?,?,?)")
@@ -345,6 +359,10 @@ enum StoreMigrationDiagnostics {
   @Published var progress: Double = 0
   @Published var status = ""
   @Published var shareURL: URL?
+  @Published var captureJobs:[CaptureWork]=[]
+  var foreground=false
+  var activeCaptureJob:UUID?
+  var processingPause=CaptureWork.State.paused
   private var operationTask: Task<Void, Never>?
   private var captureOwner:UUID?
   let repository: Repository?
@@ -358,6 +376,8 @@ enum StoreMigrationDiagnostics {
         catch { pendingWarnings = ["Capture recovery needs attention: " + error.localizedDescription] }
         houses = try r.all()
         selected = houses.first?.id
+        do { captureJobs=try CaptureWork.restore(repo:r,houses:houses) }
+        catch {pendingWarnings.append("Saved processing queue needs attention: "+error.localizedDescription)}
         let warnings = pendingWarnings + r.recoveryWarnings
         if !warnings.isEmpty { error = warnings.joined(separator: "\n") }
       } catch { self.error = error.localizedDescription }
@@ -418,7 +438,7 @@ enum StoreMigrationDiagnostics {
   }
   func endCapture(_ token:UUID) {if captureOwner==token {captureOwner=nil}}
   var captureInProgress:Bool {captureOwner != nil}
-  func cancelOperation() { operationTask?.cancel(); status = "Stopping at the next safe boundary…" }
+  func cancelOperation(reason:CaptureWork.State = .paused) { processingPause=reason;operationTask?.cancel(); status = "Stopping at the next safe boundary…" }
   func perform(_ label: String, operation: @escaping () async throws -> URL?) {
     guard !busy else { return }
     guard captureOwner==nil else {error="Finish saving the capture before starting this operation.";return}
@@ -426,7 +446,7 @@ enum StoreMigrationDiagnostics {
     progress = 0
     status = label
     operationTask = Task {
-      defer { busy = false; operationTask = nil }
+      defer { busy = false; operationTask = nil;resumeCaptureQueue() }
       do {
         let result = try await operation()
         try Task.checkCancellation()

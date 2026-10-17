@@ -622,6 +622,29 @@ import Darwin
                 let report=processed.processingReports.last!
                 let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(processed));try restored.validate()
                 results.append(["test":"Integrated capture processing retains originals and does not publish an interrupted candidate","passed":interrupted && before?.observations==fixture.observations && before?.features==fixture.features && processed.observations==fixture.observations && restored.processingReports==processed.processingReports && report.steps.count==6 && report.steps.contains{$0.name=="Triangle surfaces" && $0.passed} && report.steps.contains{$0.name=="Photo textures" && $0.passed},"steps":report.steps.map{["name":$0.name,"passed":$0.passed,"detail":$0.detail] as [String:Any]}])
+                await check("Capture queue recovers running work, preserves owner pause and deduplicates published results") {
+                    let queue=try Repository(root:folder.appendingPathComponent("capture-queue"));try queue.save(fixture)
+                    let signature=try CaptureWork.fingerprint(house:fixture,segmentID:fixture.segments[0].id)
+                    var work=CaptureWork(projectID:fixture.id,segmentID:fixture.segments[0].id,inputFingerprint:signature)
+                    work.state = .running;work.attempts=1;try work.save(queue)
+                    let interrupted=try CaptureWork.restore(repo:queue,houses:[fixture])
+                    guard interrupted.count==1,interrupted[0].state == .waitingForForeground else{return false}
+                    work.state = .paused;try work.save(queue)
+                    guard try CaptureWork.restore(repo:queue,houses:[fixture])[0].state == .paused else{return false}
+                    var published=processed;published.processingReports[0].jobID=work.id
+                    try queue.save(published);work.state = .running;try work.save(queue)
+                    let recovered=AppModel(root:queue.root)
+                    guard recovered.captureJobs.count==1,[CaptureWork.State.succeeded,.needsAttention].contains(recovered.captureJobs[0].state),!recovered.busy else{return false}
+                    guard try CaptureWork.fingerprint(house:published,segmentID:work.segmentID)==signature else{return false}
+                    recovered.processCapture(projectID:fixture.id,segmentID:work.segmentID,automatic:true)
+                    guard recovered.captureJobs.count==1,recovered.captureJobs[0].id==work.id else{return false}
+                    recovered.processCapture(projectID:fixture.id,segmentID:work.segmentID)
+                    guard recovered.captureJobs.count==1,recovered.captureJobs[0].id != work.id,recovered.captureJobs[0].state == .waitingForForeground else{return false}
+                    let replacement=recovered.captureJobs[0].id
+                    recovered.pauseCaptureJob(replacement)
+                    return AppModel(root:queue.root).captureJobs.first?.state == .paused
+                }
+
 
             }catch{results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":false,"error":error.localizedDescription])}
             do {

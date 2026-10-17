@@ -136,6 +136,7 @@ enum FieldEvidence {
 struct CaptureProcessingStep:Codable,Equatable {var name:String;var passed:Bool;var detail:String}
 struct CaptureProcessingReport:Codable,Identifiable,Equatable {
   var id=UUID();var segmentID:UUID;var sourceRevision:Int;var sourceFingerprint:String;var date=Date();var seconds:Double;var steps:[CaptureProcessingStep]
+  var jobID:UUID?=nil
   var complete:Bool {steps.allSatisfy{$0.passed}}
   var valid:Bool {sourceRevision>=0 && seconds.isFinite && seconds>=0 && steps.count<=12 && steps.allSatisfy{$0.name.count<=200 && $0.detail.count<=10000}}
 }

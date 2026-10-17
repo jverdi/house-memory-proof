@@ -60,15 +60,18 @@ struct RootView: View {
         }
       }
     }
+    .onAppear {model.setProcessingForeground(phase == .active)}
     .onChange(of: phase) { _, value in
-      if value == .active { SnapshotService.automatic(model: model) }
-      if value == .background,model.busy { model.cancelOperation() }
+      if value == .active {model.setProcessingForeground(true);SnapshotService.automatic(model: model)}
+      if value == .inactive {model.foreground=false}
+      if value == .background {model.setProcessingForeground(false)}
     }
     .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
       if model.busy {model.cancelOperation()}
     }
     .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification)) { _ in
-      if ProcessInfo.processInfo.thermalState == .critical,model.busy {model.cancelOperation()}
+      if ProcessInfo.processInfo.thermalState == .critical,model.busy {model.cancelOperation(reason:.waitingForResources)}
+      else {model.resumeCaptureQueue()}
     }
     .task(id: model.selected) { SnapshotService.automatic(model: model) }
     .alert("Create a house", isPresented: $newProject) {
@@ -608,6 +611,10 @@ struct CapturePage: View {
               }
             }.disabled(s.worldMap == nil && s.referencePoses.isEmpty && !house.visualMaps.contains(where:{$0.roomID==s.roomID}))
             Button("Process capture") {model.processCapture(projectID:house.id,segmentID:s.id)}.disabled(model.busy || model.captureInProgress)
+            if let work=model.captureJobs.first(where:{$0.projectID==house.id && $0.segmentID==s.id}) {
+              Text(work.label).font(.caption).foregroundStyle(.secondary)
+              if work.resumable {Button("Pause queued processing"){model.pauseCaptureJob(work.id)}}
+            }
             if let report=house.processingReports.first(where:{$0.segmentID==s.id}) {
               NavigationLink(report.complete ? "Processing report":"Processing report · needs attention") {CaptureProcessingReportPage(report:report)}
             }

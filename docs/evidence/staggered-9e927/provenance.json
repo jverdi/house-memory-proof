@@ -1,0 +1,10 @@
+{
+  "sourceRevision": "9e927b7a6577da12a652934edef22af4841302c2",
+  "workflowRun": 39039170061,
+  "job": 117415015592,
+  "artifact": 12103616643,
+  "artifactSHA256": "99f806b4b6d7008e49a25961c7c3d930bd57c3a168326aec0edfe176832330a8",
+  "passed": false,
+  "fieldQualified": false,
+  "summary": "Original rough layout 905771 passes at 8.062 mm. Original 683431 fails at 10.380 mm. Four-target paired case 0/8 finished. New staggered six-target case has 0/8 finished, 12/12 rough with 18.918 mm worst/p95, and 0/20 negative false accepts. Noncoplanar references improve per-source pose eligibility but do not solve repeated-feature or consensus failures. Original cases and unchanged gates retained."
+}

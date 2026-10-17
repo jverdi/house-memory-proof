@@ -615,14 +615,14 @@ import Vision
       guard let self,self.mapRequest==request else{return}
       self.finishCaptureState()
       self.message="Photos and geometry saved. ARKit did not return a world map; use reference boards or a visual reference for alignment."
-      if UIApplication.shared.applicationState == .active {model.processCapture(projectID:houseID,segmentID:segment.id,automatic:true)}
+      model.processCapture(projectID:houseID,segmentID:segment.id,automatic:true)
     }
     view.session.getCurrentWorldMap { [weak self] map, error in
       Task { @MainActor in
         guard let self,self.mapRequest==request else{return}
         defer {
           self.finishCaptureState()
-          if UIApplication.shared.applicationState == .active {model.processCapture(projectID:houseID,segmentID:segment.id,automatic:true)}
+          model.processCapture(projectID:houseID,segmentID:segment.id,automatic:true)
         }
         do {
           if let error {throw error}

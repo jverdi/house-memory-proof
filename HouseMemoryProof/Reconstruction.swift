@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 enum Reconstruction {
   static func fuse(
@@ -152,17 +153,126 @@ enum CaptureProcessing {
   }
 }
 
+// Durable orchestration metadata is separate from immutable captures and staged outputs.
+// The published report carries the job identity, closing the commit/checkpoint crash gap.
+struct CaptureWork:Codable,Identifiable,Equatable {
+  enum State:String,Codable {case queued,running,waitingForForeground,waitingForResources,paused,succeeded,needsAttention,failed}
+  var id=UUID();var projectID:UUID;var segmentID:UUID;var inputFingerprint:String
+  var state:State = .queued;var attempts=0;var created=Date();var updated=Date();var detail="Waiting to process saved capture"
+  var key:String {"capture-v1:"+projectID.uuidString+":"+segmentID.uuidString}
+  var valid:Bool {inputFingerprint.count==64 && inputFingerprint.allSatisfy{$0.isHexDigit} && attempts>=0 && attempts<=10000 && detail.count<=10000}
+  var resumable:Bool {[State.queued,.waitingForForeground,.waitingForResources].contains(state)}
+  var label:String {
+    switch state {
+    case .queued:return "Queued for processing"
+    case .running:return "Processing capture"
+    case .waitingForForeground:return "Processing resumes when the app is open"
+    case .waitingForResources:return "Waiting for storage or a cooler phone"
+    case .paused:return "Processing paused"
+    case .succeeded:return "Processing complete"
+    case .needsAttention:return "Processed with limits — review report"
+    case .failed:return "Processing needs a retry"
+    }
+  }
+  static func fingerprint(house:House,segmentID:UUID)throws->String {
+    guard let segment=house.segments.first(where:{$0.id==segmentID}) else{throw HouseError.message("Capture session is no longer available.")}
+    struct Inputs:Codable {var algorithm="capture-processing-v1";var cameras:String;var originals:[Feature]}
+    let originals=house.features.filter{$0.segmentID==segmentID && $0.resolvedGeometrySource == .capturedMesh}.map {feature in var value=feature;value.hidden=false;return value}.sorted{$0.id.uuidString<$1.id.uuidString}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let data=try encoder.encode(Inputs(cameras:PoseGraph.fingerprint(house:house,segment:segment),originals:originals))
+    return SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
+  }
+  func save(_ repo:Repository)throws {guard valid else{throw HouseError.message("Invalid saved processing state.")};try repo.job(key,state:state.rawValue,data:JSONEncoder().encode(self))}
+  static func restore(repo:Repository,houses:[House])throws->[CaptureWork] {
+    var result:[CaptureWork]=[]
+    for data in try repo.captureJobData() {
+      var work=try JSONDecoder().decode(CaptureWork.self,from:data)
+      guard work.valid,!result.contains(where:{$0.key==work.key}) else{throw HouseError.message("Saved processing queue failed validation.")}
+      guard let house=houses.first(where:{$0.id==work.projectID}),house.segments.contains(where:{$0.id==work.segmentID}) else{continue}
+      if let report=house.processingReports.first(where:{$0.jobID==work.id}) {
+        work.state=report.complete ? .succeeded:.needsAttention;work.detail="Previously published result recovered; no duplicate output created."
+      } else if work.state == .running {
+        work.state = .waitingForForeground;work.detail="An interrupted operation will restart from validated local checkpoints."
+      }
+      try work.save(repo);result.append(work)
+    }
+    return result.sorted{$0.created<$1.created}
+  }
+}
+
 extension AppModel {
+  func setProcessingForeground(_ active:Bool) {
+    foreground=active
+    if !active,busy {cancelOperation(reason:.waitingForForeground)}
+    if active {resumeCaptureQueue()}
+  }
+  func storeCaptureWork(_ work:CaptureWork)throws {
+    guard let repo=repository else{throw HouseError.message("Local storage is unavailable.")}
+    try work.save(repo)
+    if let index=captureJobs.firstIndex(where:{$0.key==work.key}) {captureJobs[index]=work}else{captureJobs.append(work)}
+  }
   func processCapture(projectID:UUID,segmentID:UUID,automatic:Bool=false) {
-    guard let repo=repository,let source=houses.first(where:{$0.id==projectID}),!busy,!captureInProgress else{return}
-    if automatic && source.observations.filter({$0.segmentID==segmentID && $0.depth != nil && !$0.documentary}).count<3 {return}
+    guard let source=houses.first(where:{$0.id==projectID}) else{return}
+    if source.observations.filter({$0.segmentID==segmentID && $0.depth != nil && !$0.documentary}).count<3 {
+      if !automatic {error="Save at least three overlapping depth photographs before processing."};return
+    }
+    do {
+      let fingerprint=try CaptureWork.fingerprint(house:source,segmentID:segmentID)
+      if let old=captureJobs.first(where:{$0.projectID==projectID && $0.segmentID==segmentID}),
+        old.state == .running || (automatic && old.inputFingerprint==fingerprint) {resumeCaptureQueue();return}
+      guard captureJobs.count<1000 || captureJobs.contains(where:{$0.projectID==projectID && $0.segmentID==segmentID}) else{throw HouseError.message("The local processing queue has reached its session limit.")}
+      var work=CaptureWork(projectID:projectID,segmentID:segmentID,inputFingerprint:fingerprint)
+      if !foreground {work.state = .waitingForForeground}
+      try storeCaptureWork(work);resumeCaptureQueue()
+    }catch{self.error=error.localizedDescription}
+  }
+  func pauseCaptureJob(_ id:UUID) {
+    if activeCaptureJob==id {cancelOperation();return}
+    guard var work=captureJobs.first(where:{$0.id==id}) else{return}
+    work.state = .paused;work.detail="Paused by owner";work.updated=Date()
+    do{try storeCaptureWork(work)}catch{self.error=error.localizedDescription}
+  }
+  func resumeCaptureQueue() {
+    guard foreground,!busy,!captureInProgress,activeCaptureJob==nil,let repo=repository,
+      var work=captureJobs.filter({$0.resumable}).sorted(by:{$0.created<$1.created}).first else{return}
+    guard ProcessInfo.processInfo.thermalState != .serious,ProcessInfo.processInfo.thermalState != .critical,repo.freeBytes()>750_000_000 else {
+      if work.state != .waitingForResources {work.state = .waitingForResources;work.detail="Keep the app open after freeing storage or cooling the phone.";try? storeCaptureWork(work)}
+      return
+    }
+    guard let source=houses.first(where:{$0.id==work.projectID}) else{return}
+    do {
+      // Always bind a restarted attempt to the current saved inputs. Publication
+      // still compares the exact revision used for this attempt.
+      work.inputFingerprint=try CaptureWork.fingerprint(house:source,segmentID:work.segmentID)
+      work.state = .running;work.attempts+=1;work.updated=Date();work.detail="Processing saved originals"
+      try storeCaptureWork(work)
+    }catch{self.error=error.localizedDescription;return}
+    activeCaptureJob=work.id;processingPause = .paused
+    let running=work
     perform("Processing saved capture") {
-      let result=try await CaptureProcessing.build(house:source,segmentID:segmentID,repo:repo){label,value in self.status=label;self.progress=value}
-      try Task.checkCancellation()
-      guard self.houses.first(where:{$0.id==projectID})?.revision==source.revision else{throw HouseError.message("The project changed during processing. Saved captures are intact; process this session again.")}
-      guard self.commit(result,select:false) else{throw HouseError.message("Processed capture could not be saved. Existing originals and the previous project remain intact.")}
-      if let report=result.processingReports.last,!report.complete {self.error="Capture saved and processed with limits. Open its processing report for the stages that need more capture support."}
-      return nil
+      defer {self.activeCaptureJob=nil}
+      var finished=running
+      do {
+        var result=try await CaptureProcessing.build(house:source,segmentID:running.segmentID,repo:repo){label,value in self.status=label;self.progress=value}
+        try Task.checkCancellation()
+        guard self.houses.first(where:{$0.id==running.projectID})?.revision==source.revision else{throw HouseError.message("The project changed during processing. Saved captures are intact; process this session again.")}
+        guard let reportIndex=result.processingReports.firstIndex(where:{$0.segmentID==running.segmentID}) else{throw HouseError.message("Processing report was not produced.")}
+        result.processingReports[reportIndex].jobID=running.id
+        guard self.commit(result,select:false) else{throw HouseError.message("Processed capture could not be saved. Existing originals and the previous project remain intact.")}
+        let complete=result.processingReports[reportIndex].complete
+        finished.state=complete ? .succeeded:.needsAttention
+        finished.detail=complete ? "Processed capture published":"Open the processing report for stages that need more capture support."
+        finished.updated=Date();try self.storeCaptureWork(finished)
+        return nil
+      }catch is CancellationError {
+        finished.state=self.processingPause;finished.detail="Saved originals and validated checkpoints are preserved.";finished.updated=Date()
+        try self.storeCaptureWork(finished);throw CancellationError()
+      }catch {
+        // If publication succeeded but this checkpoint failed, recovery finds
+        // the matching report identity and never republishes that result.
+        finished.state = .failed;finished.detail=String(error.localizedDescription.prefix(10000));finished.updated=Date()
+        try? self.storeCaptureWork(finished);throw error
+      }
     }
   }
 }
