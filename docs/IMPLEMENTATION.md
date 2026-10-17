@@ -75,3 +75,21 @@ Updated during the October 17, 2026 implementation session. This document record
 - Source `70f4d8e6db6d248d8fe8ab2fca877c88dc92a7e8`, run 39009362626: isolated exact-production Swift/C++ replay passed its development diagnostics. Five additional analytic room seeds accepted **13/15** matching queries, rejected **5/5** unrelated queries, and had maximum accepted position error **10.77 mm**. Mapping-camera drift corrections had maximum error **6.24 mm**. OS sandbox controls denied the oracle on every case. These are small development denominators, not protected wrong-room or precision qualification. Evidence is in `docs/evidence/visual-replay-70/`.
 - Latest source adds oriented named reveal volumes with explicit cavity depth/finish offset, polygon clipping, and front-side eligibility. These need native qualification; they do not establish measured wall geometry automatically.
 - Scheduled renewal is prepared but disabled until a candidate is accepted. No implementation build has been uploaded.
+
+## October 17 continuation checkpoint
+
+Source `f300a1b0f8ab3bace0819270347639b8f5e22ef8`, run `39011993345`, passed **66 native checks, both UI workflows, independent exports and the offline browser viewer**. Reports are retained in `docs/evidence/native-67/`. The process test actually kills the app after its durable capture journal is written and verifies exactly-once recovery in a new process; sudden power loss is not qualified.
+
+Additional implemented behavior supersedes the older audit entries where noted:
+
+- Explicit construction-stage categories, oriented reveal rectangles with cavity depth/finish offset, crossing-triangle clipping and opposite-side hiding. Boundaries remain user-defined and approximate.
+- A nominal back-plane coverage denominator includes unseen regions, rather than only observed mesh surfaces. It identifies missing views and foreground blockage but cannot establish hidden-service completeness.
+- Sparse photograph-only triangulation retains at least three image observations per point. It uses camera estimates and does not turn arbitrary documentary photos into a reconstruction.
+- Three shared fixed reference boards support cross-session registration with a held-out board check. Invalidated dependency chains lose their registrations; custom decoding now preserves the dependency and saved camera-solution fields.
+- Incremental Files-folder snapshots deduplicate immutable originals and restore a selected revision as a separate house. Existing remote assets are rehashed, so large-provider performance and actual cloud completion remain unqualified.
+- Display-only geometry reduction and texture budgets bound rendering detail. Recorded camera paths can follow gentle changes in height; a full-house tiled scene system and verified stair/portal navigation are not complete.
+- Archives include a self-contained WebGL viewer with zero external requests in browser checks. Model exports preserve their full source geometry independently of display reductions.
+
+Frozen Cycles development fixture, source `b32b5fb9a5519c3e3328f19fbe7d6dfb0febb3c2`, run `39011589852`: **2/3** scored matching images accepted, **0/1** unrelated false accepts, worst accepted position error **6.780 mm**. Five connected camera views were optimized; one unsupported photograph was excluded. Maximum optimized camera position error was **7.105 mm** with 30 mm injected prior drift. A finished-stage exploratory query also matched, but is not included in the scored positive denominator. These denominators are too small for production claims.
+
+The continuation adds pinned Ceres/Eigen joint image/depth/pose optimization, bounded to 120 cameras and 2,000 points at the C interface, with two fitting observations per point and remaining image observations held out of the objective. The current Swift track builder still samples at most twelve views; the C interface bound is not a proven whole-house capacity. Numerical factor derivatives, native image-track replay and independent query localization are required before accepting the integration. Packaging and validation are currently in progress. No precision profile or implementation TestFlight upload has been enabled.

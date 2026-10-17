@@ -14,7 +14,9 @@ Acceptance remains the runbook's gates. Implemented features below are not equiv
 - [x] Validate IFC4, connections, drawing controls, tours, clearance and capture-journal recovery: source a12d1249e8, 47 native tests plus integrated UI/export workflow.
 - [x] Validate native OpenCV image fixture and bounded local pose graph: source 188f337048, 54 native tests plus integrated workflow.
 - [x] Validate isolated host replay and five development geometries (13/15 matching, 0/5 false accepts); native photo-point workflow and surface resume (57 checks + 2 UI flows).
-- [ ] Qualify boundary-specific reveal, rendered construction replay and protected cross-room rejection.
+- [x] Validate boundary editing/clipping, nominal-plane coverage, camera solution reloads, recorded slope following, incremental snapshots and SIGKILL journal recovery: source f300a1b0, 66 checks + 2 UI flows.
+- [x] Run the frozen physically rendered reference fixture: 2/3 matching queries, 0/1 false accepts, worst accepted position error 6.8 mm; development diagnostic only.
+- [ ] Complete protected cross-room rejection and full-house localization qualification.
 - [ ] Complete robust optimization/localization, protected house-scale simulation and remaining software gates.
 - [ ] Complete owner-device resource and physical precision qualification.
 - [ ] Upload one final accepted build and verify Apple availability.

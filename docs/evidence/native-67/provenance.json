@@ -1,0 +1,12 @@
+{
+  "source": "f300a1b0f8ab3bace0819270347639b8f5e22ef8",
+  "workflowRun": 39011993345,
+  "job": 117336386596,
+  "artifact": 12093466105,
+  "artifactSHA256": "9a4b20416b478c10bd92ea0b534cfd55f8ce57bf542f9610e9e5a52549f9c0bd",
+  "nativeChecks": 66,
+  "uiFlows": 2,
+  "physicalDevice": false,
+  "productionQualified": false,
+  "notes": "Includes boundary editing, depth interpolation, disconnected graph component, camera solution decoding, incremental snapshots, sparse RGB reconstruction and process-crash recovery. Precedes Ceres integration."
+}

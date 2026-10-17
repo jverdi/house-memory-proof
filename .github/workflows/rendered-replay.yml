@@ -16,23 +16,61 @@ concurrency:
   group: frozen-rendered-replay
   cancel-in-progress: true
 jobs:
-  replay:
-    runs-on: macos-26
-    timeout-minutes: 25
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Download checksum-pinned durable fixture
+      - name: Retrieve exact original fixture with a bounded request
+        id: original
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
         run: |
-          set -euo pipefail
-          mkdir -p build/render-input
-          if ! gh release download rendered-reference-v1 --pattern rendered-reference-v1.zip --dir build; then
-            gh api "repos/$GH_REPO/actions/artifacts/12092369790/zip" > build/rendered-reference-v1.zip
-          fi
-          echo '91ad7166dcd79270aff71de974bd9dc2e3a9204f701ff8d7cd2313671b178d0b  build/rendered-reference-v1.zip' | shasum -a 256 --check
-          unzip -q build/rendered-reference-v1.zip -d build/render-input
+          python3 - <<'PYFETCH'
+          import subprocess,hashlib,zipfile,pathlib,os,json
+          root=pathlib.Path('build/render-input');root.mkdir(parents=True,exist_ok=True)
+          archive=root/'original.zip';ok=False
+          try:
+              with archive.open('wb') as output:
+                  result=subprocess.run(['gh','api','repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts/12092369790/zip'],stdout=output,timeout=60)
+              ok=result.returncode==0 and hashlib.sha256(archive.read_bytes()).hexdigest()=='91ad7166dcd79270aff71de974bd9dc2e3a9204f701ff8d7cd2313671b178d0b'
+              if ok:
+                  with zipfile.ZipFile(archive) as source:source.extractall(root)
+          except (OSError,subprocess.TimeoutExpired):pass
+          archive.unlink(missing_ok=True)
+          pathlib.Path(os.environ['GITHUB_OUTPUT']).open('a').write('available='+str(ok).lower()+'\n')
+          (root/'fixture-provenance.json').write_text(json.dumps({'originalBytes':ok,'source':'3bb06ee5deabe9b1dcc8b84cd4e572b766c00134','blender':'4.5.3','seed':803219,'regeneratedPixelsMayDiffer':not ok},indent=2))
+          PYFETCH
+      - uses: actions/checkout@v4
+        if: steps.original.outputs.available != 'true'
+        with:
+          ref: 3bb06ee5deabe9b1dcc8b84cd4e572b766c00134
+          path: build/frozen-source
+      - uses: actions/cache@v4
+        if: steps.original.outputs.available != 'true'
+        with:
+          path: build/blender
+          key: blender-4.5.3-linux-x64
+      - name: Regenerate from pinned source if the original artifact expired
+        if: steps.original.outputs.available != 'true'
+        run: |
+          bash tooling/blender/install.sh
+          build/blender/blender --background --python build/frozen-source/tooling/blender/house.py -- build/render-input/rendered-fixture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-replay-input
+          path: build/render-input/
+          retention-days: 14
+  replay:
+    needs: prepare
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: reference-replay-input
+          path: build/render-input
       - uses: actions/cache@v4
         with:
           path: build/opencv-host
@@ -43,8 +81,10 @@ jobs:
           path: build/ceres
           key: ceres-2.2.0-macos-arm64-v1
       - run: bash tooling/opencv/build-host.sh
-      - name: Evaluate unchanged reference-target rendering
-        run: python3 tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/render-input/rendered-fixture --output build/vision-evaluation/rendered.json --refine
+      - name: Evaluate pinned-source reference rendering
+        run: |
+          cp build/render-input/fixture-provenance.json build/vision-evaluation/
+          python3 tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/render-input/rendered-fixture --output build/vision-evaluation/rendered.json --refine
       - uses: actions/upload-artifact@v4
         if: always()
         with:

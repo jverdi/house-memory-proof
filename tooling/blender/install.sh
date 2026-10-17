@@ -3,8 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 mkdir -p build/blender-evidence
 if [ ! -x build/blender/blender ]; then
-  curl --fail --location --retry 3 https://download.blender.org/release/Blender4.5/blender-4.5.3.sha256 --output build/blender.sha256
-  curl --fail --location --retry 3 https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz --output build/blender-4.5.3-linux-x64.tar.xz
+  curl --fail --location --retry 2 --connect-timeout 20 --max-time 300 https://download.blender.org/release/Blender4.5/blender-4.5.3.sha256 --output build/blender.sha256
+  curl --fail --location --retry 2 --connect-timeout 20 --max-time 300 https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz --output build/blender-4.5.3-linux-x64.tar.xz
   python3 - <<'PY'
 from pathlib import Path
 import hashlib,json
