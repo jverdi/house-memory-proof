@@ -33,7 +33,7 @@ xcodebuild build \
   CURRENT_PROJECT_VERSION="$build_number" PROOF_SOURCE_REVISION="$revision" \
   2>&1 | tee build/evidence/simulator-build.log
 xcrun simctl install "$device_id" build/DerivedData/Build/Products/Debug-iphonesimulator/HouseMemoryProof.app
-xcrun simctl launch "$device_id" com.example.HouseMemoryProof | tee build/evidence/launch.log
+xcrun simctl launch "$device_id" com.example.HouseMemoryProof --demo --self-test --video-test | tee build/evidence/launch.log
 # Allow the first SwiftUI frame to render before recording CI evidence.
 sleep 3
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
@@ -48,3 +48,21 @@ Path('build/evidence/simulator-result.json').write_text(json.dumps({
     'testflight_available': False
 }, indent=2) + '\n')
 PY
+
+app_data="$(xcrun simctl get_app_container "$device_id" com.example.HouseMemoryProof data)"
+for attempt in $(seq 1 90); do
+  if [ -f "$app_data/Library/Application Support/HouseXray/self-test.json" ]; then break; fi
+  sleep 2
+done
+cp "$app_data/Library/Application Support/HouseXray/self-test.json" build/evidence/native-self-test.json
+cp "$app_data/Library/Application Support/HouseXray/test.glb" build/evidence/test.glb
+cp "$app_data/Library/Application Support/HouseXray/test.usdz" build/evidence/test.usdz
+cp "$app_data/Library/Application Support/HouseXray/test-render.png" build/evidence/test-render.png
+cp "$app_data/Library/Application Support/HouseXray/test-tour.mp4" build/evidence/test-tour.mp4
+xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
+python3 - <<'PYTEST'
+import json
+r=json.load(open('build/evidence/native-self-test.json'))
+assert r['passed'], r
+print('All native self-tests passed:',len(r['tests']))
+PYTEST

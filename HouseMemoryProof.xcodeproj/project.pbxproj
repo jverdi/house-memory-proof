@@ -5,6 +5,33 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"F32527ACB931236609C95997" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "SelfTests.swift"; "sourceTree" = "<group>"; };
+		"EEE1B47025BF139FF876C0F0" = { "isa" = "PBXBuildFile"; "fileRef" = "F32527ACB931236609C95997"; };
+
+		"1415F251FED0C1EABC91901B" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "TourEngine.swift"; "sourceTree" = "<group>"; };
+		"0C08BFCEF0E23850C5E34CB0" = { "isa" = "PBXBuildFile"; "fileRef" = "1415F251FED0C1EABC91901B"; };
+
+		"E2EBCCF90AEED7C2E3C536F4" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "ToolsViews.swift"; "sourceTree" = "<group>"; };
+		"AD47F9431CBE8FD06E18C647" = { "isa" = "PBXBuildFile"; "fileRef" = "E2EBCCF90AEED7C2E3C536F4"; };
+
+		"8AE8276A866DAF6A4EECE113" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "SceneEngine.swift"; "sourceTree" = "<group>"; };
+		"3D53A80EF8CAD5614A005B93" = { "isa" = "PBXBuildFile"; "fileRef" = "8AE8276A866DAF6A4EECE113"; };
+
+		"DB9106B16570EE6E304F7B55" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "Exports.swift"; "sourceTree" = "<group>"; };
+		"E00BD22C1577232F449D4639" = { "isa" = "PBXBuildFile"; "fileRef" = "DB9106B16570EE6E304F7B55"; };
+
+		"FDBD6C35BCCA4DD1AB724632" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "CaptureEngine.swift"; "sourceTree" = "<group>"; };
+		"F81FE8D1B96348113CAC8FF5" = { "isa" = "PBXBuildFile"; "fileRef" = "FDBD6C35BCCA4DD1AB724632"; };
+
+		"650759F942D044E4B193BC62" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "AppViews.swift"; "sourceTree" = "<group>"; };
+		"D6FA9D5A2F14957F80327D59" = { "isa" = "PBXBuildFile"; "fileRef" = "650759F942D044E4B193BC62"; };
+
+		"49566D13970A381445D10B26" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "HouseStore.swift"; "sourceTree" = "<group>"; };
+		"654FAD572F04175B8EE54B31" = { "isa" = "PBXBuildFile"; "fileRef" = "49566D13970A381445D10B26"; };
+
+		"ED44FF492ADA2BFD804D4580" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "Domain.swift"; "sourceTree" = "<group>"; };
+		"A8A2D6FD78EF2004BE90D2B3" = { "isa" = "PBXBuildFile"; "fileRef" = "ED44FF492ADA2BFD804D4580"; };
+
 		"A33603BF79F74B056172D43B" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -53,6 +80,15 @@
 			"buildActionMask" = 2147483647;
 			"files" = (
 				"534A5F435ADDB25DA9F43232",
+				"EEE1B47025BF139FF876C0F0",
+				"0C08BFCEF0E23850C5E34CB0",
+				"AD47F9431CBE8FD06E18C647",
+				"3D53A80EF8CAD5614A005B93",
+				"E00BD22C1577232F449D4639",
+				"F81FE8D1B96348113CAC8FF5",
+				"D6FA9D5A2F14957F80327D59",
+				"654FAD572F04175B8EE54B31",
+				"A8A2D6FD78EF2004BE90D2B3",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
@@ -76,6 +112,15 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"A33603BF79F74B056172D43B",
+				"F32527ACB931236609C95997",
+				"1415F251FED0C1EABC91901B",
+				"E2EBCCF90AEED7C2E3C536F4",
+				"8AE8276A866DAF6A4EECE113",
+				"DB9106B16570EE6E304F7B55",
+				"FDBD6C35BCCA4DD1AB724632",
+				"650759F942D044E4B193BC62",
+				"49566D13970A381445D10B26",
+				"ED44FF492ADA2BFD804D4580",
 				"8BF729FFE074CAEE622C0292",
 				"06271BAF49532C879AA3C58B",
 				"A4CC6BC01A927E2A78FD3BEC",
@@ -104,7 +149,7 @@
 			"buildSettings" = {
 				"CLANG_ENABLE_MODULES" = "YES";
 				"SDKROOT" = "iphoneos";
-				"IPHONEOS_DEPLOYMENT_TARGET" = "18.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
 				"SWIFT_VERSION" = "5.0";
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf";
@@ -142,7 +187,7 @@
 			"buildSettings" = {
 				"CLANG_ENABLE_MODULES" = "YES";
 				"SDKROOT" = "iphoneos";
-				"IPHONEOS_DEPLOYMENT_TARGET" = "18.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
 				"SWIFT_VERSION" = "5.0";
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
