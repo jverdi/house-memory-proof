@@ -1,16 +1,84 @@
 {
-  "runtimeSource": "be3753079215e46f3e18e5263c922d862be86c8c",
-  "artifact": 12115888013,
-  "artifactSHA256": "694bd08c0236f7976f8a4180afec0d175b36aa1eaa0aa2aecc60daa4c6a6357e",
-  "verificationRun": 39074678968,
-  "verificationJob": 117519264499,
+  "artifact": 12117025728,
+  "artifactSHA256": "5774ae88771d02cb87fcbaf107dbe29f6b53840410a2c7b7270efd13234f7bf1",
   "artifactDigestVerified": true,
+  "kind": "native",
   "productionQualified": false,
-  "workflowRun": 39073833454,
   "nativePassed": true,
   "nativeTotal": 102,
   "nativePassedCount": 102,
-  "elapsedSeconds": 151.26974216666667,
+  "nativeElapsedSeconds": 151.26974216666667,
+  "processRecovery": {
+    "journal": true,
+    "capture-row": true,
+    "migration": true
+  },
+  "portable": {
+    "passed": true,
+    "cases": 50
+  },
+  "independentReaders": {
+    "test-gltf": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "textured-gltf": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "points-gltf": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "house-surface-gltf": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "test-usd": {
+      "passed": true
+    },
+    "textured-usd": {
+      "passed": true
+    },
+    "points-usd": {
+      "passed": true
+    },
+    "archive": {
+      "passed": true
+    },
+    "mesh-interchange": {
+      "passed": true
+    },
+    "offline-viewer": {
+      "passed": true
+    },
+    "semantic-csv": {
+      "passed": true
+    }
+  },
+  "uiPassed": {
+    "testLandscapeControlsAndRotation": {
+      "passed": true,
+      "seconds": 73.834
+    },
+    "testPersonalHouseWorkflow": {
+      "passed": true,
+      "seconds": 65.687
+    },
+    "testPhotoPointWorkflow": {
+      "passed": true,
+      "seconds": 92.487
+    }
+  },
+  "runtimeSource": "be3753079215e46f3e18e5263c922d862be86c8c",
+  "workflowRun": 39073833454,
+  "workflowPassed": true,
+  "verificationRun": 39075289446,
+  "verificationJob": 117521079834,
+  "fullWorkflowPending": false,
   "baselineRegressionPassed": true,
-  "fullWorkflowPending": true
+  "checkpointArtifact": 12115888013,
+  "checkpointArtifactSHA256": "694bd08c0236f7976f8a4180afec0d175b36aa1eaa0aa2aecc60daa4c6a6357e",
+  "physicalDeviceQualified": false,
+  "testFlightUploaded": false
 }

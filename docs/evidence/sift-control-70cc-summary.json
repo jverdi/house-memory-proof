@@ -1,0 +1,115 @@
+{
+  "artifact": 12116397670,
+  "artifactSHA256": "9ae437bb71a2aae4799492b4e24a724baa7e1f9aa250a2613331077b7c5be662",
+  "artifactDigestVerified": true,
+  "kind": "fixtures",
+  "productionQualified": false,
+  "fixtures": {
+    "rough-a": {
+      "passed": true,
+      "positiveAccepted": 12,
+      "positiveQueries": 12,
+      "falseAccepts": 0,
+      "negativeQueries": 8,
+      "worstAcceptedPositionErrorMetres": 0.0029720859775642407,
+      "p95Metres": 0.0029720859775642407,
+      "availability": 1,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1,
+          "p95Metres": 0.0029720859775642407,
+          "worstMetres": 0.0029720859775642407,
+          "passed": true
+        }
+      }
+    },
+    "rough-b": {
+      "passed": true,
+      "positiveAccepted": 12,
+      "positiveQueries": 12,
+      "falseAccepts": 0,
+      "negativeQueries": 8,
+      "worstAcceptedPositionErrorMetres": 0.004964562257837295,
+      "p95Metres": 0.004964562257837295,
+      "availability": 1,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1,
+          "p95Metres": 0.004964562257837295,
+          "worstMetres": 0.004964562257837295,
+          "passed": true
+        }
+      }
+    },
+    "paired": {
+      "passed": false,
+      "positiveAccepted": 13,
+      "positiveQueries": 20,
+      "falseAccepts": 0,
+      "negativeQueries": 20,
+      "worstAcceptedPositionErrorMetres": 0.00327420918609399,
+      "p95Metres": 0.00327420918609399,
+      "availability": 0.65,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1,
+          "p95Metres": 0.00327420918609399,
+          "worstMetres": 0.00327420918609399,
+          "passed": true
+        },
+        "finished stage with retained reference surfaces": {
+          "attempts": 8,
+          "accepted": 1,
+          "availability": 0.125,
+          "p95Metres": 0.0010227696089765126,
+          "worstMetres": 0.0010227696089765126,
+          "passed": false
+        }
+      }
+    },
+    "staggered": {
+      "passed": false,
+      "positiveAccepted": 13,
+      "positiveQueries": 20,
+      "falseAccepts": 0,
+      "negativeQueries": 20,
+      "worstAcceptedPositionErrorMetres": 0.004880180856475614,
+      "p95Metres": 0.004880180856475614,
+      "availability": 0.65,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1,
+          "p95Metres": 0.004880180856475614,
+          "worstMetres": 0.004880180856475614,
+          "passed": true
+        },
+        "finished stage with retained reference surfaces": {
+          "attempts": 8,
+          "accepted": 1,
+          "availability": 0.125,
+          "p95Metres": 0.00462852679978286,
+          "worstMetres": 0.00462852679978286,
+          "passed": false
+        }
+      }
+    }
+  },
+  "verificationRun": 39075002340,
+  "verificationJob": 117520203114,
+  "runtimeSource": "be3753079215e46f3e18e5263c922d862be86c8c",
+  "workflowRun": 39073907352,
+  "workflowSource": "70cc45f873c4e528db8464db70c26f8e04e54575",
+  "adopted": false
+}

@@ -111,5 +111,23 @@
     }
   },
   "adopted": false,
-  "comparisonControlDetailedSummaryPending": true
+  "comparisonControlDetailedSummaryPending": false,
+  "finishedRejectionClasses": {
+    "paired": {
+      "accepted": 1,
+      "competingMap": 0,
+      "repeatedFeatureSupport": 7,
+      "sourceConsensus": 0,
+      "coverageOrGeometry": 0,
+      "other": 0
+    },
+    "staggered": {
+      "accepted": 1,
+      "competingMap": 0,
+      "repeatedFeatureSupport": 5,
+      "sourceConsensus": 2,
+      "coverageOrGeometry": 0,
+      "other": 0
+    }
+  }
 }
