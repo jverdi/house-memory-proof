@@ -106,8 +106,8 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
         }
     }
     func jump(_ room:Room){
-        var p=room.origin+V3(room.size.x/2,room.size.y/2,1.6),direction=V3(0,1,0)
-        if let h=house,let observation=h.observations.last(where:{$0.roomID==room.id && SceneBuilder.eligibleStages(h,options:options).contains($0.stageID) && !$0.documentary}) {
+        var p=room.origin+V3(room.size.x/2,room.size.y/2,1.6),direction=V3(0.55,1,-0.08)
+        if let h=house,let observation=h.observations.last(where:{$0.roomID==room.id && SceneBuilder.eligibleStages(h,options:options).contains($0.stageID) && (SceneBuilder.activeUnregisteredSegment(h,options:options)==nil || $0.segmentID==SceneBuilder.activeUnregisteredSegment(h,options:options)) && !$0.documentary}) {
             let m=observation.camera;p=V3(m[3],-m[11],m[7]);direction=V3(-m[2],m[10],-m[6])
             if let t=h.segments.first(where:{$0.id==observation.segmentID})?.registration{p=t.apply(p);direction=t.apply(direction)-t.apply(V3())}
         }

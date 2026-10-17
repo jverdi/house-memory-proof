@@ -1,0 +1,12 @@
+{
+  "source": "bbfb4076b9fa1ba8ad2e0acbe3bf87bc4488311e",
+  "run": 39005798164,
+  "artifact": 12091346088,
+  "archiveSHA256": "6315790f2fa86033c404cadace1f99e48936bb3c8c6cff8f7d240d0bb334812c",
+  "nativeTests": 38,
+  "screenshotsInspected": [
+    "Finished",
+    "Ghost"
+  ],
+  "testflightUploaded": false
+}
