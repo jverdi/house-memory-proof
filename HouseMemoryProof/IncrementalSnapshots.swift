@@ -8,6 +8,14 @@ struct SnapshotRevision:Codable,Identifiable {
 enum IncrementalSnapshots {
   static func root(_ folder:URL)->URL {folder.appendingPathComponent("HouseXraySnapshots",isDirectory:true)}
   static func hash(_ bytes:Data)->String {SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()}
+  static func revisionID(metadata:String)->UUID {
+    // Content identity makes a retry after the commit point return the same
+    // revision. Include a format namespace and mark this as a custom UUID.
+    var bytes=Array(SHA256.hash(data:Data(("HouseXraySnapshot-v1:"+metadata).utf8)).prefix(16))
+    bytes[6]=(bytes[6]&0x0f)|0x80;bytes[8]=(bytes[8]&0x3f)|0x80
+    let hex=bytes.map{String(format:"%02x",$0)}
+    return UUID(uuidString:[hex[0..<4].joined(),hex[4..<6].joined(),hex[6..<8].joined(),hex[8..<10].joined(),hex[10..<16].joined()].joined(separator:"-"))!
+  }
   static func safe(_ key:String)->Bool {key.count<100 && !key.contains("/") && !key.contains("\\") && !key.contains("..") && key.count>=65 && key.prefix(64).allSatisfy{$0.isHexDigit} && key.dropFirst(64).first=="."}
   static func publish(source:URL,destination:URL,expected:String?=nil)throws {
     let coordinator=NSFileCoordinator(filePresenter:nil);var coordinationError:NSError?,operationError:Error?
@@ -37,10 +45,20 @@ enum IncrementalSnapshots {
     if !FileManager.default.fileExists(atPath:destination.path) {try data.write(to:temporary,options:.atomic);try publish(source:temporary,destination:destination,expected:String(key.prefix(64)))}
     else {guard try StreamingArchive.digest(destination).sha==String(key.prefix(64)) else{throw HouseError.message("Existing snapshot metadata is incomplete or corrupt.")}}
     try checkpoint?("metadata-verified")
-    let revision=SnapshotRevision(projectID:house.id,name:house.name,revision:house.revision,metadata:key,assets:house.assets.sorted())
+    let id=revisionID(metadata:key),recordURL=base.appendingPathComponent("revisions").appendingPathComponent(id.uuidString+".json")
+    func committed()throws->SnapshotRevision? {
+      guard FileManager.default.fileExists(atPath:recordURL.path) else{return nil}
+      let record=try JSONDecoder().decode(SnapshotRevision.self,from:read(recordURL,limit:10_000_000))
+      guard record.format=="HouseXraySnapshot",record.version==1,record.id==id,record.projectID==house.id,record.name==house.name,record.revision==house.revision,record.metadata==key,record.assets==house.assets.sorted() else{throw HouseError.message("Existing snapshot revision conflicts with its content identity. Local evidence is intact.")}
+      return record
+    }
+    if let existing=try committed(){return existing}
+    let revision=SnapshotRevision(id:id,projectID:house.id,name:house.name,revision:house.revision,metadata:key,assets:house.assets.sorted())
     try encoder.encode(revision).write(to:temporary,options:.atomic)
     // The small revision record is the commit point; assets/metadata precede it.
-    try publish(source:temporary,destination:base.appendingPathComponent("revisions").appendingPathComponent(revision.id.uuidString+".json"))
+    do {try publish(source:temporary,destination:recordURL)}
+    catch {let publicationError=error;if let existing=try committed(){return existing};throw publicationError}
+    try checkpoint?("revision-committed")
     return revision
   }
   static func catalog(folder:URL)throws->[SnapshotRevision] {

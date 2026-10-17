@@ -263,6 +263,25 @@ import Darwin
                 do{_=try IncrementalSnapshots.write(house:h,repo:source,folder:blocked);return false}catch{}
                 return try source.integrity(h)==1 && target.all().map({$0.id})==[existing.id]
             }
+            await check("Snapshot retry after commit preserves one revision and detects conflicting records") {
+                let source=try Repository(root:folder.appendingPathComponent("snapshot-retry-source")),destination=folder.appendingPathComponent("snapshot-retry-destination")
+                var h=House.empty("Retry after commit");let key=try source.put(Data("retry original".utf8),ext:"jpg")
+                h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)];try source.save(h)
+                do{_=try IncrementalSnapshots.write(house:h,repo:source,folder:destination,checkpoint:{if $0=="revision-committed" {throw CancellationError()}});return false}catch is CancellationError{}
+                let first=try IncrementalSnapshots.catalog(folder:destination);guard first.count==1 else{return false}
+                let retried=try IncrementalSnapshots.write(house:h,repo:source,folder:destination)
+                guard retried.id==first[0].id,retried.date==first[0].date,try IncrementalSnapshots.catalog(folder:destination).count==1 else{return false}
+                // Content changes remain distinct even if an imported project
+                // reused a revision number. A retry cannot silently lose them.
+                h.notes="Changed metadata with the same revision number"
+                let changed=try IncrementalSnapshots.write(house:h,repo:source,folder:destination)
+                guard changed.id != retried.id,try IncrementalSnapshots.catalog(folder:destination).count==2 else{return false}
+                let record=IncrementalSnapshots.root(destination).appendingPathComponent("revisions").appendingPathComponent(changed.id.uuidString+".json")
+                var conflict=changed;conflict.metadata=retried.metadata
+                let bytes=try JSONEncoder().encode(conflict);try bytes.write(to:record,options:.atomic)
+                do{_=try IncrementalSnapshots.write(house:h,repo:source,folder:destination);return false}catch{}
+                return try Data(contentsOf:record)==bytes && source.integrity(h)==1 && IncrementalSnapshots.catalog(folder:destination).count==2
+            }
             await check("Boundary coverage counts unseen and occluded nominal patches") {
                 var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
                 // Narrow-FOV planar depth diagnostic; RGB pixels are not consumed by coverage.
