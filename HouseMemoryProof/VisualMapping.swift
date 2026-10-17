@@ -25,7 +25,7 @@ enum VisualMapping {
   static let featureLimit=2000
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v8-pooled-source-checks";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v9-distributed-bundle-fit";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -190,7 +190,13 @@ enum VisualMapping {
   static func pooledPose(_ sources:[SourceMatches],features:Features,width:Int,height:Int,intrinsics:[Double],diagnostic:((String)->Void)?)->Pose? {
     let points=fusedPoints(sources)
     guard points.count>=30 else{diagnostic?("Pooled source group has only \(points.count) independently repeated features");return nil}
-    let xyz=points.flatMap{[$0.1.x,$0.1.y,$0.1.z]},xy=points.flatMap{[Double(features.xy[$0.0*2])*Double(width),Double(features.xy[$0.0*2+1])*Double(height)]}
+    var xyz:[Double]=[],xy:[Double]=[]
+    for (query,point) in points {
+      xyz.append(contentsOf:[point.x,point.y,point.z])
+      let u=Double(features.xy[query*2])*Double(width)
+      let v=Double(features.xy[query*2+1])*Double(height)
+      xy.append(contentsOf:[u,v])
+    }
     var matrix=[Double](repeating:0,count:16),quality=HXPoseQuality()
     let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
       hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(points.count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)

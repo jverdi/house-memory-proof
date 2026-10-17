@@ -12,7 +12,12 @@ enum BundleRefinement {
     let raw=house.observations.filter{$0.segmentID==segment.id}
     let selected=PoseRefinement.selected(raw,segment:segment,house:house).0
     let used=Set(tracks.flatMap{$0.controls.map{$0.observationID}})
-    var fits:[UUID:Int]=[:];for track in tracks {for control in track.controls.prefix(2) {fits[control.observationID,default:0]+=1}}
+    // Keep one image observation per landmark out of the objective. Rotate
+    // that choice across the remaining views; fitting only the widest pair
+    // leaves middle cameras almost entirely constrained by their old priors.
+    let heldOut=tracks.enumerated().map{index,track in 2+index%(track.controls.count-2)}
+    var fits:[UUID:Int]=[:]
+    for (point,track) in tracks.enumerated() {for (index,control) in track.controls.enumerated() where index != heldOut[point] {fits[control.observationID,default:0]+=1}}
     // Camera zero fixes the solver gauge. Preserve the pose graph's original
     // anchor rather than freezing an arbitrary already-corrected camera.
     let supported=selected.filter{used.contains($0.id)}.sorted{a,b in a.timestamp==b.timestamp ? a.id.uuidString<b.id.uuidString:a.timestamp<b.timestamp}
@@ -30,9 +35,9 @@ enum BundleRefinement {
       for (order,control) in track.controls.enumerated() {
         guard let camera=lookup[control.observationID] else{throw HouseError.message("Track references an unavailable camera estimate.")}
         let o=observations[camera]
-        // Remaining views are held out of the objective. Their image residuals
-        // are checked after solving, including when their camera fits other points.
-        let fitting=order<2
+        // This point's held-out image is never a residual or depth constraint
+        // in the solve, even when that camera fits other independent points.
+        let fitting=order != heldOut[point]
         let depth=fitting ? measuredDepth(control,point:vertices[point],observation:o,data:depths[o.id],confidence:confidences[o.id]):0
         evidence.append(HXBundleObservation(camera:UInt32(camera),point:UInt32(point),fit:fitting ? 1:0,u:control.u*Double(o.width),v:control.v*Double(o.height),depth:depth))
       }
@@ -52,7 +57,7 @@ enum BundleRefinement {
     feature.mesh=Mesh(vertices:(0..<pointCount).map{V3(outputPoints[$0*3],-outputPoints[$0*3+2],outputPoints[$0*3+1])},triangles:[])
     feature.pointTracks=tracks;feature.sourceIDs=observations.map{$0.id}
     feature.sourceFingerprint=try VisualMapping.fingerprint(house:updated,segment:updated.segments[index])
-    feature.notes="Ceres joint camera/point refinement. Two fitting views per point; remaining image observations excluded from the objective and checked afterward. Optional continuous depth patches constrain metric scale. Held-out RMS \(String(format:"%.3f",quality.final_check_rms)) px, fit RMS \(String(format:"%.3f",quality.fit_rms)) px. These residuals are not physical accuracy. Raw evidence remains immutable."
+    feature.notes="Ceres joint camera/point refinement. At least two fitting views per point; one rotating image observation per point is excluded from the objective and checked afterward. Optional continuous depth patches constrain metric scale. Held-out RMS \(String(format:"%.3f",quality.final_check_rms)) px, fit RMS \(String(format:"%.3f",quality.fit_rms)) px. These residuals are not physical accuracy. Raw evidence remains immutable."
     return Result(solution:solution,feature:feature)
   }
   static func measuredDepth(_ control:PhotoControl,point:V3,observation o:Observation,data:Data?,confidence:Data?)->Double {
