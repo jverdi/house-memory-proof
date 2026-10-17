@@ -1,8 +1,5 @@
 name: Evaluate precise SIFT image correspondence candidate
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/feature-sift.yml]
   workflow_dispatch:
 permissions:
   contents: read
