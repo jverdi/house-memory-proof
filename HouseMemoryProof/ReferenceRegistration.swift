@@ -72,3 +72,37 @@ enum ReferenceRegistration {
     }
   }
 }
+
+// Placement advice uses recorded board centres, not a claimed camera-error bound.
+// Two vertical columns on different walls can still have coplanar centres.
+enum ReferenceLayout {
+  struct Assessment {
+    var count:Int;var variances:[Double]
+    var distributed:Bool {count>=4 && variances.count==3 && variances[0]>=0.09 && variances[1]>=0.0225 && variances[2]>=0.0016}
+    var advice:String {
+      if count<4 {return "Record at least four distinct fixed references to check three-dimensional placement. Stagger their heights and horizontal positions."}
+      if !distributed {return "Reference centres are clustered or nearly coplanar. Stagger upper, middle and lower targets across different horizontal positions on two walls; avoid two straight columns."}
+      return "Recorded reference centres have useful three-dimensional spread. Capture sharp, overlapping views with visible texture. This placement check does not establish accuracy."
+    }
+  }
+  static func assess(_ points:[V3])->Assessment {
+    guard points.count>=4,points.count<=100,points.allSatisfy({$0.finite}) else{return Assessment(count:points.count,variances:[])}
+    let centre=points.reduce(V3(),+)*(1/Double(points.count))
+    var covariance=simd_double3x3(diagonal:SIMD3<Double>(repeating:0))
+    for point in points {let p=point-centre,v=SIMD3(p.x,p.y,p.z);covariance += simd_double3x3(columns:(v*v.x,v*v.y,v*v.z))*(1/Double(points.count))}
+    let q=(covariance[0][0]+covariance[1][1]+covariance[2][2])/3
+    var square=0.0
+    for row in 0..<3 {for column in 0..<3 {let value=covariance[column][row]-(row==column ? q:0);square+=value*value}}
+    let p=sqrt(square/6)
+    if p<1e-12 {return Assessment(count:points.count,variances:[max(0,q),max(0,q),max(0,q)])}
+    let unit=(covariance-simd_double3x3(diagonal:SIMD3<Double>(repeating:q)))*(1/p)
+    let angle=acos(max(-1,min(1,simd_determinant(unit)/2)))/3
+    let high=q+2*p*cos(angle),low=q+2*p*cos(angle+2*Double.pi/3),middle=3*q-high-low
+    return Assessment(count:points.count,variances:[high,middle,low].map{max(0,$0)}.sorted(by:>))
+  }
+  static func assess(segment:Segment,house:House)->Assessment {
+    let valid=Set(house.references.filter{$0.valid}.map{$0.id})
+    let poses=Dictionary(segment.referencePoses.filter{valid.contains($0.boardID) && Rigid(values:$0.matrix).valid}.map{($0.boardID,$0)},uniquingKeysWith:{a,_ in a})
+    return assess(poses.values.map{p in V3(p.matrix[3],-p.matrix[11],p.matrix[7])})
+  }
+}

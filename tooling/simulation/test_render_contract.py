@@ -3,6 +3,7 @@ import math
 import unittest
 import numpy as np
 from house import box,render
+from house_layout_fixture import reference_targets
 
 class RendererContract(unittest.TestCase):
  def setUp(self):
@@ -35,6 +36,16 @@ class RendererContract(unittest.TestCase):
   painted=dict(self.back,textureless=True)
   rgb,_,_,_,_=render([painted],np.zeros(3),0,128,96,texture_seed=123)
   self.assertTrue(np.all(rgb[30:60,20:100]==np.array([200,100,50])))
+ def test_staggered_reference_protocol_has_nonplanar_centres(self):
+  for w,d in [(3.5,3.5),(4.5,4),(5.5,5)]:
+   targets=reference_targets(w,d,True,True)
+   self.assertEqual(len(targets),6)
+   centres=np.array([(np.array(t['low'])+np.array(t['high']))/2 for t in targets]);centres-=centres.mean(axis=0)
+   eigenvalues=np.linalg.eigvalsh(centres.T@centres/len(centres))
+   self.assertGreater(eigenvalues[0],.03)
+  columns=reference_targets(4.5,4,True,False)
+  p=np.array([(np.array(t['low'])+np.array(t['high']))/2 for t in columns]);p-=p.mean(axis=0)
+  self.assertLess(np.linalg.eigvalsh(p.T@p/len(p))[0],1e-10)
  def test_camera_rotation_and_projection_convention(self):
   position=np.array([.2,-.3,.4]);yaw=.37
   _,_,_,m,k=render([self.back],position,yaw,128,96)

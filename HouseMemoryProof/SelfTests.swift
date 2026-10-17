@@ -128,6 +128,12 @@ import Darwin
                 h=restored;h.features[0].artifactValid=false
                 return !DerivedEvidence.currentIDs(h).contains(annotation.id)
             }
+            await check("Reference placement distinguishes staggered controls from coplanar columns") {
+                let flat=[V3(0,0,0),V3(0,0,1),V3(1,1,0),V3(1,1,1)]
+                let staggered=[V3(0.45,1.8,-0.5),V3(1.15,1.8,0.65),V3(0.75,1.8,0.1),V3(2.05,1.2,-0.45),V3(2.05,0.55,0.65),V3(2.05,0.95,0.15)]
+                let a=ReferenceLayout.assess(staggered),b=ReferenceLayout.assess(staggered.map{V3(-$0.y+17,$0.x-6,$0.z+8)})
+                return !ReferenceLayout.assess(flat).distributed && a.distributed && b.distributed && zip(a.variances,b.variances).allSatisfy{abs($0-$1)<1e-10} && !ReferenceLayout.assess([V3(),V3(),V3(),V3()]).distributed
+            }
             await check("Capture face labels preserve every triangle and isolate ceiling layers") {
                 var h=House.empty("Face labels");let room=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:room.id,stageID:stage.id);h.segments=[segment]
                 let mesh=Mesh(vertices:[V3(),V3(1,0,0),V3(0,1,0),V3(0,0,1)],triangles:[0,1,2,0,2,3,1,2,3])

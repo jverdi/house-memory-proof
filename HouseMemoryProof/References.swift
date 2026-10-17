@@ -96,7 +96,17 @@ struct ReferencesPage: View {
         }
       }
       Section {
-        Text("For a rough-in to finished-stage handoff, retain at least three distinct fixed references; four provide extra coverage. Spread them across upper and lower viewing regions and two wall planes, where they remain visible after drywall. Capture translated, overlapping views of them in both stages. A cluster high on one wall may not constrain visual alignment.").font(.footnote)
+        Text("For a rough-in to finished-stage handoff, retain distinct fixed references where they remain visible after drywall. Stagger their horizontal positions and heights across two walls; two straight columns may still form a nearly flat layout. Six targets can cover upper, middle and lower viewing regions. Capture translated overlapping views in both stages and check the recorded layout below.").font(.footnote)
+      }
+      Section("Recorded reference placement") {
+        ForEach(house.segments.filter{!$0.referencePoses.isEmpty}) {segment in
+          let assessment=ReferenceLayout.assess(segment:segment,house:house)
+          VStack(alignment:.leading,spacing:6) {
+            Text(house.rooms.first{$0.id==segment.roomID}?.name ?? "Capture")
+            Text("\(assessment.count) fixed references · \(segment.started.formatted())").font(.caption)
+            Text(assessment.advice).font(.footnote).foregroundStyle(assessment.distributed ? .mint:.orange)
+          }
+        }
       }
       ForEach(house.references) { board in
         NavigationLink(board.name) { ReferenceEditor(board: board) }

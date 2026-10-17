@@ -8,5 +8,7 @@
   "nativePassed": 80,
   "nativeTotal": 81,
   "uiPassed": 2,
-  "scope": "Report extracted from native job assertion; complete run artifact retained by GitHub. Simulator only."
+  "scope": "Report extracted from native job assertion; complete run artifact retained by GitHub. Simulator only.",
+  "processRecoveryPassed": 3,
+  "independentExportChecks": "4 GLB validators and hierarchy/animation readers, USDZ/archive/offline viewer step passed"
 }
