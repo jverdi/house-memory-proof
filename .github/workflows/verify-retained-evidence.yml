@@ -1,0 +1,66 @@
+name: Verify retained qualification evidence
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/verify-retained-evidence.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: baseline
+            artifact: 12116302335
+            sha256: 8934d362b832230a33795a1dd280d88e4720123c31545c22d86a412f27bb126a
+          - label: host
+            artifact: 12115932460
+            sha256: 40b0704b843e38648f917a4cc7dc5cc7566b7b26bd61ca159913450ab31aa23e
+          - label: rendered
+            artifact: 12116660894
+            sha256: 9cbbc2cc2893be701e4169084bae1efe674b22f494bcc9a1e3f0779ea6948175
+          - label: native-checkpoint
+            artifact: 12115888013
+            sha256: 694bd08c0236f7976f8a4180afec0d175b36aa1eaa0aa2aecc60daa4c6a6357e
+          - label: rootsift
+            artifact: 12116178518
+            sha256: c39de573c28accfa95a1d491ca9f4bac1d4ab8f20231baa599c823f1901af3f5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Independently verify artifact bytes and expose text reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ matrix.artifact }}
+          EXPECTED_SHA256: ${{ matrix.sha256 }}
+          EVIDENCE_LABEL: ${{ matrix.label }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,io,json,os,pathlib,subprocess,zipfile
+          artifact=os.environ['ARTIFACT_ID']
+          assert artifact.isdecimal()
+          raw=subprocess.run(['gh','api','repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts/'+artifact+'/zip'],capture_output=True,check=True,timeout=90).stdout
+          digest=hashlib.sha256(raw).hexdigest()
+          assert digest==os.environ['EXPECTED_SHA256'], 'Artifact digest mismatch'
+          archive=zipfile.ZipFile(io.BytesIO(raw))
+          # Public repository; only synthetic CI fixtures, never owner captures.
+          # Provenance: house_layout_fixture.py uses seeded RNG/isDemo=True;
+          # vision-evaluation.yml generates all host inputs; simulator.sh launches --demo.
+          allowed={"baseline":["candidate-sha256.txt","core-diagnostics.json","paired.json","rough-a.json","rough-b.json","source-revision.txt","staggered.json"],"host":["bundle-replay.json","coded-regions.json","core-diagnostics.json","long-session.json","replay.json","house-layout-683431.json","house-layout-905771.json","house-paired.json","house-staggered.json"],"rendered":["core-diagnostics.json","fixture-provenance.json","rendered.json"],"native-checkpoint":["native-self-test.json","native-progress.json","coded-reference-diagnostics.json"],"rootsift":["candidate-contract.json","candidate-sha256.txt","candidate.diff","core-diagnostics.json","paired.json","rough-a.json","rough-b.json","source-revision.txt","staggered.json"]}
+          files=[]
+          for entry in archive.infolist():
+              name=pathlib.PurePosixPath(entry.filename)
+              assert not name.is_absolute() and '..' not in name.parts
+              if str(name) not in allowed[os.environ['EVIDENCE_LABEL']]:continue
+              # Only reports and adapter diffs; never application/log archives.
+              assert entry.file_size<=2000000, 'Unexpected report size'
+              data=archive.read(entry);value=data.decode('utf-8')
+              if name.suffix=='.json':json.loads(value)
+              files.append(dict(path=str(name),sha256=hashlib.sha256(data).hexdigest(),bytes=len(data)))
+              for offset in range(0,len(value),8000):
+                  print('EVIDENCE_CHUNK '+json.dumps(dict(label=os.environ['EVIDENCE_LABEL'],path=str(name),offset=offset,text=value[offset:offset+8000])),flush=True)
+          print('EVIDENCE_MANIFEST '+json.dumps(dict(label=os.environ['EVIDENCE_LABEL'],artifact=int(artifact),artifactSHA256=digest,files=files)),flush=True)
+          PY
