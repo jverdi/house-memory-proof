@@ -1,0 +1,1 @@
+{"verifiedAssets":3,"recoveredExactlyOnce":true,"powerLossQualified":false,"passed":true,"fault":"SIGKILL after durable journal, before observation SQLite commit"}

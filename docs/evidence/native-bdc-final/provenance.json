@@ -1,0 +1,21 @@
+{
+  "sourceCommit": "bdc740ae5413e29b68be42c3d265a3c5ac9b48d3",
+  "testedMergeRevision": "4025c57804",
+  "runID": 39043134471,
+  "jobID": 117426481585,
+  "artifactID": 12105320953,
+  "reportedArchiveSHA256": "702180fe4e6e488d6ec0b7682da60bbc9ab0aba6841bc07f2ba247ce84dab43e",
+  "wholeArchiveSHA256Verified": false,
+  "memberHashes": "selective-download.json",
+  "nativeChecks": 90,
+  "nativePassed": 90,
+  "uiTests": 2,
+  "uiFailures": 0,
+  "processKillModes": 3,
+  "portableCases": 50,
+  "visualReview": [
+    "Nearby source wall faces are continuous in the capacity frame",
+    "Tour caption and provenance fit on two visible lines"
+  ],
+  "physicalQualification": false
+}

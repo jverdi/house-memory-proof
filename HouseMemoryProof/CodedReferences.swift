@@ -106,6 +106,7 @@ enum CodedReferences {
     let captures=house.observations.filter{$0.segmentID==segment.id && !$0.documentary && $0.codedDetections?.isEmpty==false}
     var boards:[Board]=[]
     for board in known {
+      if Task.isCancelled {return Map(boards:[],known:known)}
       // Capture rows can commit before their aggregate segment checkpoint.
       // Re-measure a bounded best source from durable pixels/camera metadata;
       // a changed measured print width must not reuse the old metric pose.

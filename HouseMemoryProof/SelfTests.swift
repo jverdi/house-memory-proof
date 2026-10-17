@@ -548,6 +548,25 @@ import Darwin
                   && !local.isWalkClear(from:a,to:V3(1.5,0,1.6))
                   && !local.isWalkClear(from:a,to:V3(Double.nan,0,1.6))
             }
+            await check("Observed floor walking preserves capture height, climbs checked steps and refuses holes or low headroom") {
+                func floor(_ centre:V3,_ size:V3)->Feature {Feature(name:"Observed floor fixture",trade:.floor,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:centre,size:size))}
+                let ground=floor(V3(0,0,-0.1),V3(4,3,0.2)),low=V3(0,0,1.1),target=V3(0.5,0,1.1)
+                let flat=SpatialClearance(features:[ground])
+                guard !flat.isWalkClear(from:low,to:target),let result=flat.walkingDestination(from:low,toward:target),(result.position-target).length<1e-9 else{return false}
+                let beam=Feature(name:"Low beam",trade:.structure,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:V3(0.4,0,1.7),size:V3(0.2,2,0.15)))
+                guard SpatialClearance(features:[ground,beam]).walkingDestination(from:low,toward:target)==nil else{return false}
+                let gap=[floor(V3(-0.3,0,-0.1),V3(1.4,2,0.2)),floor(V3(1.3,0,-0.1),V3(1.4,2,0.2))]
+                guard SpatialClearance(features:gap).walkingDestination(from:low,toward:V3(1,0,1.1))==nil else{return false}
+                var stairs=[floor(V3(-0.4,0,-0.1),V3(1.2,2,0.2))]
+                for i in 1...5 {let top=Double(i)*0.18;stairs.append(floor(V3(Double(i)*0.4,0,(top-0.1)/2),V3(0.4,2,top+0.1)))}
+                let stair=SpatialClearance(features:stairs),start=V3(-0.5,0,1.3)
+                guard let up=stair.walkingDestination(from:start,toward:V3(1.4,0,1.3)),up.position.z>1.8,
+                  let down=stair.walkingDestination(from:up.position,toward:start,eyeHeight:up.eyeHeight),(down.position-start).length<1e-8 else{return false}
+                let tall=[stairs[0],floor(V3(0.4,0,0.125),V3(0.4,2,0.45))]
+                guard SpatialClearance(features:tall).walkingDestination(from:start,toward:V3(0.4,0,1.3))==nil else{return false}
+                let local=try SpatialClearance(index:SpatialDisplayIndex(features:[ground]),camera:low,radius:1)
+                return local.walkingDestination(from:low,toward:target)==nil
+            }
             await check("Tour path rejects observed wall and accepts supported camera corridor"){
                 var h=House.empty("Path test");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
                 for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}
@@ -830,6 +849,23 @@ extension SelfTests {
         var missingCheckpoint=restored;missingCheckpoint.segments[0].referencePoses=[]
         let rebuilt=CodedReferences.build(house:missingCheckpoint,segment:missingCheckpoint.segments[0])
         guard rebuilt.boards.count==6,zip(rebuilt.boards,map.boards).allSatisfy({$0.id==$1.id && $0.corners==$1.corners}) else{throw HouseError.message("Committed source rows could not recover before the aggregate reference checkpoint.")}
+        var linked=missingCheckpoint
+        linked.segments[0].registration=Rigid()
+        var other=linked.segments[0];other.id=UUID();other.stageID=linked.stages[1].id;other.registration=nil
+        linked.segments.append(other)
+        for original in missingCheckpoint.observations {
+            var copy=original;copy.id=UUID();copy.segmentID=other.id;copy.stageID=other.stageID;copy.camera[3]-=0.4;copy.referenceObservations=[]
+            linked.observations.append(copy)
+        }
+        let (handoff,_,link)=try ReferenceRegistration.fit(source:other,anchor:linked.segments[0],house:linked)
+        guard (handoff.apply(V3())-V3(0.4,0,0)).length<0.001 else{throw HouseError.message("Coded handoff failed to rebuild geometry from durable source rows.")}
+        linked.segments[1].registration=handoff;linked.segments[1].registrationLink=link
+        ReferenceRegistration.invalidateChangedInputs(&linked)
+        guard linked.segments[1].registration != nil else{throw HouseError.message("Unchanged coded handoff invalidated itself.")}
+        let last=linked.observations.count-1
+        linked.observations[last].codedDetections![0].corners[0].u+=0.01
+        ReferenceRegistration.invalidateChangedInputs(&linked)
+        guard linked.segments[1].registration==nil else{throw HouseError.message("A changed raw reference corner retained a stale stage registration.")}
         var resizedPrint=restored;resizedPrint.references[0].width *= 1.5
         guard !CodedReferences.build(house:resizedPrint,segment:resizedPrint.segments[0]).boards.contains(where:{$0.id==resizedPrint.references[0].id}) else{throw HouseError.message("A changed print scale reused an old metric pose despite conflicting translated views.")}
         var conflictedHouse=restored,changed=restored.observations[0];changed.id=UUID()

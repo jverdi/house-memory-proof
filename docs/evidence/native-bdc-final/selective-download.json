@@ -1,0 +1,234 @@
+{
+  "archiveSHA256Verified": false,
+  "downloadedBytes": 1229838,
+  "members": [
+    {
+      "path": "archive-validation.json",
+      "bytes": 63,
+      "sha256": "4f15d0bf93cdfc9c5757ea22f1c0b29ced0ad099c82665ee738869b624eb7f58",
+      "crcVerified": true
+    },
+    {
+      "path": "coded-reference-diagnostics.json",
+      "bytes": 672,
+      "sha256": "2666df6c46c257cab7237d02e25137c808c9cf9108cbf325cf974641b6e0b53a",
+      "crcVerified": true
+    },
+    {
+      "path": "coded-source-0.png",
+      "bytes": 13000,
+      "sha256": "ee20374c0b044de38e850ed61a7bac5355cc3be928be03464c88c9d397df088f",
+      "crcVerified": true
+    },
+    {
+      "path": "coded-source-1.png",
+      "bytes": 12305,
+      "sha256": "4bf3266ef743b6ec7197e5d11df95a4f269abbe32b0a558faaf2fba035c8985e",
+      "crcVerified": true
+    },
+    {
+      "path": "drawing-baseline.png",
+      "bytes": 1816,
+      "sha256": "643bdebaee1467db4cf45beea742a0c3bd26ff43e2b01ccca508096e5c0c8ab9",
+      "crcVerified": true
+    },
+    {
+      "path": "drawing-rotated-180.png",
+      "bytes": 1816,
+      "sha256": "643bdebaee1467db4cf45beea742a0c3bd26ff43e2b01ccca508096e5c0c8ab9",
+      "crcVerified": true
+    },
+    {
+      "path": "drawing-rotated-270.png",
+      "bytes": 1816,
+      "sha256": "643bdebaee1467db4cf45beea742a0c3bd26ff43e2b01ccca508096e5c0c8ab9",
+      "crcVerified": true
+    },
+    {
+      "path": "drawing-rotated-90.png",
+      "bytes": 1816,
+      "sha256": "643bdebaee1467db4cf45beea742a0c3bd26ff43e2b01ccca508096e5c0c8ab9",
+      "crcVerified": true
+    },
+    {
+      "path": "house-surface-gltf-validation.json",
+      "bytes": 850,
+      "sha256": "d345d123c7f098bcdbccafc4b8d8c398bb300ff1d12c5e318c8b2aea7456eddd",
+      "crcVerified": true
+    },
+    {
+      "path": "house-surface-interchange.json",
+      "bytes": 104,
+      "sha256": "e1ee0d65d79f31ae6118810b61339b4a01d5445d269e9c2603297d2e5500b1d6",
+      "crcVerified": true
+    },
+    {
+      "path": "ifc-package-lock.json",
+      "bytes": 456,
+      "sha256": "f185b1cebab7e82526e1e7ad9b50957ecfb7623299f188db616a7223a83200fd",
+      "crcVerified": true
+    },
+    {
+      "path": "large-house-render.png",
+      "bytes": 20524,
+      "sha256": "86d328a2c386376860d14282487acf2540459cd43989227ec3fa5abc9dddbfc4",
+      "crcVerified": true
+    },
+    {
+      "path": "native-progress.json",
+      "bytes": 216,
+      "sha256": "1ab67ce1904eec10d0b0031dbd35722e7ff69d079a7052e0b1aa9f14ab393d2d",
+      "crcVerified": true
+    },
+    {
+      "path": "offline-viewer-mobile.png",
+      "bytes": 54853,
+      "sha256": "3495fc46e8367095216666c959eff59be8034faa678566132d7161e8668c151c",
+      "crcVerified": true
+    },
+    {
+      "path": "offline-viewer-validation.json",
+      "bytes": 142,
+      "sha256": "4d473375449cf8be1e22ed9d9adb0ed90f0ee08037009d94dc87ef25681a0332",
+      "crcVerified": true
+    },
+    {
+      "path": "native-self-test.json",
+      "bytes": 19398,
+      "sha256": "bb3c6cbf5f906066e45e1003b3ef279152a787bf9086edee34437d35279c96fc",
+      "crcVerified": true
+    },
+    {
+      "path": "offline-viewer.png",
+      "bytes": 71587,
+      "sha256": "dfc78d3ab76daab72a92fec18d889509427d15bc1e0ace0d841caaddbb896cf6",
+      "crcVerified": true
+    },
+    {
+      "path": "points-gltf-validation.json",
+      "bytes": 839,
+      "sha256": "80294037fb75489d69789715f02a29332a63b963bb7e1d77b7fd2bb5f5009d8d",
+      "crcVerified": true
+    },
+    {
+      "path": "points-interchange.json",
+      "bytes": 104,
+      "sha256": "e1ee0d65d79f31ae6118810b61339b4a01d5445d269e9c2603297d2e5500b1d6",
+      "crcVerified": true
+    },
+    {
+      "path": "points-usd-validation.json",
+      "bytes": 102,
+      "sha256": "74e17bbc0160eaae8fb42bd99d4f5f9f52a0fed0da80e1a594e897c61bc0b9b8",
+      "crcVerified": true
+    },
+    {
+      "path": "process-recovery-capture-row.json",
+      "bytes": 159,
+      "sha256": "e42ff55b59f292f073c9744bdfaf978e0815b511dcc850e5de78700572478464",
+      "crcVerified": true
+    },
+    {
+      "path": "portable-tests.json",
+      "bytes": 7859,
+      "sha256": "9fc1b911d7095312468ac57b672cba30131992d0218982c717b1323338c4ea9d",
+      "crcVerified": true
+    },
+    {
+      "path": "process-recovery-journal.json",
+      "bytes": 163,
+      "sha256": "25351274affc6ca4aeb56783227214174349f7b34ee689c83a1ea0887aa2b6f4",
+      "crcVerified": true
+    },
+    {
+      "path": "process-recovery-migration.json",
+      "bytes": 120,
+      "sha256": "6df35c5f19688dbf968e00996438241b9b3188dc529454f79130d665b9b4f190",
+      "crcVerified": true
+    },
+    {
+      "path": "self-test-partial.json",
+      "bytes": 14045,
+      "sha256": "f43ffe8c342f4b10352a87eba1b15e3c719f438fd44feb39de46d4e3e8a1d81c",
+      "crcVerified": true
+    },
+    {
+      "path": "simulator-inventory.json",
+      "bytes": 32993,
+      "sha256": "739ffc9fa5f355373635b33067d96fe18db4725a2680d3d60507f7bc54a76d50",
+      "crcVerified": true
+    },
+    {
+      "path": "simulator-result.json",
+      "bytes": 206,
+      "sha256": "bf88b1d771b6678dc6180c0e59eec51cd701f48824a84d14d53ef374230b6c57",
+      "crcVerified": true
+    },
+    {
+      "path": "simulator.png",
+      "bytes": 315218,
+      "sha256": "216bf0aa2530b0a5bbc717acd9a4410ddd0e6690a06b3763f897be86431e3f95",
+      "crcVerified": true
+    },
+    {
+      "path": "surface-tests.json",
+      "bytes": 196,
+      "sha256": "12f78c0489c48743cf7c385e5636268036915bac440c39bd8970ac4e4e08a1df",
+      "crcVerified": true
+    },
+    {
+      "path": "synthetic-house-generator.json",
+      "bytes": 204,
+      "sha256": "18a238d0489c4c6f89bbd7caef116b34ccea7344999d9a49ea3f05252bc9df40",
+      "crcVerified": true
+    },
+    {
+      "path": "test-gltf-validation.json",
+      "bytes": 842,
+      "sha256": "88ded596364fea597830200c5cb27007e0bf61884d20e314d926d653365a0e8c",
+      "crcVerified": true
+    },
+    {
+      "path": "test-interchange.json",
+      "bytes": 107,
+      "sha256": "ae3f21436bd7e0bf7b865e73d8a2514acc990e7f2c0c9b9a6a9e6d9fd192fae9",
+      "crcVerified": true
+    },
+    {
+      "path": "test-render.png",
+      "bytes": 15797,
+      "sha256": "555787650d22dc1369ec65f590bb92c33b7d203c64dd14a225dcebc37c9e142b",
+      "crcVerified": true
+    },
+    {
+      "path": "test-tour-frame.png",
+      "bytes": 543278,
+      "sha256": "8d35c61bd3b7607c912b54b0c533326cd0e057428f14a53cabf5f83a3bf2d717",
+      "crcVerified": true
+    },
+    {
+      "path": "test-usd-validation.json",
+      "bytes": 104,
+      "sha256": "fcb0c5ddf1c4f29d9a8b79d0c4b48bad913e3b9c7999f0924a0a82e1a2ce68f8",
+      "crcVerified": true
+    },
+    {
+      "path": "textured-gltf-validation.json",
+      "bytes": 1689,
+      "sha256": "4f44d1fc9232815593cdd17510a4b15b0c49468969fa86ba29ffda720a0e0f26",
+      "crcVerified": true
+    },
+    {
+      "path": "textured-interchange.json",
+      "bytes": 104,
+      "sha256": "a320ef6b522cf48a332ec971aea45912e52316f5cddb5588ab22b07521638d0d",
+      "crcVerified": true
+    },
+    {
+      "path": "textured-usd-validation.json",
+      "bytes": 102,
+      "sha256": "37a7f445253e304f7193b1ef7b2a246b2aa1d33e7a483551617e66bea86fbe3d",
+      "crcVerified": true
+    }
+  ]
+}
