@@ -42,9 +42,13 @@ jobs:
       - name: Replay finished captures with unchanged query and ambiguity gates
         run: |
           failed=0
-          for seed in 905771 683431; do
-            build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/finished-$seed" --seed "$seed" --paired --staggered --finished-capture
-            build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/finished-$seed" --output "build/finished-map-evidence/$seed.json" --refine --bundle --house || failed=1
+          # Fresh ray samples at each native raster size; no image upscaling.
+          # Retain both 384-pixel failures and 768-pixel diagnostics unchanged.
+          for width in 384 768; do
+            for seed in 905771 683431; do
+              build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/finished-$seed-$width" --seed "$seed" --paired --staggered --finished-capture --width "$width"
+              build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/finished-$seed-$width" --output "build/finished-map-evidence/$seed-$width.json" --refine --bundle --house || failed=1
+            done
           done
           exit "$failed"
       - name: Print aggregate results only
@@ -55,7 +59,7 @@ jobs:
           for path in sorted(pathlib.Path('build/finished-map-evidence').glob('*.json')):
               report=json.loads(path.read_text())
               keys=['passed','positiveQueries','positiveAccepted','negativeQueries','falseAccepts','p95Metres','worstAcceptedPositionErrorMetres','oracleReadDenied','scenarioMetrics','mapCount','optimizedCameraCount','maximumOptimizedCameraPositionErrorMetres']
-              print('FINISHED_MAP_AGGREGATE '+json.dumps({k:report[k] for k in keys if k in report}),flush=True)
+              print('FINISHED_MAP_AGGREGATE '+json.dumps(dict(case=path.stem,**{k:report[k] for k in keys if k in report})),flush=True)
           PYCODE
       - uses: actions/upload-artifact@v4
         if: always()

@@ -20,11 +20,12 @@ def reference_targets(w,d,paired=False,staggered=False):
   side=[(.9,-.35),(.9,.65)] if paired else [(-.8,.3),(.8,.8)]
  return [box((x,d/2-.20,z),(.4,.012,.4),(235,235,235),'reference') for x,z in front]+[box((w/2-.20,y,z),(.012,.4,.4),(235,235,235),'reference') for y,z in side]
 
-def make(dest,seed=905771,paired=False,staggered=False,finished_capture=False):
+def make(dest,seed=905771,paired=False,staggered=False,finished_capture=False,width=384):
  assert not staggered or paired
  assert not finished_capture or (paired and staggered)
  rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True)
- width,height=384,288;now=813974400.;assets={};truth=[];observations=[];segments=[];rooms=[];query_truth=[]
+ assert width in (384,768)
+ height=width*3//4;now=813974400.;assets={};truth=[];observations=[];segments=[];rooms=[];query_truth=[]
  rough=identity(seed,'layout-rough');finished=identity(seed,'layout-finished')
  sizes=[]
  for index in range(4):
@@ -134,7 +135,7 @@ def make(dest,seed=905771,paired=False,staggered=False,finished_capture=False):
  with zipfile.ZipFile(dest/'vision-map.hxray','w',compression=zipfile.ZIP_STORED) as z:
   for n,b in entries.items():z.writestr(n,b)
  (dest/'vision-queries.json').write_text(json.dumps(dict(renderer='Connected four-room/two-level analytic layout',queries=query_truth,mappingCameras=mapping,injectedTranslationDriftMetres=.03,completeLayout=truth,oracleOnlyGeometry=complete,oracleOnlyFinishedGeometry=complete_finished,fieldQualified=False),indent=2))
- return dict(seed=seed,rooms=4,levels=2,photographs=24,nominalQueries=20 if paired else 12,criticalQueries=20 if paired else 8,pairedQueries=paired,finishedCapture=finished_capture,nominalProtocol="Six retained targets staggered horizontally across upper/middle/lower regions on two walls" if staggered else "Four retained targets distributed across upper/lower regions on two wall planes" if paired else "Rough-in corner capture",fieldQualified=False,limitations=['Partial corner coverage; unseen surfaces must remain unknown','No calibrated sensor model','Full stair walkthrough and finished-stage reconstruction are separate checks'])
+ return dict(seed=seed,rooms=4,levels=2,photographs=24,nominalQueries=20 if paired else 12,criticalQueries=20 if paired else 8,pairedQueries=paired,finishedCapture=finished_capture,imageWidth=width,nominalProtocol="Six retained targets staggered horizontally across upper/middle/lower regions on two walls" if staggered else "Four retained targets distributed across upper/lower regions on two wall planes" if paired else "Rough-in corner capture",fieldQualified=False,limitations=['Partial corner coverage; unseen surfaces must remain unknown','No calibrated sensor model','Full stair walkthrough and finished-stage reconstruction are separate checks'])
 
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('output',type=Path);p.add_argument('--seed',type=int,default=905771);p.add_argument('--paired',action='store_true');p.add_argument('--staggered',action='store_true');p.add_argument('--finished-capture',action='store_true');a=p.parse_args();print(json.dumps(make(a.output,a.seed,a.paired,a.staggered,a.finished_capture)))
+ p=argparse.ArgumentParser();p.add_argument('output',type=Path);p.add_argument('--seed',type=int,default=905771);p.add_argument('--paired',action='store_true');p.add_argument('--staggered',action='store_true');p.add_argument('--finished-capture',action='store_true');p.add_argument('--width',type=int,choices=[384,768],default=384);a=p.parse_args();print(json.dumps(make(a.output,a.seed,a.paired,a.staggered,a.finished_capture,a.width)))

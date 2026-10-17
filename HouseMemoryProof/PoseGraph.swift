@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import simd
 
 struct OptimizedLandmark:Codable,Equatable {var point:V3;var controls:[PhotoControl]}
