@@ -97,7 +97,7 @@ struct FieldChecksPage:View {
       let modes=Set(observations.map{"\($0.width)×\($0.height) RGB; \($0.depthWidth)×\($0.depthHeight) depth"}).sorted().joined(separator:"; ")
       let check=FieldCheck(split:split,kind:kind,fixture:fixture,session:session,conditions:conditions,device:hardware+" / iOS "+UIDevice.current.systemVersion,sourceBuild:Bundle.main.object(forInfoDictionaryKey:"ProofSourceRevision") as? String ?? "local",cameraMode:modes,truthUncertainty:uncertainty,cameraDistance:cameraDistance,measurement:source,referenceDistance:kind == .distance && !abstained ? truthDistance:nil,referencePoint:reference,abstained:abstained,overlayWasVisible:kind == .rejection ? visible:nil,originalIDs:originalIDs)
       guard check.valid else{throw HouseError.message("Check the finite measurements, uncertainty, distance and required field names.")}
-      saved=model.edit{$0.fieldChecks.append(check)}
+      saved=model.edit(projectID:house.id){$0.fieldChecks.append(check)}
     }catch{model.error=error.localizedDescription}
   }
 }
