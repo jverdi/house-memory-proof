@@ -49,7 +49,9 @@ if [ "$mode" != recovery ] && [ "$mode" != ui ]; then
 if ! xcrun simctl list devices booted | grep -Fq "$device_id"; then
   xcrun simctl boot "$device_id"
 fi
-python3 ci/run_bounded.py 180 xcrun simctl bootstatus "$device_id" -b
+# Cold platform migration took 185 seconds on a fresh hosted runner. This
+# startup allowance is separate from the unchanged 300-second app test gate.
+python3 ci/run_bounded.py 300 xcrun simctl bootstatus "$device_id" -b
 xcrun simctl install "$device_id" build/DerivedData/Build/Products/Debug-iphonesimulator/HouseMemoryProof.app
 xcrun simctl launch "$device_id" com.example.HouseMemoryProof --demo --self-test --video-test | tee build/evidence/launch.log
 # Allow the first SwiftUI frame to render before recording CI evidence.
@@ -166,3 +168,4 @@ rm -rf build/formatted-source/HouseMemoryProof/IFC build/formatted-source/HouseM
 xcrun swift-format format --in-place --recursive build/formatted-source
 tar -czf build/evidence/formatted-source.tgz -C build/formatted-source .
 exit "$native_failed"
+

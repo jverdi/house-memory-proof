@@ -1,0 +1,11 @@
+{
+  "sourceRevision": "b022d8fa7422b523d75db61b27f9e67a18ea428f",
+  "runID": 39054429531,
+  "artifactID": 12109286631,
+  "verifiedSHA256": "1c34a522d0ddd5b35277e11930f831edd18c8979721ae84cc74ddfdadb333b31",
+  "compiled": true,
+  "appLaunched": false,
+  "nativeTestsExecuted": false,
+  "passed": false,
+  "reason": "Hosted simulator bootstatus exceeded 180-second cold-start budget during platform migration. Group cleanup encountered PermissionError. No app assertion, renderer or image test ran."
+}
