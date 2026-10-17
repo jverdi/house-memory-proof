@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "1ec81a32ca",
+  "runID": 39036086112,
+  "jobID": 117407680008,
+  "artifactID": 12102282852,
+  "artifactSHA256": "b052fda14b107b0eb638613b7e2a40f091084d5158d76ae672fca5b74fe360d6",
+  "conclusion": "success",
+  "nativeChecks": 77,
+  "uiTests": 2,
+  "actualProcessRecoveryCases": 3,
+  "physicalDeviceQualified": false,
+  "testFlightUploaded": false,
+  "scope": "Simulator integration and export conformance. Does not qualify localization, newer source revisions, or physical-device behavior."
+}

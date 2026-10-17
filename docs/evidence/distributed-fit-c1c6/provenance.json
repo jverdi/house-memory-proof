@@ -1,0 +1,9 @@
+{
+  "sourceRevision": "c1c6c37b61c456d0d4ec2174ff4bb8bfec025846",
+  "runID": 39037534348,
+  "jobID": 117410268197,
+  "artifactID": 12102862456,
+  "artifactSHA256": "1e56654173e878898c52005f2701c0463b9860faea496ba45f6e10605a23b2b9",
+  "conclusion": "failure",
+  "physicalDeviceQualified": false
+}
