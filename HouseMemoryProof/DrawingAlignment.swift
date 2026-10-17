@@ -90,6 +90,7 @@ struct DrawingAlignmentPage: View {
             let (transform, fit, check) = try CheckedRegistration.fit(source: source, target: targets)
             let bounds = sheet.bounds(for: .cropBox)
             guard bounds.width > 0, bounds.height > 0 else { throw HouseError.message("The source page has no usable bounds.") }
+            guard sheet.rotation % 360 == 0 else { throw HouseError.message("This page has a rotation flag. Preserve the original and import a normalized unrotated PDF for a spatial overlay.") }
             let image = sheet.thumbnail(of: CGSize(width: 2048, height: 2048), for: .cropBox)
             guard let bytes = image.jpegData(compressionQuality: 0.95) else { throw HouseError.message("Unable to render the source page.") }
             let texture = try repo.put(bytes, ext: "jpg")

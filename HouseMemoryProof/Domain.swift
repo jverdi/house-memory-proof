@@ -54,6 +54,7 @@ struct Mesh: Codable, Equatable {
         return Mesh(vertices:v,triangles:[0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7])
     }
     static func route(_ p:[V3],radius:Double)->Mesh {
+        guard p.count>=2,radius.isFinite,radius>0,p.allSatisfy({$0.finite}) else{return Mesh()}
         var m=Mesh()
         for i in 1..<p.count {
             let direction=(p[i]-p[i-1]).normalized
