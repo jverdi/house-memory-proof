@@ -28,6 +28,8 @@ import ImageIO
                 let(t,residual,link)=try ReferenceRegistration.fit(source:source,anchor:anchor,house:h)
                 guard (t.apply(V3())-V3(1,0,0)).length<1e-8,residual<1e-8 else{return false}
                 source.registration=t;source.registrationLink=link;h.segments[1]=source
+                h=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))
+                guard h.segments[1].registrationLink==link else{return false}
                 ReferenceRegistration.invalidateChangedInputs(&h);guard h.segments[1].registration != nil else{return false}
                 h.segments[0].registration!.values[3]=0.1;ReferenceRegistration.invalidateChangedInputs(&h)
                 guard h.segments[1].registration==nil else{return false}
@@ -84,7 +86,15 @@ import ImageIO
                 let solution=try PoseGraph.build(house:capture,segment:capture.segments[0],repo:repo)
                 guard solution.cameras[capture.observations[0].id.uuidString]==nil,(solution.excludedFrameCount ?? 0)>=1,solution.cameras.count>=3 else{return false}
                 capture.segments[0].poseSolution=solution
+                capture=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(capture))
+                guard capture.segments[0].poseSolution==solution else{return false}
                 return PoseGraph.selected(capture.observations,segment:capture.segments[0],house:capture)?.count==solution.cameras.count
+            }
+            check("Recorded path follows stair height without jumping to another floor") {
+                let edge=NavigationGeometry.PathEdge(a:V3(0,0,1.6),b:V3(1,0,2.1))
+                guard let point=NavigationGeometry.followedHeight(from:V3(0,0,1.6),to:V3(0.1,0,1.6),paths:[edge]) else{return false}
+                let upper=NavigationGeometry.PathEdge(a:V3(0,0,4.6),b:V3(1,0,4.6))
+                return abs(point.z-1.65)<1e-9 && NavigationGeometry.followedHeight(from:V3(0,0,1.6),to:V3(0.1,0,1.6),paths:[upper])==nil
             }
             check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
             check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}

@@ -170,6 +170,7 @@ extension UIColor {
   @Published var orbit = false
   private var clearance = SpatialClearance(features: [])
   private var cameraCorridor: [V3] = []
+  private var recordedPaths:[NavigationGeometry.PathEdge]=[]
   @Published var navigationNotice = ""
   var house: House?
   var options = SceneOptions()
@@ -217,6 +218,7 @@ extension UIColor {
     revision = h.revision
     clearance = SpatialClearance(features: Exporter.canonicalFeatures(h, options: o))
     cameraCorridor = NavigationGeometry.positions(house:h,options:o)
+    recordedPaths=NavigationGeometry.paths(house:h,options:o)
     navigationNotice = clearance.complete ? DisplayGeometry.notice(SceneBuilder.features(h,options:o)) : "Walk collision budget exceeded. Choose one room or use Free fly."
     let scene = SceneBuilder.scene(h, options: o)
     scene.rootNode.addChildNode(camera)
@@ -338,12 +340,13 @@ extension UIColor {
     let delta = (forward * move.y + right * move.x + SIMD3(0, vertical, 0)) * dt * 1.3
     guard simd_length(delta) > 0 else { return }
     let from = camera.simdPosition
-    let to = from + delta
+    var to = from + delta
     if flying {
       camera.simdPosition = to
       return
     }
-    let direction = simd_normalize(delta)
+    if let adjusted=NavigationGeometry.followedHeight(from:V3(ar:from),to:V3(ar:to),paths:recordedPaths) {to=adjusted.render}
+    let direction = simd_normalize(to-from)
     let ahead = to + direction * 0.23
     if clearance.isClear(from: V3(ar: from), to: V3(ar: ahead), radius: 0.15) {
       if let h = house {
@@ -395,6 +398,32 @@ struct Joystick: View {
 }
 
 enum NavigationGeometry {
+  struct PathEdge {var a:V3;var b:V3}
+  static func paths(house:House,options:SceneOptions)->[PathEdge] {
+    let stages=SceneBuilder.eligibleStages(house,options:options),active=SceneBuilder.activeUnregisteredSegment(house,options:options)
+    let observations=PoseRefinement.selectedForHouse(house).filter{stages.contains($0.stageID) && (options.room==nil || options.room==$0.roomID) && (active==nil || active==$0.segmentID)}
+    let grouped=Dictionary(grouping:observations,by:{$0.segmentID});var result:[PathEdge]=[]
+    for group in grouped.values {
+      let sorted=group.sorted{$0.timestamp<$1.timestamp}
+      for i in sorted.indices.dropFirst() {
+        let a=sorted[i-1],b=sorted[i],p=TourDirector.pose(a,house:house).0,q=TourDirector.pose(b,house:house).0
+        let horizontal=hypot(q.x-p.x,q.y-p.y)
+        if b.timestamp-a.timestamp<=3 && (q-p).length<=1 && horizontal>=0.03 && abs(q.z-p.z)<=horizontal {result.append(PathEdge(a:p,b:q))}
+      }
+    };return result
+  }
+  static func followedHeight(from:V3,to:V3,paths:[PathEdge])->V3? {
+    let step=hypot(to.x-from.x,to.y-from.y);guard step>0 else{return nil}
+    var best:V3?,distance=Double.infinity
+    for edge in paths {
+      let d=edge.b-edge.a,denominator=d.x*d.x+d.y*d.y;guard denominator>1e-6 else{continue}
+      let t=max(0,min(1,((to.x-edge.a.x)*d.x+(to.y-edge.a.y)*d.y)/denominator)),point=edge.a+d*t
+      let separation=hypot(point.x-to.x,point.y-to.y)
+      guard separation<0.35,abs(point.z-from.z)<0.4,separation<distance else{continue}
+      // Only follow recorded gentle height changes, never an invented floor jump.
+      best=V3(to.x,to.y,from.z+max(-step,min(step,point.z-from.z)));distance=separation
+    };return best
+  }
   static func positions(house:House,options:SceneOptions)->[V3] {
     let stages=SceneBuilder.eligibleStages(house,options:options)
     let active=SceneBuilder.activeUnregisteredSegment(house,options:options)

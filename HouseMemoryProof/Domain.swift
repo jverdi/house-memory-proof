@@ -208,6 +208,7 @@ extension House {
         isDemo=try c.decodeIfPresent(Bool.self,forKey:.isDemo) ?? false
         notes=try c.decodeIfPresent(String.self,forKey:.notes) ?? ""
         closureNotes=try c.decodeIfPresent(String.self,forKey:.closureNotes) ?? ""
+        ReferenceRegistration.invalidateChangedInputs(&self)
     }
 }
 
@@ -224,5 +225,7 @@ extension Segment {
         interrupted=try c.decodeIfPresent(Bool.self,forKey:.interrupted) ?? false
         approved=try c.decodeIfPresent(Bool.self,forKey:.approved) ?? false
         referencePoses=try c.decodeIfPresent([ReferencePose].self,forKey:.referencePoses) ?? []
+        registrationLink=try c.decodeIfPresent(RegistrationLink.self,forKey:.registrationLink)
+        poseSolution=try c.decodeIfPresent(PoseGraphSolution.self,forKey:.poseSolution)
     }
 }

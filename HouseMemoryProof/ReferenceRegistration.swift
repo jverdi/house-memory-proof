@@ -45,6 +45,18 @@ enum ReferenceRegistration {
     return(result,worst,RegistrationLink(anchorSegment:anchor.id,boardIDs:boards.map{$0.id},fingerprint:try fingerprint(source:source,anchor:anchor,boards:boards)))
   }
   static func invalidateChangedInputs(_ house:inout House) {
+    // Imported dependency graphs may contain cycles or missing targets. Remove
+    // every invalid chain before any derived registration can be displayed.
+    let byID=Dictionary(house.segments.map{($0.id,$0)},uniquingKeysWith:{a,_ in a})
+    var invalid=Set<UUID>()
+    for segment in house.segments where segment.registrationLink != nil {
+      var visited=Set<UUID>(),current:Segment?=segment
+      while let item=current,let link=item.registrationLink {
+        guard visited.insert(item.id).inserted,let next=byID[link.anchorSegment],link.boardIDs.count>=3,Set(link.boardIDs).count==link.boardIDs.count else{invalid.insert(segment.id);break}
+        current=next
+      }
+    }
+    for i in house.segments.indices where invalid.contains(house.segments[i].id) {house.segments[i].registration=nil;house.segments[i].registrationResidual=nil;house.segments[i].registrationLink=nil}
     for _ in 0..<house.segments.count {
       var changed=false
       for i in house.segments.indices {
