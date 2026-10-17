@@ -20,7 +20,9 @@ while True:
     if version:
         filters['filter[version]'] = version
     builds = request(token, '/v1/builds?' + urllib.parse.urlencode(filters))['data']
-    report = {'app_id': app['id'], 'app_name': app['attributes']['name'],
+    owners = request(token, '/v1/users?' + urllib.parse.urlencode({'filter[roles]': 'ACCOUNT_HOLDER'}))['data']
+    owner_matches = [u for u in owners if u['attributes'].get('firstName', '').lower() == 'jared' and u['attributes'].get('lastName', '').lower() in ('verdi', 'testerverdi')]
+    report = {'personal_account_holder_verified': len(owners) == 1 and len(owner_matches) == 1, 'app_id': app['id'], 'app_name': app['attributes']['name'],
               'bundle_id': bundle, 'target_build': version, 'builds': []}
     for build in builds:
         attrs = build['attributes']
