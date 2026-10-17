@@ -64,6 +64,21 @@ jobs:
         id: native
         timeout-minutes: 10
         run: bash ci/simulator.sh native
+      - name: Preserve native checkpoint before interface and interoperability checks
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-checkpoint-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            build/evidence/native-self-test.json
+            build/evidence/native-progress.json
+            build/evidence/self-test-partial.json
+            build/evidence/coded-reference-diagnostics.json
+            build/evidence/coded-source-*.png
+            build/evidence/incomplete-native-sample.txt
+            build/evidence/HouseMemoryProof*.ips
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify recovery across actual process termination
         if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/simulator-result.json') != ''
         timeout-minutes: 6

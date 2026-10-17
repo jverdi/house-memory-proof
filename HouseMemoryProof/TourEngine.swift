@@ -190,7 +190,7 @@ enum TourDirector {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v8", options.mode.rawValue,
+      "renderer-v9", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
@@ -373,18 +373,16 @@ enum TourDirector {
             ctx.translateBy(x: 0, y: CGFloat(height))
             ctx.scaleBy(x: 1, y: -1)
             UIGraphicsPushContext(ctx)
-            let text =
-              shot.caption + "\nHouse Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
-            let rect = CGRect(
-              x: 24, y: CGFloat(height) - 92, width: CGFloat(width) - 48, height: 76)
+            let titleFont=UIFont.systemFont(ofSize:CGFloat(width)/55,weight:.medium)
+            let sourceFont=UIFont.systemFont(ofSize:CGFloat(width)/70,weight:.regular)
+            let titleHeight=ceil(titleFont.lineHeight),sourceHeight=ceil(sourceFont.lineHeight)
+            let rect=CGRect(x:24,y:CGFloat(height)-24-titleHeight-sourceHeight-8,width:CGFloat(width)-48,height:titleHeight+sourceHeight+8)
             UIColor.black.withAlphaComponent(0.65).setFill()
             UIBezierPath(roundedRect: rect.insetBy(dx: -10, dy: -5), cornerRadius: 8).fill()
-            (text as NSString).draw(
-              in: rect,
-              withAttributes: [
-                .font: UIFont.systemFont(ofSize: CGFloat(width) / 55, weight: .medium),
-                .foregroundColor: UIColor.white,
-              ])
+            let paragraph=NSMutableParagraphStyle();paragraph.lineBreakMode = .byTruncatingTail
+            (shot.caption as NSString).draw(in:CGRect(x:rect.minX,y:rect.minY,width:rect.width,height:titleHeight),withAttributes:[.font:titleFont,.foregroundColor:UIColor.white,.paragraphStyle:paragraph])
+            let provenance="House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
+            (provenance as NSString).draw(in:CGRect(x:rect.minX,y:rect.minY+titleHeight+8,width:rect.width,height:sourceHeight),withAttributes:[.font:sourceFont,.foregroundColor:UIColor.white,.paragraphStyle:paragraph])
             UIGraphicsPopContext()
             ctx.restoreGState()
             guard
