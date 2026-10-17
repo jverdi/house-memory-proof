@@ -227,3 +227,10 @@ The exact C detector adapter passed 24 independent projective raster/blur/noise 
 The pinned AprilTag decoder reports edge-origin coordinates (first pixel centre 0.5); AR camera intrinsics and the independent ray renderer use integer pixel centres. Saved normalized detections retain their original convention. The geometry adapter now subtracts half a pixel only at source measurement, multi-view fitting, consistency checking and query localization. Coded registration fingerprints include the algorithm version so existing transforms are recomputed. A native regression archives exact projected marker corners and requires recovery of the original metric board pose. This correction requires fresh native and isolated replay results.
 
 Before this coordinate correction, source `b022d8fa` passed the isolated four-region coded replay: 16/16 nominal queries, zero false accepts among 20 negative challenges, worst/p95 3.873 mm. Artifact 12108253343 from run 39054429618 was downloaded and SHA-256 verified (`341fa97741e51e95af076e61304e51819c99b2c3c67879309ff01ea27fcab683`). This remains a development fixture, not field qualification.
+
+
+### Natural-feature support experiment rejected
+
+Isolated source `db5d1f6c`, run 39054565418 compared 15/21/25-pixel ORB patches on the four unchanged house fixtures. All three variants failed overall. The 15-pixel variant lost all rough-view availability; 21 and 25 pixels still accepted at most one of eight finished views and exceeded accuracy limits in other configurations. No production feature parameters were changed. Whole artifact hashes and per-scenario results are retained under `docs/evidence/feature-support-db5d1/`.
+
+A separate diagnostic now evaluates the pinned OpenCV AKAZE detector with its standard threshold, a 256-bit binary descriptor and the existing feature-count, matching and pose gates. It uses AKAZE's own scale-space localization, with no ORB-specific corner refinement. The production extractor stays unchanged unless a candidate clears the independent acceptance suites; the experiment alone cannot qualify a release. API contract: https://docs.opencv.org/4.13.0/d8/d30/classcv_1_1AKAZE.html.

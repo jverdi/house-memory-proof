@@ -1,0 +1,317 @@
+{
+  "sourceRevision": "db5d1f6cae2764fb863dbcaf046968a88bc987e6",
+  "runID": 39054565418,
+  "productionChanged": false,
+  "adopted": false,
+  "artifacts": [
+    {
+      "patchSize": 15,
+      "artifactID": 12109415899,
+      "verifiedSHA256": "e43970e83c5ecb13ce9595451450e6f56714b01728cc5e59ab72ffa7bf005255",
+      "reports": [
+        {
+          "fixture": "paired",
+          "passed": false,
+          "positiveAccepted": 0,
+          "positiveQueries": 20,
+          "falseAccepts": 0,
+          "negativeQueries": 20,
+          "p95Metres": null,
+          "availability": 0.0,
+          "scenarioMetrics": {
+            "finished stage with retained reference surfaces": {
+              "attempts": 8,
+              "accepted": 0,
+              "availability": 0.0,
+              "p95Metres": null,
+              "worstMetres": null,
+              "passed": false
+            },
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 0,
+              "availability": 0.0,
+              "p95Metres": null,
+              "worstMetres": null,
+              "passed": false
+            }
+          }
+        },
+        {
+          "fixture": "rough-b",
+          "passed": false,
+          "positiveAccepted": 0,
+          "positiveQueries": 12,
+          "falseAccepts": 0,
+          "negativeQueries": 8,
+          "p95Metres": null,
+          "availability": 0.0,
+          "scenarioMetrics": {
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 0,
+              "availability": 0.0,
+              "p95Metres": null,
+              "worstMetres": null,
+              "passed": false
+            }
+          }
+        },
+        {
+          "fixture": "rough-a",
+          "passed": false,
+          "positiveAccepted": 0,
+          "positiveQueries": 12,
+          "falseAccepts": 0,
+          "negativeQueries": 8,
+          "p95Metres": null,
+          "availability": 0.0,
+          "scenarioMetrics": {
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 0,
+              "availability": 0.0,
+              "p95Metres": null,
+              "worstMetres": null,
+              "passed": false
+            }
+          }
+        },
+        {
+          "fixture": "staggered",
+          "passed": false,
+          "positiveAccepted": 3,
+          "positiveQueries": 20,
+          "falseAccepts": 0,
+          "negativeQueries": 20,
+          "p95Metres": 0.012078999998840776,
+          "availability": 0.15,
+          "scenarioMetrics": {
+            "finished stage with retained reference surfaces": {
+              "attempts": 8,
+              "accepted": 3,
+              "availability": 0.375,
+              "p95Metres": 0.012078999998840776,
+              "worstMetres": 0.012078999998840776,
+              "passed": false
+            },
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 0,
+              "availability": 0.0,
+              "p95Metres": null,
+              "worstMetres": null,
+              "passed": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "patchSize": 21,
+      "artifactID": 12108817376,
+      "verifiedSHA256": "c7e3327de2613e327ddea4708951e0827d85d98e321a3600ec640917fca8273b",
+      "reports": [
+        {
+          "fixture": "paired",
+          "passed": false,
+          "positiveAccepted": 13,
+          "positiveQueries": 20,
+          "falseAccepts": 0,
+          "negativeQueries": 20,
+          "p95Metres": 0.01117184041143144,
+          "availability": 0.65,
+          "scenarioMetrics": {
+            "finished stage with retained reference surfaces": {
+              "attempts": 8,
+              "accepted": 1,
+              "availability": 0.125,
+              "p95Metres": 0.01117184041143144,
+              "worstMetres": 0.01117184041143144,
+              "passed": false
+            },
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 12,
+              "availability": 1.0,
+              "p95Metres": 0.006832657865901547,
+              "worstMetres": 0.006832657865901547,
+              "passed": true
+            }
+          }
+        },
+        {
+          "fixture": "rough-b",
+          "passed": false,
+          "positiveAccepted": 12,
+          "positiveQueries": 12,
+          "falseAccepts": 0,
+          "negativeQueries": 8,
+          "p95Metres": 0.013757600010264909,
+          "availability": 1.0,
+          "scenarioMetrics": {
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 12,
+              "availability": 1.0,
+              "p95Metres": 0.013757600010264909,
+              "worstMetres": 0.013757600010264909,
+              "passed": false
+            }
+          }
+        },
+        {
+          "fixture": "rough-a",
+          "passed": false,
+          "positiveAccepted": 12,
+          "positiveQueries": 12,
+          "falseAccepts": 0,
+          "negativeQueries": 8,
+          "p95Metres": 0.011990821675275315,
+          "availability": 1.0,
+          "scenarioMetrics": {
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 12,
+              "availability": 1.0,
+              "p95Metres": 0.011990821675275315,
+              "worstMetres": 0.011990821675275315,
+              "passed": false
+            }
+          }
+        },
+        {
+          "fixture": "staggered",
+          "passed": false,
+          "positiveAccepted": 13,
+          "positiveQueries": 20,
+          "falseAccepts": 0,
+          "negativeQueries": 20,
+          "p95Metres": 0.013953217039487929,
+          "availability": 0.65,
+          "scenarioMetrics": {
+            "finished stage with retained reference surfaces": {
+              "attempts": 8,
+              "accepted": 1,
+              "availability": 0.125,
+              "p95Metres": 0.005942282886487772,
+              "worstMetres": 0.005942282886487772,
+              "passed": false
+            },
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 12,
+              "availability": 1.0,
+              "p95Metres": 0.013953217039487929,
+              "worstMetres": 0.013953217039487929,
+              "passed": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "patchSize": 25,
+      "artifactID": 12109321762,
+      "verifiedSHA256": "70ba0186e59cae52ec4463c22d50eca7c8d0a0c496b4298686d6d8b1e6bbe106",
+      "reports": [
+        {
+          "fixture": "paired",
+          "passed": false,
+          "positiveAccepted": 12,
+          "positiveQueries": 20,
+          "falseAccepts": 0,
+          "negativeQueries": 20,
+          "p95Metres": 0.0071924481420303525,
+          "availability": 0.6,
+          "scenarioMetrics": {
+            "finished stage with retained reference surfaces": {
+              "attempts": 8,
+              "accepted": 0,
+              "availability": 0.0,
+              "p95Metres": null,
+              "worstMetres": null,
+              "passed": false
+            },
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 12,
+              "availability": 1.0,
+              "p95Metres": 0.0071924481420303525,
+              "worstMetres": 0.0071924481420303525,
+              "passed": true
+            }
+          }
+        },
+        {
+          "fixture": "rough-b",
+          "passed": false,
+          "positiveAccepted": 12,
+          "positiveQueries": 12,
+          "falseAccepts": 0,
+          "negativeQueries": 8,
+          "p95Metres": 0.012179557090650477,
+          "availability": 1.0,
+          "scenarioMetrics": {
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 12,
+              "availability": 1.0,
+              "p95Metres": 0.012179557090650477,
+              "worstMetres": 0.012179557090650477,
+              "passed": false
+            }
+          }
+        },
+        {
+          "fixture": "rough-a",
+          "passed": true,
+          "positiveAccepted": 12,
+          "positiveQueries": 12,
+          "falseAccepts": 0,
+          "negativeQueries": 8,
+          "p95Metres": 0.009234163539951873,
+          "availability": 1.0,
+          "scenarioMetrics": {
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 12,
+              "availability": 1.0,
+              "p95Metres": 0.009234163539951873,
+              "worstMetres": 0.009234163539951873,
+              "passed": true
+            }
+          }
+        },
+        {
+          "fixture": "staggered",
+          "passed": false,
+          "positiveAccepted": 11,
+          "positiveQueries": 20,
+          "falseAccepts": 0,
+          "negativeQueries": 20,
+          "p95Metres": 0.02522834092740968,
+          "availability": 0.55,
+          "scenarioMetrics": {
+            "finished stage with retained reference surfaces": {
+              "attempts": 8,
+              "accepted": 1,
+              "availability": 0.125,
+              "p95Metres": 0.003326341619900528,
+              "worstMetres": 0.003326341619900528,
+              "passed": false
+            },
+            "nominal selected room": {
+              "attempts": 12,
+              "accepted": 10,
+              "availability": 0.8333333333333334,
+              "p95Metres": 0.02522834092740968,
+              "worstMetres": 0.02522834092740968,
+              "passed": false
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
