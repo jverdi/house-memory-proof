@@ -25,7 +25,7 @@ permissions:
 
 concurrency:
   group: house-proof-${{ github.ref }}-${{ startsWith(github.event.head_commit.message, '[release]') && 'delivery' || 'validation' }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'push' && !startsWith(github.event.head_commit.message, '[release]') }}
 
 jobs:
   simulator:
