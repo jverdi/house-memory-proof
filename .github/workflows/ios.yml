@@ -2,7 +2,7 @@ name: Build and deliver House Proof
 
 on:
   push:
-    branches: [main]
+    branches: [main, continuation-evidence-20261017]
     paths:
       - HouseMemoryProof/**
       - HouseMemoryProof.xcodeproj/**

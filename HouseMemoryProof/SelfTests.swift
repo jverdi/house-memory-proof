@@ -843,6 +843,20 @@ extension SelfTests {
             return result
         }
         let originalExports=try published();var retained:[String:String]=[:]
+        var completedShots=0,partialFrames=0,interrupted:Task<URL,Error>?
+        interrupted=Task {
+            try await MovieExporter.render(house,repo:repo,options:options,duration:5,width:320,height:180,checkpoint:{phase in
+                if phase=="shot-committed" {completedShots+=1}
+                if phase=="frame-encoded",completedShots==1 {
+                    partialFrames+=1
+                    if partialFrames==3 {interrupted?.cancel()}
+                }
+            }){_ in}
+        }
+        do {_=try await interrupted!.value;throw HouseError.message("Mid-shot cancellation did not stop export.")}catch is CancellationError{}
+        retained=try cache()
+        guard completedShots==1,partialFrames==3,retained.count==1,try published()==originalExports else{throw HouseError.message("Mid-shot interruption did not retain exactly the completed shot and remove partial output.")}
+
         for phase in ["shot-committed","assembly-started","assembly-completed"] {
             do {
                 _=try await MovieExporter.render(house,repo:repo,options:options,duration:5,width:320,height:180,checkpoint:{if $0==phase {throw CancellationError()}}){_ in}
@@ -862,7 +876,7 @@ extension SelfTests {
         guard try cache()==retained,await MovieExporter.validClip(recovered,frames:150,width:320,height:180) else{throw HouseError.message("Interrupted movie did not resume from its verified shots.")}
         let digest=try StreamingArchive.digest(recovered).sha
         try FileManager.default.removeItem(at:recovered);try FileManager.default.removeItem(at:recovered.deletingPathExtension().appendingPathExtension("json"))
-        return ["test":"Movie interruption and final-publication recovery","passed":true,"faultPhases":["shot-committed","assembly-started","assembly-completed"],"actualTaskCancellation":true,"retainedShots":retained.count,"recoveredFrames":150,"recoveredMovieSHA256":digest,"physicalDeviceQualified":false]
+        return ["test":"Movie interruption and final-publication recovery","passed":true,"faultPhases":["mid-shot","shot-committed","assembly-started","assembly-completed"],"actualTaskCancellation":true,"retainedShots":retained.count,"recoveredFrames":150,"recoveredMovieSHA256":digest,"physicalDeviceQualified":false]
     }
     static func movieTargetReport(root:URL) async throws->[String:Any] {
         let scene=SCNScene();scene.background.contents=UIColor.black

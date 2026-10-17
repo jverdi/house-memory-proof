@@ -270,6 +270,10 @@ enum TourDirector {
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     try planData.write(to: folder.appendingPathComponent("tour.json"), options: .atomic)
     try repo.job(hash, state: "running", data: planData)
+    var published=false
+    // Cancellation can occur while validating cached clips or constructing the
+    // renderer, before an individual shot's cleanup block is entered.
+    defer {if !published {try? repo.job(hash,state:"checkpointed",data:planData)}}
     var files: [URL] = []
     let total = plan.shots.reduce(0) { $0 + Int(($1.duration * 30).rounded()) }
     var complete = 0
@@ -349,6 +353,7 @@ enum TourDirector {
           guard let pool=adaptor.pixelBufferPool else{throw HouseError.message("Movie encoder did not provide a reusable frame pool.")}
           let buffer=try await renderer.frame(at:Double(frame)/30,pool:pool)
           guard adaptor.append(buffer,withPresentationTime:CMTime(value:Int64(frame),timescale:30)) else{throw writer.error ?? HouseError.message("Movie frame was rejected.")}
+          try checkpoint?("frame-encoded")
           progress(Double(complete + frame + 1) / Double(total))
           await Task.yield()
         }
@@ -414,6 +419,7 @@ enum TourDirector {
       try Task.checkCancellation()
       try planData.write(to: output.deletingPathExtension().appendingPathExtension("json"))
       try repo.job(hash, state: "succeeded", data: planData)
+      published=true
       progress(1)
       return output
     } catch {
@@ -424,3 +430,4 @@ enum TourDirector {
     }
   }
 }
+

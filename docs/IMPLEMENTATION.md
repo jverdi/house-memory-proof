@@ -332,3 +332,8 @@ All 56 negative challenges reject in each candidate. Neither ablation repairs th
 Source `974b9d09`, run 39064382551, passed **95/95 native checks** in 149.7 seconds, including the new post-commit retry/conflict case. The checkpoint artifact was downloaded and SHA-256 verified (`70245d5bba01c811d7b950b553e1a002f0410983b3ad7f5ef42a61e6f9f23f5d`); native reports are retained under `docs/evidence/native-974b/`. All three process-kill recovery modes also completed successfully. UI and independent-reader steps were still running when this checkpoint was recorded. This source predates the movie-recovery and PLY changes, whose combined native run remains pending.
 
 Automatic approval review blocked a subsequent default-branch evidence update for lack of explicit main-branch authorization. The prepared evidence is preserved on `continuation-evidence-20261017`; no rejected ref update was retried. Previously queued validation continues. No TestFlight upload occurred.
+
+
+### Review-branch movie cancellation completion
+
+The review branch adds actual task cancellation three frames into the second shot, requiring the first verified shot to retain its checksum/modification time and the partial second shot/final export to disappear before retry. A function-wide job-state cleanup also covers cancellation during cached-clip validation and renderer setup. This is additional unverified code until the branch CI completes. Simulator-only CI accepts this explicit review branch; the TestFlight job remains disabled.
