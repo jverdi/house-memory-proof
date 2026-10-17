@@ -772,6 +772,9 @@ import Darwin
                     try UIImage(cgImage:frame.image).pngData()?.write(to:mainRepo.root.appendingPathComponent("test-tour-frame.png"))
                     results.append(["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":reused,"width":1920,"height":1080,"durationSeconds":10,"seconds":ProcessInfo.processInfo.systemUptime-started])
                 }catch{results.append(["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":false,"error":error.localizedDescription])}
+                mark("Movie interruption and final-publication recovery")
+                do {results.append(try await movieRecoveryReport(repo:Repository(root:folder.appendingPathComponent("movie-recovery"))))}
+                catch{results.append(["test":"Movie interruption and final-publication recovery","passed":false,"error":error.localizedDescription])}
             }
         }catch{results.append(["test":"Test harness setup","passed":false,"error":error.localizedDescription])}
         #if targetEnvironment(simulator)
@@ -787,6 +790,42 @@ import Darwin
 }
 
 extension SelfTests {
+    static func movieRecoveryReport(repo:Repository) async throws->[String:Any] {
+        let house=DemoFactory.make(),options=SceneOptions(),exports=Exporter.destination("probe").deletingLastPathComponent()
+        func published()throws->Set<String> {Set(try FileManager.default.contentsOfDirectory(atPath:exports.path))}
+        func cache()throws->[String:String] {
+            let root=repo.root.appendingPathComponent("tours")
+            guard let files=FileManager.default.enumerator(at:root,includingPropertiesForKeys:[.contentModificationDateKey]) else{return [:]}
+            var result:[String:String]=[:]
+            for case let url as URL in files where url.pathExtension=="mp4" {
+                guard !url.lastPathComponent.contains("partial") else{throw HouseError.message("Interrupted movie retained an unfinished shot.")}
+                let date=try url.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                result[url.lastPathComponent]=try StreamingArchive.digest(url).sha+"|"+String(date.timeIntervalSince1970)
+            }
+            return result
+        }
+        let originalExports=try published();var retained:[String:String]=[:]
+        for phase in ["shot-committed","assembly-started","assembly-completed"] {
+            do {
+                _=try await MovieExporter.render(house,repo:repo,options:options,duration:5,width:320,height:180,checkpoint:{if $0==phase {throw CancellationError()}}){_ in}
+                throw HouseError.message("Movie fault checkpoint was not reached: "+phase)
+            } catch is CancellationError {}
+            let current=try cache()
+            guard !current.isEmpty,retained.allSatisfy({current[$0.key]==$0.value}),try published()==originalExports else{throw HouseError.message("Movie interruption changed a completed shot or published an incomplete final file.")}
+            retained=current
+        }
+        var cancelled:Task<URL,Error>?
+        cancelled=Task {
+            try await MovieExporter.render(house,repo:repo,options:options,duration:5,width:320,height:180,checkpoint:{if $0=="assembly-completed" {cancelled?.cancel()}}){_ in}
+        }
+        do {_=try await cancelled!.value;throw HouseError.message("Cancelled movie was published.")}catch is CancellationError{}
+        guard try cache()==retained,try published()==originalExports else{throw HouseError.message("Task cancellation lost a shot or retained a final export.")}
+        let recovered=try await MovieExporter.render(house,repo:repo,options:options,duration:5,width:320,height:180){_ in}
+        guard try cache()==retained,await MovieExporter.validClip(recovered,frames:150,width:320,height:180) else{throw HouseError.message("Interrupted movie did not resume from its verified shots.")}
+        let digest=try StreamingArchive.digest(recovered).sha
+        try FileManager.default.removeItem(at:recovered);try FileManager.default.removeItem(at:recovered.deletingPathExtension().appendingPathExtension("json"))
+        return ["test":"Movie interruption and final-publication recovery","passed":true,"faultPhases":["shot-committed","assembly-started","assembly-completed"],"actualTaskCancellation":true,"retainedShots":retained.count,"recoveredFrames":150,"recoveredMovieSHA256":digest,"physicalDeviceQualified":false]
+    }
     static func movieTargetReport(root:URL) async throws->[String:Any] {
         let scene=SCNScene();scene.background.contents=UIColor.black
         let camera=SCNNode();camera.camera=SCNCamera();camera.camera!.usesOrthographicProjection=true;camera.camera!.orthographicScale=1;camera.camera!.zNear=0.1;camera.camera!.zFar=10;scene.rootNode.addChildNode(camera)

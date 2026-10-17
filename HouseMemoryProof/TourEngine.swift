@@ -249,8 +249,10 @@ enum TourDirector {
   // in iOS 26. Its use is isolated here; no live screen recording is performed.
   static func render(
     _ house: House, repo: Repository, options: SceneOptions, duration: Double = 20,
-    width: Int = 1920, height: Int = 1080, preset:TourPreset = .overview, progress: @escaping (Double) -> Void
+    width: Int = 1920, height: Int = 1080, preset:TourPreset = .overview,
+    checkpoint:((String)throws->Void)?=nil, progress: @escaping (Double) -> Void
   ) async throws -> URL {
+    try Task.checkCancellation()
     var plan = TourDirector.plan(house, duration: duration, options: options,preset:preset)
     plan.width = width
     plan.height = height
@@ -369,6 +371,7 @@ enum TourDirector {
         files.append(url)
         complete += frames
         try repo.job(hash, state: "checkpointed", data: planData)
+        try checkpoint?("shot-committed")
       } catch {
         writer.cancelWriting()
         try? FileManager.default.removeItem(at: candidate)
@@ -376,37 +379,48 @@ enum TourDirector {
         throw error
       }
     }
-    let composition = AVMutableComposition()
-    guard
-      let video = composition.addMutableTrack(
-        withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-    else { throw HouseError.message("Could not assemble the tour.") }
-    var time = CMTime.zero
-    for file in files {
-      let asset = AVURLAsset(url: file)
-      guard let track = try await asset.loadTracks(withMediaType: .video).first else {
-        throw HouseError.message("Movie segment has no video.")
-      }
-      let duration = try await asset.load(.duration)
-      try video.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: track, at: time)
-      time = CMTimeAdd(time, duration)
-    }
     let output = Exporter.destination("House-Xray-tour.mp4")
-    guard
-      let export = AVAssetExportSession(
-        asset: composition, presetName: AVAssetExportPresetPassthrough)
-    else { throw HouseError.message("Movie assembly unavailable.") }
-    let assemblyWatchdog=Task {
-      do{try await Task.sleep(nanoseconds:60_000_000_000);export.cancelExport()}catch{}
+    do {
+      try Task.checkCancellation()
+      let composition = AVMutableComposition()
+      guard
+        let video = composition.addMutableTrack(
+          withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+      else { throw HouseError.message("Could not assemble the tour.") }
+      var time = CMTime.zero
+      for file in files {
+        let asset = AVURLAsset(url: file)
+        guard let track = try await asset.loadTracks(withMediaType: .video).first else {
+          throw HouseError.message("Movie segment has no video.")
+        }
+        let duration = try await asset.load(.duration)
+        try video.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: track, at: time)
+        time = CMTimeAdd(time, duration)
+      }
+      guard
+        let export = AVAssetExportSession(
+          asset: composition, presetName: AVAssetExportPresetPassthrough)
+      else { throw HouseError.message("Movie assembly unavailable.") }
+      try checkpoint?("assembly-started")
+      try Task.checkCancellation()
+      let assemblyWatchdog=Task {
+        do{try await Task.sleep(nanoseconds:60_000_000_000);export.cancelExport()}catch{}
+      }
+      defer{assemblyWatchdog.cancel()}
+      try await withTaskCancellationHandler(operation:{try await export.export(to:output,as:.mp4)},onCancel:{export.cancelExport()})
+      try checkpoint?("assembly-completed")
+      try Task.checkCancellation()
+      if let issue=await clipIssue(output,frames:total,width:width,height:height){throw HouseError.message("Final movie: "+issue)}
+      try Task.checkCancellation()
+      try planData.write(to: output.deletingPathExtension().appendingPathExtension("json"))
+      try repo.job(hash, state: "succeeded", data: planData)
+      progress(1)
+      return output
+    } catch {
+      try? FileManager.default.removeItem(at:output)
+      try? FileManager.default.removeItem(at:output.deletingPathExtension().appendingPathExtension("json"))
+      try? repo.job(hash,state:"checkpointed",data:planData)
+      throw error
     }
-    defer{assemblyWatchdog.cancel()}
-    do{try await export.export(to: output, as: .mp4)}
-    catch{try? FileManager.default.removeItem(at:output);throw error}
-    if let issue=await clipIssue(output,frames:total,width:width,height:height){throw HouseError.message("Final movie: "+issue)}
-    try planData.write(to: output.deletingPathExtension().appendingPathExtension("json"))
-    try repo.job(hash, state: "succeeded", data: planData)
-    progress(1)
-    return output
   }
 }
-
