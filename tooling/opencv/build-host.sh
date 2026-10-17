@@ -25,7 +25,7 @@ clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-hos
 swiftc -O -swift-version 5 -parse-as-library -target arm64-apple-macos14.0 \
   -import-objc-header packages/visual-core/hx_replay.h \
   HouseMemoryProof/Domain.swift HouseMemoryProof/EvidenceModels.swift \
-  HouseMemoryProof/PoseRefinement.swift HouseMemoryProof/VisualMapping.swift HouseMemoryProof/PoseGraph.swift \
+  HouseMemoryProof/PoseRefinement.swift HouseMemoryProof/VisualMapping.swift HouseMemoryProof/PoseGraph.swift HouseMemoryProof/ReferenceRegistration.swift \
   tooling/simulation/VisionReplay.swift build/vision-core.o build/vision-core-test.o build/graph-core.o \
   -F build/opencv-host -framework opencv2 -framework Accelerate -framework OpenCL \
   -framework Foundation -framework CoreGraphics -framework ImageIO -lc++ -lz \

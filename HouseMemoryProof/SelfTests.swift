@@ -20,6 +20,21 @@ import ImageIO
                 let opposite=try RevealVolumes.clip(f,to:b)
                 return b.valid && clipped.mesh.valid && !clipped.mesh.triangles.isEmpty && clipped.uv?.count==clipped.mesh.vertices.count && clipped.mesh.vertices.allSatisfy{let q=b.coordinates($0);return q.x >= -1e-9 && q.x<=1+1e-9 && q.y>=(-1e-9) && q.y<=1+1e-9 && q.z<=0.2} && opposite.mesh.vertices.isEmpty && b.viewedFromFront(V3(0,0,-1)) && !b.viewedFromFront(V3(0,0,1))
             }
+            check("Shared reference registration checks third board and invalidates dependencies") {
+                var h=House.empty("Registration test");var anchor=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);anchor.registration=Rigid()
+                var source=Segment(roomID:h.rooms[0].id,stageID:h.stages[1].id)
+                for i in 0..<3 {let board=ReferenceBoard(name:"Board",image:"test.png",pdf:"test.pdf");h.references.append(board);var a=Rigid();a.values[3]=Double(i)*0.6;a.values[7]=1;a.values[11] = -2-Double(i)*0.2;var b=a;b.values[3]-=1;anchor.referencePoses.append(ReferencePose(boardID:board.id,matrix:a.values));source.referencePoses.append(ReferencePose(boardID:board.id,matrix:b.values))}
+                h.segments=[anchor,source]
+                let(t,residual,link)=try ReferenceRegistration.fit(source:source,anchor:anchor,house:h)
+                guard (t.apply(V3())-V3(1,0,0)).length<1e-8,residual<1e-8 else{return false}
+                source.registration=t;source.registrationLink=link;h.segments[1]=source
+                ReferenceRegistration.invalidateChangedInputs(&h);guard h.segments[1].registration != nil else{return false}
+                h.segments[0].registration!.values[3]=0.1;ReferenceRegistration.invalidateChangedInputs(&h)
+                guard h.segments[1].registration==nil else{return false}
+                let third=link.boardIDs[2];let index=source.referencePoses.firstIndex{$0.boardID==third}!
+                source.referencePoses[index].matrix[3]+=0.1
+                do {_=try ReferenceRegistration.fit(source:source,anchor:anchor,house:h);return false}catch{return true}
+            }
             check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
             check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
             check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}

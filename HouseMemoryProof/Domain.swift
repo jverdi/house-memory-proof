@@ -81,7 +81,7 @@ struct Observation:Codable,Identifiable,Equatable {
 }
 struct DocumentaryPhoto:Codable,Identifiable,Equatable {var id=UUID();var image:String;var date=Date();var note="";var roomID:UUID?;var stageID:UUID?}
 struct Segment:Codable,Identifiable,Equatable {
-    var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var interrupted=false;var approved=false;var referencePoses:[ReferencePose]=[];var poseSolution:PoseGraphSolution?=nil
+    var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var registrationLink:RegistrationLink?=nil;var interrupted=false;var approved=false;var referencePoses:[ReferencePose]=[];var poseSolution:PoseGraphSolution?=nil
 }
 struct Dimension:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var a:V3;var b:V3;var roomID:UUID;var date=Date();var source="Approximate geometry";var sourceRevision:Int;var segmentID:UUID?=nil

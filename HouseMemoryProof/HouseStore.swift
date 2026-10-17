@@ -247,6 +247,7 @@ final class Repository: EvidenceAssetReader {
     guard let repository else { return false }
     do {
       var h = house
+      ReferenceRegistration.invalidateChangedInputs(&h)
       h.revision += 1
       try repository.save(h)
       if let i = houses.firstIndex(where: { $0.id == h.id }) {

@@ -368,6 +368,7 @@ struct RegistrationPage: View {
   @EnvironmentObject var model: AppModel
   var house: House
   @State private var selected: UUID?
+  @State private var anchorID:UUID?
   @State private var source = ""
   @State private var target = ""
   @State private var report = ""
@@ -379,6 +380,24 @@ struct RegistrationPage: View {
       Picker("Segment", selection: $selected) {
         Text("Choose").tag(UUID?.none)
         ForEach(house.segments) { Text($0.started.formatted()).tag(Optional($0.id)) }
+      }
+      Section("Shared physical references") {
+        Button("Use selected session as house origin") {
+          guard let sid=selected else{return}
+          if model.edit(projectID:house.id,{h in if let i=h.segments.firstIndex(where:{$0.id==sid}) {h.segments[i].registration=Rigid();h.segments[i].registrationResidual=nil;h.segments[i].registrationLink=nil}}) {report="House origin assigned. This establishes coordinates, not physical accuracy."}
+        }
+        Picker("Registered anchor session",selection:$anchorID) {
+          Text("Choose").tag(Optional<UUID>.none)
+          ForEach(house.segments.filter{$0.registration != nil && $0.id != selected}) {Text($0.started.formatted()).tag(Optional($0.id))}
+        }
+        Button("Align using shared reference boards") {
+          do {
+            guard let source=house.segments.first(where:{$0.id==selected}),let anchor=house.segments.first(where:{$0.id==anchorID}) else{throw HouseError.message("Choose source and registered anchor sessions.")}
+            let (transform,residual,link)=try ReferenceRegistration.fit(source:source,anchor:anchor,house:house)
+            if model.edit(projectID:house.id,{h in if let i=h.segments.firstIndex(where:{$0.id==source.id}) {h.segments[i].registration=transform;h.segments[i].registrationResidual=residual;h.segments[i].registrationLink=link}}) {report="Approximate reference alignment saved. Independent board check: \(Int((residual*1000).rounded())) mm. Rebuild derived surfaces and visual maps after alignment."}
+          } catch {model.error=error.localizedDescription}
+        }
+        Text("Three shared, fixed boards are required. Two fit; at least one checks independently. Changing an anchor or invalidating a board removes dependent registrations.").font(.footnote)
       }
       Section("Segment points: x,y,z per line") { TextEditor(text: $source).frame(height: 120) }
       Section("House points: x,y,z per line") { TextEditor(text: $target).frame(height: 120) }
@@ -399,6 +418,7 @@ struct RegistrationPage: View {
           model.edit {
             if let i = $0.segments.firstIndex(where: { $0.id == sid }) {
               $0.segments[i].registration = transform
+              $0.segments[i].registrationLink = nil
               $0.segments[i].registrationResidual = worst
             }
           }
