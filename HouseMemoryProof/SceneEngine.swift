@@ -293,7 +293,7 @@ extension UIColor {
       if points.isEmpty {
         pointRoomID = house?.features.first(where: { $0.id == selection })?.roomID
       }
-      if tool == "Measure" && points.count >= 2 { points = [] }
+      if (tool == "Measure" && points.count >= 2) || (tool == "Boundary" && points.count >= 3) { points = [] }
       points.append(v)
       drawPoints()
     }

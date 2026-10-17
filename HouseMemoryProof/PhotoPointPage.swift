@@ -37,7 +37,7 @@ struct PhotoPointPage:View {
       }catch{model.error=error.localizedDescription}
     }.disabled(controls.contains(where:{$0==nil}))
     if !saved.isEmpty {Text(saved).font(.footnote).foregroundStyle(.mint)}
-  }.navigationTitle("Locate from photographs").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil]}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
+  }.navigationTitle("Photo point").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil]}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
 }
 struct PhotoPointSurface:UIViewRepresentable {
   var url:URL

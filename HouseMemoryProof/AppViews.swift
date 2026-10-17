@@ -277,6 +277,7 @@ struct ExploreView: View {
   @State private var selectedFeature: Feature?
   @State private var routeName = ""
   @State private var saveRoute = false
+  @State private var boundarySegment:Segment?
   @State private var routeTrade: Trade = .lowVoltage
   var body: some View {
     NavigationStack {
@@ -325,8 +326,15 @@ struct ExploreView: View {
             VStack {
               Text(
                 controller.tool == "Measure"
-                  ? "Tap two surface points" : "Tap points along the route"
+                  ? "Tap two surface points" : controller.tool == "Boundary" ? "Tap corner, horizontal edge, then vertical edge" : "Tap points along the route"
               ).font(.caption)
+              if controller.points.count == 3, controller.tool == "Boundary" {
+                Button("Define wall or ceiling volume") {
+                  let sid=SceneBuilder.activeUnregisteredSegment(house,options:options) ?? house.features.first(where:{$0.id==controller.selection})?.segmentID
+                  boundarySegment=house.segments.first(where:{$0.id==sid})
+                  if boundarySegment == nil {model.error="Select geometry from a captured session to define its reveal volume."}
+                }
+              }
               if controller.points.count == 2, controller.tool == "Measure" {
                 Text(
                   ((controller.points[0] - controller.points[1]).length).formatted(
@@ -401,6 +409,7 @@ struct ExploreView: View {
             Text("Inspect").tag("Inspect")
             Text("Measure").tag("Measure")
             Text("Trace route").tag("Trace")
+            Text("Wall").tag("Boundary")
           }.pickerStyle(.segmented).padding(4).background(
             ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
         }.padding(.horizontal, 16).padding(.bottom, 10).padding(.top, 12)
@@ -443,6 +452,7 @@ struct ExploreView: View {
           }
         }
         .sheet(isPresented: $editor) { if let f = selectedFeature { FeatureEditor(feature: f) } }
+        .sheet(item:$boundarySegment) { segment in BoundaryEditor(house:house,segment:segment,points:controller.points) }
         .sheet(isPresented: $saveRoute) {
           NavigationStack {
             Form {
@@ -616,11 +626,14 @@ struct CaptureSessionView: View {
   var room: Room
   var stage: Stage
   var prior: Segment?
+  var boundaries:[RevealBoundary]
+  @State private var boundaryID:UUID?
   init(model: AppModel, room: Room, stage: Stage, prior: Segment?) {
     _controller = StateObject(wrappedValue: CaptureController(model: model))
     self.room = room
     self.stage = stage
     self.prior = prior
+    self.boundaries=model.house.map { h in h.boundaries.filter{$0.segmentID==prior?.id && RevealVolumes.current($0,house:h)} } ?? []
   }
   var body: some View {
     ZStack {
@@ -638,6 +651,13 @@ struct CaptureSessionView: View {
         Spacer()
         VStack(spacing: 12) {
           Text(controller.message).font(.callout)
+          if prior != nil && !controller.running {
+            Picker("Reveal volume",selection:$boundaryID) {
+              Text("Choose wall or ceiling").tag(Optional<UUID>.none)
+              ForEach(boundaries){Text($0.name).tag(Optional($0.id))}
+            }
+            if boundaries.isEmpty {Text("Define a wall or ceiling volume with the Explore tab’s Wall tool before revealing this session.").font(.caption)}
+          }
           if prior == nil {
             Text("\(controller.count) photos · \(controller.coverageCells) camera positions").font(
               .caption)
@@ -652,7 +672,7 @@ struct CaptureSessionView: View {
               Button("Save & stop") { controller.stop() }.buttonStyle(.borderedProminent)
             } else {
               Button(controller.processing ? "Saving…" : "Start") {
-                controller.start(room: room, stage: stage, prior: prior, reveal: prior != nil)
+                controller.start(room: room, stage: stage, prior: prior, reveal: prior != nil, boundary:boundaries.first(where:{$0.id==boundaryID}))
               }.buttonStyle(.borderedProminent).disabled(controller.processing)
             }
           }

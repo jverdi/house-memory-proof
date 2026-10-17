@@ -76,3 +76,16 @@ struct PhotoControl: Codable, Equatable {
   var u:Double
   var v:Double
 }
+
+// Oriented wall/ceiling rectangle; positive normal points into the hidden cavity.
+// Coordinates belong to one immutable capture frame, never a guessed room frame.
+struct RevealBoundary: Codable, Identifiable, Equatable {
+  var id=UUID();var name:String;var segmentID:UUID;var origin:V3;var horizontal:V3;var vertical:V3
+  var width:Double;var height:Double;var depth:Double;var finishOffset:Double
+  var sourceFingerprint:String;var date=Date()
+  var normal:V3 {horizontal.cross(vertical)}
+  var valid:Bool {origin.finite && horizontal.finite && vertical.finite && abs(horizontal.length-1)<0.001 && abs(vertical.length-1)<0.001 && abs(horizontal.dot(vertical))<0.001 && width.isFinite && height.isFinite && depth.isFinite && finishOffset.isFinite && width>0.05 && width<=30 && height>0.05 && height<=30 && depth>0 && depth<=1 && finishOffset>=0 && finishOffset<=0.2}
+  func coordinates(_ p:V3)->V3 {let d=p-origin;return V3(d.dot(horizontal),d.dot(vertical),d.dot(normal))}
+  func contains(_ p:V3)->Bool {let q=coordinates(p);return q.x>=0 && q.x<=width && q.y>=0 && q.y<=height && q.z>=(-finishOffset) && q.z<=depth}
+  func viewedFromFront(_ camera:V3)->Bool {coordinates(camera).z < -finishOffset-0.05}
+}

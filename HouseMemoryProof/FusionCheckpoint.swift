@@ -7,7 +7,7 @@ enum FusionCheckpoint {
     guard let bytes=try repo.jobData("surface-"+segment.id.uuidString),let record=try? JSONDecoder().decode(Record.self,from:bytes),record.schema==1,record.fingerprint==fingerprint,record.nextFrame>=0,record.nextFrame<=frameCount,UUID(uuidString:record.file) != nil else{return nil}
     let url=repo.root.appendingPathComponent("fusion-checkpoints").appendingPathComponent(record.file)
     guard let size=try? url.resourceValues(forKeys:[.fileSizeKey]).fileSize,size<=20_000_000 else{return nil}
-    let data=try Data(contentsOf:url)
+    guard let data=try? Data(contentsOf:url) else{return nil}
     guard SHA256.hash(data:data).map({String(format:"%02x",$0)}).joined()==record.sha256 else{return nil}
     let core=data.withUnsafeBytes{hx_surface_restore($0.bindMemory(to:UInt8.self).baseAddress,UInt32(data.count))}
     guard let core else{return nil};return (core,record.nextFrame)

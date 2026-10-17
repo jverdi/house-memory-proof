@@ -28,6 +28,7 @@ import Vision
   private var generation = UUID()
   private var starting: UUID?
   var reveal = false
+  private var revealBoundary:RevealBoundary?
   private var revealedNodes: [SCNNode] = []
   private let overlayRoot = SCNNode()
   private var referenceConflict = false
@@ -50,7 +51,7 @@ import Vision
     view.automaticallyUpdatesLighting = true
     view.scene = SCNScene()
   }
-  func start(room: Room, stage: Stage, prior: Segment? = nil, reveal: Bool = false) {
+  func start(room: Room, stage: Stage, prior: Segment? = nil, reveal: Bool = false, boundary:RevealBoundary? = nil) {
     guard supported, let h = model?.house else {
       message = "AR tracking is unavailable. You can still view, import, annotate and export."
       return
@@ -72,6 +73,7 @@ import Vision
         return
       }
       self.reveal = reveal
+      self.revealBoundary = boundary
       houseID = h.id
       generation = UUID()
       count = 0
@@ -132,9 +134,15 @@ import Vision
           message = "No usable saved alignment. Build a visual reference or use source photographs."
           return
         }
+        guard let boundary,boundary.segmentID==prior.id,RevealVolumes.current(boundary,house:h) else {message="Choose a current wall or ceiling boundary before revealing this capture.";return}
         var scoped = h
         let current=DerivedEvidence.currentIDs(h)
         scoped.features = h.features.filter { $0.segmentID == prior.id && current.contains($0.id) }.map { feature in var f=feature;f.sourceFingerprint=nil;return f }
+        do {
+          guard scoped.features.reduce(0,{$0+$1.mesh.vertices.count})<=500000 else{throw HouseError.message("Capture exceeds the reveal geometry budget. Reconstruct a smaller segment first.")}
+          scoped.features=try scoped.features.map{try RevealVolumes.clip($0,to:boundary)}
+        }
+        catch {message=error.localizedDescription;return}
         scoped.segments = scoped.segments.map {
           var s = $0
           s.registration = nil
@@ -196,10 +204,12 @@ import Vision
         && (markerFresh || visualFresh || (loadedWorldMap && markerTransform == nil && visualTransform == nil && frame.worldMappingStatus == .mapped))
       if markerFresh, let transform = markerTransform { overlayRoot.simdTransform = transform }
       else if visualFresh, let transform = visualTransform { overlayRoot.simdTransform = transform }
-      revealedNodes.forEach { $0.isHidden = !eligible }
+      let localCamera=simd_inverse(overlayRoot.simdWorldTransform)*frame.camera.transform.columns.3
+      let front=revealBoundary?.viewedFromFront(V3(ar:SIMD3(localCamera.x,localCamera.y,localCamera.z))) == true
+      revealedNodes.forEach { $0.isHidden = !eligible || !front }
       message =
         eligible
-        ? "Approximate historical overlay. Verify against photographs and physical references; no precision calibration yet."
+        ? (front ? "Approximate reveal: \(revealBoundary?.name ?? "selected volume"). Verify against photographs and physical references." : "You are on the opposite side of the selected boundary — overlay hidden.")
         : (visualConflict ? "Visual matches are ambiguous or inconsistent — overlay hidden. Use physical references." : "Alignment unavailable — overlay hidden. Return to the original capture viewpoint.")
       return
     }

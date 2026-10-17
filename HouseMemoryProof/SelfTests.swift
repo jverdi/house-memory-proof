@@ -12,6 +12,14 @@ import ImageIO
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
+            check("Reveal clips crossing triangles and rejects opposite wall and viewpoint") {
+                let b=RevealBoundary(name:"Test",segmentID:UUID(),origin:V3(),horizontal:V3(1,0,0),vertical:V3(0,1,0),width:1,height:1,depth:0.2,finishOffset:0.01,sourceFingerprint:"test")
+                var f=house.features[0];f.mesh=Mesh(vertices:[V3(-1,0.2,0.1),V3(2,0.2,0.1),V3(0.5,2,0.1)],triangles:[0,1,2]);f.uv=[UV(u:0,v:0),UV(u:1,v:0),UV(u:0.5,v:1)]
+                let clipped=try RevealVolumes.clip(f,to:b)
+                f.mesh.vertices=f.mesh.vertices.map{$0+V3(0,0,1)}
+                let opposite=try RevealVolumes.clip(f,to:b)
+                return b.valid && clipped.mesh.valid && !clipped.mesh.triangles.isEmpty && clipped.uv?.count==clipped.mesh.vertices.count && clipped.mesh.vertices.allSatisfy{let q=b.coordinates($0);return q.x >= -1e-9 && q.x<=1+1e-9 && q.y>=(-1e-9) && q.y<=1+1e-9 && q.z<=0.2} && opposite.mesh.vertices.isEmpty && b.viewedFromFront(V3(0,0,-1)) && !b.viewedFromFront(V3(0,0,1))
+            }
             check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
             check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
             check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}
