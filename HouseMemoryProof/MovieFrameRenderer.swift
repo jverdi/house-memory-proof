@@ -22,6 +22,7 @@ private final class MovieGPUCompletion: @unchecked Sendable {
   private let queue:MTLCommandQueue
   private let cache:CVMetalTextureCache
   private let depth:MTLTexture
+  private let captions:SKRenderer
   private let width:Int,height:Int
   init(scene:SCNScene,camera:SCNNode,width:Int,height:Int,title:String,provenance:String)throws {
     guard width>0,height>0,width<=3840,height<=2160,
@@ -32,9 +33,11 @@ private final class MovieGPUCompletion: @unchecked Sendable {
     descriptor.usage = .renderTarget;descriptor.storageMode = .private
     guard let depth=device.makeTexture(descriptor:descriptor) else{throw HouseError.message("Movie depth target exceeds available memory.")}
     self.queue=queue;self.cache=cache;self.depth=depth;self.width=width;self.height=height
+    captions=SKRenderer(device:device)
     renderer=SCNRenderer(device:device,options:nil);renderer.scene=scene;renderer.pointOfView=camera
     // Rasterize only the small, unchanging caption once per shot. SpriteKit
-    // composites that texture in the same GPU render pass as the 3D scene.
+    // composites that texture in an explicit second GPU pass. SceneKit's
+    // command-buffer render path does not render overlaySKScene.
     let titleFont=UIFont.systemFont(ofSize:CGFloat(width)/55,weight:.medium)
     let sourceFont=UIFont.systemFont(ofSize:CGFloat(width)/70,weight:.regular)
     let titleHeight=ceil(titleFont.lineHeight),sourceHeight=ceil(sourceFont.lineHeight)
@@ -49,7 +52,7 @@ private final class MovieGPUCompletion: @unchecked Sendable {
     }
     let overlay=SKScene(size:CGSize(width:width,height:height));overlay.scaleMode = .resizeFill;overlay.backgroundColor = .clear
     let label=SKSpriteNode(texture:SKTexture(image:caption));label.anchorPoint = .zero;label.position=CGPoint(x:14,y:19)
-    overlay.addChild(label);renderer.overlaySKScene=overlay
+    overlay.addChild(label);captions.scene=overlay
   }
   func frame(at time:Double,pool:CVPixelBufferPool) async throws->CVPixelBuffer {
     try Task.checkCancellation()
@@ -66,6 +69,12 @@ private final class MovieGPUCompletion: @unchecked Sendable {
     pass.depthAttachment.texture=depth;pass.depthAttachment.loadAction = .clear;pass.depthAttachment.storeAction = .dontCare;pass.depthAttachment.clearDepth=renderer.usesReverseZ ? 0:1
     pass.stencilAttachment.texture=depth;pass.stencilAttachment.loadAction = .clear;pass.stencilAttachment.storeAction = .dontCare;pass.stencilAttachment.clearStencil=0
     renderer.render(atTime:time,viewport:CGRect(x:0,y:0,width:width,height:height),commandBuffer:command,passDescriptor:pass)
+    let captionPass=MTLRenderPassDescriptor()
+    captionPass.colorAttachments[0].texture=color
+    captionPass.colorAttachments[0].loadAction = .load
+    captionPass.colorAttachments[0].storeAction = .store
+    captions.update(atTime:time)
+    captions.render(withViewport:CGRect(x:0,y:0,width:width,height:height),commandBuffer:command,renderPassDescriptor:captionPass)
     try await withCheckedThrowingContinuation { (continuation:CheckedContinuation<Void,Error>) in
       let completion=MovieGPUCompletion(continuation)
       command.addCompletedHandler { [buffer,reference] finished in
@@ -82,3 +91,4 @@ private final class MovieGPUCompletion: @unchecked Sendable {
     return buffer
   }
 }
+

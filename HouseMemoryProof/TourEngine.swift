@@ -190,7 +190,7 @@ enum TourDirector {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v10-metal-target", options.mode.rawValue,
+      "renderer-v11-metal-caption-pass", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
@@ -409,3 +409,4 @@ enum TourDirector {
     return output
   }
 }
+
