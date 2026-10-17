@@ -14,6 +14,9 @@ uint32_t hx_surface_dropped(void* context);
 // Output is an explicit triangle soup; count is a multiple of three.
 // A result above capacity signals truncation and must never be published.
 uint32_t hx_surface_mesh(void* context,HXVertex* output,uint32_t capacity,uint32_t min_views);
+// Checkpoint copies a bounded versioned byte stream. Null output returns required size.
+uint32_t hx_surface_checkpoint(void* context,uint8_t* output,uint32_t capacity);
+void* hx_surface_restore(const uint8_t* bytes,uint32_t size);
 #ifdef __cplusplus
 }
 #endif

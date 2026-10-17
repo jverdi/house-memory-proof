@@ -175,6 +175,16 @@ final class Repository: EvidenceAssetReader {
     }
     return count
   }
+  func jobData(_ id:String)throws->Data? {
+    lock.lock();defer{lock.unlock()}
+    let s=try statement("SELECT json FROM jobs WHERE id=?");defer{sqlite3_finalize(s)}
+    _=id.withCString{sqlite3_bind_text(s,1,$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))}
+    let status=sqlite3_step(s)
+    if status==SQLITE_DONE{return nil}
+    guard status==SQLITE_ROW,let bytes=sqlite3_column_blob(s,0) else{throw HouseError.message("Could not read the local job checkpoint.")}
+    let count=Int(sqlite3_column_bytes(s,0));guard count<=1_000_000 else{throw HouseError.message("Job metadata exceeds its budget.")}
+    return Data(bytes:bytes,count:count)
+  }
   func job(_ id: String, state: String, data: Data) throws {
     lock.lock()
     defer { lock.unlock() }

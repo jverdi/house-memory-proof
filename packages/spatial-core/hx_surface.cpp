@@ -1,6 +1,8 @@
 #include "hx_surface.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <memory>
 #include <limits>
 #include <unordered_map>
 #include <vector>
@@ -66,3 +68,27 @@ extern "C" uint32_t hx_surface_mesh(void*p,HXVertex*out,uint32_t cap,uint32_t mi
  }
  return count;
 } catch(...){return UINT32_MAX;}
+
+// Versioned little-endian checkpoint; no native padding or pointer values are saved.
+namespace {
+void put32(uint8_t*&p,uint32_t v){for(int i=0;i<4;i++)*p++=uint8_t(v>>(i*8));}
+void put64(uint8_t*&p,uint64_t v){for(int i=0;i<8;i++)*p++=uint8_t(v>>(i*8));}
+uint32_t get32(const uint8_t*&p){uint32_t v=0;for(int i=0;i<4;i++)v|=uint32_t(*p++)<<(i*8);return v;}
+uint64_t get64(const uint8_t*&p){uint64_t v=0;for(int i=0;i<8;i++)v|=uint64_t(*p++)<<(i*8);return v;}
+void putDouble(uint8_t*&p,double v){uint64_t bits;std::memcpy(&bits,&v,8);put64(p,bits);}
+double getDouble(const uint8_t*&p){uint64_t bits=get64(p);double v;std::memcpy(&v,&bits,8);return v;}
+}
+extern "C" uint32_t hx_surface_checkpoint(void* context,uint8_t* output,uint32_t capacity) try {
+ if(!context)return 0;auto&s=*static_cast<Surface*>(context);uint32_t size=32+uint32_t(s.cells.size())*36;
+ if(!output)return size;if(capacity<size)return 0;uint8_t*p=output;std::memcpy(p,"HXSURF01",8);p+=8;putDouble(p,s.voxel);put32(p,s.capacity);put32(p,s.dropped);put32(p,uint32_t(s.cells.size()));put32(p,0);
+ std::vector<Key> keys;for(auto&cell:s.cells)keys.push_back(cell.first);std::sort(keys.begin(),keys.end());
+ for(auto key:keys){const auto&cell=s.cells.at(key);put32(p,uint32_t(key.x));put32(p,uint32_t(key.y));put32(p,uint32_t(key.z));putDouble(p,cell.value);putDouble(p,cell.weight);put32(p,cell.views);put32(p,cell.last);}return size;
+} catch(...){return 0;}
+extern "C" void* hx_surface_restore(const uint8_t* data,uint32_t size) try {
+ if(!data||size<32||std::memcmp(data,"HXSURF01",8))return nullptr;const uint8_t*p=data+8;double voxel=getDouble(p);uint32_t capacity=get32(p),dropped=get32(p),count=get32(p),reserved=get32(p);
+ if(!std::isfinite(voxel)||voxel<.005||voxel>.1||capacity<1||capacity>500000||count>capacity||dropped||reserved||uint64_t(count)*36+32!=size)return nullptr;
+ std::unique_ptr<Surface>s(new Surface(voxel,capacity));
+ for(uint32_t i=0;i<count;i++){Key k{int32_t(get32(p)),int32_t(get32(p)),int32_t(get32(p))};Cell c;c.value=getDouble(p);c.weight=getDouble(p);c.views=get32(p);c.last=get32(p);
+  if(std::abs(double(k.x)*voxel)>10000.1||std::abs(double(k.y)*voxel)>10000.1||std::abs(double(k.z)*voxel)>10000.1||!std::isfinite(c.value)||std::abs(c.value)>voxel*3+1e-9||!std::isfinite(c.weight)||c.weight<=0||c.weight>64||!c.views||c.last==UINT32_MAX||c.views>c.last+1||!s->cells.emplace(k,c).second)return nullptr;
+ }return s.release();
+} catch(...){return nullptr;}

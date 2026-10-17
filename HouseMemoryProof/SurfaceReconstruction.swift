@@ -9,15 +9,18 @@ enum SurfaceReconstruction {
         .prefix(300))
     let (observations, referenceSupported) = PoseRefinement.selected(
       raw, segment: segment, house: house)
-    guard !observations.isEmpty, let core = hx_surface_create(0.02, 400000) else {
+    let fingerprint="surface-v1|" + (try VisualMapping.fingerprint(house:house,segment:segment))
+    let checkpoint=try FusionCheckpoint.load(repo:repo,segment:segment,fingerprint:fingerprint,frameCount:observations.count)
+    guard !observations.isEmpty, let core = checkpoint?.0 ?? hx_surface_create(0.02, 400000) else {
       throw HouseError.message("No depth observations or insufficient surface-fusion resources.")
     }
     defer { hx_surface_destroy(core) }
-    for (frame, o) in observations.enumerated() {
+    let firstFrame=checkpoint?.1 ?? 0
+    for (frame, o) in observations.enumerated() where frame>=firstFrame {
       try Task.checkCancellation()
       guard ProcessInfo.processInfo.thermalState != .critical else {
         throw HouseError.message(
-          "Surface fusion paused because the phone is too warm. Originals remain intact; retry after cooling."
+          "Surface fusion paused because the phone is too warm. Originals and the last completed checkpoint remain intact; retry after cooling."
         )
       }
       let depth = try repo.read(o.depth!)
@@ -47,6 +50,7 @@ enum SurfaceReconstruction {
           "Surface fusion reached its bounded volume or rejected a frame. Split the capture into smaller sessions; originals are preserved."
         )
       }
+      if (frame+1)%10==0 || frame+1==observations.count {try FusionCheckpoint.save(core:core,repo:repo,segment:segment,fingerprint:fingerprint,nextFrame:frame+1)}
       await progress(Double(frame + 1) / Double(observations.count) * 0.85)
       await Task.yield()
     }

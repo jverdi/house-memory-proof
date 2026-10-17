@@ -232,6 +232,8 @@ import ImageIO
                 }
                 let feature=try await Reconstruction.fuse(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
                 let surface=try await SurfaceReconstruction.build(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
+                let resumedSurface=try await SurfaceReconstruction.build(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
+                results.append(["test":"Native surface checkpoint reload produces identical geometry","passed":resumedSurface.mesh==surface.mesh && resumedSurface.sourceIDs==surface.sourceIDs])
                 let surfaceError=surface.mesh.vertices.map{abs($0.y-2)}.max() ?? .infinity
                 results.append(["test":"Native signed-distance surface fusion","passed":surface.mesh.valid && surface.mesh.triangles.count>300 && surfaceError<0.003,"vertices":surface.mesh.vertices.count,"maxPlaneErrorMetres":surfaceError,"syntheticOnly":true])
                 var pointHouse=fixture;pointHouse.features=[feature]
