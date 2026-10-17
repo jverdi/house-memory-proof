@@ -82,7 +82,8 @@ enum VisualMapping {
     guard a.valid,b.valid else{return false}
     let x=a.values,y=b.values
     guard (V3(x[3],x[7],x[11])-V3(y[3],y[7],y[11])).length<=0.03 else{return false}
-    let trace=(0..<3).reduce(0.0){total,row in total+(0..<3).reduce(0.0){$0+x[$1*4+row]*y[$1*4+row]}}
+    var trace=0.0
+    for row in 0..<3 {for col in 0..<3 {trace += x[row*4+col]*y[row*4+col]}}
     return acos(max(-1,min(1,(trace-1)/2)))<=3*Double.pi/180
   }
   static func overlay(liveCamera:Rigid,savedCanonicalCamera:Rigid)->Rigid? {
