@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "oracleReadDenied": true,
+  "candidateBinarySHA256": "3cd2002de6527fa8f48d5191f3883e097d7a96640f0b2873ea2149a8dd7a7920",
+  "candidateRejected": true,
+  "error": "Swift/ErrorType.swift:254: Fatal error: Error raised at top level: DecodingError.keyNotFound: Key 'depthWidth' not found in keyed decoding container. Path: observations[0]. Debug description: No value associated with key CodingKeys(stringValue: \"depthWidth\", intValue: nil) (\"depthWidth\").\n",
+  "productionQualified": false
+}

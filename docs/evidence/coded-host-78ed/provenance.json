@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "78ed6bc2a191471f961b57de4f2ba2ab3168972b",
+  "runID": 39042724339,
+  "jobID": 117425284132,
+  "artifactID": 12104133920,
+  "artifactSHA256": "fadddd1bbcf2ed44cb9f3b54c6908706b2876aa1cc379294103280eeab2be1c7",
+  "wholeArchiveDigestVerified": true,
+  "codedReplayRan": false,
+  "failure": "Source observation omitted required depthWidth/depthHeight metadata despite having no depth. Native decoder rejected the candidate before localization.",
+  "poseQualification": false
+}

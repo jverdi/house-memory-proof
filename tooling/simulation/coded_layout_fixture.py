@@ -79,7 +79,7 @@ def make(dest,book,seed=802117,drift=.003,width=1280):
             return encoded(image),m,k
         for frame,shift in enumerate([-.24,-.08,.08,.24]):
             image,m,k=photograph(shift);prior=m.copy();prior[:3,3]+=rng.normal(0,.0005,3)+np.array([drift*frame/3,0,0])
-            observations.append(dict(id=identity(seed,f'observation-{region}-{frame}'),roomID=rid,stageID=rough,segmentID=sid,timestamp=float(frame),date=now+frame,image=asset(image,'jpg'),width=width,height=height,camera=prior.flatten().tolist(),intrinsics=k,tracking='synthetic noisy camera prior',light=900,sharpness=.1,note='Independent ray/plane coded-reference source image',documentary=False,imageOrientation=1))
+            observations.append(dict(id=identity(seed,f'observation-{region}-{frame}'),roomID=rid,stageID=rough,segmentID=sid,timestamp=float(frame),date=now+frame,image=asset(image,'jpg'),depthWidth=0,depthHeight=0,width=width,height=height,camera=prior.flatten().tolist(),intrinsics=k,tracking='synthetic noisy camera prior',light=900,sharpness=.1,note='Independent ray/plane coded-reference source image',documentary=False,imageOrientation=1))
         for closed in [False,True]:
             for number,(shift,elevation,angle) in enumerate([(-.15,.025,-.015),(.13,-.03,.02)]):
                 image,m,k=photograph(shift,elevation,angle,closed);name=f'region-{region}-{closed}-{number}.jpg';(dest/name).write_bytes(image)

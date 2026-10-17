@@ -58,7 +58,7 @@ permissions:
   contents: read
 concurrency:
   group: visual-evaluation-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   replay:
     runs-on: macos-26
@@ -100,6 +100,24 @@ jobs:
           build/vision-env/bin/python tooling/simulation/test_render_contract.py
           build/vision-env/bin/python tooling/simulation/vision_fixture.py build/vision-fixture
           build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-fixture --output build/vision-evaluation/replay.json
+      - name: Evaluate pixel-derived coded capture across rough and finished regions
+        if: always() && !cancelled() && steps.candidate.outcome == 'success'
+        id: coded
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          build/vision-env/bin/python tooling/simulation/test_coded_render_contract.py
+          build/vision-replay --reference-codebook build/reference-codebook.json
+          python3 ci/run_bounded.py 420 build/vision-env/bin/python tooling/simulation/coded_layout_fixture.py build/coded-regions --codebook build/reference-codebook.json
+          python3 ci/run_bounded.py 600 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/coded-regions --output build/vision-evaluation/coded-regions.json --house --coded
+      - name: Preserve coded-image result before the longer natural-feature suite
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coded-image-checkpoint
+          path: build/vision-evaluation/coded-regions.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Evaluate joint optimization against independent query views
         run: build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-fixture --output build/vision-evaluation/bundle-replay.json --refine --bundle
       - name: Exercise a longer overlapping capture session
@@ -132,14 +150,9 @@ jobs:
         run: |
           python3 ci/run_bounded.py 300 build/vision-env/bin/python tooling/simulation/house_layout_fixture.py build/house-staggered --seed 905771 --paired --staggered
           python3 ci/run_bounded.py 660 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/house-staggered --output build/vision-evaluation/house-staggered.json --refine --bundle --house
-      - name: Evaluate pixel-derived coded capture across rough and finished regions
-        if: always() && !cancelled() && steps.candidate.outcome == 'success'
-        timeout-minutes: 15
-        run: |
-          build/vision-env/bin/python tooling/simulation/test_coded_render_contract.py
-          build/vision-replay --reference-codebook build/reference-codebook.json
-          python3 ci/run_bounded.py 420 build/vision-env/bin/python tooling/simulation/coded_layout_fixture.py build/coded-regions --codebook build/reference-codebook.json
-          python3 ci/run_bounded.py 600 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/coded-regions --output build/vision-evaluation/coded-regions.json --house --coded
+      - name: Enforce the coded-image qualification result
+        if: always() && !cancelled()
+        run: test "${{ steps.coded.outcome }}" = success
       - uses: actions/upload-artifact@v4
         if: always()
         with:
