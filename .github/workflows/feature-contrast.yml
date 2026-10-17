@@ -1,0 +1,77 @@
+name: Evaluate low-contrast natural feature detection
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/feature-contrast.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: feature-contrast
+  cancel-in-progress: true
+jobs:
+  replay:
+    runs-on: macos-26
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        threshold: ["0.0003", "0.0001"]
+    env:
+      FEATURE_THRESHOLD: ${{ matrix.threshold }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ca5a28fe80df316348a10e9bae220b23e8955664
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Record isolated candidate diff and build exact adapter
+        run: |
+          python3 - <<'PY'
+          import os,pathlib
+          p=pathlib.Path('packages/visual-core/hx_vision.cpp')
+          s=p.read_text()
+          before='256,3,0.001f,4,4'
+          after='256,3,'+os.environ['FEATURE_THRESHOLD']+'f,4,4'
+          assert s.count(before)==1
+          p.write_text(s.replace(before,after))
+          PY
+          mkdir -p build/vision-evaluation
+          git diff -- packages/visual-core/hx_vision.cpp HouseMemoryProof/VisualMapping.swift > build/vision-evaluation/candidate.diff
+          bash tooling/opencv/build-host.sh
+          python3 -m venv build/vision-env
+          build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+      - name: Preserve all four unchanged house diagnostics
+        run: |
+          failed=0
+          bundle=--bundle
+          for spec in 'rough-a 905771' 'rough-b 683431' 'paired 905771 --paired' 'staggered 905771 --paired --staggered'; do
+            read -r name seed arg1 arg2 <<< "$spec"
+            if build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/$name" --seed "$seed" ${arg1:-} ${arg2:-}; then
+              python3 ci/run_bounded.py 600 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/$name" --output "build/vision-evaluation/$name.json" --refine ${bundle:-} --house || failed=1
+            else
+              failed=1
+            fi
+          done
+          exit "$failed"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: feature-contrast-${{ matrix.threshold }}
+          path: build/vision-evaluation/
+          retention-days: 14
+
+
