@@ -60,7 +60,11 @@ while True:
     for build in builds:
         attrs = build['attributes']
         detail = request(token, '/v1/builds/' + build['id'] + '/buildBetaDetail')['data']
-        groups = request(token, '/v1/builds/' + build['id'] + '/betaGroups')['data']
+        groups = []
+        for group in request(token, '/v1/apps/' + app['id'] + '/betaGroups')['data']:
+            linked = request(token, '/v1/betaGroups/' + group['id'] + '/relationships/builds')['data']
+            if any(item['id'] == build['id'] for item in linked):
+                groups.append(group)
         report['builds'].append({'id': build['id'], 'version': attrs['version'],
             'processing_state': attrs['processingState'], 'expired': attrs['expired'],
             'beta_state': detail.get('attributes', {}),
