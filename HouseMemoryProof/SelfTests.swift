@@ -325,6 +325,20 @@ import Darwin
             }
             check("Corrupt archive rejected"){let url=try Exporter.archive(house,repo:repo);var bytes=try Data(contentsOf:url);bytes[60]^=0xff;let broken=folder.appendingPathComponent("broken.hxray");try bytes.write(to:broken);do{_=try Exporter.restore(broken,repo:repo);return false}catch{return true}}
             check("GLB framing and length"){let url=try Exporter.glb(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.glb"));return d.uint32(0)==0x46546c67 && d.uint32(4)==2 && Int(d.uint32(8))==d.count}
+            check("Model export admits unique texture bytes and rejects missing, corrupt or oversized selections") {
+                let bytes=Data([137,80,78,71,1,2,3]),key=try repo.put(bytes,ext:"png")
+                var feature=house.features[0];feature.texture=key;feature.uv=feature.mesh.vertices.map{_ in UV(u:0,v:0)}
+                let root=repo.root.appendingPathComponent("assets")
+                let assets=try Exporter.exportAssets([feature,feature],textGeometry:false,root:root)
+                guard assets.count==1,try Exporter.verifiedTexture(key,assets:assets)==bytes else{return false}
+                do{_=try Exporter.exportAssets([feature],textGeometry:false,root:root,budget:1);return false}catch{}
+                var missing=feature;missing.texture=String(repeating:"0",count:64)+".png"
+                do{_=try Exporter.exportAssets([missing],textGeometry:false,root:root);return false}catch{}
+                let original=try repo.assetURL(key);try Data([1,2,3]).write(to:original)
+                do{_=try Exporter.verifiedTexture(key,assets:assets);return false}catch{}
+                try bytes.write(to:original)
+                return true
+            }
             check("PLY independent parser roundtrip"){let url=try Exporter.meshText(house,options:SceneOptions(),ply:true);let mesh=try PLYReader.read(Data(contentsOf:url));return mesh.valid && mesh.vertices.count==Exporter.canonicalFeatures(house,options:SceneOptions()).reduce(0){$0+$1.mesh.vertices.count}}
             check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
             check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}

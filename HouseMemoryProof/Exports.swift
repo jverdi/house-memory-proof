@@ -161,8 +161,45 @@ enum Exporter {
       return f
     }
   }
+  // Conservative staging estimate includes working copies and unique texture
+  // bytes. It is an admission limit, not a measured device-memory guarantee.
+  static func exportAssets(_ features:[Feature],textGeometry:Bool,
+    root:URL=Repository.defaultRoot.appendingPathComponent("assets"),budget:Int64=256_000_000
+  ) throws -> [String:URL] {
+    var estimate:Int64=0,assets:[String:URL]=[:]
+    for feature in features {
+      try Task.checkCancellation()
+      estimate += Int64(feature.mesh.vertices.count)*(textGeometry ? 320:72)
+        + Int64(max(feature.mesh.triangles.count,feature.mesh.vertices.count))*(textGeometry ? 32:12)+4096
+      if let key=feature.texture {
+        guard feature.uv?.count==feature.mesh.vertices.count else{throw HouseError.message("A textured surface has no complete texture coordinates. Rebuild it before exporting.")}
+        guard key.count<100,!key.contains("/"),!key.contains("\\"),!key.contains(".."),
+          ["jpg","jpeg","png"].contains((key as NSString).pathExtension.lowercased())
+        else{throw HouseError.message("An export texture has an invalid asset key.")}
+        if assets[key]==nil {
+          let url=root.appendingPathComponent(key)
+          guard FileManager.default.fileExists(atPath:url.path) else{throw HouseError.message("An export texture is missing. Restore its original or rebuild the surface before exporting.")}
+          let values=try url.resourceValues(forKeys:[.fileSizeKey,.isRegularFileKey,.isSymbolicLinkKey])
+          guard values.isRegularFile==true,values.isSymbolicLink != true,let bytes=values.fileSize,bytes>0,bytes<=25_000_000 else{throw HouseError.message("An export texture exceeds the 25 MB asset budget or is not a regular file.")}
+          estimate += Int64(bytes)*3;assets[key]=url
+        }
+      }
+      guard estimate<=budget else{throw HouseError.message("This selection exceeds the model export memory budget. Select one room or stage and export again.")}
+    }
+    return assets
+  }
+  static func verifiedTexture(_ key:String,assets:[String:URL])throws->Data {
+    try Task.checkCancellation()
+    guard let url=assets[key] else{throw HouseError.message("An export texture was not admitted.")}
+    let bytes=try DurableFiles.read(url,limit:25_000_000)
+    let hash=SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()
+    guard key.hasPrefix(hash+".") else{throw HouseError.message("An export texture failed its checksum. Restore its original before exporting.")}
+    return bytes
+  }
   static func glb(_ h: House, options: SceneOptions) throws -> URL {
     let features = canonicalFeatures(h, options: options)
+    guard !features.isEmpty else{throw HouseError.message("No geometry selected.")}
+    let assets=try exportAssets(features,textGeometry:false)
     var bin = Data()
     var views: [[String: Any]] = []
     var accessors: [[String: Any]] = []
@@ -173,9 +210,8 @@ enum Exporter {
     var textures: [[String: Any]] = []
     var textureIDs: [String: Int] = [:]
     var featureNodes:[UUID:[UUID:[Int]]]=[:]
-    let estimatedBytes=features.reduce(Int64(0)){total,f in total+Int64(f.mesh.vertices.count)*20+Int64(max(f.mesh.triangles.count,f.mesh.vertices.count))*4}
-    guard estimatedBytes<=300_000_000 else{throw HouseError.message("This model exceeds the GLB export memory budget. Select one room or stage and export again.")}
     for f in features where !f.mesh.vertices.isEmpty {
+      try Task.checkCancellation()
       let posOffset = bin.count
       var lo = [Double](repeating: Double.infinity, count: 3)
       var hi = [Double](repeating: -Double.infinity, count: 3)
@@ -233,10 +269,7 @@ enum Exporter {
       ])
       if let key = f.texture, attributes["TEXCOORD_0"] != nil {
         if textureIDs[key] == nil {
-          let root = Repository.defaultRoot.appendingPathComponent("assets")
-          if let bytes = try? DurableFiles.read(root.appendingPathComponent(key),limit:25_000_000),
-            bytes.count < 25_000_000
-          {
+          let bytes=try verifiedTexture(key,assets:assets)
             let offset = bin.count
             bin.append(bytes)
             views.append(["buffer": 0, "byteOffset": offset, "byteLength": bytes.count])
@@ -247,7 +280,6 @@ enum Exporter {
             ])
             textureIDs[key] = textures.count
             textures.append(["source": images.count - 1])
-          }
         }
         if let index = textureIDs[key] {
           materials[materials.count - 1]["pbrMetallicRoughness"] = [
@@ -370,6 +402,9 @@ enum Exporter {
   }
   static func meshText(_ h: House, options: SceneOptions, ply: Bool) throws -> URL {
     let features = canonicalFeatures(h, options: options)
+    // OBJ/PLY intentionally carry geometry only; do not require photo assets.
+    let geometry=features.map{f->Feature in var result=f;result.texture=nil;return result}
+    _=try exportAssets(geometry,textGeometry:true)
     let count = features.reduce(0) { $0 + $1.mesh.vertices.count }
     let faces = features.reduce(0) { $0 + $1.mesh.triangles.count / 3 }
     guard count > 0 else { throw HouseError.message("No geometry selected.") }
@@ -378,10 +413,12 @@ enum Exporter {
       ? "ply\nformat ascii 1.0\ncomment House Xray metres Z-up uncalibrated\nelement vertex \(count)\nproperty double x\nproperty double y\nproperty double z\nelement face \(faces)\nproperty list uchar int vertex_indices\nend_header\n"
       : "# House Xray metres Z-up; uncalibrated evidence\n"
     for f in features {
+      try Task.checkCancellation()
       for p in f.mesh.vertices { s += "\(ply ? "" : "v ")\(p.x) \(p.y) \(p.z)\n" }
     }
     var offset = ply ? 0 : 1
     for f in features {
+      try Task.checkCancellation()
       if !ply { s += "g feature_\(f.id.uuidString.replacingOccurrences(of:"-",with:"_"))\n" }
       for i in stride(from: 0, to: f.mesh.triangles.count, by: 3) {
         s +=
@@ -396,10 +433,12 @@ enum Exporter {
   static func usdz(_ h: House, options: SceneOptions) throws -> URL {
     let features = canonicalFeatures(h, options: options)
     guard !features.isEmpty else { throw HouseError.message("No geometry selected.") }
+    let admitted=try exportAssets(features,textGeometry:true)
     var text =
       "#usda 1.0\n(\n defaultPrim = \"House\"\n metersPerUnit = 1\n upAxis = \"Z\"\n)\ndef Xform \"House\" {\n"
     var assets: [String: Data] = [:]
     for f in features {
+      try Task.checkCancellation()
       let id = f.id.uuidString.replacingOccurrences(of: "-", with: "_")
       let pts = f.mesh.vertices.map { "(\($0.x), \($0.y), \($0.z))" }.joined(separator: ",")
       let c = f.trade.hex
@@ -415,15 +454,10 @@ enum Exporter {
         "color3f[] primvars:displayColor = [(\(Double((c>>16)&255)/255), \(Double((c>>8)&255)/255), \(Double(c&255)/255))]\ncustom string houseXray:id = \"\(f.id)\"\n"
       var texture: String?
       if let key = f.texture, let uv = f.uv, uv.count == f.mesh.vertices.count {
-        let root = Repository.defaultRoot.appendingPathComponent("assets")
-        if let bytes = try? DurableFiles.read(root.appendingPathComponent(key),limit:25_000_000),
-          bytes.count < 25_000_000
-        {
-          assets[key] = bytes
+          if assets[key]==nil{assets[key]=try verifiedTexture(key,assets:admitted)}
           texture = key
           text +=
             "texCoord2f[] primvars:st = [\(uv.map{"(\($0.u),\(1-$0.v))"}.joined(separator:","))] (interpolation = \"vertex\")\nrel material:binding = </House/material_\(id)>\n"
-        }
       }
       text += "}\n"
       if let texture {
@@ -461,7 +495,8 @@ enum Exporter {
         StoredZip.Entry(name: "textures/" + $0.key, data: $0.value)
       }
     let url = destination("House-Xray.usdz")
-    try StoredZip.write(entries, to: url, aligned: true)
+    do{try StoredZip.write(entries, to: url, aligned: true)}
+    catch{try? FileManager.default.removeItem(at:url);throw error}
     return url
   }
   static func archive(_ h: House, repo: Repository) throws -> URL {
