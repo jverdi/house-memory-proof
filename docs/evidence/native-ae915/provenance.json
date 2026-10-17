@@ -1,0 +1,7 @@
+{
+  "source": "ae915fe2348d9b7e048280d4be3b08921d9a4b39",
+  "run": 39032859612,
+  "artifact": 12101222463,
+  "sha256": "fd146f786d1847187d393f4a762ca9f3f1e8d305f6f7626e47814f5ec07aae58",
+  "result": "69 of 70 native checks passed; 1080p final movie timing check failed. UI/process checks did not run."
+}

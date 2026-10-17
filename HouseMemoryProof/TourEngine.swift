@@ -190,23 +190,29 @@ enum TourDirector {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v6", options.mode.rawValue,
+      "renderer-v7", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
     data.append(Data(selection.utf8))
     return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
   }
-  static func validClip(_ url:URL,frames:Int,width:Int,height:Int) async -> Bool {
+  static func clipIssue(_ url:URL,frames:Int,width:Int,height:Int) async -> String? {
     do {
       let asset=AVURLAsset(url:url)
-      guard let track=try await asset.loadTracks(withMediaType:.video).first else{return false}
+      guard let track=try await asset.loadTracks(withMediaType:.video).first else{return "No video track"}
       let duration=try await asset.load(.duration),size=try await track.load(.naturalSize),rate=try await track.load(.nominalFrameRate)
-      guard abs(CMTimeGetSeconds(duration)-Double(frames)/30)<0.1,Int(size.width)==width,Int(size.height)==height,abs(rate-30)<0.1 else{return false}
+      let actual=CMTimeGetSeconds(duration),expected=Double(frames)/30
+      guard abs(actual-expected)<1.0/600 else{return "Duration \(actual) seconds; expected \(expected) seconds"}
+      guard Int(size.width)==width,Int(size.height)==height else{return "Dimensions \(size.width) × \(size.height); expected \(width) × \(height)"}
+      guard abs(rate-30)<0.1 else{return "Frame rate \(rate); expected 30"}
       let generator=AVAssetImageGenerator(asset:asset);generator.maximumSize=CGSize(width:320,height:180)
       _=try await generator.image(at:CMTime(value:Int64(max(0,frames-1)),timescale:30))
-      return true
-    }catch{return false}
+      return nil
+    }catch{return "Frame decode: \(error.localizedDescription)"}
+  }
+  static func validClip(_ url:URL,frames:Int,width:Int,height:Int) async -> Bool {
+    await clipIssue(url,frames:frames,width:width,height:height)==nil
   }
   // Compatibility adapter: AVAssetWriter's pixel buffer adaptor remains available
   // in iOS 26. Its use is isolated here; no live screen recording is performed.
@@ -265,7 +271,7 @@ enum TourDirector {
         mediaType: .video,
         outputSettings: [
           AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
-          AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 6_000_000],
+          AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 6_000_000,AVVideoExpectedSourceFrameRateKey:30,AVVideoMaxKeyFrameIntervalKey:60],
         ])
       input.expectsMediaDataInRealTime = false
       let adaptor = AVAssetWriterInputPixelBufferAdaptor(
@@ -332,7 +338,7 @@ enum TourDirector {
             ctx.scaleBy(x: 1, y: -1)
             UIGraphicsPushContext(ctx)
             let text =
-              shot.caption + "\nHouse Xray · revision \(house.revision) · \(options.mode.rawValue)"
+              shot.caption + "\nHouse Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
             let rect = CGRect(
               x: 24, y: CGFloat(height) - 92, width: CGFloat(width) - 48, height: 76)
             UIColor.black.withAlphaComponent(0.65).setFill()
@@ -353,12 +359,16 @@ enum TourDirector {
           progress(Double(complete + frame + 1) / Double(total))
           await Task.yield()
         }
+        // Close the timeline after the last frame's full display interval.
+        // Without this the writer may end at (frames-1)/fps and short clips
+        // accumulate missing frame durations during passthrough assembly.
+        writer.endSession(atSourceTime:CMTime(value:Int64(frames),timescale:30))
         input.markAsFinished()
         await writer.finishWriting()
         guard writer.status == .completed else {
           throw writer.error ?? HouseError.message("Movie segment did not finish.")
         }
-        guard await validClip(candidate,frames:frames,width:width,height:height) else{throw HouseError.message("Encoded shot did not pass its dimensions, timing and decode checks.")}
+        if let issue=await clipIssue(candidate,frames:frames,width:width,height:height){throw HouseError.message("Encoded shot: "+issue)}
         try FileManager.default.moveItem(at: candidate, to: url)
         try DurableFiles.write(Data(try StreamingArchive.digest(url).sha.utf8),to:checksumURL)
         files.append(url)
@@ -392,11 +402,7 @@ enum TourDirector {
         asset: composition, presetName: AVAssetExportPresetPassthrough)
     else { throw HouseError.message("Movie assembly unavailable.") }
     try await export.export(to: output, as: .mp4)
-    let final = AVURLAsset(url: output)
-    let actual = try await final.load(.duration)
-    guard abs(CMTimeGetSeconds(actual) - Double(total) / 30) < 0.15,await validClip(output,frames:total,width:width,height:height) else {
-      throw HouseError.message("Final movie duration did not match its plan.")
-    }
+    if let issue=await clipIssue(output,frames:total,width:width,height:height){throw HouseError.message("Final movie: "+issue)}
     try planData.write(to: output.deletingPathExtension().appendingPathExtension("json"))
     try repo.job(hash, state: "succeeded", data: planData)
     progress(1)
