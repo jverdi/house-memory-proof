@@ -79,7 +79,7 @@ struct Observation:Codable,Identifiable,Equatable {
     // Native camera transform is row-major, ARKit right/up/back. No pretend calibration.
 }
 struct Segment:Codable,Identifiable,Equatable {
-    var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var interrupted=false;var approved=false
+    var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var interrupted=false;var approved=false;var referencePoses:[ReferencePose]=[]
 }
 struct Dimension:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var a:V3;var b:V3;var roomID:UUID;var date=Date();var source="Approximate geometry";var sourceRevision:Int
@@ -92,8 +92,8 @@ struct Bookmark:Codable,Identifiable,Equatable { var id=UUID();var name:String;v
 struct House:Codable,Identifiable,Equatable {
     var schema=1;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
-    var isDemo=false;var notes="";var closureNotes=""
-    var assets:Set<String> { Set(observations.flatMap{[$0.image,$0.depth,$0.confidence].compactMap{$0}}+drawings.map{$0.asset}+segments.compactMap{$0.worldMap}) }
+    var references:[ReferenceBoard]=[];var isDemo=false;var notes="";var closureNotes=""
+    var assets:Set<String> { Set(observations.flatMap{[$0.image,$0.depth,$0.confidence].compactMap{$0}}+drawings.map{$0.asset}+segments.compactMap{$0.worldMap}+references.flatMap{[$0.image,$0.pdf]}) }
     func validate() throws {
         guard schema==1 else {throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
         guard rooms.count<=100,features.count<=10000,observations.count<=50000 else{throw HouseError.message("Project exceeds this build's tested limits.")}

@@ -28,6 +28,10 @@ import ImageIO
     private var generation=UUID()
     var reveal=false
     private var revealedNodes:[SCNNode]=[]
+    private let overlayRoot=SCNNode()
+    private var markerSeen:TimeInterval=0
+    private var markerTransform:simd_float4x4?
+    private var currentReferencePoses:[UUID:ReferencePose]=[:]
     init(model:AppModel){self.model=model;super.init();view.session.delegate=self;view.session.delegateQueue = .main;view.automaticallyUpdatesLighting=true;view.scene=SCNScene()}
     func start(room:Room,stage:Stage,prior:Segment?=nil,reveal:Bool=false) {
         guard supported,let h=model?.house else{message="AR tracking is unavailable. You can still view, import, annotate and export.";return}
@@ -38,17 +42,19 @@ import ImageIO
             guard let repo=model?.repository,repo.freeBytes()>750_000_000 else{message="Free at least 750 MB before starting a capture.";return}
             self.reveal=reveal;houseID=h.id;generation=UUID();count=0;meshes=[:];cellSet=[];coverageCells=0;lastFrameTime=0;stopping=false
             let config=ARWorldTrackingConfiguration();config.planeDetection=[.horizontal,.vertical]
+            config.detectionImages=await BoardGenerator.images(h,repo:repo);config.maximumNumberOfTrackedImages=2
+            currentReferencePoses=[:];markerTransform=nil;markerSeen=0
             if hasDepth{config.frameSemantics.insert(.sceneDepth)}
             if ARWorldTrackingConfiguration.supportsSceneReconstruction(.meshWithClassification){config.sceneReconstruction = .meshWithClassification}
             if let prior,let key=prior.worldMap {
                 do {let data=try repo.read(key);config.initialWorldMap=try NSKeyedUnarchiver.unarchivedObject(ofClass:ARWorldMap.self,from:data)}catch{message="Saved map could not be loaded: \(error.localizedDescription)";return}
             }
             if reveal {
-                guard let prior,config.initialWorldMap != nil else{message="This session has no saved AR map. Open source photographs instead.";return}
+                guard let prior,config.initialWorldMap != nil || !prior.referencePoses.isEmpty else{message="This session has no saved AR map. Open source photographs instead.";return}
                 segment=prior
                 var scoped=h;scoped.features=h.features.filter{$0.segmentID==prior.id};scoped.segments=scoped.segments.map{var s=$0;s.registration=nil;return s}
                 let scene=SceneBuilder.scene(scoped,options:SceneOptions(mode:.rough,ceilings:true))
-                view.scene=scene;revealedNodes=scene.rootNode.childNodes.filter{$0.geometry != nil};revealedNodes.forEach{$0.isHidden=true}
+                view.scene=scene;overlayRoot.removeFromParentNode();overlayRoot.childNodes.forEach{$0.removeFromParentNode()};revealedNodes=scene.rootNode.childNodes.filter{$0.geometry != nil};for n in revealedNodes{n.removeFromParentNode();overlayRoot.addChildNode(n);n.isHidden=true};scene.rootNode.addChildNode(overlayRoot)
             }else{
                 let s=Segment(roomID:room.id,stageID:stage.id);segment=s;model?.edit{$0.segments.append(s)};view.scene=SCNScene()
             }
@@ -62,7 +68,9 @@ import ImageIO
         case .notAvailable:tracking="Unavailable";normal=false
         case .limited(let reason):tracking="Limited: \(reason)";normal=false}
         if reveal {
-            let eligible=normal && frame.worldMappingStatus == .mapped
+            let markerFresh=frame.timestamp-markerSeen<2 && markerTransform != nil
+            let eligible=normal && (markerFresh || (markerTransform==nil && frame.worldMappingStatus == .mapped))
+            if markerFresh,let transform=markerTransform{overlayRoot.simdTransform=transform}
             revealedNodes.forEach{$0.isHidden = !eligible}
             message=eligible ? "Approximate historical overlay. Verify against photographs and physical references; no precision calibration yet." : "Alignment unavailable — overlay hidden. Return to the original capture viewpoint."
             return
@@ -118,9 +126,20 @@ import ImageIO
         for y in 1..<n{for x in 1..<n{sum+=abs(Double(data[y*n+x])-Double(data[y*n+x-1]))+abs(Double(data[y*n+x])-Double(data[(y-1)*n+x]))}}
         return sum/Double((n-1)*(n-1)*510)
     }
-    func session(_ session:ARSession,didAdd anchors:[ARAnchor]){collect(anchors)}
-    func session(_ session:ARSession,didUpdate anchors:[ARAnchor]){collect(anchors)}
+    func session(_ session:ARSession,didAdd anchors:[ARAnchor]){references(anchors);collect(anchors)}
+    func session(_ session:ARSession,didUpdate anchors:[ARAnchor]){references(anchors);collect(anchors)}
     func session(_ session:ARSession,didRemove anchors:[ARAnchor]){for a in anchors{meshes.removeValue(forKey:a.identifier)}}
+    private func references(_ anchors:[ARAnchor]) {
+        guard running else{return}
+        for item in anchors {
+            guard let anchor=item as? ARImageAnchor,anchor.isTracked,let name=anchor.referenceImage.name,let id=UUID(uuidString:name),model?.house?.references.first(where:{$0.id==id})?.valid==true else{continue}
+            var values:[Double]=[];for row in 0..<4{for col in 0..<4{values.append(Double(anchor.transform[col][row]))}}
+            if reveal,let old=segment?.referencePoses.first(where:{$0.boardID==id}),old.matrix.count==16 {
+                var previous=matrix_identity_float4x4;for row in 0..<4{for col in 0..<4{previous[col][row]=Float(old.matrix[row*4+col])}}
+                markerTransform=anchor.transform*simd_inverse(previous);markerSeen=view.session.currentFrame?.timestamp ?? 0
+            }else if !reveal {currentReferencePoses[id]=ReferencePose(boardID:id,matrix:values)}
+        }
+    }
     private func collect(_ anchors:[ARAnchor]) {
         guard running,!reveal,let segment else{return}
         for anchor in anchors {
@@ -134,7 +153,7 @@ import ImageIO
         }
     }
     func stop(){guard running else{return};running=false;stopping=true;processing=true;if reveal{view.session.pause();revealedNodes.forEach{$0.isHidden=true};processing=false;return};if pending==0{finishStop()}}
-    private func finishStop(){guard processing,let segment,let model,let repo=model.repository else{return};let features=Array(meshes.values);model.edit{$0.features.removeAll{$0.segmentID==segment.id};$0.features.append(contentsOf:features)}
+    private func finishStop(){guard processing,let segment,let model,let repo=model.repository else{return};let features=Array(meshes.values);model.edit{h in h.features.removeAll{$0.segmentID==segment.id};h.features.append(contentsOf:features);if let i=h.segments.firstIndex(where:{$0.id==segment.id}){h.segments[i].referencePoses=Array(currentReferencePoses.values)}}
         view.session.getCurrentWorldMap { [weak self] map,error in
             Task {@MainActor in guard let self else{return};defer{self.view.session.pause();self.processing=false;self.stopping=false}
                 do{if let map{let data=try NSKeyedArchiver.archivedData(withRootObject:map,requiringSecureCoding:true);let key=try repo.put(data,ext:"armap");model.edit{h in if let i=h.segments.firstIndex(where:{$0.id==segment.id}){h.segments[i].worldMap=key}}};self.message="Session saved: \(self.count) images, \(features.count) mesh patches. Approximate, uncalibrated geometry."}catch{self.message="Photos and geometry saved. Map save failed: \(error.localizedDescription)"}

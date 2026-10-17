@@ -5,6 +5,9 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"6AC99570C780820B91D7C3A1" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "References.swift"; "sourceTree" = "<group>"; };
+		"D5BC86CCF803527013D48BDA" = { "isa" = "PBXBuildFile"; "fileRef" = "6AC99570C780820B91D7C3A1"; };
+
 "HXCORECPP0000000000000001" = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "../packages/spatial-core/hx_core.cpp"; sourceTree = "<group>"; };
 "HXCOREBUILD00000000000001" = {isa = PBXBuildFile; fileRef = HXCORECPP0000000000000001; };
 		"457556C9DE35485C0570A257" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "Reconstruction.swift"; "sourceTree" = "<group>"; };
@@ -84,7 +87,8 @@
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
-				"534A5F435ADDB25DA9F43232", "HXCOREBUILD00000000000001",
+				"534A5F435ADDB25DA9F43232",
+				"D5BC86CCF803527013D48BDA", "HXCOREBUILD00000000000001",
 				"0D5313A68842A767BBC319AB",
 				"EEE1B47025BF139FF876C0F0",
 				"0C08BFCEF0E23850C5E34CB0",
@@ -117,7 +121,8 @@
 		"FC233BDA2344D97687F5A251" = {
 			"isa" = "PBXGroup";
 			"children" = (
-				"A33603BF79F74B056172D43B", "HXCORECPP0000000000000001",
+				"A33603BF79F74B056172D43B",
+				"6AC99570C780820B91D7C3A1", "HXCORECPP0000000000000001",
 				"457556C9DE35485C0570A257",
 				"F32527ACB931236609C95997",
 				"1415F251FED0C1EABC91901B",
