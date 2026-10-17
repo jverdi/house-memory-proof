@@ -1,0 +1,79 @@
+{
+  "sourceRevision": "ffa44947575049a8e3f13226f06133b5c7728094",
+  "runID": 39057607243,
+  "artifactID": 12110177906,
+  "verifiedSHA256": "00415b5d0ac5f36b557bb15eafc3f5c5f24e4c9a68b24da6cee7c41949fd5aeb",
+  "cases": [
+    {
+      "name": "basic",
+      "passed": true,
+      "positiveAccepted": 3,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.0030970525804517868,
+      "oracleReadDenied": true
+    },
+    {
+      "name": "coded-regions",
+      "passed": true,
+      "positiveAccepted": 16,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.003908046305612429,
+      "oracleReadDenied": true
+    },
+    {
+      "name": "joint",
+      "passed": true,
+      "positiveAccepted": 3,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.004567666221661783,
+      "oracleReadDenied": true
+    },
+    {
+      "name": "long-session",
+      "passed": true,
+      "positiveAccepted": 3,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.0029654441748894513,
+      "oracleReadDenied": true
+    },
+    {
+      "name": "rough-905771",
+      "passed": true,
+      "positiveAccepted": 12,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.004682171370462692,
+      "oracleReadDenied": true
+    },
+    {
+      "name": "rough-683431",
+      "passed": true,
+      "positiveAccepted": 12,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.005867004767681341,
+      "oracleReadDenied": true
+    },
+    {
+      "name": "paired",
+      "passed": false,
+      "positiveAccepted": 12,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.0036973824569957,
+      "oracleReadDenied": true
+    },
+    {
+      "name": "staggered",
+      "passed": false,
+      "positiveAccepted": 12,
+      "falseAccepts": 0,
+      "worstAcceptedPositionErrorMetres": 0.004853352901091296,
+      "oracleReadDenied": true
+    }
+  ],
+  "finishedStageAccepted": {
+    "paired": 0,
+    "staggered": 0,
+    "attemptsEach": 8
+  },
+  "additionalRoomConfigurations": 5,
+  "allAdditionalRoomConfigurationsPassed": true
+}

@@ -1,0 +1,52 @@
+{
+  "sourceRevision": "ffa44947575049a8e3f13226f06133b5c7728094",
+  "runID": 39057607330,
+  "jobID": 117468905930,
+  "native": {
+    "checks": 93,
+    "failures": [],
+    "nativePassed": true
+  },
+  "uiTests": 2,
+  "uiFailures": 0,
+  "requiredSteps": [
+    {
+      "name": "Run native image, reconstruction, storage and movie diagnostics",
+      "conclusion": "success"
+    },
+    {
+      "name": "Preserve native checkpoint before interface and interoperability checks",
+      "conclusion": "success"
+    },
+    {
+      "name": "Verify recovery across actual process termination",
+      "conclusion": "success"
+    },
+    {
+      "name": "Exercise the iPhone interface workflows",
+      "conclusion": "success"
+    },
+    {
+      "name": "Verify portable core and independent export readers",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 12110921368,
+      "name": "simulator-evidence-147-1",
+      "reportedSHA256": "cc783b735c42fe7a2a423794b277da89a4482b50fd489b2b2544bf941ee69634"
+    },
+    {
+      "id": 12109797967,
+      "name": "native-checkpoint-147-1",
+      "reportedSHA256": "b11e45e6a5e181a2381a708943eedf823f750c5c3209caf85301bd6c5ffa2f1d"
+    }
+  ],
+  "artifactBytesVerified": false,
+  "evidenceSource": "GitHub job log and completed step statuses; local executor disconnected before archive retrieval"
+}
