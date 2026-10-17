@@ -624,9 +624,11 @@ import Darwin
                 try Data(contentsOf:Exporter.metadata(fixture)).write(to:mainRepo.root.appendingPathComponent("semantic-source.json"))
                 let directory=url.deletingLastPathComponent()
                 let before=Set(try FileManager.default.contentsOfDirectory(atPath:directory.path))
-                do{_=try Exporter.semanticCSV(fixture,maximumBytes:1);return false}catch{}
-                guard Set(try FileManager.default.contentsOfDirectory(atPath:directory.path))==before else{return false}
-                return !data.isEmpty && Set(try FileManager.default.contentsOfDirectory(atPath:directory.path))==before
+                for budget in [1,data.count/2] {
+                    do{_=try Exporter.semanticCSV(fixture,maximumBytes:budget);return false}catch{}
+                    guard Set(try FileManager.default.contentsOfDirectory(atPath:directory.path))==before else{return false}
+                }
+                return !data.isEmpty
             }
             await check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
             await check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}

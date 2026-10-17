@@ -13,7 +13,7 @@ Personal, local-first native iPhone construction record. SwiftUI + ARKit + Scene
 - Approximate point measurements, route tracing, trade/endpoint labels, explicit service links, source/session photographs and on-device OCR.
 - PDF/image scale calibration, independent source preservation, offline bounded IFC and ASCII PLY import.
 - Bounded local depth fusion, visibility-tested photo textures, photo-support coverage checks and an in-app simulated camera dataset.
-- Automatic offscreen MP4 tours with five-second checkpoints; GLB, textured USDZ, PLY, OBJ and metadata output.
+- Automatic offscreen MP4 tours with five-second checkpoints; GLB, textured USDZ, PLY, OBJ, metadata JSON and [semantic CSV](docs/SEMANTIC_CSV.md) output.
 - Streaming ZIP64 complete archives, independent offline photo index and restore into a fresh project identity.
 
 These paths have different validation maturity. See [implementation and acceptance status](docs/IMPLEMENTATION.md), not just the feature list, before relying on them.
@@ -24,13 +24,13 @@ Native source targets iOS 26+. Runtime hardware checks determine whether ARKit, 
 
 `python3 tooling/hm test` builds the portable C++ core and runs 50 analytic noisy-depth cases. Those cases are **not** 50 distinct houses or field/localization qualification.
 
-The managed macOS workflow compiles the app, launches the iPhone simulator, runs native self-tests and XCUITest navigation, and validates output with Khronos glTF Validator, OpenUSD and Python's independent ZIP reader. CI artifacts distinguish simulator results from physical-device results. Exact evidence and limitations are recorded in the implementation ledger.
+The managed macOS workflow compiles the app, launches the iPhone simulator, runs native self-tests and XCUITest navigation, and validates output with Khronos glTF Validator, OpenUSD, trimesh and Python's independent ZIP/CSV readers. CI artifacts distinguish simulator results from physical-device results. Exact evidence and limitations are recorded in the implementation ledger.
 
 `python3 tooling/project.py` and `python3 tooling/ui-project.py` maintain the checked-in Xcode source/test references. `tooling/prepare-ifc.sh` downloads pinned web-ifc 0.0.72 during builds; the resulting parser runs entirely offline inside the app. See [third-party notices](docs/THIRD_PARTY.md).
 
 ## Delivery
 
-The private repository and hosted macOS runner previously delivered signed **House Xray build 2.1** to the owner's internal TestFlight group. The owner confirmed installation on October 17, 2026. [Proof evidence](docs/evidence/testflight-delivery-2.1.json) is separate from application acceptance.
+The repository and hosted macOS runner previously delivered signed **House Xray build 2.1** to the owner's internal TestFlight group. The owner confirmed installation on October 17, 2026. [Proof evidence](docs/evidence/testflight-delivery-2.1.json) is separate from application acceptance.
 
 - App ID: `6823862609`
 - Bundle: `com.jverdi.housememoryproof`
@@ -43,3 +43,4 @@ Intermediate uploads are disabled in `.github/workflows/ios.yml`. A successful s
 ## Keeping evidence
 
 New installations keep originals in the app's Files-visible Documents/HouseXray store; legacy installations retain their original Application Support store. Originals are never automatically evicted. Export a complete archive through Tools and save it using Files, including to iCloud Drive if desired. Optional coordinated folder snapshots can write to a user-selected Files/iCloud Drive folder, including daily while opening a house. iOS requires initial folder permission. Incremental snapshots share immutable originals, with restore-by-revision and no automatic merging. Real-provider lifecycle and performance qualification remain incomplete. Do not delete the app as a recovery step without an independently verified archive.
+

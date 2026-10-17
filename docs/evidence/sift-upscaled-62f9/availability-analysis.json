@@ -1,0 +1,155 @@
+{
+  "feature-sift-corrected": {
+    "rough-a": {
+      "positiveQueries": 12,
+      "accepted": 12,
+      "ambiguityRefusals": [],
+      "remainingRefusals": []
+    },
+    "rough-b": {
+      "positiveQueries": 12,
+      "accepted": 12,
+      "ambiguityRefusals": [],
+      "remainingRefusals": []
+    },
+    "paired": {
+      "positiveQueries": 20,
+      "accepted": 13,
+      "ambiguityRefusals": [],
+      "remainingRefusals": [
+        {
+          "image": "room-0-finished-1.jpg",
+          "lastDiagnostic": "Pooled source group has only 24 independently repeated features"
+        },
+        {
+          "image": "room-1-finished-0.jpg",
+          "lastDiagnostic": "Pooled source group has only 18 independently repeated features"
+        },
+        {
+          "image": "room-1-finished-1.jpg",
+          "lastDiagnostic": "Pooled source group has only 17 independently repeated features"
+        },
+        {
+          "image": "room-2-finished-0.jpg",
+          "lastDiagnostic": "Pooled source group has only 23 independently repeated features"
+        },
+        {
+          "image": "room-2-finished-1.jpg",
+          "lastDiagnostic": "Pooled source group has only 15 independently repeated features"
+        },
+        {
+          "image": "room-3-finished-0.jpg",
+          "lastDiagnostic": "Pooled source group has only 23 independently repeated features"
+        },
+        {
+          "image": "room-3-finished-1.jpg",
+          "lastDiagnostic": "Pooled source group has only 18 independently repeated features"
+        }
+      ]
+    },
+    "staggered": {
+      "positiveQueries": 20,
+      "accepted": 13,
+      "ambiguityRefusals": [],
+      "remainingRefusals": [
+        {
+          "image": "room-0-finished-0.jpg",
+          "lastDiagnostic": "Insufficient repeated features for multi-view query refinement"
+        },
+        {
+          "image": "room-0-finished-1.jpg",
+          "lastDiagnostic": "No unique, separated source-pose consensus"
+        },
+        {
+          "image": "room-1-finished-1.jpg",
+          "lastDiagnostic": "Insufficient repeated features for multi-view query refinement"
+        },
+        {
+          "image": "room-2-finished-0.jpg",
+          "lastDiagnostic": "Insufficient repeated features for multi-view query refinement"
+        },
+        {
+          "image": "room-2-finished-1.jpg",
+          "lastDiagnostic": "Pooled source group has only 26 independently repeated features"
+        },
+        {
+          "image": "room-3-finished-0.jpg",
+          "lastDiagnostic": "Insufficient repeated features for multi-view query refinement"
+        },
+        {
+          "image": "room-3-finished-1.jpg",
+          "lastDiagnostic": "Pooled source group has only 21 independently repeated features"
+        }
+      ]
+    }
+  },
+  "feature-sift-upscaled": {
+    "rough-a": {
+      "positiveQueries": 12,
+      "accepted": 12,
+      "ambiguityRefusals": [],
+      "remainingRefusals": []
+    },
+    "rough-b": {
+      "positiveQueries": 12,
+      "accepted": 7,
+      "ambiguityRefusals": [
+        "room-1-query-0.jpg",
+        "room-2-query-0.jpg",
+        "room-2-query-2.jpg",
+        "room-3-query-0.jpg",
+        "room-3-query-2.jpg"
+      ],
+      "remainingRefusals": []
+    },
+    "paired": {
+      "positiveQueries": 20,
+      "accepted": 8,
+      "ambiguityRefusals": [
+        "room-0-query-0.jpg",
+        "room-0-query-1.jpg",
+        "room-0-query-2.jpg",
+        "room-0-finished-0.jpg",
+        "room-0-finished-1.jpg",
+        "room-1-finished-0.jpg",
+        "room-1-finished-1.jpg",
+        "room-3-query-0.jpg",
+        "room-3-query-1.jpg",
+        "room-3-query-2.jpg",
+        "room-3-finished-1.jpg"
+      ],
+      "remainingRefusals": [
+        {
+          "image": "room-2-finished-0.jpg",
+          "lastDiagnostic": "Pooled source group: 3 sources, 55 repeated features, rejection 3, cells 5, span 0.681440144777298/0.7607972174882889, spectrum 0.828684265531772/0.35659234969434134/0.00255971301055808"
+        }
+      ]
+    },
+    "staggered": {
+      "positiveQueries": 20,
+      "accepted": 5,
+      "ambiguityRefusals": [
+        "room-0-query-0.jpg",
+        "room-0-query-1.jpg",
+        "room-0-finished-0.jpg",
+        "room-0-finished-1.jpg",
+        "room-1-query-0.jpg",
+        "room-1-query-1.jpg",
+        "room-1-finished-0.jpg",
+        "room-1-finished-1.jpg",
+        "room-2-finished-0.jpg",
+        "room-3-query-0.jpg",
+        "room-3-query-1.jpg",
+        "room-3-query-2.jpg",
+        "room-3-finished-0.jpg",
+        "room-3-finished-1.jpg"
+      ],
+      "remainingRefusals": [
+        {
+          "image": "room-2-finished-1.jpg",
+          "lastDiagnostic": "Insufficient repeated features for multi-view query refinement"
+        }
+      ]
+    }
+  }
+}
