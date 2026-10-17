@@ -1,0 +1,13 @@
+{
+  "source": "0056098e4fd0296cd568c416257c7db29ebfc4ec",
+  "run": 39066800878,
+  "fullWorkflowPassed": true,
+  "artifactID": 12113579911,
+  "sha256": "6ccb71169da1c8ff103cf7b7455c776887e2bf2f85aff79bb609aaae7bd8cb80",
+  "independentlyVerified": true,
+  "nativeChecks": 100,
+  "uiTests": 3,
+  "processKillModes": 3,
+  "syntheticOnly": true,
+  "deviceQualified": false
+}

@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "tests": 3,
+  "source": "0056098e4fd0296cd568c416257c7db29ebfc4ec",
+  "run": 39066800878,
+  "lines": [
+    "Test Case '-[HouseXrayUITests.HouseXraySmoke testLandscapeControlsAndRotation]' passed (75.838 seconds).",
+    "Test Case '-[HouseXrayUITests.HouseXraySmoke testPersonalHouseWorkflow]' passed (57.678 seconds).",
+    "Test Case '-[HouseXrayUITests.HouseXraySmoke testPhotoPointWorkflow]' passed (127.130 seconds).",
+    "\t Executed 3 tests, with 0 failures (0 unexpected) in 260.646 (260.656) seconds",
+    "\t Executed 3 tests, with 0 failures (0 unexpected) in 260.646 (260.658) seconds",
+    "\t Executed 3 tests, with 0 failures (0 unexpected) in 260.646 (260.661) seconds",
+    "** TEST SUCCEEDED **"
+  ]
+}

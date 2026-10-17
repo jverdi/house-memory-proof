@@ -1,0 +1,178 @@
+diff --git a/HouseMemoryProof/PoseGraph.swift b/HouseMemoryProof/PoseGraph.swift
+index 7ef8fae..5f98474 100644
+--- a/HouseMemoryProof/PoseGraph.swift
++++ b/HouseMemoryProof/PoseGraph.swift
+@@ -45,7 +45,7 @@ enum PoseGraph {
+       let inverse=simd_inverse(registration*adapter*native)
+       var points:[Double]=[]
+       for point in map.points[view.start..<(view.start+view.count)] {let p=inverse*SIMD4(point.x,point.y,point.z,1);points += [p.x,p.y,p.z]}
+-      cameraPoints.append(points);descriptors.append(map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32));priors += observation.camera;ids.append(observation.id)
++      cameraPoints.append(points);descriptors.append(map.descriptors.subdata(in:view.start*128..<(view.start+view.count)*128));priors += observation.camera;ids.append(observation.id)
+     }
+     // Nearby temporal frames establish continuity. Spatially nearby older
+     // views may close loops; far-apart rooms are never exhaustively paired.
+diff --git a/HouseMemoryProof/VisualMapping.swift b/HouseMemoryProof/VisualMapping.swift
+index e8228c5..45008dc 100644
+--- a/HouseMemoryProof/VisualMapping.swift
++++ b/HouseMemoryProof/VisualMapping.swift
+@@ -15,7 +15,7 @@ struct VisualMap: Codable {
+   var schema=1;var segmentID:UUID;var roomID:UUID;var stageID:UUID;var frameID:UUID?
+   var fingerprint:String;var points:[V3];var descriptors:Data;var views:[View]
+   var valid:Bool {
+-    schema==1 && points.count<=240000 && descriptors.count==points.count*32
++    schema==1 && points.count<=240000 && descriptors.count==points.count*128
+       && points.allSatisfy{$0.finite} && views.count>=2 && views.count<=120
+       && Set(views.map{$0.observationID}).count==views.count
+       && views.allSatisfy{$0.start>=0 && $0.count>=0 && $0.start<=points.count && $0.count<=points.count-$0.start && $0.position.finite}
+@@ -26,19 +26,19 @@ enum VisualMapping {
+   struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
+   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
+   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
+-  struct Signature:Codable {var algorithm="visual-v12-camera-pixel-centres";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
++  struct Signature:Codable {var algorithm="isolated-sift128-precise-v1";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+   static func fingerprint(house:House,segment:Segment)throws->String {
+     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
+     return SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
+   }
+   static func detect(gray:Data,width:Int,height:Int,stride:Int)throws->Features {
+-    var xy=[Float](repeating:0,count:featureLimit*2),bytes=[UInt8](repeating:0,count:featureLimit*32)
++    var xy=[Float](repeating:0,count:featureLimit*2),bytes=[UInt8](repeating:0,count:featureLimit*128)
+     let count=gray.withUnsafeBytes{p in xy.withUnsafeMutableBufferPointer{x in bytes.withUnsafeMutableBufferPointer{d in
+       hx_vision_detect(p.bindMemory(to:UInt8.self).baseAddress,UInt32(gray.count),UInt32(width),UInt32(height),UInt32(stride),x.baseAddress,d.baseAddress,UInt32(featureLimit))
+     }}}
+     guard count>=0 else{throw HouseError.message("Visual feature extraction rejected the image.")}
+-    return Features(xy:Array(xy.prefix(Int(count)*2)),descriptors:Data(bytes.prefix(Int(count)*32)),count:Int(count))
++    return Features(xy:Array(xy.prefix(Int(count)*2)),descriptors:Data(bytes.prefix(Int(count)*128)),count:Int(count))
+   }
+   static func image(_ data:Data)throws->(Data,Int,Int) {
+     guard let source=CGImageSourceCreateWithData(data as CFData,nil),let cg=CGImageSourceCreateThumbnailAtIndex(source,0,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:1280,kCGImageSourceCreateThumbnailWithTransform:false] as CFDictionary) else{throw HouseError.message("Visual map image cannot be decoded.")}
+@@ -50,7 +50,7 @@ enum VisualMapping {
+     guard ok else{throw HouseError.message("Visual map image allocation failed.")};return (gray,w,h)
+   }
+   static func cameraFeatures(_ features:Features,imageWidth:Int,imageHeight:Int,cameraWidth:Int,cameraHeight:Int)throws->Features {
+-    guard imageWidth>0,imageHeight>0,cameraWidth>0,cameraHeight>0,features.count>=0,features.xy.count==features.count*2,features.descriptors.count==features.count*32 else{throw HouseError.message("Invalid visual image dimensions or feature storage.")}
++    guard imageWidth>0,imageHeight>0,cameraWidth>0,cameraHeight>0,features.count>=0,features.xy.count==features.count*2,features.descriptors.count==features.count*128 else{throw HouseError.message("Invalid visual image dimensions or feature storage.")}
+     guard imageWidth != cameraWidth || imageHeight != cameraHeight else{return features}
+     // Integer pixel centres do not scale about zero. A thumbnail pixel x
+     // maps to (x + 0.5) * cameraWidth / imageWidth - 0.5 in the camera.
+@@ -111,12 +111,12 @@ enum VisualMapping {
+         let key=PixelIdentity(u,v)
+         if conflicts[o.id]?.contains(key) != true,let landmark=optimized[o.id]?[key],(landmark-point).length<=0.025 {point=landmark}
+         if let t=segment.registration{point=t.apply(point)}
+-        map.points.append(point);map.descriptors.append(features.descriptors.subdata(in:i*32..<(i+1)*32))
++        map.points.append(point);map.descriptors.append(features.descriptors.subdata(in:i*128..<(i+1)*128))
+       }
+       let m=o.camera;var position=V3(m[3],-m[11],m[7]);if let t=segment.registration{position=t.apply(position)}
+       let retained=map.points.count-start
+       if retained>=30{map.views.append(VisualMap.View(observationID:o.id,position:position,start:start,count:retained))}
+-      else{map.points.removeLast(retained);map.descriptors.removeSubrange(start*32..<map.descriptors.count)}
++      else{map.points.removeLast(retained);map.descriptors.removeSubrange(start*128..<map.descriptors.count)}
+     }
+     guard map.valid,map.views.count>=2 else{throw HouseError.message("Not enough stable, textured depth features. Capture wider views with overlapping corners and good lighting.")}
+     return map
+@@ -178,7 +178,7 @@ enum VisualMapping {
+     for map in maps where map.valid {
+       var supported:[V3]=[],repeated:[Int:[V3]]=[:]
+       for view in map.views {
+-        let bytes=map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32)
++        let bytes=map.descriptors.subdata(in:view.start*128..<(view.start+view.count)*128)
+         var pairs=[UInt32](repeating:0,count:featureLimit*2)
+         let count=bytes.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,UInt32(featureLimit))}}}
+         guard count>=8 else{continue}
+@@ -251,7 +251,7 @@ enum VisualMapping {
+     struct Candidate {var pose:Pose;var position:V3;var matches:[Int:V3]}
+     var candidates:[Candidate]=[],sources:[SourceMatches]=[]
+     for view in map.views {
+-      let descriptors=map.descriptors.subdata(in:view.start*32..<(view.start+view.count)*32)
++      let descriptors=map.descriptors.subdata(in:view.start*128..<(view.start+view.count)*128)
+       var pairs=[UInt32](repeating:0,count:featureLimit*2)
+       let count=descriptors.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in
+         hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,UInt32(featureLimit))
+diff --git a/packages/visual-core/hx_vision.cpp b/packages/visual-core/hx_vision.cpp
+index 74666bc..e1f25dc 100644
+--- a/packages/visual-core/hx_vision.cpp
++++ b/packages/visual-core/hx_vision.cpp
+@@ -18,14 +18,15 @@ extern "C" int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t
+  if(!gray||!xy||!descriptors||w<64||h<64||w>4096||h>4096||stride<w||uint64_t(stride)*h>bytes||capacity<1||capacity>2400)return -1;
+  configure();cv::Mat source(h,w,CV_8U,const_cast<uint8_t*>(gray),stride),image;
+  double scale=std::min(1.0,1280.0/std::max(w,h));cv::resize(source,image,cv::Size(),scale,scale,cv::INTER_AREA);
+- auto detector=cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,256,3,0.001f,4,4,cv::KAZE::DIFF_PM_G2,int(capacity));
++ auto detector=cv::SIFT::create(int(capacity),3,0.04,10,1.6,CV_8U,true);
+  std::vector<cv::KeyPoint> keys;cv::Mat desc;
+  detector->detectAndCompute(image,cv::noArray(),keys,desc);
+  if(keys.empty())return 0;
+- if(desc.type()!=CV_8U||desc.cols!=32||desc.rows!=int(keys.size()))return -2;
+- std::set<std::array<uint8_t,32>> unique;uint32_t n=0;
++ if(desc.type()!=CV_8U||desc.cols!=128||desc.rows!=int(keys.size()))return -2;
++ std::set<std::array<uint8_t,128>> unique;std::set<std::pair<float,float>> uniqueLocations;uint32_t n=0;
+  for(size_t i=0;i<keys.size()&&n<capacity;i++){
+-  std::array<uint8_t,32> descriptor;std::memcpy(descriptor.data(),desc.ptr(i),32);
++  if(!uniqueLocations.emplace(keys[i].pt.x,keys[i].pt.y).second)continue;
++  std::array<uint8_t,128> descriptor;std::memcpy(descriptor.data(),desc.ptr(i),128);
+   // Refinement can converge neighbouring detections onto the same patch.
+   // Identical descriptors are ambiguous evidence, not extra independent votes.
+   if(!unique.insert(descriptor).second)continue;
+@@ -33,18 +34,18 @@ extern "C" int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t
+   // Preserve the existing float arithmetic exactly when there is no resize.
+   xy[n*2]=image.cols==int(w) ? keys[i].pt.x/image.cols:(keys[i].pt.x+.5)/image.cols-.5/w;
+   xy[n*2+1]=image.rows==int(h) ? keys[i].pt.y/image.rows:(keys[i].pt.y+.5)/image.rows-.5/h;
+-  std::memcpy(descriptors+n*32,descriptor.data(),32);n++;
++  std::memcpy(descriptors+n*128,descriptor.data(),128);n++;
+  }
+  return int32_t(n);
+ } catch(...){return -2;}
+ extern "C" int32_t hx_vision_match(const uint8_t* map,uint32_t mn,const uint8_t* query,uint32_t qn,uint32_t* pairs,uint32_t capacity) try {
+  if(!map||!query||!pairs||mn<2||qn<2||mn>50000||qn>2400||capacity>2400)return -1;
+- configure();cv::Mat a(mn,32,CV_8U,const_cast<uint8_t*>(map)),b(qn,32,CV_8U,const_cast<uint8_t*>(query));
+- cv::BFMatcher matcher(cv::NORM_HAMMING);std::vector<std::vector<cv::DMatch>> forward;std::vector<cv::DMatch> reverse;
++ configure();cv::Mat a(mn,128,CV_8U,const_cast<uint8_t*>(map)),b(qn,128,CV_8U,const_cast<uint8_t*>(query));
++ cv::BFMatcher matcher(cv::NORM_L2);std::vector<std::vector<cv::DMatch>> forward;std::vector<cv::DMatch> reverse;
+  matcher.knnMatch(b,a,forward,2);matcher.match(a,b,reverse);uint32_t count=0;
+  for(uint32_t i=0;i<forward.size()&&count<capacity;i++){
+   if(forward[i].size()!=2)continue;auto best=forward[i][0],next=forward[i][1];
+-  if(best.distance>64||best.distance>=next.distance*.75f||reverse[best.trainIdx].trainIdx!=int(i))continue;
++  if(best.distance>256||best.distance>=next.distance*.75f||reverse[best.trainIdx].trainIdx!=int(i))continue;
+   pairs[count*2]=best.trainIdx;pairs[count*2+1]=i;count++;
+  }
+  return count;
+diff --git a/packages/visual-core/hx_vision.h b/packages/visual-core/hx_vision.h
+index 2184e09..94f2f44 100644
+--- a/packages/visual-core/hx_vision.h
++++ b/packages/visual-core/hx_vision.h
+@@ -4,7 +4,7 @@
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+-// XY locations are normalized to input width/height; 32 descriptor bytes per point.
++// XY locations are normalized to input width/height; 128 SIFT descriptor bytes per point (isolated candidate).
+ int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t width,uint32_t height,uint32_t stride,float* xy,uint8_t* descriptors,uint32_t capacity);
+ // Returns pairs (map index, query index) with ratio and reciprocal-match checks.
+ int32_t hx_vision_match(const uint8_t* map,uint32_t map_count,const uint8_t* query,uint32_t query_count,uint32_t* pairs,uint32_t capacity);
+diff --git a/packages/visual-core/hx_vision_test.cpp b/packages/visual-core/hx_vision_test.cpp
+index 1d70342..79b8a6a 100644
+--- a/packages/visual-core/hx_vision_test.cpp
++++ b/packages/visual-core/hx_vision_test.cpp
+@@ -36,11 +36,11 @@ extern "C" int32_t hx_vision_selftest(double* maximum,uint32_t* falseAccepts) tr
+  if(*falseAccepts)return -13;
+  for(uint32_t i=0;i<n;i++){double x=-1.2+(i%12)*2.4/11,y=-.9+(i/12)*1.8/11;world[i*3]=x;world[i*3+1]=y;world[i*3+2]=3;pixels[i*2]=500*x/3+320;pixels[i*2+1]=500*y/3+240;}
+  if(hx_vision_pose(world.data(),pixels.data(),n,500,500,320,240,w,h,pose,&quality)!=0)return -14;
+- std::vector<uint8_t> gray(w*h),desc(1200*32),again(1200*32);std::vector<float> xy(2400),other(2400);std::vector<uint32_t> pairs(2400);
++ std::vector<uint8_t> gray(w*h),desc(1200*128),again(1200*128);std::vector<float> xy(2400),other(2400);std::vector<uint32_t> pairs(2400);
+  for(auto& value:gray)value=uint8_t(random.uniform(0,256));
+  int count=hx_vision_detect(gray.data(),uint32_t(gray.size()),w,h,w,xy.data(),desc.data(),1200);
+  int repeat=hx_vision_detect(gray.data(),uint32_t(gray.size()),w,h,w,other.data(),again.data(),1200);
+- if(count<100||count!=repeat||std::memcmp(desc.data(),again.data(),count*32)||std::memcmp(xy.data(),other.data(),count*2*sizeof(float)))return -15;
++ if(count<100||count!=repeat||std::memcmp(desc.data(),again.data(),count*128)||std::memcmp(xy.data(),other.data(),count*2*sizeof(float)))return -15;
+  if(hx_vision_match(desc.data(),count,again.data(),repeat,pairs.data(),1200)!=count)return -16;
+  // The same analysis pixels must produce identical descriptors and camera
+  // rays whether resizing happens inside the adapter or before it. Odd input
+@@ -50,7 +50,7 @@ extern "C" int32_t hx_vision_selftest(double* maximum,uint32_t* falseAccepts) tr
+   double scale=1280.0/edge;cv::resize(large,small,cv::Size(),scale,scale,cv::INTER_AREA);
+   int a=hx_vision_detect(large.data,uint32_t(large.total()),large.cols,large.rows,uint32_t(large.step),xy.data(),desc.data(),1200);
+   int b=hx_vision_detect(small.data,uint32_t(small.total()),small.cols,small.rows,uint32_t(small.step),other.data(),again.data(),1200);
+-  if(a<30||a!=b||std::memcmp(desc.data(),again.data(),a*32))return -19;
++  if(a<30||a!=b||std::memcmp(desc.data(),again.data(),a*128))return -19;
+   for(int i=0;i<a;i++)for(int axis=0;axis<2;axis++){
+    double input=axis==0?large.cols:large.rows,analysed=axis==0?small.cols:small.rows;
+    double expected=(double(other[i*2+axis])*analysed+.5)*input/analysed-.5;

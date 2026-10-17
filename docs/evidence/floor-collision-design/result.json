@@ -9,5 +9,7 @@
     "translated origin"
   ],
   "reference": "SciPy HiGHS linear feasibility in barycentric coordinates and continuous time",
-  "scope": "Independent mathematical design check of Python SAT transcription; not execution of the native Swift implementation or device qualification."
+  "scope": "Independent mathematical design check of Python SAT transcription; not execution of the native Swift implementation or device qualification.",
+  "numpyVersion": "2.3.5",
+  "scipyVersion": "1.17.0"
 }

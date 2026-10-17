@@ -1,0 +1,24 @@
+{
+  "source": "0056098e4fd0296cd568c416257c7db29ebfc4ec",
+  "reviewed": true,
+  "screenshots": [
+    {
+      "name": "Landscape measurement",
+      "artifactPath": "ui-attachments/1D49F5F8-C521-4C38-BC57-48FF9BA34286.png",
+      "sha256": "009557ded6311c8b6ee5f776e9d5a1def8ff0fe2c8c33730f5e6b65a36a46b5f"
+    },
+    {
+      "name": "Portrait after rotation",
+      "artifactPath": "ui-attachments/9AFC5327-C37C-4369-AFAE-AFFD64FFED61.png",
+      "sha256": "48b38d3a611109cce412e1fee9468ba7d7261f1946b965089667ba52b3a16dd7"
+    }
+  ],
+  "findings": [
+    "Compact menus, layer control, movement controls and tab bar fit in landscape.",
+    "Portrait restores segmented controls with Finished and Measure selected.",
+    "Labels are readable and controls do not overlap in these two captured states."
+  ],
+  "limitations": [
+    "Not the complete Dynamic Type, contrast, VoiceOver, device or orientation matrix."
+  ]
+}

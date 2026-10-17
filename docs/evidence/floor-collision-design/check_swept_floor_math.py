@@ -1,6 +1,7 @@
 """Design check: translated floor SAT against independent LP feasibility."""
 import json
 import numpy as np
+import scipy
 from scipy.optimize import linprog
 rng=np.random.default_rng(819237)
 def sat(vertices,start,end,extents):
@@ -38,5 +39,5 @@ for i in range(1000):
  shift=np.array([1000,-2000,3000.])
  assert sat(vertices+shift,start+shift,end+shift,extents)==answer,('translated',i)
  colliding+=answer
-report={'passed':True,'cases':1000,'colliding':colliding,'separated':1000-colliding,'seed':819237,'additionalChecks':['reversed winding and motion','translated origin'],'reference':'SciPy HiGHS linear feasibility in barycentric coordinates and continuous time','scope':'Independent mathematical design check of Python SAT transcription; not execution of the native Swift implementation or device qualification.'}
+report={'passed':True,'cases':1000,'numpyVersion':np.__version__,'scipyVersion':scipy.__version__,'colliding':colliding,'separated':1000-colliding,'seed':819237,'additionalChecks':['reversed winding and motion','translated origin'],'reference':'SciPy HiGHS linear feasibility in barycentric coordinates and continuous time','scope':'Independent mathematical design check of Python SAT transcription; not execution of the native Swift implementation or device qualification.'}
 open('swept-floor-math.json','w').write(json.dumps(report,indent=2)+'\n');print(json.dumps(report))

@@ -1,0 +1,12 @@
+{
+  "workflowSource": "50ab7e5b4a690b51ed2d23c4b2a2cf87057babb0",
+  "candidateBaseline": "ca5a28fe80df316348a10e9bae220b23e8955664",
+  "run": 39067282669,
+  "artifactID": 12113474472,
+  "sha256": "0cce40b8fdd013ec0c7a195e643a0be3bf7412d6cbb0cac6f69e9a99e69beacc",
+  "independentlyVerified": true,
+  "candidateValid": true,
+  "acceptedForProduction": false,
+  "syntheticOnly": true,
+  "descriptorContract": "SIFT 128-byte CV_8U, precise pyramid, L2<=256, reciprocal 0.75 ratio; duplicate locations excluded. All pose/scoring gates unchanged."
+}
