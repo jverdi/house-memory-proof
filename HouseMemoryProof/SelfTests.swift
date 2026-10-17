@@ -308,6 +308,14 @@ import Darwin
             check("PLY independent parser roundtrip"){let url=try Exporter.meshText(house,options:SceneOptions(),ply:true);let mesh=try PLYReader.read(Data(contentsOf:url));return mesh.valid && mesh.vertices.count==Exporter.canonicalFeatures(house,options:SceneOptions()).reduce(0){$0+$1.mesh.vertices.count}}
             check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
             check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}
+            check("Before-after and service tours retain stage identity and exact frame timeline") {
+                for preset in [TourPreset.beforeAfter,.services] {
+                    let plan=TourDirector.plan(house,duration:10,preset:preset)
+                    guard !plan.shots.isEmpty,plan.shots.allSatisfy({$0.duration<=5 && $0.layerMode != nil && $0.tradeNames != nil}),plan.shots.reduce(0,{ $0+Int(($1.duration*30).rounded()) })==300 else{return false}
+                    if preset == .beforeAfter {guard Set(plan.shots.compactMap{$0.layerMode})==Set([ViewMode.rough.rawValue,ViewMode.finished.rawValue]) else{return false}}
+                }
+                return true
+            }
             check("Deterministic tour source revision"){let a=try JSONEncoder().encode(TourDirector.plan(house)),b=try JSONEncoder().encode(TourDirector.plan(house));let p=try JSONDecoder().decode(TourPlan.self,from:a),q=try JSONDecoder().decode(TourPlan.self,from:b);return Set(p.shots.map{$0.roomID}).count==3 && p.shots.allSatisfy{$0.duration<=5} && p.sourceRevision==q.sourceRevision && p.shots.map{$0.position}==q.shots.map{$0.position}}
             check("Clearance handles parallel rays and rejects incomplete indexes"){
                 let box=SpatialClearance.Bounds(low:V3(),high:V3(1,1,1))
@@ -318,6 +326,7 @@ import Darwin
             check("Tour path rejects observed wall and accepts supported camera corridor"){
                 var h=House.empty("Path test");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
                 for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}
+                h.features=[Feature(name:"Captured floor",trade:.floor,roomID:r.id,stageID:stage.id,kind:.synthetic,mesh:.box(center:V3(0,0,-0.1),size:V3(3,3,0.1)),segmentID:segment.id)]
                 let a=V3(0,0,1.6),b=V3(0.5,0,1.6),options=SceneOptions()
                 guard TourDirector.clearPath(a,b,house:h,options:options,clearance:SpatialClearance(features:Exporter.canonicalFeatures(h,options:options))),TourDirector.plan(h).shots.contains(where:{$0.endPosition != nil}) else{return false}
                 h.features=[Feature(name:"Blocking wall",trade:.structure,roomID:r.id,stageID:stage.id,kind:.synthetic,mesh:.box(center:V3(0.25,0,1.6),size:V3(0.1,2,2)),segmentID:segment.id)]

@@ -4,6 +4,10 @@ import Foundation
 import SceneKit
 import UIKit
 
+enum TourPreset:String,CaseIterable,Identifiable {
+  case overview="Current layers",beforeAfter="Rough-in / finished",services="Service systems"
+  var id:String{rawValue}
+}
 struct TourShot: Codable {
   var roomID: UUID
   var position: V3
@@ -16,6 +20,8 @@ struct TourShot: Codable {
   var endPosition: V3? = nil
   var endYaw: Double? = nil
   var endPitch: Double? = nil
+  var layerMode:String?=nil
+  var tradeNames:[String]?=nil
 }
 struct TourPlan: Codable {
   var schema = 1
@@ -28,15 +34,42 @@ struct TourPlan: Codable {
   var height = 1080
 }
 enum TourDirector {
-  static func plan(_ h: House, duration: Double = 20, options: SceneOptions = SceneOptions())
+  static func plan(_ h: House, duration: Double = 20, options: SceneOptions = SceneOptions(),preset:TourPreset = .overview)
     -> TourPlan
   {
+    if preset != .overview {
+      var variants:[(String,SceneOptions)]=[]
+      if preset == .beforeAfter {
+        for mode in [ViewMode.rough,.finished] {var scope=options;scope.mode=mode;scope.stage=nil;variants.append((mode.rawValue,scope))}
+      }else{
+        for trade in [Trade.electrical,.lowVoltage,.plumbing,.hvac] {var scope=options;scope.mode = .rough;scope.trades=[trade];variants.append((trade.rawValue,scope))}
+      }
+      var shots:[TourShot]=[],excluded:[String]=[]
+      for (label,scope) in variants {
+        let part=plan(h,duration:20,options:scope)
+        excluded += part.excluded.map{label+": "+$0}
+        for var shot in part.shots {shot.layerMode=scope.mode.rawValue;shot.tradeNames=scope.trades.map{$0.rawValue}.sorted();shot.caption += " · "+label;shots.append(shot)}
+      }
+      // Group the comparison by room, retaining explicit cuts and frames.
+      let roomOrder=Dictionary(h.rooms.enumerated().map{($0.element.id,$0.offset)},uniquingKeysWith:{a,_ in a})
+      shots=shots.enumerated().sorted{a,b in
+        let ar=roomOrder[a.element.roomID] ?? 0,br=roomOrder[b.element.roomID] ?? 0
+        return ar==br ? a.offset<b.offset:ar<br
+      }.map{$0.element}
+      let frames=max(150,Int((min(60,max(5,duration))*30).rounded()))
+      // Every selected shot has at least one frame and the timeline is exact.
+      if shots.count>frames {excluded.append("Tour duration omitted \(shots.count-frames) shots.");shots=Array(shots.prefix(frames))}
+      let count=max(1,shots.count),base=frames/count,remainder=frames%count
+      for i in shots.indices {shots[i].duration=Double(base+(i<remainder ? 1:0))/30}
+      return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(shots),excluded:excluded)
+    }
     let observations=PoseRefinement.selectedForHouse(h)
     var shots: [TourShot] = []
     var excluded: [String] = []
     for r in h.rooms where options.room == nil || options.room == r.id {
       var scope = options
       scope.room = r.id
+      guard !SceneBuilder.features(h,options:scope).isEmpty else{excluded.append(r.name+": no geometry in selected layers");continue}
       let stages = SceneBuilder.eligibleStages(h, options: scope)
       let unregistered = SceneBuilder.activeUnregisteredSegment(h, options: scope)
       if h.isDemo && h.observations.isEmpty {
@@ -86,8 +119,13 @@ enum TourDirector {
         excluded.append(r.name + ": no captured camera viewpoint")
       }
     }
-    let length = max(5, min(60, duration)) / Double(max(1, shots.count))
-    for i in shots.indices { shots[i].duration = length }
+    let frames=max(150,Int((max(5,min(60,duration))*30).rounded()))
+    if shots.count>frames {excluded.append("Tour duration omitted \(shots.count-frames) shots.");shots=Array(shots.prefix(frames))}
+    let count=max(1,shots.count),base=frames/count,remainder=frames%count
+    for i in shots.indices {shots[i].duration=Double(base+(i<remainder ? 1:0))/30}
+    return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(shots),excluded:excluded)
+  }
+  static func chunk(_ shots:[TourShot])->[TourShot] {
     var chunks: [TourShot] = []
     for shot in shots {
       let totalFrames = max(1, Int((shot.duration * 30).rounded()))
@@ -96,14 +134,13 @@ enum TourDirector {
         let n = min(150, totalFrames - completed)
         var part = shot
         part.duration = Double(n) / 30
-        part.startPhase = Double(completed) / Double(totalFrames)
-        part.endPhase = Double(completed + n) / Double(totalFrames)
+        part.startPhase = shot.startPhase+Double(completed)/Double(totalFrames)*(shot.endPhase-shot.startPhase)
+        part.endPhase = shot.startPhase+Double(completed+n)/Double(totalFrames)*(shot.endPhase-shot.startPhase)
         chunks.append(part)
         completed += n
       }
     }
-    return TourPlan(
-      sourceRevision: h.revision, synthetic: h.isDemo, shots: chunks, excluded: excluded)
+    return chunks
   }
   static func pose(_ observation: Observation, house: House) -> (V3, Double, Double) {
     let m = observation.camera
@@ -153,7 +190,7 @@ enum TourDirector {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v5", options.mode.rawValue,
+      "renderer-v6", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
@@ -175,9 +212,9 @@ enum TourDirector {
   // in iOS 26. Its use is isolated here; no live screen recording is performed.
   static func render(
     _ house: House, repo: Repository, options: SceneOptions, duration: Double = 20,
-    width: Int = 1920, height: Int = 1080, progress: @escaping (Double) -> Void
+    width: Int = 1920, height: Int = 1080, preset:TourPreset = .overview, progress: @escaping (Double) -> Void
   ) async throws -> URL {
-    var plan = TourDirector.plan(house, duration: duration, options: options)
+    var plan = TourDirector.plan(house, duration: duration, options: options,preset:preset)
     plan.width = width
     plan.height = height
     guard !plan.shots.isEmpty else {
@@ -216,8 +253,8 @@ enum TourDirector {
       let scene = SceneBuilder.scene(
         house,
         options: SceneOptions(
-          mode: options.mode, trades: options.trades, ceilings: options.ceilings, room: shot.roomID,
-          stage: options.stage))
+          mode: shot.layerMode.flatMap(ViewMode.init(rawValue:)) ?? options.mode, trades: shot.tradeNames.map{Set($0.compactMap(Trade.init(rawValue:)))} ?? options.trades, ceilings: options.ceilings, room: shot.roomID,
+          stage: shot.layerMode==nil ? options.stage:nil))
       let camera = SceneBuilder.camera(at: shot.position, yaw: shot.yaw, pitch: shot.pitch)
       scene.rootNode.addChildNode(camera)
       let renderer = SCNRenderer(device: MTLCreateSystemDefaultDevice(), options: nil)

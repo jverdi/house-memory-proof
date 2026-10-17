@@ -9,6 +9,7 @@ struct ToolsPage: View {
   @State private var mode: ViewMode = .rough
   @State private var ceilings = true
   @State private var duration = 20.0
+  @State private var tourPreset:TourPreset = .overview
   @State private var exportRoom:UUID?
   @State private var exportStage:UUID?
   @State private var diagnostics = ""
@@ -66,16 +67,27 @@ struct ToolsPage: View {
           ).font(.caption)
         }
         Section("Automatic tour") {
+          Picker("Film",selection:$tourPreset){ForEach(TourPreset.allCases){Text($0.rawValue).tag($0)}}
+          if tourPreset == .beforeAfter {Text("Comparison films use both rough-in and finished stages.").font(.caption)}
           Slider(value: $duration, in: 10...60, step: 5)
           Text("\(Int(duration)) seconds · 1080p · 30 fps")
           Button("Create fly-through video") {
             guard let repo = model.repository else { return }
             model.perform("Rendering automatic tour") {
               try await MovieExporter.render(
-                house, repo: repo, options: options, duration: duration
+                house, repo: repo, options: options, duration: duration,preset:tourPreset
               ) { model.progress = $0 }
             }
           }.disabled(model.busy)
+          NavigationLink("Preview shot list") {
+            List {
+              let plan=TourDirector.plan(house,duration:duration,options:options,preset:tourPreset)
+              ForEach(Array(plan.shots.enumerated()),id:\.offset){index,shot in
+                VStack(alignment:.leading){Text("\(index+1). \(shot.caption)");Text("\(shot.duration.formatted(.number.precision(.fractionLength(2)))) seconds").font(.caption)}
+              }
+              ForEach(Array(plan.excluded.enumerated()),id:\.offset){_,reason in Text(reason).font(.caption)}
+            }.navigationTitle("Automatic shots")
+          }
           Text(
             "Automatic camera turns at captured viewpoints. Rooms use explicit cuts; no invented path through unknown walls. Keep the app open. Completed shots resume on retry."
           ).font(.footnote).foregroundStyle(.secondary)
