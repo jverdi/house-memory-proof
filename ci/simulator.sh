@@ -80,7 +80,7 @@ PYTEST
 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO \
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \
   2>&1 | tee build/evidence/ui-tests.log
 
 xcrun xcresulttool export attachments --path build/evidence/ui-tests.xcresult --output-path build/evidence/ui-attachments
