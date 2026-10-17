@@ -5,6 +5,7 @@ on:
     branches: [main, continuation-evidence-20261017]
     paths:
       - HouseMemoryProof/**
+      - HouseXrayUITests/**
       - HouseMemoryProof.xcodeproj/**
       - ci/simulator.sh
       - ci/run_bounded.py

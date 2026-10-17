@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "source": "9297d1b346644c760d98534b0474980ce0fa3327",
+  "run": 39065223663,
+  "lines": [
+    "Test Case '-[HouseXrayUITests.HouseXraySmoke testPersonalHouseWorkflow]' passed (110.718 seconds).",
+    "Test Case '-[HouseXrayUITests.HouseXraySmoke testPhotoPointWorkflow]' passed (107.188 seconds).",
+    "\t Executed 2 tests, with 0 failures (0 unexpected) in 217.906 (217.913) seconds",
+    "\t Executed 2 tests, with 0 failures (0 unexpected) in 217.906 (217.916) seconds",
+    "\t Executed 2 tests, with 0 failures (0 unexpected) in 217.906 (217.918) seconds",
+    "** TEST SUCCEEDED **"
+  ]
+}

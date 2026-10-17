@@ -76,6 +76,30 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(app.buttons["Layers"].waitForExistence(timeout:5))
     app.terminate()
   }
+  @MainActor func testLandscapeControlsAndRotation() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--demo"]
+    XCUIDevice.shared.orientation = .landscapeLeft
+    defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
+    app.launch()
+    XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20))
+    app.tabBars.buttons["Explore"].tap()
+    let viewMode=app.buttons["View mode"],tool=app.buttons["Inspection tool"],layers=app.buttons["Layers"]
+    for control in [viewMode,tool,layers] {
+      XCTAssertTrue(control.waitForExistence(timeout:10));XCTAssertTrue(control.isHittable)
+      XCTAssertTrue(app.frame.contains(control.frame),"Landscape control outside the screen: \(control.label)")
+    }
+    viewMode.tap();app.buttons["Finished"].tap()
+    tool.tap();app.buttons["Measure"].tap()
+    XCTAssertTrue(app.staticTexts["Tap two surface points"].waitForExistence(timeout:5))
+    screenshot("10-landscape-measure")
+    layers.tap()
+    XCTAssertTrue(app.switches["Show ceilings"].waitForExistence(timeout:5));app.buttons["Done"].tap()
+    XCUIDevice.shared.orientation = .portrait
+    XCTAssertTrue(app.buttons["Trace route"].waitForExistence(timeout:10))
+    XCTAssertTrue(app.buttons["Finished"].isSelected)
+    screenshot("11-portrait-after-rotation")
+  }
   func screenshot(_ name: String) {
     let a = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
     a.name = name
@@ -83,3 +107,4 @@ final class HouseXraySmoke: XCTestCase {
     add(a)
   }
 }
+

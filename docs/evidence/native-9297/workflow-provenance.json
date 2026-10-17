@@ -1,0 +1,11 @@
+{
+  "source": "9297d1b346644c760d98534b0474980ce0fa3327",
+  "run": 39065223663,
+  "fullWorkflowPassed": true,
+  "artifactID": 12113910625,
+  "sha256": "7e8e6dd7e696fce7161c1dcc7797021af1e543f41e0627356657fc2e2128eef5",
+  "independentlyVerified": true,
+  "enhancedOBJGroupGeometryValidation": "Checker source 2c7b9698 also executed locally against these actual native exports; passed.",
+  "syntheticOnly": true,
+  "deviceQualified": false
+}

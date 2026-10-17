@@ -144,7 +144,7 @@ struct OverviewView: View {
               Button("Add sample house") { model.create("", demo: true) }
             } label: {
               Image(systemName: "square.stack.3d.up")
-            }
+            }.accessibilityLabel("Choose house")
           }
           Text(house.name).font(.system(size: 34, weight: .semibold, design: .rounded))
           ScenePreview(house: house).frame(height: 260).clipShape(
@@ -165,6 +165,7 @@ struct OverviewView: View {
             }.buttonStyle(.borderedProminent)
             Button(action: openCapture) { Image(systemName: "camera.fill").padding(8) }.buttonStyle(
               .bordered)
+              .accessibilityLabel("Open capture")
           }
           Label(
             house.isDemo
@@ -179,7 +180,7 @@ struct OverviewView: View {
               newRoom = true
             } label: {
               Image(systemName: "plus.circle")
-            }
+            }.accessibilityLabel("Add space")
           }
           ForEach(house.rooms) { r in
             HStack {
@@ -278,6 +279,7 @@ struct RoomEditor: View {
 }
 struct ExploreView: View {
   @Environment(\.scenePhase) private var phase
+  @Environment(\.verticalSizeClass) private var verticalSizeClass
   @EnvironmentObject var model: AppModel
   var house: House
   @StateObject private var controller = WalkController()
@@ -302,18 +304,30 @@ struct ExploreView: View {
             Text(controller.navigationNotice).font(.caption).padding(8).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 10))
           }
           Spacer()
+            if verticalSizeClass == .compact {
+              Menu {
+                Picker("View", selection:$options.mode) {ForEach(ViewMode.allCases){Text($0.rawValue).tag($0)}}
+              } label:{Label(options.mode.rawValue,systemImage:"cube.transparent")}
+                .accessibilityLabel("View mode").buttonStyle(.bordered)
+              Menu {
+                Picker("Tool",selection:$controller.tool) {
+                  Text("Inspect").tag("Inspect");Text("Measure").tag("Measure");Text("Trace route").tag("Trace");Text("Wall").tag("Boundary")
+                }
+              } label:{Label(controller.tool,systemImage:"cursorarrow.rays")}
+                .accessibilityLabel("Inspection tool").buttonStyle(.bordered)
+            }
             Button {
               layers = true
             } label: {
               Label("Layers", systemImage: "square.3.layers.3d")
             }.buttonStyle(.borderedProminent)
           }
-          HStack {
+          if verticalSizeClass != .compact {HStack {
             Picker("View", selection: $options.mode) {
               ForEach(ViewMode.allCases) { Text($0.rawValue).tag($0) }
             }.pickerStyle(.segmented).padding(4).background(
               ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
-          }
+          }}
           Spacer()
           if let id = controller.selection, let f = house.features.first(where: { $0.id == id }) {
             Button {
@@ -410,19 +424,19 @@ struct ExploreView: View {
               Toggle("Free fly", isOn: $controller.flying).font(.caption).fixedSize()
               if controller.flying {
                 HStack {
-                  Button("↑") { controller.camera.position.y += 0.3 }
-                  Button("↓") { controller.camera.position.y -= 0.3 }
+                  Button("↑") { controller.camera.position.y += 0.3 }.accessibilityLabel("Move up")
+                  Button("↓") { controller.camera.position.y -= 0.3 }.accessibilityLabel("Move down")
                 }.buttonStyle(.bordered)
               }
             }.padding(10).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
           }
-          Picker("Tool", selection: $controller.tool) {
+          if verticalSizeClass != .compact {Picker("Tool", selection: $controller.tool) {
             Text("Inspect").tag("Inspect")
             Text("Measure").tag("Measure")
             Text("Trace route").tag("Trace")
             Text("Wall").tag("Boundary")
           }.pickerStyle(.segmented).padding(4).background(
-            ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
+            ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))}
         }.padding(.horizontal, 16).padding(.bottom, 10).padding(.top, 12)
       }.background(ink).toolbar(.hidden, for: .navigationBar).onDisappear { controller.stop() }
         .onAppear {
@@ -896,3 +910,4 @@ struct ClosureReview: View {
     }.navigationTitle("Closure review").onAppear { notes = house.closureNotes }
   }
 }
+
