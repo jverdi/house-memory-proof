@@ -60,7 +60,7 @@ enum PoseGraph {
     guard edges.count>=ids.count else{throw HouseError.message("Insufficient independently matched overlap to close a local pose graph. Capture translated corner views; no camera corrections were applied.")}
     var output=[Double](repeating:0,count:priors.count),residual=0.0
     let status=priors.withUnsafeBufferPointer{p in edges.withUnsafeBufferPointer{e in output.withUnsafeMutableBufferPointer{o in hx_graph_optimize(p.baseAddress,UInt32(ids.count),e.baseAddress,UInt32(edges.count),o.baseAddress,&residual)}}}
-    guard status==1 else{throw HouseError.message("Pose graph rejected disconnected, inconsistent or excessive corrections. Raw camera evidence is unchanged.")}
+    guard status==1 else{throw HouseError.message("Pose graph rejected disconnected, inconsistent or excessive corrections (status \(status), \(edges.count) edges, maximum edge residual \(Int((residual*1000).rounded())) mm). Raw camera evidence is unchanged.")}
     var corrected:[String:[Double]]=[:]
     for i in ids.indices{corrected[ids[i].uuidString]=Array(output[i*16..<(i+1)*16])}
     return PoseGraphSolution(fingerprint:try fingerprint(house:house,segment:segment),cameras:corrected,edges:edges.count,maximumEdgeResidual:residual)

@@ -68,7 +68,11 @@ enum VisualMapping {
         var samples:[Double]=[]
         for dy in -1...1{for dx in -1...1{samples.append(Double(depth.withUnsafeBytes{$0.loadUnaligned(fromByteOffset:((y+dy)*w+x+dx)*4,as:Float.self)}))}}
         guard samples.allSatisfy({$0.isFinite && $0>=0.15 && $0<=5}),let low=samples.min(),let high=samples.max(),high-low<0.04 else{continue}
-        let d=samples[4],cx=(u*Double(o.width)-o.intrinsics[2])*d/o.intrinsics[0],cy = -(v*Double(o.height)-o.intrinsics[5])*d/o.intrinsics[4],cz = -d,m=o.camera
+        // Interpolate the continuous depth patch at the RGB feature's subpixel
+        // location. Nearest-cell depth biases oblique surfaces by up to one
+        // coarse depth pixel; the continuity gate above still rejects edges.
+        let tx=u*Double(w)-Double(x),ty=v*Double(h)-Double(y)
+        let d=samples[4]*(1-tx)*(1-ty)+samples[5]*tx*(1-ty)+samples[7]*(1-tx)*ty+samples[8]*tx*ty,cx=(u*Double(o.width)-o.intrinsics[2])*d/o.intrinsics[0],cy = -(v*Double(o.height)-o.intrinsics[5])*d/o.intrinsics[4],cz = -d,m=o.camera
         let ar=V3(m[0]*cx+m[1]*cy+m[2]*cz+m[3],m[4]*cx+m[5]*cy+m[6]*cz+m[7],m[8]*cx+m[9]*cy+m[10]*cz+m[11])
         var point=V3(ar.x,-ar.z,ar.y);if let t=segment.registration{point=t.apply(point)}
         map.points.append(point);map.descriptors.append(features.descriptors.subdata(in:i*32..<(i+1)*32))

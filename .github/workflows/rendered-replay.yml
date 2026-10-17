@@ -1,0 +1,43 @@
+name: Replay frozen rendered construction
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/rendered-replay.yml
+      - HouseMemoryProof/VisualMapping.swift
+      - HouseMemoryProof/PoseGraph.swift
+      - HouseMemoryProof/PhotoReconstruction.swift
+      - packages/visual-core/**
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: frozen-rendered-replay
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: rendered-construction-fixture
+          run-id: 39010282671
+          github-token: ${{ github.token }}
+          path: build/render-input
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+          restore-keys: opencv-4.13.0-macos14-arm64-v1-
+      - run: bash tooling/opencv/build-host.sh
+      - name: Evaluate unchanged reference-target rendering
+        run: python3 tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/render-input/rendered-fixture --output build/vision-evaluation/rendered.json --refine
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-rendered-replay-evidence
+          path: build/vision-evaluation/
+          retention-days: 30

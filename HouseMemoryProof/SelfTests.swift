@@ -64,6 +64,19 @@ import ImageIO
                 try Data("corrupt".utf8).write(to:assets[0],options:.atomic)
                 do{_=try IncrementalSnapshots.restore(first,repo:restoredRepo,folder:folder);return false}catch{return true}
             }
+            check("Boundary coverage counts unseen and occluded nominal patches") {
+                var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
+                // Narrow-FOV planar depth diagnostic; RGB pixels are not consumed by coverage.
+                for i in h.observations.indices {h.observations[i].intrinsics[0]*=2;h.observations[i].intrinsics[4]*=2;h.observations[i].sharpness=0.1}
+                let fingerprint=try VisualMapping.fingerprint(house:h,segment:segment)
+                let b=RevealBoundary(name:"Wall",segmentID:segment.id,origin:V3(-0.2,1.8,1.6),horizontal:V3(1,0,0),vertical:V3(0,0,-1),width:0.4,height:0.4,depth:0.2,finishOffset:0.01,sourceFingerprint:fingerprint)
+                let supported=try BoundaryCoverage.analyze(house:h,boundary:b,repo:repo)
+                var behind=b;behind.depth=0.5
+                let blocked=try BoundaryCoverage.analyze(house:h,boundary:behind,repo:repo)
+                var unseen=b;unseen.origin.x=100
+                let unknown=try BoundaryCoverage.analyze(house:h,boundary:unseen,repo:repo)
+                return supported.supported>0 && blocked.supported==0 && blocked.states.contains(3) && unknown.states.allSatisfy{$0==0}
+            }
             check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
             check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
             check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}

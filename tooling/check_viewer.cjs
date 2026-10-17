@@ -11,7 +11,7 @@ const {chromium}=require('../build/validation/node_modules/playwright');
  await page.screenshot({path:'build/evidence/offline-viewer.png'});
  const stages=await page.locator('#stage option').count();if(stages>1){await page.selectOption('#stage',{index:1});await page.waitForTimeout(100)}
  const filtered=await page.evaluate(()=>window.houseXrayViewer.shown);
- await page.setViewportSize({width:390,height:844});await page.screenshot({path:'build/evidence/offline-viewer-mobile.png'});
+ await page.setViewportSize({width:390,height:844});await page.click('#reset');await page.waitForTimeout(100);await page.screenshot({path:'build/evidence/offline-viewer-mobile.png'});
  if(errors.length||network.length||filtered>initial.viewer.shown)throw Error(JSON.stringify({errors,network,initial,filtered}));
  fs.writeFileSync('build/evidence/offline-viewer-validation.json',JSON.stringify({passed:true,objects:initial.viewer.objects,stageFilteredObjects:filtered,externalRequests:network,errors,offlineFileProtocol:true},null,2));
  await browser.close();

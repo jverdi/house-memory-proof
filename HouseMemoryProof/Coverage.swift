@@ -113,6 +113,7 @@ struct CoveragePage: View {
           }
         }.disabled(model.busy)
       }
+      BoundaryCoveragePanel(house:house)
       ForEach(reports, id: \.segmentID) { r in
         Section(
           house.segments.first(where: { $0.id == r.segmentID })?.started.formatted() ?? "Session"

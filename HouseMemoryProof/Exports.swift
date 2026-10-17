@@ -231,7 +231,7 @@ enum Exporter {
       if let key = f.texture, attributes["TEXCOORD_0"] != nil {
         if textureIDs[key] == nil {
           let root = Repository.defaultRoot.appendingPathComponent("assets")
-          if let bytes = try? Data(contentsOf: root.appendingPathComponent(key)),
+          if let bytes = try? DurableFiles.read(root.appendingPathComponent(key),limit:25_000_000),
             bytes.count < 25_000_000
           {
             let offset = bin.count
@@ -353,7 +353,7 @@ enum Exporter {
       var texture: String?
       if let key = f.texture, let uv = f.uv, uv.count == f.mesh.vertices.count {
         let root = Repository.defaultRoot.appendingPathComponent("assets")
-        if let bytes = try? Data(contentsOf: root.appendingPathComponent(key)),
+        if let bytes = try? DurableFiles.read(root.appendingPathComponent(key),limit:25_000_000),
           bytes.count < 25_000_000
         {
           assets[key] = bytes

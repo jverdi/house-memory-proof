@@ -168,7 +168,7 @@ struct ToolsPage: View {
     defer { if access { url.stopAccessingSecurityScopedResource() } }
     do {
       if url.pathExtension.lowercased() == "ifc" {
-        let data = try Data(contentsOf: url)
+        let data = try DurableFiles.read(url,limit:50_000_000)
         guard let room = house.rooms.first else { return }
         let key = try repo.put(data, ext: "ifc")
         let stage = Stage(name: "Imported IFC design", kind: .planned)
@@ -188,7 +188,7 @@ struct ToolsPage: View {
         }
       } else if url.pathExtension.lowercased() == "ply" {
         var h = house
-        let data = try Data(contentsOf: url)
+        let data = try DurableFiles.read(url,limit:50_000_000)
         let mesh = try PLYReader.read(data)
         guard let r = h.rooms.first, let s = h.stages.first else { return }
         let asset = try repo.put(data, ext: "ply")
@@ -240,7 +240,7 @@ struct PlansPage: View {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         do {
-          let data = try Data(contentsOf: url)
+          let data = try DurableFiles.read(url,limit:50_000_000)
           guard data.count < 50_000_000 else {
             throw HouseError.message("Drawing import limit is 50 MB.")
           }
