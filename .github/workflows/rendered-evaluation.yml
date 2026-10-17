@@ -1,0 +1,61 @@
+name: Evaluate rendered construction capture
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/rendered-evaluation.yml
+      - tooling/blender/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rendered-evaluation
+  cancel-in-progress: false
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: build/blender
+          key: blender-4.5.3-linux-x64
+      - run: bash tooling/blender/install.sh
+      - name: Render construction images and independent depth samples
+        run: build/blender/blender --background --python tooling/blender/house.py -- build/rendered-fixture
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rendered-construction-fixture
+          path: |
+            build/rendered-fixture/
+            build/blender-evidence/
+          retention-days: 14
+  evaluate:
+    needs: render
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: rendered-construction-fixture
+          path: build/render-input
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+          restore-keys: opencv-4.13.0-macos14-arm64-v1-
+      - run: bash tooling/opencv/build-host.sh
+      - name: Replay rendered images with ground truth denied
+        run: python3 tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/render-input/rendered-fixture --output build/vision-evaluation/rendered.json --refine
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rendered-localization-evidence
+          path: build/vision-evaluation/
+          retention-days: 30

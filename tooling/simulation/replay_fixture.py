@@ -35,10 +35,12 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
  report=json.loads(result.stdout);by_name={x['image']:x for x in report['queries']};positive_accepted=0;false_accepts=0;worst=0.
  for q in oracle['queries']:
   r=by_name[q['image']]
+  if q['shouldMatch'] is None:
+   r['exploratoryScenario']=q.get('scenario','unscored query');continue
   if r['accepted'] and q['shouldMatch']:
    positive_accepted+=1;pose=r['worldFromARCamera'];truth=q['expectedCamera'];error=sum((pose[i]-truth[i])**2 for i in (3,7,11))**.5;r['evaluatorPositionErrorMetres']=error;worst=max(worst,error)
   elif r['accepted']:false_accepts+=1
- report.update(oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),positiveAccepted=positive_accepted,positiveQueries=3,falseAccepts=false_accepts,negativeQueries=1,worstAcceptedPositionErrorMetres=worst,passed=positive_accepted>=2 and false_accepts==0 and worst<.03,productionQualified=False,limitations=['One textured-corner fixture','Perfectly synchronized analytic rendering','Not an iPhone sensor model','Does not qualify wrong-room rejection or field accuracy'])
+ report.update(oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),positiveAccepted=positive_accepted,positiveQueries=sum(q['shouldMatch'] is True for q in oracle['queries']),falseAccepts=false_accepts,negativeQueries=sum(q['shouldMatch'] is False for q in oracle['queries']),worstAcceptedPositionErrorMetres=worst,passed=positive_accepted>=2 and false_accepts==0 and worst<.03,productionQualified=False,limitations=[oracle.get('renderer','Analytic textured-corner fixture'),'Perfectly synchronized analytic rendering','Not an iPhone sensor model','Does not qualify wrong-room rejection or field accuracy'])
  if a.refine:
   errors=[]
   for identity,pose in report['optimizedCameras'].items():
