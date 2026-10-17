@@ -1,0 +1,168 @@
+{
+  "mapCount": 0,
+  "mapFeatures": 0,
+  "mappingFailures": {
+    "0DD854E1-E25A-5BE3-B5C1-B309FF23CA9E": "Fewer than three photographs share reliable overlap. Capture more translated views; originals remain unchanged.",
+    "4FCD1F33-DD45-53CB-B4DB-BCB42BCAED40": "Fewer than three photographs share reliable overlap. Capture more translated views; originals remain unchanged.",
+    "26C5BD8C-3860-5A76-BE9D-B9732B6960FA": "Fewer than three photographs share reliable overlap. Capture more translated views; originals remain unchanged.",
+    "F2292EB1-18D5-5E0C-AA9B-DE6407FE6E38": "Fewer than three photographs share reliable overlap. Capture more translated views; originals remain unchanged."
+  },
+  "mapViews": 0,
+  "optimizedCameras": {},
+  "productionQualified": false,
+  "queries": [
+    {
+      "accepted": false,
+      "image": "room-0-query-0.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-0-query-1.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-0-query-2.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-0-wrong-1.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "wrong room"
+    },
+    {
+      "accepted": false,
+      "image": "room-0-wrong-2.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "wrong floor"
+    },
+    {
+      "accepted": false,
+      "image": "room-1-query-0.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-1-query-1.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-1-query-2.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-1-wrong-0.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "wrong room"
+    },
+    {
+      "accepted": false,
+      "image": "room-1-wrong-3.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "wrong floor"
+    },
+    {
+      "accepted": false,
+      "image": "room-2-query-0.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-2-query-1.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-2-query-2.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-2-wrong-3.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "wrong room"
+    },
+    {
+      "accepted": false,
+      "image": "room-2-wrong-0.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "wrong floor"
+    },
+    {
+      "accepted": false,
+      "image": "room-3-query-0.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-3-query-1.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-3-query-2.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "nominal selected room"
+    },
+    {
+      "accepted": false,
+      "image": "room-3-wrong-2.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "wrong room"
+    },
+    {
+      "accepted": false,
+      "image": "room-3-wrong-1.jpg",
+      "reason": "Selected capture has no admitted map",
+      "scenario": "wrong floor"
+    }
+  ],
+  "candidateQuerySpecificationSHA256": "bc39dcb4a10cea3197c97aa877d84520f81f9d55e8d7abea511a12b2baee3287",
+  "queryLabelsExcluded": true,
+  "ambiguityCases": 0,
+  "ambiguityRejected": true,
+  "oracleReadDenied": true,
+  "candidateBinarySHA256": "8aa6f0055999c9767938953f4e8b6abb016d3d52d0aff52bcdffb3f520c89fce",
+  "positiveAccepted": 0,
+  "positiveQueries": 12,
+  "falseAccepts": 0,
+  "negativeQueries": 8,
+  "worstAcceptedPositionErrorMetres": 0.0,
+  "passed": false,
+  "limitations": [
+    "Four-room/two-level analytic construction layout",
+    "Incomplete corner coverage; no unseen cavity completeness claim",
+    "No calibrated phone sensor model",
+    "Finished-stage and full-house registration qualification remain separate"
+  ],
+  "p95Metres": null,
+  "availability": 0.0,
+  "scenarioMetrics": {
+    "nominal selected room": {
+      "attempts": 12,
+      "accepted": 0,
+      "availability": 0.0,
+      "p95Metres": null,
+      "worstMetres": null,
+      "passed": false
+    }
+  },
+  "optimizedCameraCount": 0,
+  "maximumOptimizedCameraPositionErrorMetres": Infinity,
+  "injectedTranslationDriftMetres": 0.03
+}

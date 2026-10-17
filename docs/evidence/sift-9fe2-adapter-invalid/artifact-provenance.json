@@ -1,0 +1,14 @@
+{
+  "workflowSource": "9fe2bc39b26c3b5b961c3d2d360f44c048f7f17b",
+  "run": 39066926169,
+  "artifactID": 12113732451,
+  "sha256": "0a5264d649c19a2048082bda463f59a1ffcc9d6877422e5dfcec8b4826d92244",
+  "independentlyVerified": true,
+  "candidateValid": false,
+  "algorithmPerformanceConclusion": null,
+  "reason": "Experimental graph descriptor slices retained the old 32-byte width while the candidate detector/matcher used 128 bytes. Corrected separately in 50ab7e5b. All four maps failed before localization; these results cannot qualify or compare SIFT.",
+  "originalReportsPreserved": true,
+  "originalReportCaveat": "The frozen evaluator writes nonstandard Infinity for missing camera-fit errors. Raw artifact reports are preserved without silently rewriting their bytes.",
+  "productionChanged": false,
+  "syntheticOnly": true
+}

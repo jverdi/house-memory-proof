@@ -384,3 +384,10 @@ Source `9297d1b3`, run 39065223663, completed successfully: **98 native checks, 
 ### Landscape viewer controls and rotation acceptance
 
 Compact-height exploration now places the view/tool selectors in menus beside the layer control, reclaiming vertical space for the scene and movement controls. Portrait keeps its existing segmented selectors. Icon-only house/capture/space controls and vertical movement buttons now have explicit accessibility labels. The added XCUITest selects finished view and measurement in landscape, checks the menu/layer controls are on-screen and hittable, opens layers, rotates back and checks the selected view remains. CI now includes changes under `HouseXrayUITests/**` in its triggers. This regression is pending and does not claim the full Dynamic Type/VoiceOver/device matrix.
+
+
+### Snapshot catalog and exact ramp collision verified natively
+
+Source `0056098e`, run 39066800878, passed **100/100 native checks** in 123.3 seconds. The new catalog test preserves an intact restore while reporting three malformed/unreadable records and clears its warning after a clean retry. The new ramp test passes bidirectional traversal, stacked-level separation, low-ceiling and floor-crossing rejection, local-index equivalence and primitive-budget refusal. Existing stair, full-body, gap and movie/recovery/export checks remain green. Checkpoint SHA-256 was verified; native reports are retained under `docs/evidence/native-0056/`. Full process/UI/independent-reader completion, including the new landscape test, is still pending.
+
+The first isolated SIFT comparison at `9fe2bc39` contained an experimental adapter error: graph matching still sliced 32 descriptor bytes while SIFT used 128. All maps failed before query localization, so its results are retained under `docs/evidence/sift-9fe2-adapter-invalid/` without drawing an algorithm-performance conclusion. Workflow `50ab7e5b` corrects the slice width and reruns the same fixtures/gates. Production remains unchanged.
