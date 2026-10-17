@@ -23,7 +23,6 @@ jobs:
           path: build/ceres
           key: ceres-2.2.0-eigen3.4-arm64-v1
       - run: bash tooling/solver/build.sh host
-      - run: bash tooling/solver/build.sh ios
       - name: Compile and run exact solver diagnostics
         run: |
           mkdir -p build/solver-evidence
@@ -31,7 +30,8 @@ jobs:
             -I build/ceres/host/include packages/visual-core/hx_bundle.cpp \
             build/ceres/host/lib/libceres.a -o build/bundle-test
           build/bundle-test | tee build/solver-evidence/report.json
-          du -k build/ceres/iphoneos/lib/libceres.a build/ceres/iphonesimulator/lib/libceres.a > build/solver-evidence/sizes.txt
+      - run: bash tooling/solver/build.sh ios
+      - run: du -k build/ceres/iphoneos/lib/libceres.a build/ceres/iphonesimulator/lib/libceres.a > build/solver-evidence/sizes.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:

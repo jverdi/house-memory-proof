@@ -19,7 +19,7 @@ build_slice() {
   slice="$1"
   if [ -f "$root/$slice/lib/libceres.a" ]; then return; fi
   extra=()
-  if [ "$slice" = host ]; then extra=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0); else extra=(-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT="$slice" -DCMAKE_OSX_DEPLOYMENT_TARGET=26.0 -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY); fi
+  if [ "$slice" = host ]; then extra=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0); else extra=(-DCMAKE_SYSTEM_NAME=iOS -DIOS_DEPLOYMENT_TARGET=26.0 -DIOS_PLATFORM="$slice" -DCMAKE_OSX_SYSROOT="$slice" -DCMAKE_OSX_DEPLOYMENT_TARGET=26.0 -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY); fi
   cmake -S build/ceres-source -B "build/ceres-build-$slice" -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_INSTALL_PREFIX="$root/$slice" \
     -DEigen3_DIR="$root/eigen/share/eigen3/cmake" \
