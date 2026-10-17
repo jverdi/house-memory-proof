@@ -54,11 +54,17 @@ import SQLite3
                 let key=try store.put(Data("original camera bytes".utf8),ext:"jpg")
                 let o=Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:1,image:key,width:64,height:64,camera:Rigid().values,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1)
                 try store.journalCapture(projectID:h.id,observation:o)
-                guard try store.recoverPendingCaptures().isEmpty,let recovered=try store.all().first,recovered.observations==[o] else{return false}
+                let reopened=AppModel(root:store.root)
+                guard reopened.house?.observations==[o],try store.recoverPendingCaptures().isEmpty,let recovered=try store.all().first,recovered.observations==[o] else{return false}
                 try store.journalCapture(projectID:h.id,observation:o)
                 guard try store.recoverPendingCaptures().isEmpty,try store.all().first?.observations==[o] else{return false}
                 let bad=store.captureJournal.appendingPathComponent("broken.json");try Data("broken".utf8).write(to:bad)
                 return try !store.recoverPendingCaptures().isEmpty && FileManager.default.fileExists(atPath:bad.path)
+            }
+            check("Background capture save targets its original project without switching selection"){
+                let app=AppModel(root:folder.appendingPathComponent("project-routing"));let a=House.empty("A"),b=House.empty("B")
+                guard app.commit(a),app.commit(b),app.selected==b.id,app.edit(projectID:a.id,{$0.notes="capture belongs to A"}) else{return false}
+                return app.selected==b.id && app.houses.first(where:{$0.id==a.id})?.notes=="capture belongs to A" && app.house?.notes==""
             }
             check("Asset hash identity"){let a=try repo.put(Data("original".utf8),ext:"txt"),b=try repo.put(Data("original".utf8),ext:"txt");let read=try repo.read(a);return a==b && read==Data("original".utf8)}
             check("Unsafe paths rejected"){do{_=try repo.assetURL("../escape");return false}catch{return true}}
