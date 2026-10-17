@@ -1,0 +1,8 @@
+{
+  "vertices": 33012,
+  "dropped": 0,
+  "surface_to_truth_p95_m": 0.012255251395848571,
+  "surface_to_truth_max_m": 0.01763186760870683,
+  "precision_qualified": false,
+  "scope": "single synthetic room; biased pose priors; no completeness denominator"
+}

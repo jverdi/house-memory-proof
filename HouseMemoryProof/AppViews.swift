@@ -6,6 +6,7 @@ import PhotosUI
 
 private let ink=Color(red:0.035,green:0.055,blue:0.08)
 struct RootView:View {
+    @Environment(\.scenePhase) private var phase
     @EnvironmentObject var model:AppModel
     @State private var tab=0
     @State private var newProject=false
@@ -32,6 +33,8 @@ struct RootView:View {
                 }.padding(28)}.background(ink)}
             }
         }
+        .onChange(of:phase){_,value in if value == .active{SnapshotService.automatic(model:model)}}
+        .task(id:model.selected){SnapshotService.automatic(model:model)}
         .alert("Create a house",isPresented:$newProject){TextField("House name",text:$name);Button("Create"){model.create(name)};Button("Cancel",role:.cancel){}}
         .alert("House Xray",isPresented:Binding(get:{model.error != nil},set:{if !$0{model.error=nil}})){Button("OK"){model.error=nil}}message:{Text(model.error ?? "")}
         .sheet(isPresented:Binding(get:{model.shareURL != nil},set:{if !$0{model.shareURL=nil}})){if let url=model.shareURL{ShareSheet(url:url)}}

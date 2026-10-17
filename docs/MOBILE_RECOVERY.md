@@ -9,6 +9,7 @@ The app is local. Deleting it can remove the only copy of construction evidence.
 - **Trace and label:** Explore → Trace route; select an object to review its system, endpoint and associated photos. Tools → Service endpoint connections records only explicit links.
 - **Backup:** Tools → Export complete house archive → Save to Files. Original images, raw depth, references, annotations and geometry remain in the archive. The archive is a ZIP64 file with an `.hxray` extension; unzip a copy for its independent HTML photo index and JSON.
 - **Restore:** Tools → Import archive, IFC or point cloud. A house archive creates a separate restored project. It does not replace your current project. Restore checks manifest hashes before publishing the project.
+- **Optional folder snapshots:** Tools → Automatic folder snapshots → Choose snapshot folder. The iOS folder permission must be granted on the phone. Daily-on-open snapshots run only while the app is active; a local copy is not proof that a cloud provider has finished uploading.
 - **Bad edit:** Tools → Restore previous local revision. Twenty prior metadata/geometry revisions are retained; original content-addressed files are never automatically pruned.
 - **Interrupted capture:** finalized photos remain saved; mesh state checkpoints periodically. Start a new session after interruption rather than assuming its frame stayed valid.
 - **Interrupted movie:** export again using the same project revision and layers. Completed five-second chunks are reused. Keep the app foregrounded and cool.

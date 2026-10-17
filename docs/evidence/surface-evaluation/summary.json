@@ -1,0 +1,15 @@
+{
+  "cases": 70,
+  "accepted": 67,
+  "p95_10mm_pass": 38,
+  "precision_qualified": false,
+  "reference_constraints_used": false,
+  "candidate_source_sha256": "9283e1e06fcb83b7f28b54ee5408d3ade2c03fc8344321bc62461dc42b399111",
+  "scope": [
+    "AABB renderer, not a validated iPhone sensor model",
+    "One room per house scored; no inter-room registration",
+    "Nearest-surface distance, not a completeness measure",
+    "Thin-service localization and false room matches are not evaluated",
+    "Held-out seeds from the same scene family are not the full protected qualification suite"
+  ]
+}

@@ -25,7 +25,7 @@ Updated during the October 17, 2026 implementation session. This document record
 | P7 Tours | Deterministic captured-viewpoint turns, explicit room cuts, common offscreen renderer, H.264, five-second resumable chunks, cache includes source/layers, share output | Collision-aware moving routes, choreography/presets, all interruption cases, native 1080p sustained qualification, optional 4K |
 | P8 Labels/plans/import | Trade taxonomy, route tracing, endpoint labels, explicit user-confirmed links, OCR, source photos, PDF/image scale, bounded offline IFC and PLY | Drawing-to-house spatial alignment/revisions, confidence/review propagation, broader IFC units/placements/unsupported cases, optional Core ML suggestions |
 | P9 Exports/recovery | GLB, textured USDZ, PLY/OBJ, metadata, streaming ZIP64, offline image index, fresh identity restore; independent readers in CI | Animated cameras/hierarchy, interactive offline 3D archive viewer, large-file stress/legacy matrix, all semantic export cases |
-| P10 iCloud/resources | Local-only operation, portable Files/iCloud Drive archive, capture/storage/thermal guards, bounded buffers and mesh budgets | Coordinated automatic snapshots, partial arrivals/conflicts/quota/account changes, continued-processing resource governor, full owner-device stress |
+| P10 iCloud/resources | Local-only operation, coordinated full snapshots to a user-selected Files/iCloud Drive folder, optional daily-on-open scheduling, capture/storage/thermal guards, bounded buffers and mesh budgets | Incremental chunks, real-provider partial arrivals/conflicts/quota/account changes, continued-processing resource governor, full owner-device stress |
 | P11 Qualification | Native self-tests, integration workflow, portable core tests, independent export readers, XCUITest added | Full protected synthetic suite and native lifecycle matrix. Feature-complete candidate gate is not passed |
 | P12 Field | Approximate status throughout UI, no enabled precision profile, independent manual registration check | Actual camera/pose/depth correctness, device performance, physical calibration and independent validation |
 | P13 Sustained use | Export/recovery instructions, source checkpoints and delivery proof | Automated expiry/renewal, completed handoff and restore cycle, maintenance checks, production release manifest |
@@ -40,7 +40,7 @@ Updated during the October 17, 2026 implementation session. This document record
 6. SceneKit uses Metal for the shared viewer/movie scene. A custom Metal renderer and full tiled scene system have not been implemented.
 7. Tours turn at known viewpoints and cut between rooms; they do not invent continuous paths through uncaptured spaces. Completed encoded chunks resume; interrupted fusion restarts from originals.
 8. The archive streams file bytes in 1 MiB chunks. Metadata is bounded to 100 MB; large-house/large-archive device stress is unqualified. The format supports ZIP64 but a format limit is not a tested capacity claim.
-9. Runtime processing remains local. GitHub, Apple signing and TestFlight are development/distribution services. Optional automatic iCloud sync is absent.
+9. Runtime processing remains local. GitHub, Apple signing and TestFlight are development/distribution services. Optional full snapshots use a user-selected Files folder and file coordination; native container-based incremental iCloud sync is absent. Provider lifecycle behavior is not qualified.
 10. No real-device capture, performance or precision result is inferred from simulator CI.
 
 ## Verified evidence so far
@@ -50,6 +50,8 @@ Updated during the October 17, 2026 implementation session. This document record
 - Build run 39003995500: streaming archive round trip and corruption rejection passed in native tests. Same older Python setup failed afterward; not a successful full gate.
 - Build run 39004157350: synthetic camera pipeline produced 10,956 fused points with maximum plane distance 0.0008895 m, but texture test failed because the target exceeded the camera's field of view. Target framing was fixed; this failed run is not recorded as a passing pipeline.
 - Build run 39004499104, source `94b6decb2ebee8e09d42497da8160fae80bc0a98`: **30 native tests, XCUITest navigation, 50 portable cases, plain/textured Khronos GLB validation, plain/textured OpenUSD parsing and independent ZIP64 validation all passed**. Reports are retained under `docs/evidence/native-14/`. No TestFlight upload occurred.
+- Run 39005535734: native paired three-room/144-observation archive replay, surface reconstruction, reference-consensus checks and point/surface/textured exports passed the integrated simulator workflow.
+- Frozen portable surface evaluation: **67/70** noisy unreferenced room cases produced surfaces; **38/70** met a nearest-surface p95 ≤10 mm comparison. The other cases were not waived. This is not a qualified precision result; source hashes, seed split, input hashes and all case results are retained in `docs/evidence/surface-evaluation/`. There is no completeness denominator or full sensor/localization qualification in this suite.
 - Later integration results must be recorded before delivery. A pass on an earlier source is not automatically a pass on the final source.
 
 ## Continuation priorities
