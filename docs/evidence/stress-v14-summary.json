@@ -1,0 +1,65 @@
+{
+  "cases": 70,
+  "positiveQueries": 1000,
+  "positiveAccepted": 1000,
+  "availability": 1.0,
+  "unrelatedNegativeQueries": 1400,
+  "repeatedRoomAndFloorChallenges": 2000,
+  "criticalChallenges": 3400,
+  "executedUnrelatedQueries": 1400,
+  "criticalFalseAccepts": 0,
+  "oracleControlFailures": 0,
+  "p50Metres": 0.0024727037536983326,
+  "p95Metres": 0.004769115928754034,
+  "worstMetres": 0.007313800982736666,
+  "spatialTargetsPassed": true,
+  "sourceRevisions": [
+    "09f4ce8793599cd1ce546131e108a4a18a52bff3"
+  ],
+  "development": {
+    "cases": 50,
+    "positiveQueries": 600,
+    "positiveAccepted": 600,
+    "availability": 1.0,
+    "unrelatedNegativeQueries": 1000,
+    "repeatedRoomAndFloorChallenges": 1200,
+    "criticalChallenges": 2200,
+    "executedUnrelatedQueries": 1000,
+    "criticalFalseAccepts": 0,
+    "oracleControlFailures": 0,
+    "p50Metres": 0.0024218912250130466,
+    "p95Metres": 0.00451964601022025,
+    "worstMetres": 0.00687680390041617,
+    "spatialTargetsPassed": true
+  },
+  "protected": {
+    "cases": 20,
+    "positiveQueries": 400,
+    "positiveAccepted": 400,
+    "availability": 1.0,
+    "unrelatedNegativeQueries": 400,
+    "repeatedRoomAndFloorChallenges": 800,
+    "criticalChallenges": 1200,
+    "executedUnrelatedQueries": 400,
+    "criticalFalseAccepts": 0,
+    "oracleControlFailures": 0,
+    "p50Metres": 0.0025418517085359607,
+    "p95Metres": 0.00491828703774765,
+    "worstMetres": 0.007313800982736666,
+    "spatialTargetsPassed": true
+  },
+  "passed": true,
+  "productionQualified": false,
+  "limitations": [
+    "Analytic textured corners, not 70 complete house topologies",
+    "Room geometry and texture vary; no calibrated iPhone sensor model",
+    "Repeated-room and floor clones test conservative abstention",
+    "Thin-service geometry, camera integration and physical uncertainty are separate gates"
+  ],
+  "evidence": {
+    "run": 39079201686,
+    "artifact": 12118319747,
+    "artifactSHA256": "197c0cb2fb570edaafe86343332b70a4f48dc32ed66f44fe7c876db9fe2accc5",
+    "independentlyHashVerified": true
+  }
+}

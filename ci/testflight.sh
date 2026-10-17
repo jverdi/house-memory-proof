@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
+python3 tooling/project.py
+git diff --exit-code -- HouseMemoryProof.xcodeproj/project.pbxproj
 export HOUSE_RELEASE_REVISION="$(git rev-parse --short=10 HEAD)"
 export HOUSE_RELEASE_BUILD="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
 python3 ci/upload_preflight.py

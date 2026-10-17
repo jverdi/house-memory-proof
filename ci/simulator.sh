@@ -6,6 +6,8 @@ mode="${1:-all}"
 case "$mode" in all|prepare|compile|verify|exercise|native|recovery|ui) ;; *) echo 'Expected all, prepare, compile, verify, exercise, native, recovery or ui'; exit 2;; esac
 native_failed=0
 if [ "$mode" = all ] || [ "$mode" = prepare ]; then
+python3 tooling/project.py
+git diff --exit-code -- HouseMemoryProof.xcodeproj/project.pbxproj
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
