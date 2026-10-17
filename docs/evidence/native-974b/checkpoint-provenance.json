@@ -6,6 +6,12 @@
   "downloadedAndVerified": true,
   "nativeChecks": 95,
   "nativePassed": true,
-  "fullWorkflowPending": true,
-  "physicalDeviceQualified": false
+  "fullWorkflowPending": false,
+  "physicalDeviceQualified": false,
+  "fullWorkflowPassed": true,
+  "fullArtifact": {
+    "id": 12112823279,
+    "sha256": "022ddd33963d49fbe907e88b74810e080a117834703dc21b0b82f9f5e264d695",
+    "downloadedAndVerified": true
+  }
 }

@@ -1,0 +1,21 @@
+{
+  "workflowSource": "8e443bb57f69c1586c5ad22c6e49117cbff1d620",
+  "candidateBaseline": "ca5a28fe80df316348a10e9bae220b23e8955664",
+  "run": 39064906350,
+  "artifacts": [
+    {
+      "name": "feature-contrast-0.0001",
+      "id": 12112996376,
+      "sha256": "6adec32e686ed1870afb5d85c22d2309f994bcb24187e6d5da0b895820f4dc4a",
+      "downloadedAndVerified": true
+    },
+    {
+      "name": "feature-contrast-0.0003",
+      "id": 12112678229,
+      "sha256": "9c54b8378c43977d9f2899e301d5df045c8aab6ecc16fc8b29d02b5423fab764",
+      "downloadedAndVerified": true
+    }
+  ],
+  "adopted": false,
+  "physicalPrecisionQualified": false
+}

@@ -337,3 +337,15 @@ Automatic approval review blocked a subsequent default-branch evidence update fo
 ### Review-branch movie cancellation completion
 
 The review branch adds actual task cancellation three frames into the second shot, requiring the first verified shot to retain its checksum/modification time and the partial second shot/final export to disappear before retry. A function-wide job-state cleanup also covers cancellation during cached-clip validation and renderer setup. This is additional unverified code until the branch CI completes. Simulator-only CI accepts this explicit review branch; the TestFlight job remains disabled.
+
+
+### Lower-contrast detection does not repair finished matching
+
+The native-resolution AKAZE detector thresholds 0.0003 and 0.0001, isolated at workflow `8e443bb5`, run 39064906350, both fail the unchanged paired/staggered gates. Each accepts all 12 rough queries in every fixture and **0/8 finished queries in each paired variant**, with zero false accepts across all 56 negative challenges. Rough-layout worst errors are 3.581/6.863 mm for 0.0003 and 3.700/6.149 mm for 0.0001. The first staggered finished view contains 415/459 detected features, but individual sources supply only 3–21 matches and the first disjoint pool only nine independently repeated features. Lower detection contrast does not supply sufficient stable correspondence. No matching or geometric gate was changed and neither candidate is adopted. Full reports/diffs and independently verified artifact hashes are retained under `docs/evidence/contrast-8e443/`.
+
+
+### Direct-main authorization restored; snapshot full workflow passed
+
+On October 17 at 16:10 America/New_York, the owner explicitly instructed: “Yes, Just commit directly to main.” Prepared source/evidence commits through `9297d1b3` were fast-forwarded to main. Ongoing logical commits go directly to main; no PR review is required. TestFlight remains held for the final candidate.
+
+Source `974b9d09` now passes its complete workflow: 95 native checks, both UI tests, all three process-kill recovery modes, 50 portable cases and independent GLB/USDZ/ZIP64/offline-viewer readers. The full artifact was downloaded and SHA-256 verified (`022ddd33963d49fbe907e88b74810e080a117834703dc21b0b82f9f5e264d695`); exact reports extend `docs/evidence/native-974b/`. The movie/PLY sources are newer and still require their own results.
