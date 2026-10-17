@@ -10,13 +10,13 @@ enum PoseRefinement {
         for row in 0..<4{for col in 0..<4{m[col][row]=values[row*4+col]}};return m
     }
     static func array(_ m:simd_double4x4)->[Double]{(0..<4).flatMap{r in (0..<4).map{c in m[c][r]}}}
-    static func refine(_ o:Observation,segment:Segment,house:House)->Result? {
+    static func refine(_ o:Observation,segment:Segment,house:House,maximumCorrection:Double=0.25)->Result? {
         guard let camera=matrix(o.camera),let seen=o.referenceObservations else{return nil}
         let valid=Set(house.references.filter{$0.valid}.map{$0.id});var candidates:[(UUID,simd_double4x4)]=[]
         for observation in seen where valid.contains(observation.boardID) {
             guard let fixed=segment.referencePoses.first(where:{$0.boardID==observation.boardID}),let original=matrix(fixed.matrix),let measured=matrix(observation.matrix) else{continue}
             let candidate=original*simd_inverse(measured)*camera
-            if Rigid(values:array(candidate)).valid,simd_distance(candidate.columns.3,camera.columns.3)<=0.25{candidates.append((observation.boardID,candidate))}
+            if Rigid(values:array(candidate)).valid,simd_distance(candidate.columns.3,camera.columns.3)<=maximumCorrection{candidates.append((observation.boardID,candidate))}
         }
         // A single board cannot independently check whether it moved.
         guard candidates.count>=2,Set(candidates.map{$0.0}).count==candidates.count else{return nil}

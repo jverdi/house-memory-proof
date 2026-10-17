@@ -61,6 +61,17 @@ import SQLite3
                 movedB[3]+=0.2;o.referenceObservations=[ReferencePose(boardID:a.id,matrix:movedA),ReferencePose(boardID:b.id,matrix:movedB)]
                 return PoseRefinement.refine(o,segment:s,house:h)==nil
             }
+            check("Reference correction preserves nontrivial camera rotation"){
+                var h=House.empty("Rotated controls");let a=ReferenceBoard(name:"A",image:"a.png",pdf:"a.pdf",width:0.18),b=ReferenceBoard(name:"B",image:"b.png",pdf:"b.pdf",width:0.18);h.references=[a,b]
+                let angle=0.07,c=cos(angle),sn=sin(angle);let drift=PoseRefinement.matrix([c,-sn,0,0.1,sn,c,0,-0.05,0,0,1,0.02,0,0,0,1])!
+                let truth=[cos(0.3),0,sin(0.3),1,0,1,0,0.3,-sin(0.3),0,cos(0.3),2,0,0,0,1.0]
+                var fixedA=Rigid().values,fixedB=Rigid().values;fixedA[3] = -0.5;fixedA[11] = -2;fixedB[3]=0.5;fixedB[11] = -2.5
+                var s=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);s.referencePoses=[ReferencePose(boardID:a.id,matrix:fixedA),ReferencePose(boardID:b.id,matrix:fixedB)]
+                let o=Observation(roomID:s.roomID,stageID:s.stageID,segmentID:s.id,timestamp:0,image:"a.jpg",width:64,height:64,camera:PoseRefinement.array(drift*PoseRefinement.matrix(truth)!),intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1,referenceObservations:[ReferencePose(boardID:a.id,matrix:PoseRefinement.array(drift*PoseRefinement.matrix(fixedA)!)),ReferencePose(boardID:b.id,matrix:PoseRefinement.array(drift*PoseRefinement.matrix(fixedB)!))])
+                guard let corrected=PoseRefinement.refine(o,segment:s,house:h,maximumCorrection:.infinity) else{return false}
+                let error=zip(corrected.observation.camera,truth).map{abs($0-$1)}.max() ?? .infinity;h.references[1].valid=false
+                return error<1e-9 && PoseRefinement.refine(o,segment:s,house:h)==nil
+            }
             check("Projection and occlusion rejection"){
                 var depth=Data();for _ in 0..<64*64{depth.float(1)}
                 let o=Observation(roomID:house.rooms[0].id,stageID:house.stages[0].id,segmentID:UUID(),timestamp:0,image:"fixture.jpg",width:64,height:64,camera:Rigid().values,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"normal",light:1000,sharpness:0.1)

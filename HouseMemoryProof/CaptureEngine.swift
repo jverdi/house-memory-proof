@@ -29,6 +29,7 @@ import ImageIO
     var reveal=false
     private var revealedNodes:[SCNNode]=[]
     private let overlayRoot=SCNNode()
+    private var referenceConflict=false
     private var loadedWorldMap=false
     private var markerSeen:TimeInterval=0
     private var markerTransform:simd_float4x4?
@@ -44,7 +45,7 @@ import ImageIO
             self.reveal=reveal;houseID=h.id;generation=UUID();count=0;meshes=[:];cellSet=[];coverageCells=0;lastFrameTime=0;stopping=false
             let config=ARWorldTrackingConfiguration();config.planeDetection=[.horizontal,.vertical]
             config.detectionImages=await BoardGenerator.images(h,repo:repo);config.maximumNumberOfTrackedImages=2
-            currentReferencePoses=[:];markerTransform=nil;markerSeen=0;loadedWorldMap=false
+            currentReferencePoses=[:];markerTransform=nil;markerSeen=0;loadedWorldMap=false;referenceConflict=false
             if hasDepth{config.frameSemantics.insert(.sceneDepth)}
             if ARWorldTrackingConfiguration.supportsSceneReconstruction(.meshWithClassification){config.sceneReconstruction = .meshWithClassification}
             if let prior,let key=prior.worldMap {
@@ -70,7 +71,7 @@ import ImageIO
         case .limited(let reason):tracking="Limited: \(reason)";normal=false}
         if reveal {
             let markerFresh=frame.timestamp-markerSeen<2 && markerTransform != nil
-            let eligible=normal && (markerFresh || (loadedWorldMap && markerTransform==nil && frame.worldMappingStatus == .mapped))
+            let eligible=normal && !referenceConflict && (markerFresh || (loadedWorldMap && markerTransform==nil && frame.worldMappingStatus == .mapped))
             if markerFresh,let transform=markerTransform{overlayRoot.simdTransform=transform}
             revealedNodes.forEach{$0.isHidden = !eligible}
             message=eligible ? "Approximate historical overlay. Verify against photographs and physical references; no precision calibration yet." : "Alignment unavailable — overlay hidden. Return to the original capture viewpoint."
@@ -140,10 +141,21 @@ import ImageIO
         for item in anchors {
             guard let anchor=item as? ARImageAnchor,anchor.isTracked,let name=anchor.referenceImage.name,let id=UUID(uuidString:name),model?.house?.references.first(where:{$0.id==id})?.valid==true else{continue}
             var values:[Double]=[];for row in 0..<4{for col in 0..<4{values.append(Double(anchor.transform[col][row]))}}
-            if reveal,let old=segment?.referencePoses.first(where:{$0.boardID==id}),old.matrix.count==16 {
-                var previous=matrix_identity_float4x4;for row in 0..<4{for col in 0..<4{previous[col][row]=Float(old.matrix[row*4+col])}}
-                markerTransform=anchor.transform*simd_inverse(previous);markerSeen=view.session.currentFrame?.timestamp ?? 0
-            }else if !reveal,currentReferencePoses[id]==nil {currentReferencePoses[id]=ReferencePose(boardID:id,matrix:values)}
+            if reveal {currentReferencePoses[id]=ReferencePose(boardID:id,matrix:values)}
+            else if currentReferencePoses[id]==nil {currentReferencePoses[id]=ReferencePose(boardID:id,matrix:values)}
+        }
+        if reveal,let s=segment,let h=model?.house,let frame=view.session.currentFrame {
+            let recent=currentReferencePoses.values.filter{Date().timeIntervalSince($0.observed)<1.5}
+            if recent.count>=2 {
+                let camera=(0..<4).flatMap{r in (0..<4).map{c in Double(frame.camera.transform[c][r])}}
+                let input=Observation(roomID:s.roomID,stageID:s.stageID,segmentID:s.id,timestamp:frame.timestamp,image:"alignment",width:1,height:1,camera:camera,intrinsics:[1,0,0,0,1,0,0,0,1],tracking:"live",light:0,sharpness:0,referenceObservations:Array(recent))
+                if let result=PoseRefinement.refine(input,segment:s,house:h,maximumCorrection:.infinity),let corrected=PoseRefinement.matrix(result.observation.camera),let current=PoseRefinement.matrix(camera) {
+                    let alignment=current*simd_inverse(corrected);var transform=matrix_identity_float4x4
+                    for row in 0..<4{for col in 0..<4{transform[col][row]=Float(alignment[col][row])}}
+                    markerTransform=transform;markerSeen=frame.timestamp;referenceConflict=false
+                }else{referenceConflict=true;markerTransform=nil;markerSeen=0}
+            }
+
         }
     }
     private func collect(_ anchors:[ARAnchor]) {
