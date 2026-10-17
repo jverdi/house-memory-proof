@@ -3,8 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
 mode="${1:-all}"
-case "$mode" in all|prepare|verify) ;; *) echo 'Expected all, prepare or verify'; exit 2;; esac
-if [ "$mode" != verify ]; then
+case "$mode" in all|prepare|compile|verify|exercise) ;; *) echo 'Expected all, prepare, compile, verify or exercise'; exit 2;; esac
+if [ "$mode" = all ] || [ "$mode" = prepare ]; then
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
@@ -31,6 +31,7 @@ PY
 )"
 revision="$(git rev-parse --short=10 HEAD)"
 build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
+if [ "$mode" != exercise ]; then
 python3 ci/run_bounded.py 600 xcodebuild build \
   -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
@@ -38,6 +39,8 @@ python3 ci/run_bounded.py 600 xcodebuild build \
   CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \
   CURRENT_PROJECT_VERSION="$build_number" PROOF_SOURCE_REVISION="$revision" \
   2>&1 | tee build/evidence/simulator-build.log
+fi
+if [ "$mode" = compile ]; then exit 0; fi
 # Fresh hosted runners usually have no booted simulator. Handle an existing one too.
 if ! xcrun simctl list devices booted | grep -Fq "$device_id"; then
   xcrun simctl boot "$device_id"

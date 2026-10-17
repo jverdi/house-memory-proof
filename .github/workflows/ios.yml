@@ -52,9 +52,12 @@ jobs:
       - name: Prepare fixtures and cached native dependencies
         timeout-minutes: 30
         run: bash ci/simulator.sh prepare
-      - name: Compile, launch, and capture evidence
-        timeout-minutes: 25
-        run: bash ci/simulator.sh verify
+      - name: Compile iOS source
+        timeout-minutes: 12
+        run: bash ci/simulator.sh compile
+      - name: Run native diagnostics, recovery and UI workflows
+        timeout-minutes: 15
+        run: bash ci/simulator.sh exercise
       - name: Verify portable core and independent export readers
         run: |
           python3 tooling/hm test
