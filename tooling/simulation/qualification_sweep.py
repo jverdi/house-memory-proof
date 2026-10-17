@@ -22,7 +22,7 @@ def summarize(cases):
     positives = sum(c['positiveQueries'] for c in cases)
     accepted = sum(c['positiveAccepted'] for c in cases)
     negatives = sum(c['negativeQueries'] for c in cases)
-    ambiguous = sum(c['executedPositiveQueries'] * 2 for c in cases)
+    ambiguous = sum(c.get('executedAmbiguityQueries',0) for c in cases)
     executed_negatives = sum(c['executedNegativeQueries'] for c in cases)
     wrong = sum(c['falseAccepts'] + c['ambiguityFalseAccepts'] for c in cases)
     report = dict(cases=len(cases), positiveQueries=positives, positiveAccepted=accepted,
@@ -84,9 +84,10 @@ def run(args):
             case=dict(case=label,split=split,positiveQueries=positive,negativeQueries=negative,
                 positiveAccepted=data.get('positiveAccepted',0),falseAccepts=data.get('falseAccepts',0),
                 executedPositiveQueries=min(positive,len(queries)),executedNegativeQueries=min(negative,max(0,len(queries)-positive)),
-                # If nominal localization abstains, the ambiguous counterpart
-                # is hidden too; nominal availability is scored separately.
-                ambiguityFalseAccepts=sum(2 for q in positives if not q.get('ambiguousRoomAndFloorRejected',False)),
+                executedAmbiguityQueries=sum(q.get('ambiguityCases',0) for q in queries),
+                # Count only clone challenges actually run after nominal admission.
+                # Abstentions remain in the nominal availability denominator.
+                ambiguityFalseAccepts=sum(q.get('ambiguityFalseAccepts',0) for q in queries),
                 oracleReadDenied=data.get('oracleReadDenied',False),
                 positionErrorsMetres=[q['evaluatorPositionErrorMetres'] for q in positives],
                 candidateBinarySHA256=record['candidateSHA256'],
@@ -95,7 +96,7 @@ def run(args):
         except Exception as error:
             case=dict(case=label,split=split,positiveQueries=positive,negativeQueries=negative,
                 positiveAccepted=0,falseAccepts=0,ambiguityFalseAccepts=0,oracleReadDenied=False,
-                executedPositiveQueries=0,executedNegativeQueries=0,
+                executedPositiveQueries=0,executedNegativeQueries=0,executedAmbiguityQueries=0,
                 positionErrorsMetres=[],candidateBinarySHA256=record['candidateSHA256'],candidateRejected=True,errorClass=type(error).__name__)
         finally:
             shutil.rmtree(fixture,ignore_errors=True)

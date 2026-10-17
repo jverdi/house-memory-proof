@@ -104,6 +104,9 @@ enum VisualMapping {
     let result=Rigid(values:PoseRefinement.array(live*simd_inverse(nativeFromCanonical*saved)))
     return result.valid ? result:nil
   }
+  static func isCompeting(_ map:VisualMap,prior:Segment)->Bool {
+    map.roomID != prior.roomID || (map.frameID != nil && map.frameID != prior.id)
+  }
   static func competingMatch(_ features:Features,width:Int,height:Int,intrinsics:[Double],maps:[VisualMap])->Bool {
     // An ill-conditioned competing map is not evidence that a room is unique.
     // Strong appearance in two separated competing views is enough to abstain,

@@ -11,6 +11,7 @@ on:
       - tooling/simulation/vision_matrix.py
       - tooling/simulation/vision_fixture.py
       - tooling/simulation/house.py
+      - tooling/simulation/house_layout_fixture.py
       - packages/visual-core/**
       - HouseMemoryProof/VisualMapping.swift
       - HouseMemoryProof/EvidenceModels.swift
@@ -69,6 +70,13 @@ jobs:
           build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-long --output build/vision-evaluation/long-session.json --refine --bundle
       - name: Exercise additional development room geometries
         run: build/vision-env/bin/python tooling/simulation/vision_matrix.py --executable build/vision-replay --output build/vision-evaluation/diversity
+      - name: Exercise separate room and floor map identities
+        timeout-minutes: 25
+        run: |
+          for seed in 905771 683431; do
+            python3 ci/run_bounded.py 300 build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/house-layout-$seed" --seed "$seed"
+            python3 ci/run_bounded.py 660 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/house-layout-$seed" --output "build/vision-evaluation/house-layout-$seed.json" --refine --bundle --house
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:

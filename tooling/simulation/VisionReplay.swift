@@ -1,6 +1,6 @@
 import Foundation
 
-struct ReplayQuery:Decodable {var image:String;var width:Int;var height:Int;var intrinsics:[Double]}
+struct ReplayQuery:Decodable {var image:String;var width:Int;var height:Int;var intrinsics:[Double];var segmentID:UUID?}
 struct ReplayQueries:Decodable {var queries:[ReplayQuery]}
 final class DiskEvidence:EvidenceAssetReader {
   let root:URL
@@ -21,8 +21,9 @@ final class DiskEvidence:EvidenceAssetReader {
       guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed at gate \(graphStatus).")}
       guard status==1 else{throw HouseError.message("Native vision diagnostics failed.")};return
     }
-    guard (3...5).contains(CommandLine.arguments.count),CommandLine.arguments.dropFirst(3).allSatisfy({["--refine","--bundle"].contains($0)}) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
+    guard (3...6).contains(CommandLine.arguments.count),CommandLine.arguments.dropFirst(3).allSatisfy({["--refine","--bundle","--house"].contains($0)}) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
     let root=URL(fileURLWithPath:CommandLine.arguments[1]),queriesURL=URL(fileURLWithPath:CommandLine.arguments[2])
+    if CommandLine.arguments.contains("--house"){try runHouse(root:root,queriesURL:queriesURL);return}
     var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
     guard let segment=house.segments.first else{throw HouseError.message("No mapping segment.")}
     var activeSegment=segment
@@ -49,10 +50,40 @@ final class DiskEvidence:EvidenceAssetReader {
           if VisualMapping.competingMatch(features,width:q.width,height:q.height,intrinsics:q.intrinsics,maps:[clone]){rejectedClones+=1}
         }
         result["ambiguousRoomAndFloorRejected"]=rejectedClones==2
-        result["ambiguityCases"]=2
+        result["ambiguityCases"]=2;result["ambiguityFalseAccepts"]=2-rejectedClones
         result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms;result["sourceIDs"]=pose.sources.map{$0.uuidString}}
       output.append(result)
     }
     print(String(data:try JSONSerialization.data(withJSONObject:["candidateFingerprint":map.fingerprint,"mapFeatures":map.points.count,"mapViews":map.views.count,"queries":output,"optimizedCameras":activeSegment.poseSolution?.cameras ?? [:],"bundleCheckRMS":activeSegment.poseSolution?.bundleCheckRMS as Any? ?? NSNull(),"bundlePointCount":activeSegment.poseSolution?.bundlePointCount as Any? ?? NSNull()],options:[.sortedKeys]),encoding:.utf8)!)
   }
+  static func runHouse(root:URL,queriesURL:URL)throws {
+    var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
+    guard house.segments.count<=24 else{throw HouseError.message("Competing-map budget exceeded; full search required.")}
+    var maps:[UUID:VisualMap]=[:],failures:[String:String]=[:],cameras:[String:[Double]]=[:]
+    for index in house.segments.indices {
+      do {
+        var segment=house.segments[index]
+        if CommandLine.arguments.contains("--refine"){segment.poseSolution=try PoseGraph.build(house:house,segment:segment,repo:DiskEvidence(root));house.segments[index]=segment}
+        if CommandLine.arguments.contains("--bundle"){let result=try BundleRefinement.build(house:house,segment:segment,repo:DiskEvidence(root));segment.poseSolution=result.solution;house.segments[index]=segment}
+        maps[segment.id]=try VisualMapping.build(house:house,segment:segment,repo:DiskEvidence(root))
+        for (id,pose) in segment.poseSolution?.cameras ?? [:]{cameras[id]=pose}
+      }catch{failures[house.segments[index].id.uuidString]=error.localizedDescription}
+    }
+    let queries=try JSONDecoder().decode(ReplayQueries.self,from:Data(contentsOf:queriesURL));var output:[[String:Any]]=[]
+    for q in queries.queries {
+      guard !q.image.contains("/"),!q.image.contains("..") else{throw HouseError.message("Unsafe query image path.")}
+      guard let selected=q.segmentID,let map=maps[selected] else{output.append(["image":q.image,"accepted":false,"reason":"Selected capture has no admitted map"]);continue}
+      let (gray,w,h)=try VisualMapping.image(Data(contentsOf:root.appendingPathComponent(q.image)))
+      let features=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w),start=Date()
+      let competing=maps.filter{$0.key != selected && ($0.value.roomID != map.roomID || $0.value.frameID != map.frameID)}.map{$0.value}
+      let ambiguous=VisualMapping.competingMatch(features,width:q.width,height:q.height,intrinsics:q.intrinsics,maps:competing)
+      let pose=ambiguous ? nil:VisualMapping.query(features,width:q.width,height:q.height,intrinsics:q.intrinsics,map:map)
+      var result:[String:Any]=["image":q.image,"accepted":pose != nil,"ambiguous":ambiguous,"selectedRoomID":map.roomID.uuidString,"selectedSegmentID":selected.uuidString,"seconds":Date().timeIntervalSince(start)]
+      if let pose{result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms}
+      output.append(result)
+    }
+    let report:[String:Any]=["queries":output,"mapCount":maps.count,"mappingFailures":failures,"optimizedCameras":cameras,"mapFeatures":maps.values.reduce(0){$0+$1.points.count},"mapViews":maps.values.reduce(0){$0+$1.views.count},"productionQualified":false]
+    print(String(data:try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]),encoding:.utf8)!)
+  }
+
 }

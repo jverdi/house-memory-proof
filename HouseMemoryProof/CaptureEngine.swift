@@ -124,7 +124,7 @@ import Vision
           else { continue }
           visualBytes += data.count
           if visualBytes > 32_000_000 {visualReferences=[];competingVisualReferences=[];break}
-          if map.roomID != prior.roomID {competingVisualReferences.append(map);continue}
+          if VisualMapping.isCompeting(map,prior:prior) {competingVisualReferences.append(map);continue}
           if map.frameID == prior.id { visualReferences.append((map, Rigid())) }
           else if map.frameID == nil, let registration = prior.registration, let matrix = PoseRefinement.matrix(registration.values) {
             visualReferences.append((map, Rigid(values: PoseRefinement.array(simd_inverse(matrix)))))

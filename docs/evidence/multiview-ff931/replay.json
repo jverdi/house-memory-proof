@@ -1,0 +1,177 @@
+{
+  "bundleCheckRMS": null,
+  "bundlePointCount": null,
+  "candidateFingerprint": "2c801d27f0524a3afd99c82db04d0f5f4106128c517b0652510580ae6b13394e",
+  "mapFeatures": 7069,
+  "mapViews": 6,
+  "optimizedCameras": {},
+  "queries": [
+    {
+      "accepted": true,
+      "ambiguityCases": 2,
+      "ambiguousRoomAndFloorRejected": true,
+      "diagnostics": [
+        "view 7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF: matches 346, pose 1, rejection 0, inliers 317",
+        "view 686D829B-39AE-5266-8661-56BC26A8AB54: matches 434, pose 1, rejection 0, inliers 414",
+        "view 394A6AC3-2B61-57F8-BFE9-15C8D9790A5C: matches 430, pose 1, rejection 0, inliers 414",
+        "view 1A67FF35-57FC-5859-8A2D-EFD9FDC8557F: matches 245, pose 1, rejection 0, inliers 223",
+        "view 935F4E49-2C26-5EB7-A52B-26C18B844A53: matches 195, pose 1, rejection 0, inliers 186",
+        "view 94BB9A91-3B2D-5994-9077-F775CBB113AD: matches 148, pose 1, rejection 0, inliers 139"
+      ],
+      "image": "vision-query-0.jpg",
+      "inliers": 376,
+      "queryFeatures": 1175,
+      "rmsPixels": 0.8064284128553952,
+      "seconds": 0.13769197463989258,
+      "sourceIDs": [
+        "7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF",
+        "686D829B-39AE-5266-8661-56BC26A8AB54",
+        "394A6AC3-2B61-57F8-BFE9-15C8D9790A5C",
+        "1A67FF35-57FC-5859-8A2D-EFD9FDC8557F",
+        "935F4E49-2C26-5EB7-A52B-26C18B844A53",
+        "94BB9A91-3B2D-5994-9077-F775CBB113AD"
+      ],
+      "worldFromARCamera": [
+        0.7312061587025519,
+        0.00029701866403181176,
+        -0.6821564815021341,
+        -0.10716078213990432,
+        -0.6821565456083725,
+        0.0002779859144640129,
+        -0.7312061063800575,
+        0.10612091761728815,
+        -2.755196753106981e-05,
+        0.9999999172518688,
+        0.0004058782385258086,
+        0.0009234464999643976,
+        0,
+        0,
+        0,
+        1
+      ],
+      "evaluatorPositionErrorMetres": 0.0014332752067851527
+    },
+    {
+      "accepted": true,
+      "ambiguityCases": 2,
+      "ambiguousRoomAndFloorRejected": true,
+      "diagnostics": [
+        "view 7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF: matches 187, pose 1, rejection 0, inliers 178",
+        "view 686D829B-39AE-5266-8661-56BC26A8AB54: matches 229, pose 1, rejection 0, inliers 207",
+        "view 394A6AC3-2B61-57F8-BFE9-15C8D9790A5C: matches 282, pose 1, rejection 0, inliers 270",
+        "view 1A67FF35-57FC-5859-8A2D-EFD9FDC8557F: matches 414, pose 1, rejection 0, inliers 387",
+        "view 935F4E49-2C26-5EB7-A52B-26C18B844A53: matches 346, pose 1, rejection 0, inliers 296",
+        "view 94BB9A91-3B2D-5994-9077-F775CBB113AD: matches 247, pose 1, rejection 0, inliers 219"
+      ],
+      "image": "vision-query-1.jpg",
+      "inliers": 366,
+      "queryFeatures": 1178,
+      "rmsPixels": 0.9588712451764155,
+      "seconds": 0.13988006114959717,
+      "sourceIDs": [
+        "7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF",
+        "686D829B-39AE-5266-8661-56BC26A8AB54",
+        "394A6AC3-2B61-57F8-BFE9-15C8D9790A5C",
+        "1A67FF35-57FC-5859-8A2D-EFD9FDC8557F",
+        "935F4E49-2C26-5EB7-A52B-26C18B844A53",
+        "94BB9A91-3B2D-5994-9077-F775CBB113AD"
+      ],
+      "worldFromARCamera": [
+        0.6955830774572748,
+        -0.00040488920301540166,
+        -0.7184455570325425,
+        0.03604941441044507,
+        -0.7184450825343899,
+        -0.0016720449057788522,
+        -0.6955816757563319,
+        -0.03802174213173504,
+        -0.000919639723386656,
+        0.9999985201641882,
+        -0.0014539367980860862,
+        0.07607559061007652,
+        0,
+        0,
+        0,
+        1
+      ],
+      "evaluatorPositionErrorMetres": 0.004795042752394788
+    },
+    {
+      "accepted": true,
+      "ambiguityCases": 2,
+      "ambiguousRoomAndFloorRejected": true,
+      "diagnostics": [
+        "view 7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF: matches 112, pose 1, rejection 0, inliers 107",
+        "view 686D829B-39AE-5266-8661-56BC26A8AB54: matches 152, pose 1, rejection 0, inliers 140",
+        "view 394A6AC3-2B61-57F8-BFE9-15C8D9790A5C: matches 163, pose 1, rejection 0, inliers 152",
+        "view 1A67FF35-57FC-5859-8A2D-EFD9FDC8557F: matches 271, pose 1, rejection 0, inliers 258",
+        "view 935F4E49-2C26-5EB7-A52B-26C18B844A53: matches 306, pose 1, rejection 0, inliers 284",
+        "view 94BB9A91-3B2D-5994-9077-F775CBB113AD: matches 379, pose 1, rejection 0, inliers 366"
+      ],
+      "image": "vision-query-2.jpg",
+      "inliers": 269,
+      "queryFeatures": 1180,
+      "rmsPixels": 0.9075583213321551,
+      "seconds": 0.12331199645996094,
+      "sourceIDs": [
+        "7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF",
+        "686D829B-39AE-5266-8661-56BC26A8AB54",
+        "394A6AC3-2B61-57F8-BFE9-15C8D9790A5C",
+        "1A67FF35-57FC-5859-8A2D-EFD9FDC8557F",
+        "935F4E49-2C26-5EB7-A52B-26C18B844A53",
+        "94BB9A91-3B2D-5994-9077-F775CBB113AD"
+      ],
+      "worldFromARCamera": [
+        0.6684836878350462,
+        0.0010993309731802126,
+        -0.7437259915922447,
+        0.1736280853395098,
+        -0.7437266857659086,
+        0.001552158259657016,
+        -0.6684820174727173,
+        -0.1777439341123619,
+        0.00041949745394970206,
+        0.9999981911364382,
+        0.001855194258762266,
+        -0.05720801047882827,
+        0,
+        0,
+        0,
+        1
+      ],
+      "evaluatorPositionErrorMetres": 0.0043179278682138255
+    },
+    {
+      "accepted": false,
+      "diagnostics": [
+        "view 7E76CEB6-DBC4-5AFA-B072-1DAF1A5784FF: insufficient matches 1",
+        "view 686D829B-39AE-5266-8661-56BC26A8AB54: insufficient matches 1",
+        "view 394A6AC3-2B61-57F8-BFE9-15C8D9790A5C: insufficient matches 1",
+        "view 1A67FF35-57FC-5859-8A2D-EFD9FDC8557F: insufficient matches 1",
+        "view 935F4E49-2C26-5EB7-A52B-26C18B844A53: insufficient matches 0",
+        "view 94BB9A91-3B2D-5994-9077-F775CBB113AD: insufficient matches 1",
+        "Fewer than two accepted source views"
+      ],
+      "image": "vision-query-3.jpg",
+      "queryFeatures": 1185,
+      "seconds": 0.1211169958114624
+    }
+  ],
+  "ambiguityCases": 6,
+  "ambiguityRejected": true,
+  "oracleReadDenied": true,
+  "candidateBinarySHA256": "affee06b48dc60c6d6f1d780ff5b2f1ed7e834275ee704ffedfe7614ed69e187",
+  "positiveAccepted": 3,
+  "positiveQueries": 3,
+  "falseAccepts": 0,
+  "negativeQueries": 1,
+  "worstAcceptedPositionErrorMetres": 0.004795042752394788,
+  "passed": true,
+  "productionQualified": false,
+  "limitations": [
+    "Analytic textured-corner fixture",
+    "Perfectly synchronized analytic rendering",
+    "Not an iPhone sensor model",
+    "Does not qualify wrong-room rejection or field accuracy"
+  ]
+}
