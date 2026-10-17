@@ -460,7 +460,11 @@ import Darwin
             }
             do {
                 guard let path=Bundle.main.url(forResource:"IFC",withExtension:nil)?.appendingPathComponent("test-block.ifc") else{throw HouseError.message("IFC test fixture missing.")}
-                let importer=IFCImporter();let features=try await importer.load(Data(contentsOf:path),roomID:house.rooms[0].id,stageID:house.stages[0].id)
+                let importer=IFCImporter(),input=try Data(contentsOf:path),roomID=house.rooms[0].id,stageID=house.stages[0].id
+                let cancelled=Task {try await importer.load(input,roomID:roomID,stageID:stageID)}
+                await Task.yield();cancelled.cancel()
+                do{_=try await cancelled.value;throw HouseError.message("Cancelled IFC import unexpectedly published geometry.")}catch is CancellationError{}
+                let features=try await importer.load(input,roomID:roomID,stageID:stageID)
                 let points=features.flatMap{$0.mesh.vertices};let extent=V3((points.map{$0.x}.max() ?? 0)-(points.map{$0.x}.min() ?? 0),(points.map{$0.y}.max() ?? 0)-(points.map{$0.y}.min() ?? 0),(points.map{$0.z}.max() ?? 0)-(points.map{$0.z}.min() ?? 0))
                 results.append(["test":"Bundled IFC2x3 conversion and axes","passed":abs(extent.x-1)<0.001 && abs(extent.y-2)<0.001 && abs(extent.z-3)<0.001,"extent":[extent.x,extent.y,extent.z]])
                 let source=try String(contentsOf:path,encoding:.utf8)

@@ -211,6 +211,7 @@ struct ToolsPage: View {
         model.perform("Converting IFC locally") {
           let importer = IFCImporter()
           let features = try await importer.load(data, roomID: room.id, stageID: stage.id)
+          try Task.checkCancellation()
           guard model.house?.id == projectID else {
             throw HouseError.message("Project changed; import not published.")
           }

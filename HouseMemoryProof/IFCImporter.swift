@@ -10,15 +10,22 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   private var features: [Feature] = []
   private var roomID = UUID(), stageID = UUID()
   private var timeout: Task<Void, Never>?
+  private var activeRequest:UUID?
   func load(_ data: Data, roomID: UUID, stageID: UUID) async throws -> [Feature] {
     guard data.count <= 50_000_000 else {
       throw HouseError.message("IFC input exceeds 50 MB. The source can still be archived.")
     }
+    guard activeRequest==nil else{throw HouseError.message("An IFC import is already active.")}
+    try Task.checkCancellation()
+    let request=UUID();activeRequest=request
+    defer{if activeRequest==request {activeRequest=nil;input=Data()}}
     self.input = data
     self.roomID = roomID
     self.stageID = stageID
     features = []
-    return try await withCheckedThrowingContinuation { continuation in
+    return try await withTaskCancellationHandler(operation:{
+      try Task.checkCancellation()
+      return try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
       let config = WKWebViewConfiguration()
       config.websiteDataStore = .nonPersistent()
@@ -36,7 +43,13 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
               HouseError.message("IFC import exceeded its time budget. Source remains preserved.")))
         }
       }
-    }
+      }
+    },onCancel:{
+      Task { @MainActor [weak self] in
+        guard let self,self.activeRequest==request else{return}
+        self.finish(.failure(CancellationError()))
+      }
+    })
   }
   private func finish(_ result: Result<[Feature], Error>) {
     timeout?.cancel()
@@ -44,7 +57,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     web?.stopLoading()
     web?.configuration.userContentController.removeScriptMessageHandler(forName: "ifc")
     web = nil
-    input = Data()
+    input = Data();activeRequest=nil;features=[]
     let c = continuation
     continuation = nil
     c?.resume(with: result)
@@ -52,6 +65,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   func userContentController(
     _ userContentController: WKUserContentController, didReceive message: WKScriptMessage
   ) {
+    guard continuation != nil,message.webView===web else{return}
     guard let body = message.body as? [String: Any], let type = body["type"] as? String else {
       return
     }
@@ -123,8 +137,9 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   func webView(
     _ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!,
     withError error: Error
-  ) { finish(.failure(error)) }
+  ) {if webView===web {finish(.failure(error))}}
   func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+    guard webView===web else{return}
     finish(.failure(HouseError.message("IFC parser process stopped. Source remains preserved.")))
   }
   func webView(

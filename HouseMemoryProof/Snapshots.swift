@@ -86,7 +86,7 @@ enum SnapshotStorage {
     }
   }
   static func automatic(model: AppModel) {
-    guard UserDefaults.standard.bool(forKey: automaticKey), !model.busy, let house = model.house,
+    guard UserDefaults.standard.bool(forKey: automaticKey), !model.busy, !model.captureInProgress, let house = model.house,
       let repo = model.repository, UserDefaults.standard.data(forKey: bookmarkKey) != nil
     else { return }
     if let previous = UserDefaults.standard.object(forKey: "snapshot-date-" + house.id.uuidString)
