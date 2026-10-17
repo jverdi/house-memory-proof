@@ -110,5 +110,6 @@
     }
   },
   "priorQueryResultsUnchangedExcludingExecutionTime": true,
-  "fullStressPending": true
+  "fullStressPending": false,
+  "stressPassed": true
 }

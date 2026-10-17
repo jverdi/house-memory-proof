@@ -1,0 +1,113 @@
+{
+  "artifact": 12116652353,
+  "artifactSHA256": "1868f462de781d03ca406de7f21b22739908ee7f66ba12c8817505d4af7f94f3",
+  "artifactDigestVerified": true,
+  "kind": "stress",
+  "productionQualified": false,
+  "cases": 70,
+  "positiveQueries": 1000,
+  "positiveAccepted": 1000,
+  "availability": 1,
+  "unrelatedNegativeQueries": 1400,
+  "repeatedRoomAndFloorChallenges": 2000,
+  "criticalChallenges": 3400,
+  "executedUnrelatedQueries": 1400,
+  "criticalFalseAccepts": 0,
+  "oracleControlFailures": 0,
+  "p50Metres": 0.002447363980539511,
+  "p95Metres": 0.004870463809263563,
+  "worstMetres": 0.0076105097676633145,
+  "spatialTargetsPassed": true,
+  "passed": true,
+  "development": {
+    "cases": 50,
+    "positiveQueries": 600,
+    "positiveAccepted": 600,
+    "availability": 1,
+    "unrelatedNegativeQueries": 1000,
+    "repeatedRoomAndFloorChallenges": 1200,
+    "criticalChallenges": 2200,
+    "executedUnrelatedQueries": 1000,
+    "criticalFalseAccepts": 0,
+    "oracleControlFailures": 0,
+    "p50Metres": 0.0024344082862618652,
+    "p95Metres": 0.004574128635701268,
+    "worstMetres": 0.006989958347744116,
+    "spatialTargetsPassed": true
+  },
+  "protected": {
+    "cases": 20,
+    "positiveQueries": 400,
+    "positiveAccepted": 400,
+    "availability": 1,
+    "unrelatedNegativeQueries": 400,
+    "repeatedRoomAndFloorChallenges": 800,
+    "criticalChallenges": 1200,
+    "executedUnrelatedQueries": 400,
+    "criticalFalseAccepts": 0,
+    "oracleControlFailures": 0,
+    "p50Metres": 0.002447689096427143,
+    "p95Metres": 0.005219328817956715,
+    "worstMetres": 0.0076105097676633145,
+    "spatialTargetsPassed": true
+  },
+  "verificationRun": 39075810178,
+  "verificationJob": 117522603249,
+  "runtimeSource": "be3753079215e46f3e18e5263c922d862be86c8c",
+  "workflowRun": 39073833450,
+  "scoreJob": 117522408761,
+  "workflowPassed": false,
+  "workflowFailureReason": "The separately retained paired/staggered house diagnostics still fail finished-stage availability.",
+  "limitations": [
+    "Analytic textured corners, not 70 complete houses",
+    "No calibrated iPhone sensor model",
+    "Whole-house registration, thin-service geometry, topology and physical uncertainty remain separate gates"
+  ],
+  "retainedArtifactReferences": [
+    {
+      "name": "source-baseline-stress-summary",
+      "id": 12116652353,
+      "sha256": "1868f462de781d03ca406de7f21b22739908ee7f66ba12c8817505d4af7f94f3"
+    },
+    {
+      "name": "source-baseline-replay-records-2",
+      "id": 12116496976,
+      "sha256": "12a12f1c53195687bee4ca2997c78623d62879d2a793761e7b7e8e2020144eb1"
+    },
+    {
+      "name": "source-baseline-stress-1",
+      "id": 12116487041,
+      "sha256": "90d7c5b4f6f36cd338a124c7242ab5543d831df763808c865d760eba7218c909"
+    },
+    {
+      "name": "source-baseline-replay-records-1",
+      "id": 12116432350,
+      "sha256": "76255aace4fa17d6bea00dd28a4e65555d82481b1f6fd517f688adf552dbd6e6"
+    },
+    {
+      "name": "source-baseline-replay-records-0",
+      "id": 12116168968,
+      "sha256": "1f1c24da168a0a906abf09142454d3c69959492eb45f21e82e2092d81714a331"
+    },
+    {
+      "name": "source-baseline-stress-0",
+      "id": 12116124134,
+      "sha256": "6ea93030911a1edc3cc21b6772951fd30107757bb46333e3eedc870d985d151b"
+    },
+    {
+      "name": "source-baseline-replay-records-3",
+      "id": 12115944421,
+      "sha256": "9951c884d9ae09ced7697a545af229fef383a5f55e428fda75b26d5d5d926e37"
+    },
+    {
+      "name": "source-baseline-stress-3",
+      "id": 12115864461,
+      "sha256": "e4fb4a742ef4375d48e713b1d7f4600e63897f22838db8cfa8e9c6c1bdb28f04"
+    },
+    {
+      "name": "source-baseline-stress-2",
+      "id": 12115823991,
+      "sha256": "ea42fba0678ad9535f42c2c9220bd3161905049bf7eb15fff2e184f71beb23cd"
+    }
+  ]
+}
