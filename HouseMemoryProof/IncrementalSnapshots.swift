@@ -5,6 +5,16 @@ struct SnapshotRevision:Codable,Identifiable {
   var format="HouseXraySnapshot";var version=1;var id=UUID();var date=Date()
   var projectID:UUID;var name:String;var revision:Int;var metadata:String;var assets:[String]
 }
+struct SnapshotCatalog {
+  var revisions:[SnapshotRevision]=[]
+  var unreadableRecords:[String]=[]
+  var message:String {
+    if !unreadableRecords.isEmpty {
+      return "\(unreadableRecords.count) snapshot record(s) could not be read. They may still be downloading or damaged. Retry after Files finishes syncing. Readable revisions remain available below."
+    }
+    return revisions.isEmpty ? "No saved snapshot revisions were found in this folder.":"\(revisions.count) revision(s) found. Originals and checksums are verified when you restore."
+  }
+}
 enum IncrementalSnapshots {
   static func root(_ folder:URL)->URL {folder.appendingPathComponent("HouseXraySnapshots",isDirectory:true)}
   static func hash(_ bytes:Data)->String {SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()}
@@ -62,14 +72,29 @@ enum IncrementalSnapshots {
     return revision
   }
   static func catalog(folder:URL)throws->[SnapshotRevision] {
+    try inspectCatalog(folder:folder).revisions
+  }
+  static func inspectCatalog(folder:URL)throws->SnapshotCatalog {
+    try Task.checkCancellation()
     let directory=root(folder).appendingPathComponent("revisions")
-    guard FileManager.default.fileExists(atPath:directory.path) else{return []}
-    let files=try FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:[.fileSizeKey]).filter{$0.pathExtension=="json"}
+    guard FileManager.default.fileExists(atPath:directory.path) else{return SnapshotCatalog()}
+    let files=try FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil).filter{$0.pathExtension=="json"}.sorted{$0.lastPathComponent<$1.lastPathComponent}
     guard files.count<=10000 else{throw HouseError.message("Snapshot catalog exceeds its entry budget.")}
-    return files.compactMap {url in
-      guard let size=try? url.resourceValues(forKeys:[.fileSizeKey]).fileSize,size<=10_000_000,let data=try? read(url,limit:10_000_000),let record=try? JSONDecoder().decode(SnapshotRevision.self,from:data),record.format=="HouseXraySnapshot",record.version==1,record.id.uuidString==url.deletingPathExtension().lastPathComponent,safe(record.metadata) else{return nil}
-      return record
-    }.sorted{$0.date>$1.date}
+    var result=SnapshotCatalog()
+    for url in files {
+      try Task.checkCancellation()
+      do {
+        // Coordinated read requests an iCloud placeholder download before
+        // checking size. A missing size must not silently hide that revision.
+        let data=try read(url,limit:10_000_000)
+        let record=try JSONDecoder().decode(SnapshotRevision.self,from:data)
+        guard record.format=="HouseXraySnapshot",record.version==1,record.id.uuidString==url.deletingPathExtension().lastPathComponent,safe(record.metadata),record.assets.count<=160000,record.assets.allSatisfy({safe($0)}),Set(record.assets).count==record.assets.count else{throw HouseError.message("Unsupported snapshot record.")}
+        result.revisions.append(record)
+      } catch is CancellationError {throw CancellationError()}
+      catch {result.unreadableRecords.append(url.lastPathComponent)}
+    }
+    result.revisions.sort{a,b in a.date==b.date ? a.id.uuidString<b.id.uuidString:a.date>b.date}
+    return result
   }
   static func read(_ url:URL,limit:Int)throws->Data {
     let coordinator=NSFileCoordinator(filePresenter:nil);var coordinationError:NSError?,operationError:Error?,result:Data?
@@ -107,3 +132,4 @@ enum IncrementalSnapshots {
     return house
   }
 }
+

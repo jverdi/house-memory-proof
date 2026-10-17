@@ -109,6 +109,8 @@ struct SnapshotSettings: View {
   var house: House
   @State private var choosing = false
   @State private var revisions:[SnapshotRevision]=[]
+  @State private var catalogMessage:String?
+  @State private var catalogIncomplete=false
   @State private var automatic = UserDefaults.standard.bool(forKey: SnapshotService.automaticKey)
   @State private var status = SnapshotService.status
   var body: some View {
@@ -140,8 +142,18 @@ struct SnapshotSettings: View {
       }
       Section("Restore an independent revision") {
         Button("List saved revisions") {
-          model.perform("Reading snapshot catalog") {revisions=try await SnapshotService.inFolder{try IncrementalSnapshots.catalog(folder:$0)};return nil}
+          model.perform("Reading snapshot catalog") {
+            do {
+              let catalog=try await SnapshotService.inFolder{try IncrementalSnapshots.inspectCatalog(folder:$0)}
+              revisions=catalog.revisions;catalogMessage=catalog.message;catalogIncomplete = !catalog.unreadableRecords.isEmpty
+            } catch {
+              revisions=[];catalogMessage="The snapshot folder could not be read. Choose it again in Files and retry.";catalogIncomplete=true
+              throw error
+            }
+            return nil
+          }
         }.disabled(model.busy)
+        if let catalogMessage {Text(catalogMessage).font(.footnote).foregroundStyle(catalogIncomplete ? .orange:.secondary)}
         ForEach(revisions){revision in
           Button("Restore \(revision.name) · r\(revision.revision) · \(revision.date.formatted())") {
             guard let repo=model.repository else{return}
@@ -164,8 +176,10 @@ struct SnapshotSettings: View {
         if let url = try result.get().first {
           try SnapshotService.select(url)
           status = SnapshotService.status
+          revisions=[];catalogMessage=nil;catalogIncomplete=false
         }
       } catch { model.error = error.localizedDescription }
     }
   }
 }
+

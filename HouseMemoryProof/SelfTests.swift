@@ -282,6 +282,26 @@ import Darwin
                 do{_=try IncrementalSnapshots.write(house:h,repo:source,folder:destination);return false}catch{}
                 return try Data(contentsOf:record)==bytes && source.integrity(h)==1 && IncrementalSnapshots.catalog(folder:destination).count==2
             }
+            await check("Snapshot catalog reports unreadable records while preserving available restores") {
+                let destination=folder.appendingPathComponent("snapshot-catalog"),target=try Repository(root:folder.appendingPathComponent("snapshot-catalog-restore"))
+                guard try IncrementalSnapshots.inspectCatalog(folder:destination).revisions.isEmpty else{return false}
+                let h=House.empty("Catalog recovery"),good=try IncrementalSnapshots.write(house:h,repo:repo,folder:destination)
+                let directory=IncrementalSnapshots.root(destination).appendingPathComponent("revisions")
+                let truncated=directory.appendingPathComponent(UUID().uuidString+".json"),wrongName=directory.appendingPathComponent(UUID().uuidString+".json")
+                try Data("{\"format\":".utf8).write(to:truncated)
+                try JSONEncoder().encode(good).write(to:wrongName)
+                var unsafe=good;unsafe.id=UUID();unsafe.assets=["../missing.jpg"]
+                let unsupported=directory.appendingPathComponent(unsafe.id.uuidString+".json")
+                try JSONEncoder().encode(unsafe).write(to:unsupported)
+                try Data("unfinished copy".utf8).write(to:directory.appendingPathComponent("ignored.partial"))
+                let catalog=try IncrementalSnapshots.inspectCatalog(folder:destination)
+                guard catalog.revisions.map({$0.id})==[good.id],catalog.unreadableRecords.count==3,!catalog.message.isEmpty else{return false}
+                let restored=try IncrementalSnapshots.restore(catalog.revisions[0],repo:target,folder:destination)
+                guard restored.name==h.name+" · restored",try Data(contentsOf:truncated)==Data("{\"format\":".utf8) else{return false}
+                for file in [truncated,wrongName,unsupported] {try FileManager.default.removeItem(at:file)}
+                let retried=try IncrementalSnapshots.inspectCatalog(folder:destination)
+                return retried.unreadableRecords.isEmpty && retried.revisions.map({$0.id})==[good.id]
+            }
             await check("Boundary coverage counts unseen and occluded nominal patches") {
                 var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
                 // Narrow-FOV planar depth diagnostic; RGB pixels are not consumed by coverage.
