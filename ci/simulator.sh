@@ -56,6 +56,7 @@ for attempt in $(seq 1 90); do
   sleep 2
 done
 cp "$app_data/Library/Application Support/HouseXray/self-test.json" build/evidence/native-self-test.json
+cp "$app_data/Library/Application Support/HouseXray/test.hxray" build/evidence/test.hxray
 cp "$app_data/Library/Application Support/HouseXray/test.glb" build/evidence/test.glb
 cp "$app_data/Library/Application Support/HouseXray/test.usdz" build/evidence/test.usdz
 cp "$app_data/Library/Application Support/HouseXray/test-render.png" build/evidence/test-render.png

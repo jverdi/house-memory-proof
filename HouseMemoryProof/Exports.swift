@@ -91,23 +91,19 @@ enum Exporter {
         let url=destination("House-Xray.usdz");try StoredZip.write([.init(name:"house.usda",data:Data(text.utf8))],to:url,aligned:true);return url
     }
     static func archive(_ h:House,repo:Repository)throws->URL {
-        try h.validate();_=try repo.integrity(h);let metadata=try JSONEncoder().encode(h)
-        var entries=[StoredZip.Entry(name:"house.json",data:metadata)]
-        var total=metadata.count
-        for key in h.assets.sorted(){let d=try repo.read(key);total+=d.count;guard total<600_000_000 else{throw HouseError.message("This build's portable archive working set is limited to 600 MB. Originals remain local; large chunked archives are not yet qualified.")};entries.append(.init(name:"assets/"+key,data:d))}
-        let hashes=Dictionary(uniqueKeysWithValues:entries.map{($0.name,SHA256.hash(data:$0.data).map{String(format:"%02x",$0)}.joined())})
-        entries.append(.init(name:"manifest.json",data:try JSONSerialization.data(withJSONObject:["format":"HouseXray","version":1,"sha256":hashes],options:[.sortedKeys])))
+        try h.validate();let metadata=try JSONEncoder().encode(h)
+        let staging=FileManager.default.temporaryDirectory.appendingPathComponent("archive-"+UUID().uuidString,isDirectory:true)
+        try FileManager.default.createDirectory(at:staging,withIntermediateDirectories:true);defer{try? FileManager.default.removeItem(at:staging)}
+        let json=staging.appendingPathComponent("house.json");try metadata.write(to:json)
+        var items=[StreamingArchive.Item(name:"house.json",url:json)],hashes=["house.json":SHA256.hash(data:metadata).map{String(format:"%02x",$0)}.joined()]
+        var required:UInt64=UInt64(metadata.count)
+        for key in h.assets.sorted(){let url=try repo.assetURL(key),digest=try StreamingArchive.digest(url);guard key.hasPrefix(digest.sha+".") else{throw HouseError.message("Original evidence checksum mismatch.")};required+=digest.size;hashes["assets/"+key]=digest.sha;items.append(.init(name:"assets/"+key,url:url))}
+        guard UInt64(max(0,repo.freeBytes()))>required+200_000_000 else{throw HouseError.message("Not enough free space for the complete archive.")}
+        let manifest=staging.appendingPathComponent("manifest.json");try JSONSerialization.data(withJSONObject:["format":"HouseXray","version":1,"sha256":hashes],options:[.sortedKeys]).write(to:manifest);items.append(.init(name:"manifest.json",url:manifest))
         let html="<!doctype html><meta charset=utf-8><title>House Xray evidence</title><style>body{font:16px system-ui;max-width:960px;margin:40px auto;background:#101923;color:#eee}img{max-width:100%;max-height:700px}article{margin:32px 0}</style><h1>House Xray evidence archive</h1><p>Unzip all files together. Coordinates in house.json are metres, Z-up. Photographs are historical evidence; placement is uncalibrated.</p><a href=house.json>Complete project metadata</a>"+h.observations.map{"<article><h2>\($0.date.formatted())</h2><img src=\"assets/\($0.image)\"><p>Observation \($0.id)</p></article>"}.joined()
-        entries.append(.init(name:"index.html",data:Data(html.utf8)));let url=destination("House-Xray.hxray");try StoredZip.write(entries,to:url);return url
+        let index=staging.appendingPathComponent("index.html");try Data(html.utf8).write(to:index);items.append(.init(name:"index.html",url:index))
+        let url=destination("House-Xray.hxray");_=try StreamingArchive.write(items,to:url);return url
     }
-    static func restore(_ url:URL,repo:Repository)throws->House {
-        let entries=try StoredZip.read(url),files=Dictionary(uniqueKeysWithValues:entries.map{($0.name,$0.data)})
-        guard let manifest=files["manifest.json"],let object=try JSONSerialization.jsonObject(with:manifest) as? [String:Any],object["format"] as? String=="HouseXray",object["version"] as? Int==1,let hashes=object["sha256"] as? [String:String],let data=files["house.json"] else{throw HouseError.message("Missing or incompatible archive manifest.")}
-        for (path,hash) in hashes {guard let d=files[path],SHA256.hash(data:d).map({String(format:"%02x",$0)}).joined()==hash else{throw HouseError.message("Archive integrity check failed.")}}
-        var h=try JSONDecoder().decode(House.self,from:data);try h.validate()
-        for key in h.assets {guard let d=files["assets/"+key],hashes["assets/"+key] != nil else{throw HouseError.message("Archive is missing an original asset.")};let ext=String(key.split(separator:".").last ?? "bin");guard try repo.put(d,ext:ext)==key else{throw HouseError.message("Asset identity mismatch.")}}
-        // Always restore to a new project; never overwrite the good live copy.
-        h.id=UUID();h.name += " · restored";h.revision=0;return h
-    }
+    static func restore(_ url:URL,repo:Repository)throws->House {try StreamingArchive.restore(url,repo:repo)}
     static func metadata(_ h:House)throws->URL {let url=destination("House-Xray.json");let enc=JSONEncoder();enc.outputFormatting=[.prettyPrinted,.sortedKeys];try enc.encode(h).write(to:url,options:.atomic);return url}
 }

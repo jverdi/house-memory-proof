@@ -66,7 +66,7 @@ final class Repository {
         return key
     }
     func read(_ key:String)throws->Data {try Data(contentsOf:assetURL(key),options:.mappedIfSafe)}
-    func integrity(_ h:House)throws->Int {var count=0;for key in h.assets {let data=try read(key),hash=SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined();guard key.hasPrefix(hash+".") else{throw HouseError.message("Asset checksum mismatch: \(key.prefix(12)).")};count+=1};return count}
+    func integrity(_ h:House)throws->Int {var count=0;for key in h.assets {let hash=try StreamingArchive.digest(assetURL(key)).sha;guard key.hasPrefix(hash+".") else{throw HouseError.message("Asset checksum mismatch: \(key.prefix(12)).")};count+=1};return count}
     func job(_ id:String,state:String,data:Data)throws {lock.lock();defer{lock.unlock()};let s=try statement("INSERT OR REPLACE INTO jobs VALUES(?,?,?)");defer{sqlite3_finalize(s)};_=id.withCString{sqlite3_bind_text(s,1,$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))};_=state.withCString{sqlite3_bind_text(s,2,$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))};_=data.withUnsafeBytes{sqlite3_bind_blob(s,3,$0.baseAddress,Int32(data.count),unsafeBitCast(-1,to:sqlite3_destructor_type.self))};guard sqlite3_step(s)==SQLITE_DONE else{throw HouseError.message("Could not checkpoint job.")}}
     func freeBytes()->Int64 { (try? root.resourceValues(forKeys:[.volumeAvailableCapacityForImportantUsageKey]).volumeAvailableCapacityForImportantUsage) ?? 0 }
 }
