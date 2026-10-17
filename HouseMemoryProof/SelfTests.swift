@@ -509,6 +509,9 @@ import Darwin
                 results.append(["test":"Noisy simulated house capture to native surface","passed":surface.mesh.valid && surface.mesh.triangles.count>300,"vertices":surface.mesh.vertices.count,"precisionQualified":false])
             }catch{results.append(["test":"Paired simulated house integration","passed":false,"error":error.localizedDescription])}
             if includeMovie || ProcessInfo.processInfo.arguments.contains("--video-test") {
+                model.status="Checking 100-space scene capacity…"
+                do{results.append(try await largeSceneReport(root:mainRepo.root))}
+                catch{results.append(["test":"100-space two-stage capacity and native streamed render","passed":false,"error":error.localizedDescription])}
                 do {
                     let started=ProcessInfo.processInfo.systemUptime
                     let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:10,width:1920,height:1080){model.progress=$0}
@@ -529,8 +532,98 @@ import Darwin
         #else
         let platform="physical iPhone"
         #endif
-        let report:[String:Any]=["deviceModel":UIDevice.current.model,"systemVersion":UIDevice.current.systemVersion,"physicalMemoryBytes":ProcessInfo.processInfo.physicalMemory,"elapsedSeconds":ProcessInfo.processInfo.systemUptime-runStarted,"sourceRevision":Bundle.main.object(forInfoDictionaryKey:"ProofSourceRevision") as? String ?? "local","build":Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "local","platform":platform,"date":ISO8601DateFormatter().string(from:Date()),"tests":results,"passed":results.allSatisfy{($0["passed"] as? Bool)==true},"fieldAccuracyValidated":false,"precisionProfileEnabled":false]
+        let report:[String:Any]=["deviceModel":UIDevice.current.model,"systemVersion":UIDevice.current.systemVersion,"physicalMemoryBytes":ProcessInfo.processInfo.physicalMemory,"processMemory":memorySample(),"elapsedSeconds":ProcessInfo.processInfo.systemUptime-runStarted,"sourceRevision":Bundle.main.object(forInfoDictionaryKey:"ProofSourceRevision") as? String ?? "local","build":Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "local","platform":platform,"date":ISO8601DateFormatter().string(from:Date()),"tests":results,"passed":results.allSatisfy{($0["passed"] as? Bool)==true},"fieldAccuracyValidated":false,"precisionProfileEnabled":false]
         do{let bytes=try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]);try bytes.write(to:mainRepo.root.appendingPathComponent("self-test.json"),options:.atomic)}catch{model.error=error.localizedDescription}
         try? FileManager.default.removeItem(at:folder)
+    }
+}
+
+extension SelfTests {
+    // Read the process footprint, not total installed device RAM. This is a
+    // sampled observation; the kernel's resident peak also includes earlier work.
+    nonisolated static func memorySample()->[String:UInt64] {
+        var info=task_vm_info_data_t()
+        var count=mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size/MemoryLayout<integer_t>.size)
+        let capacity=Int(count)
+        let status=withUnsafeMutablePointer(to:&info){pointer in
+            pointer.withMemoryRebound(to:integer_t.self,capacity:capacity){task_info(mach_task_self_,task_flavor_t(TASK_VM_INFO),$0,&count)}
+        }
+        guard status==KERN_SUCCESS else{return [:]}
+        return ["physicalFootprintBytes":info.phys_footprint,"residentBytes":info.resident_size,"lifetimeResidentPeakBytes":info.resident_size_peak]
+    }
+    nonisolated static func prepareLargeScene()throws->(House,SpatialDisplayIndex,[String:Any]) {
+        let started=ProcessInfo.processInfo.systemUptime
+        var h=House.empty("Synthetic capacity workload");h.isDemo=true;h.rooms=[]
+        h.stages[0].phase = .rough;h.stages[1].phase = .finished
+        let side=50
+        for roomIndex in 0..<100 {
+            try Task.checkCancellation()
+            let origin=V3(Double(roomIndex%5)*6,Double((roomIndex/5)%4)*6,Double(roomIndex/20)*3.5)
+            let room=Room(name:"Capacity space \(roomIndex+1)",level:roomIndex/20,origin:origin,size:V3(5,5,3));h.rooms.append(room)
+            for stage in 0..<2 {
+                var mesh=Mesh()
+                for y in 0...side {for x in 0...side {
+                    mesh.vertices.append(origin+V3(Double(x)*5/Double(side),4.8+Double(stage)*0.05,Double(y)*3/Double(side)))
+                }}
+                for y in 0..<side {for x in 0..<side {
+                    let a=Int32(y*(side+1)+x),b=a+1,c=a+Int32(side+1),d=c+1
+                    mesh.triangles += [a,b,c,b,d,c]
+                }}
+                h.features.append(Feature(name:"Capacity wall",trade:stage==0 ? .structure:.finish,roomID:room.id,stageID:h.stages[stage].id,kind:.synthetic,mesh:mesh))
+            }
+        }
+        try h.validate()
+        let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+        let bytes=try encoder.encode(h)
+        guard bytes.count<=100_000_000 else{throw HouseError.message("Capacity metadata exceeds the store's admission limit.")}
+        let restored=try JSONDecoder().decode(House.self,from:bytes);try restored.validate()
+        guard restored.rooms==h.rooms,restored.features.count==200,zip(restored.features,h.features).allSatisfy({$0.id==$1.id && $0.mesh==$1.mesh}) else{throw HouseError.message("Capacity metadata changed during round trip.")}
+        let rough=SceneBuilder.features(h,options:SceneOptions()),finished=SceneBuilder.features(h,options:SceneOptions(mode:.finished))
+        guard rough.count==100,finished.count==100,Set(rough.map{$0.id}).isDisjoint(with:Set(finished.map{$0.id})) else{throw HouseError.message("Capacity stages lost isolation.")}
+        let index=try SpatialDisplayIndex(features:h.features)
+        guard index.tiles.reduce(0,{$0+$1.primitives.count})==1_000_000 else{throw HouseError.message("Capacity index lost source primitives.")}
+        var timings:[Double]=[],maxResident=0,maxCost=0
+        for room in h.rooms {
+            try Task.checkCancellation();let start=ProcessInfo.processInfo.systemUptime
+            let plan=index.plan(camera:room.origin+V3(2.5,2,1.6))
+            timings.append((ProcessInfo.processInfo.systemUptime-start)*1000)
+            let cost=plan.reduce(0,{$0+$1.budget});maxResident=max(maxResident,plan.count);maxCost=max(maxCost,cost)
+            guard plan.count<=512,cost<=DisplayGeometry.sceneVertexBudget else{throw HouseError.message("Capacity residency exceeded its budget.")}
+            for allocation in plan.prefix(2) {let (_,mesh,_)=index.materialize(allocation);guard mesh.valid,DisplayGeometry.cost(mesh)<=allocation.budget else{throw HouseError.message("Capacity tile exceeded allocation.")}}
+        }
+        timings.sort()
+        return(h,index,["rooms":100,"levels":5,"stages":2,"sourceTriangles":1_000_000,"metadataBytes":bytes.count,"tiles":index.tiles.count,"maximumResidentTiles":maxResident,"maximumResidentEntries":maxCost,"planP95Milliseconds":timings[Int(ceil(Double(timings.count)*0.95))-1],"preparationSeconds":ProcessInfo.processInfo.systemUptime-started,"memoryAfterPreparation":memorySample()])
+    }
+    static func largeSceneReport(root:URL) async throws->[String:Any] {
+        let prepared=try await LocalWorker.run{try prepareLargeScene()}
+        let h=prepared.0,index=prepared.1,scene=SceneBuilder.baseScene(),options=SceneOptions(mode:.evidence)
+        let stream=SpatialSceneStream(index:index,scene:scene,options:options)
+        let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene
+        let camera=SceneBuilder.camera(at:V3());scene.rootNode.addChildNode(camera);renderer.pointOfView=camera
+        var frameTimes:[Double]=[],memories:[[String:UInt64]]=[],sharpFrames=0,loads:[Double]=[]
+        for (visit,roomIndex) in [0,99].enumerated() {
+            let room=h.rooms[roomIndex],position=room.origin+V3(2.5,-1,1.5),start=ProcessInfo.processInfo.systemUptime
+            camera.simdPosition=position.render;camera.look(at:SCNVector3((room.origin+V3(2.5,4.8,1.5)).render))
+            // Drain the same one-tile updates as the interactive view. The
+            // synthetic clock drives residency only, never the reported timing.
+            for tick in 0..<513 {try Task.checkCancellation();stream.update(camera:position,time:Double(visit*1000+tick)/30);if tick%16==0 {await Task.yield()}}
+            guard stream.pending.isEmpty,stream.nodes.count<=512,stream.allocations.values.reduce(0,{$0+$1.budget})<=DisplayGeometry.sceneVertexBudget else{throw HouseError.message("Capacity scene did not settle within its residency budget.")}
+            loads.append(ProcessInfo.processInfo.systemUptime-start)
+            for frame in 0..<30 {
+                try Task.checkCancellation();let before=ProcessInfo.processInfo.systemUptime
+                let image=autoreleasepool{renderer.snapshot(atTime:Double(frame)/30,with:CGSize(width:640,height:360),antialiasingMode:.none)}
+                frameTimes.append((ProcessInfo.processInfo.systemUptime-before)*1000)
+                if frame==0 {guard let cg=image.cgImage,CaptureController.sharpness(cg)>0.002 else{throw HouseError.message("Capacity renderer produced an empty view.")};sharpFrames+=1;if visit==0 {try image.pngData()?.write(to:root.appendingPathComponent("large-house-render.png"))}}
+                if frame%10==0 {memories.append(memorySample());await Task.yield()}
+            }
+        }
+        frameTimes.sort();var report=prepared.2
+        report["test"]="100-space two-stage capacity and native streamed render";report["passed"]=sharpFrames==2
+        report["offscreenFrames"]=frameTimes.count;report["offscreenSize"]=[640,360]
+        report["offscreenP50Milliseconds"]=frameTimes[frameTimes.count/2];report["offscreenP95Milliseconds"]=frameTimes[Int(ceil(Double(frameTimes.count)*0.95))-1]
+        report["residencyLoadSeconds"]=loads;report["memorySamples"]=memories
+        report["limitations"]="Synthetic tiled walls without photo textures or capture data. Offscreen snapshot time includes readback; it is not sustained display FPS, device thermal qualification, reconstruction completeness or navigation-topology evidence."
+        report["physicalDeviceQualified"]=false
+        return report
     }
 }

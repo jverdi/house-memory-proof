@@ -81,7 +81,7 @@ cp "$app_root/test.glb" build/evidence/test.glb
 cp "$app_root/test.usdz" build/evidence/test.usdz
 cp "$app_root/test-render.png" build/evidence/test-render.png
 # Retain diagnostics before failing if the encoder did not produce a movie.
-for media in test-tour.mp4 test-tour-frame.png; do
+for media in test-tour.mp4 test-tour-frame.png large-house-render.png; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
