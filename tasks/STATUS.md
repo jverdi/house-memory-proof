@@ -159,3 +159,7 @@ The host candidate now runs the same coded detection, source-pose estimation, co
 ### Review-branch continuation
 
 Automatic approval review rejected the next default-main ref update because it requires explicit default-branch authorization. Main remains at a1d3ba4ae156be4db9d582c7d9a0a672658b7410. Further implementation continues on agent/house-xray-qualification-20261017 with read-only pull-request CI; no merge or final upload is attempted without resolving that approval. This does not block local development, feature-branch commits or validation.
+
+### Native 58591: isolated coded-image fixture failure
+
+The source completed 90 native checks in 127.7 seconds; 89 passed. The sole failure was decoding all six boards in the first new coded-source image. Both UI workflows, all three actual process-kill recovery cases, 50 portable cases and the independent export readers passed. Exact reports are retained under docs/evidence/native-58591. A separate Linux build of the pinned, Git-blob-verified AprilTag source passed its production selftest and decoded all six boards in both independent raw ray renders of that layout. The native fixture now writes explicit row-major ray/plane samples, removing Core Graphics path-coordinate ambiguity. The following diagnostic naming collision is repaired, and the coded fixture has its own repository so it cannot contaminate unrelated store-order tests. Native verification remains required; no pose or accuracy gate was relaxed.

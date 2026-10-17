@@ -29,18 +29,36 @@ on:
       - HouseMemoryProof/CodedReferences.swift
   pull_request:
     paths:
-      - HouseMemoryProof/**
-      - packages/**
-      - tooling/simulation/**
-      - tooling/opencv/**
-      - tooling/references/**
       - .github/workflows/vision-evaluation.yml
+      - tooling/opencv/build-host.sh
+      - tooling/solver/**
+      - tooling/simulation/VisionReplay.swift
+      - tooling/simulation/replay_fixture.py
+      - tooling/simulation/vision_matrix.py
+      - tooling/simulation/vision_fixture.py
+      - tooling/simulation/test_render_contract.py
+      - tooling/simulation/house.py
+      - tooling/simulation/house_layout_fixture.py
+      - tooling/simulation/coded_layout_fixture.py
+      - tooling/simulation/test_coded_render_contract.py
+      - packages/visual-core/**
+      - packages/reference-core/**
+      - tooling/references/**
+      - HouseMemoryProof/VisualMapping.swift
+      - HouseMemoryProof/EvidenceModels.swift
+      - HouseMemoryProof/Domain.swift
+      - HouseMemoryProof/PoseRefinement.swift
+      - HouseMemoryProof/PoseGraph.swift
+      - HouseMemoryProof/ReferenceRegistration.swift
+      - HouseMemoryProof/BundleRefinement.swift
+      - HouseMemoryProof/PhotoReconstruction.swift
+      - HouseMemoryProof/CodedReferences.swift
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
   group: visual-evaluation-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   replay:
     runs-on: macos-26

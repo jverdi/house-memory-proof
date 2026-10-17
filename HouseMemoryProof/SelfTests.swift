@@ -35,7 +35,7 @@ import Darwin
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
             mark("Coded reference image-to-pose integration")
-            do {results.append(try codedReferenceReport(repo:repo,outputRoot:mainRepo.root))}
+            do {results.append(try codedReferenceReport(repo:Repository(root:folder.appendingPathComponent("coded-references")),outputRoot:mainRepo.root))}
             catch {results.append(["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":false,"error":error.localizedDescription])}
             await check("Multi-board pose holds out each board and rejects moved or duplicate references") {var error=0.0;return hx_reference_selftest(&error)==1 && error<0.003}
             await check("Pinned AprilTag identity, corner coordinates, rotation and duplicate rejection") {hx_tag_selftest()==1}
@@ -762,23 +762,34 @@ extension SelfTests {
         }
         func render(_ camera:Observation,moved:Bool=false,duplicate:Bool=false)->Data {
             var data=Data(repeating:245,count:width*height)
+            let worldFromCamera=PoseRefinement.matrix(camera.camera)!
             data.withUnsafeMutableBytes {buffer in
-                let context=CGContext(data:buffer.baseAddress,width:width,height:height,bitsPerComponent:8,bytesPerRow:width,space:CGColorSpaceCreateDeviceGray(),bitmapInfo:0)!
-                context.setShouldAntialias(false)
+                let pixels=buffer.bindMemory(to:UInt8.self)
                 for i in centres.indices {
                     var transform=PoseRefinement.matrix(segment.referencePoses[i].matrix)!
                     if moved && i==0 {transform.columns.3.x+=0.08}
                     let board=house.references[i],image=cells[duplicate && i==1 ? 0:i]
-                    for row in 0..<10 {for column in 0..<10 {
-                        let bounds=[(column,row),(column+1,row),(column+1,row+1),(column,row+1)]
-                        let points=bounds.compactMap {x,y -> CGPoint? in
-                            let p=transform*SIMD4((Double(x)/10-0.5)*board.width,0,(Double(y)/10-0.5)*board.width,1)
-                            guard let projected=TextureBuilder.project(V3(p.x,-p.z,p.y),through:camera) else{return nil}
-                            return CGPoint(x:projected.0.u*Double(width),y:projected.0.v*Double(height))
-                        }
-                        guard points.count==4 else{continue}
-                        context.setFillColor(gray:image[row*10+column]==0 ? 0.05:0.96,alpha:1)
-                        context.beginPath();context.move(to:points[0]);for p in points.dropFirst(){context.addLine(to:p)};context.closePath();context.fillPath()
+                    let corners=[(-0.5,-0.5),(0.5,-0.5),(0.5,0.5),(-0.5,0.5)].compactMap {x,y -> UV? in
+                        let p=transform*SIMD4(x*board.width,0,y*board.width,1)
+                        return CameraProjection.project(V3(p.x,-p.z,p.y),through:camera)?.0
+                    }
+                    guard corners.count==4 else{continue}
+                    let x0=max(0,Int(floor(corners.map{$0.u}.min()!*Double(width)))-1)
+                    let x1=min(width-1,Int(ceil(corners.map{$0.u}.max()!*Double(width)))+1)
+                    let y0=max(0,Int(floor(corners.map{$0.v}.min()!*Double(height)))-1)
+                    let y1=min(height-1,Int(ceil(corners.map{$0.v}.max()!*Double(height)))+1)
+                    let boardFromCamera=transform.inverse*worldFromCamera
+                    let origin=boardFromCamera*SIMD4<Double>(0,0,0,1)
+                    // Write raw row-major pixels directly. Core Graphics path
+                    // coordinates must not choose the camera image orientation.
+                    for y in y0...y1 {for x in x0...x1 {
+                        let ray=boardFromCamera*SIMD4((Double(x)-camera.intrinsics[2])/camera.intrinsics[0],-(Double(y)-camera.intrinsics[5])/camera.intrinsics[4],-1,0)
+                        guard abs(ray.y)>1e-12 else{continue}
+                        let distance = -origin.y/ray.y
+                        guard distance>0 else{continue}
+                        let local=origin+ray*distance,u=local.x/board.width+0.5,v=local.z/board.width+0.5
+                        guard u>=0,u<1,v>=0,v<1 else{continue}
+                        pixels[y*width+x]=image[Int(v*10)*10+Int(u*10)]==0 ? 12:245
                     }}
                 }
             }
@@ -809,7 +820,7 @@ extension SelfTests {
         house.segments[0].referencePoses=measured.values.sorted{$0.boardID.uuidString<$1.boardID.uuidString}
         diagnostics["sourceBoardPositionErrorsMetres"]=measurementErrors;checkpoint("capture persistence")
         try house.validate()
-        var checkpoint=house;checkpoint.observations=[];try repo.save(checkpoint)
+        var captureCheckpoint=house;captureCheckpoint.observations=[];try repo.save(captureCheckpoint)
         for o in house.observations {try repo.stageCapture(o,projectID:house.id,room:house.rooms[0],stage:house.stages[0],segment:house.segments[0],references:house.references)}
         guard let recovered=try Repository(root:repo.root).all().first(where:{$0.id==house.id}),recovered.observations==house.observations else{throw HouseError.message("Coded capture rows did not preserve corner and pose evidence after reopening.")}
         let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(recovered));try restored.validate()
