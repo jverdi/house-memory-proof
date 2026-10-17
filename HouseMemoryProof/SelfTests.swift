@@ -834,6 +834,10 @@ import Darwin
                 controller.flying=true;controller.stepMove(SIMD2(0,1))
                 guard (V3(ar:controller.camera.simdPosition)-first).length>0.19 else{return false}
                 let before=controller.camera.simdPosition;controller.stepMove(SIMD2(Float.nan,0))
+                controller.move=SIMD2(1,1);controller.setOrbit(true);controller.stepMove(SIMD2(0,1))
+                guard controller.orbit,controller.view.allowsCameraControl,controller.move == .zero,controller.camera.simdPosition==before else{return false}
+                controller.setOrbit(false)
+                guard !controller.orbit,!controller.view.allowsCameraControl,controller.view.pointOfView===controller.camera else{return false}
                 controller.move=SIMD2(1,1);controller.vertical=1;controller.stop()
                 return controller.camera.simdPosition==before && controller.move == .zero && controller.vertical==0
             }

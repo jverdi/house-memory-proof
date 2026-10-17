@@ -134,6 +134,10 @@ final class HouseXraySmoke: XCTestCase {
       }
     }
     screenshot("13-landscape-step-navigation")
+    app.buttons["Layers"].tap();app.switches["Orbit overview"].tap();app.buttons["Done"].tap()
+    XCTAssertFalse(app.buttons["Step forward"].isEnabled)
+    app.buttons["Layers"].tap();app.switches["Orbit overview"].tap();app.buttons["Done"].tap()
+    XCTAssertTrue(app.buttons["Step forward"].isEnabled)
     app.buttons["Layers"].tap();app.switches["Step and snap-turn buttons"].tap();app.buttons["Done"].tap()
   }
   func screenshot(_ name: String) {

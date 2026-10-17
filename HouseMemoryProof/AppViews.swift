@@ -391,7 +391,7 @@ struct ExploreView: View {
           }
           HStack(alignment: .bottom) {
             if buttonWalkControls || voiceOver {StepMovementControls(controller:controller)}
-            else {Joystick { controller.move = $0 }}
+            else {Joystick { controller.move = $0 }.disabled(controller.orbit)}
             Spacer()
             VStack {
               Menu {
@@ -424,7 +424,7 @@ struct ExploreView: View {
               } label: {
                 Label("Jump", systemImage: "location")
               }.buttonStyle(.bordered)
-              Toggle("Free fly", isOn: $controller.flying).font(.caption).fixedSize()
+              Toggle("Free fly", isOn: Binding(get:{controller.flying},set:{controller.setFlying($0)})).font(.caption).fixedSize().disabled(controller.orbit)
               if controller.flying {
                 HStack {
                   Button("↑") { controller.camera.position.y += 0.3 }.accessibilityLabel("Move up")
@@ -453,7 +453,9 @@ struct ExploreView: View {
             Form {
               Section("Navigation") {
                 Toggle("Step and snap-turn buttons",isOn:$buttonWalkControls)
+                Toggle("Orbit overview",isOn:Binding(get:{controller.orbit},set:{controller.setOrbit($0)}))
                 Text("Move 20 cm per tap and turn 15 degrees without animation. These controls are always available with VoiceOver. Walking still checks floors and obstacles.").font(.footnote)
+                Text("In Orbit overview, drag to rotate and pinch to zoom. Turn it off to return to the saved walking viewpoint.").font(.footnote)
               }
               Section("Construction") {
                 Toggle("Show ceilings", isOn: $options.ceilings)

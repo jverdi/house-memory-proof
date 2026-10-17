@@ -268,6 +268,15 @@ extension UIColor {
     if sceneTask != nil {resumeScene=true}
     sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID()
   }
+  func setOrbit(_ enabled:Bool) {
+    move = .zero;vertical=0;orbit=enabled
+    view.allowsCameraControl=enabled
+    if !enabled {view.pointOfView=camera;validateWalkPosition()}
+  }
+  func setFlying(_ enabled:Bool) {
+    move = .zero;vertical=0;flying=enabled
+    if !enabled {validateWalkPosition()}
+  }
   func load(_ h: House, _ o: SceneOptions) {
     guard revision != h.revision || house?.id != h.id || options != o else { return }
     let oldFrame = house.flatMap { SceneBuilder.activeUnregisteredSegment($0, options: options) }
