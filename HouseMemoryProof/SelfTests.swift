@@ -270,6 +270,16 @@ import Darwin
                 var error=0.0;let status=hx_graph_selftest(&error)
                 guard status==1 else{throw HouseError.message("Pose graph diagnostic failed at gate \(status).")};return error<0.0001
             }
+            await check("Pose consensus excludes isolated source errors but rejects a competing hypothesis") {
+                func pose(_ x:Double)->Rigid {var value=Rigid();value.values[3]=x;return value}
+                let positions=(0..<7).map{V3(Double($0)*0.2,0,0)}
+                let isolated=[0.0,0.003,0.006,0.008,0.5].map(pose)
+                guard VisualMapping.consensus(isolated,positions:Array(positions.prefix(5)))==[0,1,2,3] else{return false}
+                let competing=[0.0,0.003,0.006,0.008,0.009,0.5,0.503].map(pose)
+                guard VisualMapping.consensus(competing,positions:positions).isEmpty else{return false}
+                guard VisualMapping.consensus([pose(0),pose(0.01)],positions:[V3(),V3(0.2,0,0)])==[0,1] else{return false}
+                return VisualMapping.consensus([pose(0),pose(0.01)],positions:[V3(),V3(0.01,0,0)]).isEmpty
+            }
             await check("Native visual feature matching and robust PnP diagnostics"){
                 var error=0.0;var falseAccepts:UInt32=0
                 let status=hx_vision_selftest(&error,&falseAccepts)

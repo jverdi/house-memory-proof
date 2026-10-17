@@ -25,7 +25,7 @@ enum VisualMapping {
   static let featureLimit=2000
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v5-refined-2000";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v6-dominant-consensus";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -105,6 +105,40 @@ enum VisualMapping {
     let result=Rigid(values:PoseRefinement.array(live*simd_inverse(nativeFromCanonical*saved)))
     return result.valid ? result:nil
   }
+  static func consensus(_ poses:[Rigid],positions:[V3])->[Int] {
+    guard poses.count>=2,poses.count<=120,poses.count==positions.count,poses.allSatisfy({$0.valid}),positions.allSatisfy({$0.finite}) else{return []}
+    let count=poses.count,indices=Array(poses.indices)
+    let centres=poses.map{V3($0.values[3],$0.values[7],$0.values[11])}
+    var agreement=[Bool](repeating:false,count:count*count)
+    for a in indices {for b in a..<count {let value=agree(poses[a],poses[b]);agreement[a*count+b]=value;agreement[b*count+a]=value}}
+    func separated(_ group:[Int])->Bool {
+      for a in group {for b in group where b>a {if (positions[a]-positions[b]).length>=0.15{return true}}};return false
+    }
+    var best:[Int]=[]
+    // Bounded deterministic clique search: every retained pair must agree.
+    // Greedy search can abstain unnecessarily; it cannot weaken pairwise gates.
+    for seed in indices {
+      let ranked=indices.filter{$0 != seed}.sorted {a,b in
+        let x=(centres[a]-centres[seed]).length,y=(centres[b]-centres[seed]).length
+        return x==y ? a<b:x<y
+      }
+      var group=[seed]
+      for candidate in ranked where group.allSatisfy({agreement[$0*count+candidate]}){group.append(candidate)}
+      if group.count>best.count,separated(group){best=group}
+    }
+    guard best.count>=2 else{return []}
+    if best.count<count {
+      // An isolated bad source pose may be excluded only with at least three
+      // mutually agreeing views and a two-thirds majority. A second supported
+      // hypothesis always hides alignment, even against a larger majority.
+      guard best.count>=3,best.count*3>=count*2 else{return []}
+      let excluded=indices.filter{!best.contains($0)}
+      for a in excluded {for b in excluded where b>a {
+        if agreement[a*count+b],(positions[a]-positions[b]).length>=0.15{return []}
+      }}
+    }
+    return best.sorted()
+  }
   static func isCompeting(_ map:VisualMap,prior:Segment)->Bool {
     map.roomID != prior.roomID || (map.frameID != nil && map.frameID != prior.id)
   }
@@ -149,9 +183,10 @@ enum VisualMapping {
       if accepted==1,Rigid(values:matrix).valid{candidates.append(Candidate(pose:Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:[view.observationID]),position:view.position,matches:matches))}
     }
     guard candidates.count>=2 else{diagnostic?("Fewer than two accepted source views");return nil}
-    let origin=candidates[0].pose.transform
-    guard candidates.contains(where:{($0.position-candidates[0].position).length>=0.15}) else{diagnostic?("Insufficient source-view baseline");return nil}
-    guard candidates.dropFirst().allSatisfy({agree(origin,$0.pose.transform)}) else{diagnostic?("Accepted source views disagree");return nil}
+    let admitted=consensus(candidates.map{$0.pose.transform},positions:candidates.map{$0.position})
+    diagnostic?("Source pose consensus: \(admitted.count)/\(candidates.count) views; positions \(candidates.map{[ $0.pose.transform.values[3],$0.pose.transform.values[7],$0.pose.transform.values[11] ]})")
+    guard admitted.count>=2 else{diagnostic?("No unique, separated source-pose consensus");return nil}
+    candidates=admitted.map{candidates[$0]}
     // Do not throw away the checked multi-view evidence by selecting one source
     // camera. Fuse spatially consistent repeats of each query feature, then
     // rerun the same robust PnP gates on one correspondence per image feature.
