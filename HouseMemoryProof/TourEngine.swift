@@ -84,7 +84,7 @@ enum TourDirector {
         let samples = observations.filter {
           $0.roomID == r.id && $0.segmentID == obs.segmentID && !$0.documentary
         }.sorted { $0.timestamp < $1.timestamp }
-        let clearance = SpatialClearance(features: Exporter.canonicalFeatures(h, options: scope))
+        let clearance = SpatialClearance(features: NavigationGeometry.collisionFeatures(h, options: scope))
         let positions=NavigationGeometry.positions(house:h,options:scope)
         var moves: [TourShot] = []
         if samples.count >= 2 {

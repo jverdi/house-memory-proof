@@ -802,6 +802,13 @@ import Darwin
                 guard (first-V3(3,3.2,1.6)).length<1e-5,controller.move == .zero,controller.vertical==0 else{return false}
                 controller.stepMove(SIMD2(0,1))
                 guard (V3(ar:controller.camera.simdPosition)-first).length<1e-5 else{return false}
+                var hidden=SceneOptions();hidden.trades=[];hidden.ceilings=false
+                controller.load(h,hidden)
+                guard SceneBuilder.features(h,options:hidden).isEmpty,NavigationGeometry.collisionFeatures(h,options:hidden).count==2 else{return false}
+                controller.stepMove(SIMD2(0,1))
+                guard (V3(ar:controller.camera.simdPosition)-first).length<1e-5 else{return false}
+                let index=try SpatialDisplayIndex(features:NavigationGeometry.collisionFeatures(h,options:hidden))
+                guard try SpatialClearance(index:index,camera:first).walkingDestination(from:first,toward:V3(3,3.4,1.6))==nil else{return false}
                 controller.stepLook(yaw:Float.pi/12,pitch:Float.pi/12)
                 guard abs(controller.yaw-Float.pi/12)<1e-6,abs(controller.pitch-Float.pi/12)<1e-6 else{return false}
                 controller.flying=true;controller.stepMove(SIMD2(0,1))
@@ -809,6 +816,18 @@ import Darwin
                 let before=controller.camera.simdPosition;controller.stepMove(SIMD2(Float.nan,0))
                 controller.move=SIMD2(1,1);controller.vertical=1;controller.stop()
                 return controller.camera.simdPosition==before && controller.move == .zero && controller.vertical==0
+            }
+            await check("Unsafe bookmarks relocate without motion and an unsupported stage explicitly falls back to Free fly") {
+                var h=House.empty("Safe viewpoints");h.isDemo=true;h.rooms[0].size=V3(6,6,3)
+                let room=h.rooms[0].id,stage=h.stages[0].id
+                h.features=[Feature(name:"Floor",trade:.floor,roomID:room,stageID:stage,kind:.synthetic,mesh:.box(center:V3(3,3,-0.1),size:V3(6,6,0.2))),
+                  Feature(name:"Wall",trade:.structure,roomID:room,stageID:stage,kind:.synthetic,mesh:.box(center:V3(3,3.5,1.5),size:V3(6,0.1,3)))]
+                let controller=WalkController();defer{controller.stop()};controller.load(h,SceneOptions())
+                controller.bookmark(Bookmark(name:"Blocked",position:V3(3,3.5,1.6),yaw:0,pitch:0,roomID:room))
+                guard !controller.flying,(V3(ar:controller.camera.simdPosition)-V3(3,3,1.6)).length<1e-5 else{return false}
+                var unsupported=SceneOptions();unsupported.stage=h.stages[1].id
+                controller.load(h,unsupported)
+                return controller.flying && controller.navigationNotice.contains("No checked walking viewpoint") && h.features.count==2
             }
             await check("Observed floor walking preserves capture height, climbs checked steps and refuses holes or low headroom") {
                 func floor(_ centre:V3,_ size:V3)->Feature {Feature(name:"Observed floor fixture",trade:.floor,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:centre,size:size))}

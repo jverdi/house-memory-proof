@@ -53,6 +53,7 @@ struct SpatialClearance {
   private(set) var coverageCentre: V3?
   private var coverageRadius = 0.0
   var primitiveCount: Int { items.count+floors.triangles.count }
+  var hasFloorSupport:Bool {!floors.isEmpty}
   init(features: [Feature], limit: Int = 500000) {
     for f in features {
       let m = f.mesh

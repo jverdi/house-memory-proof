@@ -47,12 +47,13 @@ enum SceneBuilder {
         && $0.registration == nil
     })?.id
   }
-  static func features(_ h: House, options: SceneOptions) -> [Feature] {
+  static func features(_ h: House, options: SceneOptions,includeHiddenLayers:Bool=false) -> [Feature] {
     let stages = eligibleStages(h, options: options)
     let unregistered = activeUnregisteredSegment(h, options: options)
     let current=DerivedEvidence.currentIDs(h)
     return h.features.filter { f in
-      guard current.contains(f.id),visible(f, options),
+      let admitted=includeHiddenLayers ? (!f.hidden && f.artifactValid != false && (options.room==nil || options.room==f.roomID)):visible(f,options)
+      guard current.contains(f.id),admitted,
         stages.contains(f.stageID) || (f.trade == .floor && options.stage == nil)
       else { return false }
       if let sid = f.segmentID {
@@ -216,6 +217,7 @@ extension UIColor {
   @Published var orbit = false
   private var clearance = SpatialClearance(features: [])
   private var stream:SpatialSceneStream?
+  private var navigationIndex:SpatialDisplayIndex?
   private var collisionTask:Task<Void,Never>?
   private var collisionRequest=UUID()
   private var sceneTask:Task<Void,Never>?
@@ -280,11 +282,10 @@ extension UIColor {
     walkEyeHeight=nil
     collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
     sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID();resumeScene=false
-    stream=nil
+    stream=nil;navigationIndex=nil
     cameraCorridor = NavigationGeometry.positions(house:h,options:o)
     recordedPaths=NavigationGeometry.paths(house:h,options:o)
-    let visible=SceneBuilder.features(h,options:o)
-    let large=visible.reduce(0){$0+DisplayGeometry.cost($1.mesh)}>DisplayGeometry.sceneVertexBudget || visible.count>512
+    let large=h.features.reduce(0){$0+DisplayGeometry.cost($1.mesh)}>DisplayGeometry.sceneVertexBudget || h.features.count>512
     let scene=large ? SceneBuilder.baseScene():SceneBuilder.scene(h,options:o)
     scene.rootNode.addChildNode(camera);view.scene=scene
     preparingScene=large
@@ -295,21 +296,23 @@ extension UIColor {
         defer {if self.sceneRequest==request {self.sceneTask=nil}}
         do {
           let position=V3(ar:self.camera.simdPosition)
-          let prepared=try await LocalWorker.run { () throws -> (SpatialDisplayIndex,SpatialClearance) in
+          let prepared=try await LocalWorker.run { () throws -> (SpatialDisplayIndex,SpatialDisplayIndex,SpatialClearance) in
             let canonical=Exporter.canonicalFeatures(h,options:o)
             let index=try SpatialDisplayIndex(features:canonical)
-            return(index,try SpatialClearance(index:index,camera:position))
+            let navigation=try SpatialDisplayIndex(features:NavigationGeometry.collisionFeatures(h,options:o))
+            return(index,navigation,try SpatialClearance(index:navigation,camera:position))
           }
           guard !Task.isCancelled,self.sceneRequest==request,self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
-          self.clearance=prepared.1;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
-          self.navigationNotice=prepared.1.complete ? "Dense or distant surfaces may appear as source points. Select a room for more detail. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
+          self.navigationIndex=prepared.1;self.clearance=prepared.2;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
+          self.navigationNotice=prepared.2.complete ? "Dense or distant surfaces may appear as source points. Select a room for more detail. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
+          self.validateWalkPosition()
         }catch is CancellationError {}catch {
           guard self.sceneRequest==request,self.view.scene===scene else{return}
           self.navigationNotice=error.localizedDescription
         }
       }
     } else {
-      clearance=SpatialClearance(features:Exporter.canonicalFeatures(h,options:o))
+      clearance=SpatialClearance(features:NavigationGeometry.collisionFeatures(h,options:o))
       navigationNotice=clearance.complete ? "":"Walk collision budget exceeded. Choose one room or use Free fly."
     }
     view.pointOfView = camera
@@ -334,11 +337,29 @@ extension UIColor {
         }
       }
     }
+    validateWalkPosition()
+  }
+  private func validateWalkPosition() {
+    guard !flying,!orbit,!preparingScene,let h=house else{return}
+    let current=V3(ar:camera.simdPosition)
+    func usable(_ point:V3)->Bool {
+      guard clearance.hasFloorSupport || !cameraCorridor.isEmpty,clearance.walkingDestination(from:point,toward:point) != nil else{return false}
+      return h.isDemo && h.observations.isEmpty ? NavigationGeometry.allowed(point,house:h):NavigationGeometry.observed(point,positions:cameraCorridor)
+    }
+    guard !usable(current) else{return}
+    let candidates=h.isDemo && h.observations.isEmpty ? h.rooms.filter{options.room==nil || $0.id==options.room}.map{$0.origin+V3($0.size.x/2,$0.size.y/2,1.6)}:cameraCorridor
+    if let safe=candidates.sorted(by:{($0-current).length<($1-current).length}).first(where:usable) {
+      camera.simdPosition=safe.render;walkEyeHeight=nil;move = .zero;vertical=0
+      navigationNotice="Moved to a checked viewpoint for this stage."
+    } else {
+      flying=true;move = .zero;vertical=0
+      navigationNotice="No checked walking viewpoint is available here. Free fly is enabled; choose a captured room to walk."
+    }
   }
   private func updateCollision(at position:V3) {
-    guard let stream,collisionTask==nil,
+    guard let stream,let index=navigationIndex,collisionTask==nil,
       clearance.coverageCentre.map({(position-$0).length>=1}) ?? true else{return}
-    let request=UUID(),index=stream.index;collisionRequest=request
+    let request=UUID();collisionRequest=request
     collisionTask=Task {
       defer {if self.collisionRequest==request {self.collisionTask=nil}}
       do {
@@ -385,6 +406,8 @@ extension UIColor {
     yaw = Float(b.yaw)
     pitch = Float(b.pitch)
     camera.eulerAngles = SCNVector3(pitch, yaw, 0)
+    move = .zero;vertical=0
+    validateWalkPosition()
   }
   @objc func pan(_ g: UIPanGestureRecognizer) {
     guard !orbit else { return }
@@ -475,6 +498,7 @@ extension UIColor {
       camera.simdPosition = to
       return
     }
+    guard clearance.hasFloorSupport || !cameraCorridor.isEmpty else{return}
     if let adjusted=NavigationGeometry.followedHeight(from:V3(ar:from),to:V3(ar:to),paths:recordedPaths) {to=adjusted.render}
     if let destination=clearance.walkingDestination(from:V3(ar:from),toward:V3(ar:to),eyeHeight:walkEyeHeight) {
       to=destination.position.render
@@ -554,6 +578,14 @@ struct StepMovementControls:View {
 }
 
 enum NavigationGeometry {
+  static func collisionFeatures(_ house:House,options:SceneOptions)->[Feature] {
+    SceneBuilder.features(house,options:options,includeHiddenLayers:true).map { source in
+      var feature=source
+      if let sid=feature.segmentID,let transform=house.segments.first(where:{$0.id==sid})?.registration {
+        feature.mesh.vertices=feature.mesh.vertices.map{transform.apply($0)}
+      }
+      return feature
+    }
   struct PathEdge {var a:V3;var b:V3}
   static func paths(house:House,options:SceneOptions)->[PathEdge] {
     let stages=SceneBuilder.eligibleStages(house,options:options),active=SceneBuilder.activeUnregisteredSegment(house,options:options)
