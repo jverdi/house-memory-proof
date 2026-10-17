@@ -20,8 +20,9 @@ def reference_targets(w,d,paired=False,staggered=False):
   side=[(.9,-.35),(.9,.65)] if paired else [(-.8,.3),(.8,.8)]
  return [box((x,d/2-.20,z),(.4,.012,.4),(235,235,235),'reference') for x,z in front]+[box((w/2-.20,y,z),(.012,.4,.4),(235,235,235),'reference') for y,z in side]
 
-def make(dest,seed=905771,paired=False,staggered=False):
+def make(dest,seed=905771,paired=False,staggered=False,finished_capture=False):
  assert not staggered or paired
+ assert not finished_capture or (paired and staggered)
  rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True)
  width,height=384,288;now=813974400.;assets={};truth=[];observations=[];segments=[];rooms=[];query_truth=[]
  rough=identity(seed,'layout-rough');finished=identity(seed,'layout-finished')
@@ -99,22 +100,22 @@ def make(dest,seed=905771,paired=False,staggered=False):
  for index in range(4):
   rid=identity(seed,f'layout-room-{index}');sid=identity(seed,f'layout-segment-{index}')
   rooms.append(dict(id=rid,name='Repeated room name',level=index//2,origin=v((0,0,0)),size=v((5,4,2.8)),isDesign=True))
-  segments.append(dict(id=sid,roomID=rid,stageID=rough,started=now,interrupted=False,approved=False,referencePoses=[]))
+  segments.append(dict(id=sid,roomID=rid,stageID=finished if finished_capture else rough,started=now+100 if finished_capture else now,interrupted=False,approved=False,referencePoses=[]))
   for frame,shift in enumerate([-.3,-.2,-.1,.1,.2,.3]):
-   image,depth,valid,m,k=photograph(index,shift);oid=identity(seed,f'layout-frame-{index}-{frame}');mapping[oid]=m.flatten().tolist()
+   image,depth,valid,m,k=photograph(index,shift,finished=finished_capture);oid=identity(seed,f'layout-frame-{index}-{frame}');mapping[oid]=m.flatten().tolist()
    depth=np.where(valid,depth+rng.normal(0,.003,depth.shape),0).astype('<f4');confidence=np.where(valid,2,0).astype('uint8')
    missing=rng.random(depth.shape)<.02;depth[missing]=0;confidence[missing]=0
    prior=m.copy();prior[:3,3]+=rng.normal(0,.001,3);prior[0,3]+=.03*frame/5
-   observations.append(dict(id=oid,roomID=rid,stageID=rough,segmentID=sid,timestamp=float(frame),date=now+frame,image=asset(image,'jpg'),depth=asset(depth.tobytes(),'depth32'),confidence=asset(confidence.tobytes(),'confidence8'),depthWidth=width,depthHeight=height,width=width,height=height,camera=prior.flatten().tolist(),intrinsics=k,tracking='synthetic noisy prior',light=700,sharpness=.1,note='Analytic connected-house capture; incomplete wall coverage.',documentary=False,imageOrientation=1))
+   observations.append(dict(id=oid,roomID=rid,stageID=finished if finished_capture else rough,segmentID=sid,timestamp=float(frame),date=now+(100 if finished_capture else 0)+frame,image=asset(image,'jpg'),depth=asset(depth.tobytes(),'depth32'),confidence=asset(confidence.tobytes(),'confidence8'),depthWidth=width,depthHeight=height,width=width,height=height,camera=prior.flatten().tolist(),intrinsics=k,tracking='synthetic noisy prior',light=700,sharpness=.1,note='Analytic connected-house capture; incomplete wall coverage.',documentary=False,imageOrientation=1))
   for number,(shift,angle,elevation) in enumerate([(-.17,-2,.03),(.04,1,-.05),(.24,2,.06)]):
-   image,_,_,m,k=photograph(index,shift,math.radians(angle),elevation)
+   image,_,_,m,k=photograph(index,shift,math.radians(angle),elevation,finished=finished_capture)
    name=f'room-{index}-query-{number}.jpg';(dest/name).write_bytes(image)
-   query_truth.append(dict(image=name,width=width,height=height,intrinsics=k,segmentID=sid,shouldMatch=True,expectedCamera=(canonical@m).flatten().tolist(),scenario='nominal selected room'))
+   query_truth.append(dict(image=name,width=width,height=height,intrinsics=k,segmentID=sid,shouldMatch=True,expectedCamera=(canonical@m).flatten().tolist(),scenario='finished room with observed finished map' if finished_capture else 'nominal selected room'))
   if paired:
    for number,(shift,angle,elevation) in enumerate([(-.12,-1,.04),(.18,2,-.03)]):
     image,_,_,m,k=photograph(index,shift,math.radians(angle),elevation,finished=True)
     name=f'room-{index}-finished-{number}.jpg';(dest/name).write_bytes(image)
-    query_truth.append(dict(image=name,width=width,height=height,intrinsics=k,segmentID=sid,shouldMatch=True,expectedCamera=(canonical@m).flatten().tolist(),scenario='finished stage with retained reference surfaces'))
+    query_truth.append(dict(image=name,width=width,height=height,intrinsics=k,segmentID=sid,shouldMatch=True,expectedCamera=(canonical@m).flatten().tolist(),scenario='finished room with observed finished map' if finished_capture else 'finished stage with retained reference surfaces'))
     if number==0:
      wrong=f'room-{index}-finished-wrong-floor.jpg';(dest/wrong).write_bytes(image)
      query_truth.append(dict(image=wrong,width=width,height=height,intrinsics=k,segmentID=identity(seed,f'layout-segment-{index^2}'),shouldMatch=False,expectedCamera=(canonical@m).flatten().tolist(),scenario='wrong floor after finish'))
@@ -133,7 +134,7 @@ def make(dest,seed=905771,paired=False,staggered=False):
  with zipfile.ZipFile(dest/'vision-map.hxray','w',compression=zipfile.ZIP_STORED) as z:
   for n,b in entries.items():z.writestr(n,b)
  (dest/'vision-queries.json').write_text(json.dumps(dict(renderer='Connected four-room/two-level analytic layout',queries=query_truth,mappingCameras=mapping,injectedTranslationDriftMetres=.03,completeLayout=truth,oracleOnlyGeometry=complete,oracleOnlyFinishedGeometry=complete_finished,fieldQualified=False),indent=2))
- return dict(seed=seed,rooms=4,levels=2,photographs=24,nominalQueries=20 if paired else 12,criticalQueries=20 if paired else 8,pairedQueries=paired,nominalProtocol="Six retained targets staggered horizontally across upper/middle/lower regions on two walls" if staggered else "Four retained targets distributed across upper/lower regions on two wall planes" if paired else "Rough-in corner capture",fieldQualified=False,limitations=['Partial corner coverage; unseen surfaces must remain unknown','No calibrated sensor model','Full stair walkthrough and finished-stage reconstruction are separate checks'])
+ return dict(seed=seed,rooms=4,levels=2,photographs=24,nominalQueries=20 if paired else 12,criticalQueries=20 if paired else 8,pairedQueries=paired,finishedCapture=finished_capture,nominalProtocol="Six retained targets staggered horizontally across upper/middle/lower regions on two walls" if staggered else "Four retained targets distributed across upper/lower regions on two wall planes" if paired else "Rough-in corner capture",fieldQualified=False,limitations=['Partial corner coverage; unseen surfaces must remain unknown','No calibrated sensor model','Full stair walkthrough and finished-stage reconstruction are separate checks'])
 
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('output',type=Path);p.add_argument('--seed',type=int,default=905771);p.add_argument('--paired',action='store_true');p.add_argument('--staggered',action='store_true');a=p.parse_args();print(json.dumps(make(a.output,a.seed,a.paired,a.staggered)))
+ p=argparse.ArgumentParser();p.add_argument('output',type=Path);p.add_argument('--seed',type=int,default=905771);p.add_argument('--paired',action='store_true');p.add_argument('--staggered',action='store_true');p.add_argument('--finished-capture',action='store_true');a=p.parse_args();print(json.dumps(make(a.output,a.seed,a.paired,a.staggered,a.finished_capture)))
