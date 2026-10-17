@@ -98,8 +98,9 @@ jobs:
           build/validation/node_modules/.bin/playwright install chromium
           node tooling/check_viewer.cjs
           python3 -m venv build/usd-env
-          build/usd-env/bin/pip install usd-core==25.11
+          build/usd-env/bin/pip install usd-core==25.11 numpy==2.3.5 trimesh==5.1.1
           build/usd-env/bin/python tooling/check_usd.py
+          build/usd-env/bin/python tooling/check_mesh_interchange.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -150,3 +151,4 @@ jobs:
           path: build/evidence/
           if-no-files-found: warn
           retention-days: 14
+

@@ -474,45 +474,61 @@ struct RegistrationPage: View {
 }
 enum PLYReader {
   static func read(_ data: Data) throws -> Mesh {
-    guard data.count < 50_000_000, let text = String(data: data, encoding: .utf8),
-      text.hasPrefix("ply\n"), text.contains("format ascii 1.0")
-    else { throw HouseError.message("Only bounded ASCII PLY is supported in this build.") }
-    let lines = text.components(separatedBy: .newlines)
-    guard let end = lines.firstIndex(of: "end_header") else {
-      throw HouseError.message("PLY header is incomplete.")
+    guard data.count < 50_000_000, let text = String(data: data, encoding: .utf8) else {
+      throw HouseError.message("Only bounded ASCII PLY is supported in this build.")
     }
-    var count = 0
-    var faces = 0
+    let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
+    guard lines.first == "ply", lines.count > 2, lines[1] == "format ascii 1.0",
+      let end = lines.firstIndex(of: "end_header") else {
+      throw HouseError.message("Only a complete ASCII PLY 1.0 header is supported.")
+    }
+    let scalarTypes: Set<String> = ["char","uchar","short","ushort","int","uint","float","double",
+      "int8","uint8","int16","uint16","int32","uint32","float32","float64"]
+    var count: Int?, faces: Int?, element = "", faceList = false
     var properties: [String] = []
-    var inVertex = false
-    for line in lines.prefix(end) {
-      let p = line.split(separator: " ")
-      if p.count >= 3, p[0] == "element" {
-        inVertex = p[1] == "vertex"
-        if inVertex { count = Int(p[2]) ?? 0 }
-        if p[1] == "face" { faces = Int(p[2]) ?? 0 }
-      }
-      if p.count == 3, p[0] == "property", inVertex { properties.append(String(p[2])) }
+    for line in lines[2..<end] {
+      let p = line.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
+      if p.isEmpty || p[0] == "comment" || p[0] == "obj_info" { continue }
+      if p.count == 3, p[0] == "element", let n = Int(p[2]), n >= 0 {
+        if p[1] == "vertex", count == nil, faces == nil { count = n; element = "vertex" }
+        else if p[1] == "face", count != nil, faces == nil { faces = n; element = "face" }
+        else { throw HouseError.message("Unsupported or duplicate PLY element order.") }
+      } else if p.count == 3, p[0] == "property", element == "vertex",
+        scalarTypes.contains(p[1]), !properties.contains(p[2]) {
+        properties.append(p[2])
+      } else if p.count == 5, p[0] == "property", p[1] == "list", element == "face",
+        ["uchar","uint8"].contains(p[2]), ["int","int32","uint","uint32"].contains(p[3]),
+        ["vertex_indices","vertex_index"].contains(p[4]), !faceList {
+        faceList = true
+      } else { throw HouseError.message("Unsupported or invalid PLY property declaration.") }
     }
-    guard count > 0, count <= 200000, faces >= 0, faces <= 400000,
-      end + 1 + count + faces <= lines.count, let xi = properties.firstIndex(of: "x"),
-      let yi = properties.firstIndex(of: "y"), let zi = properties.firstIndex(of: "z")
-    else { throw HouseError.message("PLY counts or coordinate properties are invalid.") }
+    let faceCount = faces ?? 0
+    guard let count, count > 0, count <= 200000, faceCount <= 400000,
+      (faceCount == 0 || faceList), end + 1 + count + faceCount <= lines.count,
+      let xi = properties.firstIndex(of: "x"), let yi = properties.firstIndex(of: "y"),
+      let zi = properties.firstIndex(of: "z") else {
+      throw HouseError.message("PLY counts or coordinate properties are invalid.")
+    }
     var mesh = Mesh()
     for line in lines[(end + 1)..<(end + 1 + count)] {
-      let p = line.split(whereSeparator: { $0 == " " || $0 == "\t" }).compactMap { Double($0) }
-      guard p.count >= properties.count else { throw HouseError.message("Invalid PLY vertex.") }
-      mesh.vertices.append(V3(p[xi], p[yi], p[zi]))
+      let tokens = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+      // Never discard an invalid token: doing so silently shifts x/y/z fields.
+      let values = tokens.compactMap { Double($0) }
+      guard tokens.count == properties.count, values.count == tokens.count,
+        values.allSatisfy({ $0.isFinite }) else { throw HouseError.message("Invalid PLY vertex.") }
+      mesh.vertices.append(V3(values[xi], values[yi], values[zi]))
     }
-    for line in lines[(end + 1 + count)..<(end + 1 + count + faces)] {
-      let p = line.split(separator: " ").compactMap { Int32($0) }
-      guard let n = p.first, n >= 3, n <= 64, p.count >= Int(n) + 1 else {
-        throw HouseError.message("Invalid PLY face.")
+    for line in lines[(end + 1 + count)..<(end + 1 + count + faceCount)] {
+      let tokens = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+      let p = tokens.compactMap { Int32($0) }
+      guard p.count == tokens.count, let n = p.first, n >= 3, n <= 64,
+        p.count == Int(n) + 1, mesh.triangles.count / 3 + Int(n) - 2 <= 400000 else {
+        throw HouseError.message("Invalid PLY face or triangulation budget exceeded.")
       }
       for i in 2..<Int(n) { mesh.triangles += [p[1], p[i], p[i + 1]] }
     }
-    guard mesh.valid else {
-      throw HouseError.message("PLY contains invalid indices or nonfinite geometry.")
+    guard lines.dropFirst(end + 1 + count + faceCount).allSatisfy({ $0.trimmingCharacters(in: .whitespaces).isEmpty }), mesh.valid else {
+      throw HouseError.message("PLY contains unexpected records, invalid indices or nonfinite geometry.")
     }
     return mesh
   }
@@ -738,3 +754,4 @@ struct CaptureProcessingReportPage:View {
     }.navigationTitle("Processing report")
   }
 }
+

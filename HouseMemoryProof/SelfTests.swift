@@ -544,7 +544,45 @@ import Darwin
                 try bytes.write(to:original)
                 return true
             }
-            await check("PLY independent parser roundtrip"){let url=try Exporter.meshText(house,options:SceneOptions(),ply:true);let mesh=try PLYReader.read(Data(contentsOf:url));return mesh.valid && mesh.vertices.count==Exporter.canonicalFeatures(house,options:SceneOptions()).reduce(0){$0+$1.mesh.vertices.count}}
+            await check("PLY native parser roundtrip"){let url=try Exporter.meshText(house,options:SceneOptions(),ply:true);let mesh=try PLYReader.read(Data(contentsOf:url));return mesh.valid && mesh.vertices.count==Exporter.canonicalFeatures(house,options:SceneOptions()).reduce(0){$0+$1.mesh.vertices.count}}
+            await check("PLY preserves fields and rejects malformed records without coordinate shifts") {
+                let header="ply\nformat ascii 1.0\nelement vertex 3\nproperty double x\nproperty double y\nproperty double z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n"
+                let body="0 0 0\n1 0 0\n0 2 0\n3 0 1 2\n"
+                let valid=try PLYReader.read(Data((header+body).replacingOccurrences(of:"\n",with:"\r\n").utf8))
+                guard valid.vertices==[V3(),V3(1,0,0),V3(0,2,0)],valid.triangles==[0,1,2] else{return false}
+                let invalid=[
+                    header+body.replacingOccurrences(of:"0 0 0",with:"bad 0 0 9"),
+                    header+body.replacingOccurrences(of:"3 0 1 2",with:"3 bad 0 1 2"),
+                    header+body.replacingOccurrences(of:"3 0 1 2",with:"3 0 1 2 1"),
+                    header+body.replacingOccurrences(of:"3 0 1 2",with:"3 0 1 99"),
+                    header+body.replacingOccurrences(of:"0 0 0",with:"nan 0 0"),
+                    header+body+"0 0 0\n",
+                    header.replacingOccurrences(of:"element face 1",with:"element face -1")+body,
+                    header.replacingOccurrences(of:"property double y",with:"property double x")+body,
+                    header.replacingOccurrences(of:"property double y",with:"property list uchar int y")+body,
+                    header.replacingOccurrences(of:"element vertex 3",with:"element edge 3")+body,
+                    header.replacingOccurrences(of:"format ascii 1.0",with:"comment format ascii 1.0")+body
+                ]
+                for text in invalid {do{_=try PLYReader.read(Data(text.utf8));return false}catch{}}
+                let tabbed=try PLYReader.read(Data((header+body.replacingOccurrences(of:" ",with:"\t")).utf8))
+                return tabbed==valid
+            }
+            await check("PLY and OBJ retain asymmetric registered geometry for independent readers") {
+                var fixture=House.empty("Interchange axes fixture")
+                let room=fixture.rooms[0].id,stage=fixture.stages[0].id
+                let segment=Segment(roomID:room,stageID:stage,registration:Rigid(values:[0,-1,0,4, 1,0,0,-2, 0,0,1,3, 0,0,0,1]))
+                fixture.segments=[segment]
+                let a=Feature(id:UUID(uuidString:"11111111-1111-4111-8111-111111111111")!,name:"Asymmetric tetrahedron",trade:.structure,roomID:room,stageID:stage,kind:.synthetic,mesh:Mesh(vertices:[V3(),V3(1,0,0),V3(0,2,0),V3(0,0,3)],triangles:[0,2,1,0,1,3,0,3,2,1,2,3]))
+                var b=Feature(id:UUID(uuidString:"22222222-2222-4222-8222-222222222222")!,name:"Registered triangle",trade:.structure,roomID:room,stageID:stage,kind:.synthetic,mesh:Mesh(vertices:[V3(-1,0,0),V3(0,2,0),V3(0,0,1)],triangles:[0,1,2]))
+                b.segmentID=segment.id
+                var hidden=a;hidden.id=UUID();hidden.hidden=true;hidden.mesh.vertices=[V3(100,100,100)];hidden.mesh.triangles=[]
+                fixture.features=[a,b,hidden]
+                for ply in [true,false] {
+                    let url=try Exporter.meshText(fixture,options:SceneOptions(),ply:ply)
+                    try Data(contentsOf:url).write(to:mainRepo.root.appendingPathComponent(ply ? "interchange.ply":"interchange.obj"))
+                }
+                return true
+            }
             await check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
             await check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}
             await check("Before-after and service tours retain stage identity and exact frame timeline") {
@@ -1142,3 +1180,4 @@ extension SelfTests {
         return report
     }
 }
+

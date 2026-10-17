@@ -83,7 +83,7 @@ for attempt in $(seq 1 150); do
 done
 if [ -f "$app_root/self-test-progress.json" ]; then cp "$app_root/self-test-progress.json" build/evidence/native-progress.json; fi
 # Preserve already-produced evidence before an incomplete diagnostic fails the job.
-for retained in metal-target.png coded-reference.pdf coded-reference-diagnostics.json coded-source-0.png coded-source-1.png self-test-partial.json test.hxray house-surface.glb points.glb points.usdz textured.usdz textured.glb test.glb test.usdz test-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
+for retained in interchange.ply interchange.obj metal-target.png coded-reference.pdf coded-reference-diagnostics.json coded-source-0.png coded-source-1.png self-test-partial.json test.hxray house-surface.glb points.glb points.usdz textured.usdz textured.glb test.glb test.usdz test-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
   if [ -f "$app_root/$retained" ]; then cp "$app_root/$retained" "build/evidence/$retained"; fi
 done
 if [ ! -f "$app_root/self-test.json" ]; then
