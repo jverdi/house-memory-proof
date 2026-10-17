@@ -147,3 +147,7 @@ Coded board estimation no longer depends on ARKit image anchors. The new image f
 ### Native integration 4a307 passed; visual capacity defect found
 
 Run 39040257844 passed 89 native checks, both UI workflows, all three real process-kill recovery modes and independent export readers. Integrated capture processing and its interrupted-publication test now finish, confirming the mesh accumulator repair; queue recovery and rotated PDF tests pass. The million-triangle textured workload remains within its configured residency limits, but visual inspection caught perforated walls from face subsampling. The next candidate preserves full nearby surfaces and uses labeled point previews for reduced distant detail. Pixel-derived coded-reference image integration is running in the following source and remains unqualified.
+
+### Full-height walking and scene preparation lifecycle
+
+Walking now checks a conservative upright body envelope (20 cm horizontal radius, 1.55 m below the eye and 22 cm above) against full original collision bounds. It still requires the captured camera corridor and does not infer an unseen floor or portal. Native regressions cover low obstacles, overhead beams, narrow doorways and the body leaving the locally checked region. Large-scene preparation now cancels on close/background or replacement and restarts on foreground without allowing obsolete publication. Native validation is pending. The separate e688 host run passed 25 analytic single-board pose cases; unchanged natural-image house/finished-stage failures remain release blockers.

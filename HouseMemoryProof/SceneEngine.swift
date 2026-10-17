@@ -218,6 +218,9 @@ extension UIColor {
   private var stream:SpatialSceneStream?
   private var collisionTask:Task<Void,Never>?
   private var collisionRequest=UUID()
+  private var sceneTask:Task<Void,Never>?
+  private var sceneRequest=UUID()
+  private var resumeScene=false
   private var preparingScene=false
   private var cameraCorridor: [V3] = []
   private var recordedPaths:[NavigationGeometry.PathEdge]=[]
@@ -245,18 +248,22 @@ extension UIColor {
   }
   func start() {
     view.isPlaying=true
+    if resumeScene,let h=house {resumeScene=false;revision = -1;load(h,options)}
     guard timer == nil else { return }
     let t = CADisplayLink(target: self, selector: #selector(tick(_:)))
     t.add(to: .main, forMode: .common)
     timer = t
   }
   func stop() {
+    view.isPlaying=false
     timer?.invalidate()
     timer = nil
     move = .zero
     vertical = 0
     lastTime = 0
     collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
+    if sceneTask != nil {resumeScene=true}
+    sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID()
   }
   func load(_ h: House, _ o: SceneOptions) {
     guard revision != h.revision || house?.id != h.id || options != o else { return }
@@ -270,6 +277,7 @@ extension UIColor {
     options = o
     revision = h.revision
     collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
+    sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID();resumeScene=false
     stream=nil
     cameraCorridor = NavigationGeometry.positions(house:h,options:o)
     recordedPaths=NavigationGeometry.paths(house:h,options:o)
@@ -280,7 +288,9 @@ extension UIColor {
     preparingScene=large
     if large {
       navigationNotice="Preparing nearby house detail…"
-      Task {
+      let request=sceneRequest
+      sceneTask=Task {
+        defer {if self.sceneRequest==request {self.sceneTask=nil}}
         do {
           let position=V3(ar:self.camera.simdPosition)
           let prepared=try await LocalWorker.run { () throws -> (SpatialDisplayIndex,SpatialClearance) in
@@ -288,11 +298,11 @@ extension UIColor {
             let index=try SpatialDisplayIndex(features:canonical)
             return(index,try SpatialClearance(index:index,camera:position))
           }
-          guard self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
+          guard !Task.isCancelled,self.sceneRequest==request,self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
           self.clearance=prepared.1;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
           self.navigationNotice=prepared.1.complete ? "Nearby surfaces retain full detail; distant detail may appear as source points. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
-        }catch {
-          guard self.view.scene===scene else{return}
+        }catch is CancellationError {}catch {
+          guard self.sceneRequest==request,self.view.scene===scene else{return}
           self.navigationNotice=error.localizedDescription
         }
       }
@@ -444,9 +454,7 @@ extension UIColor {
       return
     }
     if let adjusted=NavigationGeometry.followedHeight(from:V3(ar:from),to:V3(ar:to),paths:recordedPaths) {to=adjusted.render}
-    let direction = simd_normalize(to-from)
-    let ahead = to + direction * 0.23
-    if clearance.isClear(from: V3(ar: from), to: V3(ar: ahead), radius: 0.15) {
+    if clearance.isWalkClear(from:V3(ar:from),to:V3(ar:to)) {
       if let h = house {
         if h.isDemo && h.observations.isEmpty {
           guard NavigationGeometry.allowed(V3(ar: to), house: h) else { return }

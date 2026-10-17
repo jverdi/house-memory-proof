@@ -13,12 +13,17 @@ struct SpatialClearance {
         high: V3(max(high.x, b.high.x), max(high.y, b.high.y), max(high.z, b.high.z)))
     }
     func intersects(_ a: V3, _ b: V3, radius: Double) -> Bool {
+      intersects(a,b,below:radius,above:radius,radius:radius)
+    }
+    // Minkowski bounds for a swept upright body. This encloses the capsule,
+    // conservatively refusing corner grazes instead of leaving vertical gaps.
+    func intersects(_ a:V3,_ b:V3,below:Double,above:Double,radius:Double)->Bool {
       var enter = 0.0
       var exit = 1.0
       let starts = [a.x, a.y, a.z]
       let ends = [b.x, b.y, b.z]
-      let lo = [low.x - radius, low.y - radius, low.z - radius]
-      let hi = [high.x + radius, high.y + radius, high.z + radius]
+      let lo = [low.x - radius, low.y - radius, low.z - above]
+      let hi = [high.x + radius, high.y + radius, high.z + below]
       for axis in 0..<3 {
         let delta = ends[axis] - starts[axis]
         if abs(delta) < 1e-12 {
@@ -122,19 +127,30 @@ struct SpatialClearance {
     return index
   }
   func isClear(from a: V3, to b: V3, radius: Double) -> Bool {
-    guard complete, a.finite, b.finite, radius.isFinite, radius >= 0 else { return false }
+    sweptClear(from:a,to:b,below:radius,above:radius,radius:radius)
+  }
+  // Eye-relative virtual walker: 20 cm horizontal radius, feet 1.55 m below
+  // the camera and head 22 cm above it. It does not infer a physical floor.
+  func isWalkClear(from a:V3,to b:V3)->Bool {
+    sweptClear(from:a,to:b,below:1.55,above:0.22,radius:0.20)
+  }
+  private func sweptClear(from a:V3,to b:V3,below:Double,above:Double,radius:Double)->Bool {
+    guard complete,a.finite,b.finite,radius.isFinite,radius>=0,
+      below.isFinite,above.isFinite,below>=0,above>=0 else{return false}
     if let centre=coverageCentre {
-      // A sphere is convex: bounding both swept endpoints bounds the entire move.
-      guard (a-centre).length+radius<=coverageRadius,
-        (b-centre).length+radius<=coverageRadius else { return false }
+      // Bound every corner of both end boxes. Their convex hull contains the
+      // complete swept body, including its feet outside the camera's vicinity.
+      for end in [a,b] {for x in [-radius,radius] {for y in [-radius,radius] {for z in [-below,above] {
+        guard (end+V3(x,y,z)-centre).length<=coverageRadius else{return false}
+      }}}}
     }
     guard !nodes.isEmpty else { return true }
     var stack = [0]
     while let index = stack.popLast() {
       let n = nodes[index]
-      guard n.bounds.intersects(a, b, radius: radius) else { continue }
+      guard n.bounds.intersects(a,b,below:below,above:above,radius:radius) else { continue }
       if n.count > 0 {
-        for i in n.start..<(n.start + n.count) where items[i].intersects(a, b, radius: radius) {
+        for i in n.start..<(n.start + n.count) where items[i].intersects(a,b,below:below,above:above,radius:radius) {
           return false
         }
       } else {

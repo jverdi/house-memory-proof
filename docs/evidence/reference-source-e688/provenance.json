@@ -1,0 +1,17 @@
+{
+  "sourceCommit": "e68835e116621627f2481b20ba52412c1b98fbd8",
+  "runID": 39041187741,
+  "jobID": 117420895471,
+  "artifactID": 12104460779,
+  "artifactSHA256": "99c7b29be32d48d4fed66616bb1d37bd99d1977336a3573a76543309093ad707",
+  "wholeArchiveDigestVerified": true,
+  "coreDiagnosticsPassed": true,
+  "sourceBoardAnalyticCases": 25,
+  "workflowPassed": false,
+  "remainingFailures": [
+    "rough house 683431 max accepted error 10.379736 mm",
+    "original finished-stage 0/8 accepted",
+    "staggered finished-stage 0/8; rough max accepted error 18.918459 mm"
+  ],
+  "imageQualification": false
+}
