@@ -217,9 +217,15 @@ enum TourDirector {
       var times:[Double]=[]
       while let sample=output.copyNextSampleBuffer(){
         try Task.checkCancellation()
-        guard CMSampleBufferGetNumSamples(sample)==1 else{return "Unexpected packed video sample"}
-        times.append(CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample)))
-        guard times.count<=frames else{return "Too many video frames: more than \(frames)"}
+        let count=CMSampleBufferGetNumSamples(sample)
+        guard count>=0,count<=frames-times.count else{return "Too many video frames: more than \(frames)"}
+        // Core Media may pack multiple samples into a buffer or return an
+        // empty timing marker. Inspect each actual sample, not each buffer.
+        for index in 0..<count {
+          var timing=CMSampleTimingInfo()
+          guard CMSampleBufferGetSampleTimingInfo(sample,at:index,timingInfoOut:&timing)==noErr else{return "Video sample timing is unavailable"}
+          times.append(CMTimeGetSeconds(timing.presentationTimeStamp))
+        }
         if times.count%64==0{await Task.yield()}
       }
       guard reader.status == .completed else{return "Video sample read failed: \(reader.error?.localizedDescription ?? "unknown")"}

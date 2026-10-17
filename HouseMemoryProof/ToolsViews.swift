@@ -146,14 +146,13 @@ struct ToolsPage: View {
             }
           }
           Button("Check original file integrity") {
-            do {
-              if let r = model.repository {
-                let n = try r.integrity(house)
-                diagnostics = "Verified \(n) original asset hashes. Project schema valid."
-                try house.validate()
-              }
-            } catch { model.error = error.localizedDescription }
-          }
+            guard let repo=model.repository else{return}
+            model.perform("Verifying original file integrity") {
+              let count=try await LocalWorker.run {try house.validate();return try repo.integrity(house)}
+              diagnostics="Verified \(count) original asset hashes. Project schema valid."
+              return nil
+            }
+          }.disabled(model.busy)
           Button("Run synthetic self-tests") {
             model.perform("Running isolated synthetic diagnostics") {
               await SelfTests.run(model: model,includeMovie:true)

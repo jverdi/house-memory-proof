@@ -54,7 +54,7 @@ enum IncrementalSnapshots {
   static func read(_ url:URL,limit:Int)throws->Data {
     let coordinator=NSFileCoordinator(filePresenter:nil);var coordinationError:NSError?,operationError:Error?,result:Data?
     coordinator.coordinate(readingItemAt:url,options:[],error:&coordinationError){source in
-      do {let values=try source.resourceValues(forKeys:[.fileSizeKey,.isUbiquitousItemKey,.ubiquitousItemDownloadingStatusKey]);if values.isUbiquitousItem==true && values.ubiquitousItemDownloadingStatus != .current {try FileManager.default.startDownloadingUbiquitousItem(at:source);throw HouseError.message("Snapshot files are still downloading. Retry after Files finishes syncing.")};guard let size=values.fileSize,size<=limit else{throw HouseError.message("Snapshot object exceeds its read budget.")};result=try Data(contentsOf:source)}catch{operationError=error}
+      do {let values=try source.resourceValues(forKeys:[.fileSizeKey,.isUbiquitousItemKey,.ubiquitousItemDownloadingStatusKey]);if values.isUbiquitousItem==true && values.ubiquitousItemDownloadingStatus != .current {try FileManager.default.startDownloadingUbiquitousItem(at:source);throw HouseError.message("Snapshot files are still downloading. Retry after Files finishes syncing.")};guard let size=values.fileSize,size<=limit else{throw HouseError.message("Snapshot object exceeds its read budget.")};result=try DurableFiles.read(source,limit:limit)}catch{operationError=error}
     }
     if let coordinationError {throw coordinationError};if let operationError {throw operationError};guard let result else{throw HouseError.message("Snapshot object is unavailable.")};return result
   }
