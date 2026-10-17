@@ -246,3 +246,10 @@ Native source `b022d8fa` compiled but **did not launch the app**. Hosted simulat
 ### Nonlinear feature experiment: rough geometry improved, finished matching still fails
 
 Isolated AKAZE source `7ba4169d`, run 39055131621, passed both rough house layouts at 12/12 nominal availability each, with worst/p95 errors 4.682 and 5.867 mm. Rough queries in the paired and staggered fixtures also passed at 12/12, worst 3.697 and 4.853 mm. All 56 negative challenges were rejected. Both finished-stage variants still accepted 0/8 and therefore failed overall. Production ORB remains unchanged. Exact reports and the isolated diff are retained under `docs/evidence/akaze-7ba416/`, with whole-artifact SHA-256 verified. The same experimental change is now submitted to the existing 70-case stress evaluator without changing its inputs, thresholds or oracle exclusion. No broad pass is inferred from these development cases.
+
+
+### Native marker repair passed; caption texture decoding failed
+
+Source `ee0c4a1749`, run 39055306722, completed 93 native checks with 91 passes. All four coded-image queries now pass, including the former held-out rejection, with worst accepted position error 1.596 mm. The archive pixel-centre regression also passes. Two movie checks fail with `Image decoding failed` during caption texture loading, before the target can be rendered; this is not accepted as a rendering pass. The checkpoint SHA-256 was verified (`d1b6153b9926f960b0e9e87177c4f3de15572db38e358f714f0839263c1bbfd7`).
+
+The next movie candidate normalizes each once-per-shot caption into explicit premultiplied RGBA8 storage and uploads those bytes directly into a shared Metal texture. It removes generic image decoding from this path and changes the shot cache identity. Scene rendering stays in the encoder pixel buffer, with no per-frame CPU scene copy. Native color/orientation/caption and 1080p encode/full-decode/cache checks remain mandatory.

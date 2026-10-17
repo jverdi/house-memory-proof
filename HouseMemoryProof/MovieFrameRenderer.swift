@@ -1,7 +1,6 @@
 import Foundation
 import CoreVideo
 import Metal
-import MetalKit
 import SceneKit
 import UIKit
 
@@ -27,7 +26,7 @@ private final class MovieGPUCompletion: @unchecked Sendable {
   private let captionViewport:MTLViewport
   private let width:Int,height:Int
   init(scene:SCNScene,camera:SCNNode,width:Int,height:Int,title:String,provenance:String)throws {
-    guard width>0,height>0,width<=3840,height<=2160,
+    guard width>=64,height>=64,width<=3840,height<=2160,
       let device=MTLCreateSystemDefaultDevice(),let queue=device.makeCommandQueue() else{throw HouseError.message("Metal movie rendering is unavailable.")}
     var cache:CVMetalTextureCache?
     guard CVMetalTextureCacheCreate(kCFAllocatorDefault,nil,device,nil,&cache)==kCVReturnSuccess,let cache else{throw HouseError.message("Movie texture allocation is unavailable.")}
@@ -43,7 +42,7 @@ private final class MovieGPUCompletion: @unchecked Sendable {
     let sourceFont=UIFont.systemFont(ofSize:CGFloat(width)/70,weight:.regular)
     let titleHeight=ceil(titleFont.lineHeight),sourceHeight=ceil(sourceFont.lineHeight)
     let captionHeight=titleHeight+sourceHeight+18
-    let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=false
+    let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=false;format.preferredRange = .standard
     let caption=UIGraphicsImageRenderer(size:CGSize(width:width-28,height:Int(captionHeight)),format:format).image { context in
       UIColor.black.withAlphaComponent(0.65).setFill()
       UIBezierPath(roundedRect:CGRect(x:0,y:0,width:width-28,height:Int(captionHeight)),cornerRadius:8).fill()
@@ -52,7 +51,17 @@ private final class MovieGPUCompletion: @unchecked Sendable {
       (provenance as NSString).draw(in:CGRect(x:10,y:5+titleHeight+8,width:CGFloat(width)-48,height:sourceHeight),withAttributes:[.font:sourceFont,.foregroundColor:UIColor.white,.paragraphStyle:paragraph])
     }
     guard let cg=caption.cgImage else{throw HouseError.message("Movie caption could not be drawn.")}
-    captionTexture=try MTKTextureLoader(device:device).newTexture(cgImage:cg,options:[.SRGB:false,.origin:MTKTextureLoader.Origin.topLeft])
+    // UIKit may optimize monochrome captions to a gray/alpha image that the
+    // generic texture loader cannot decode. Normalize the small caption once
+    // to explicitly ordered, premultiplied RGBA8 bytes before GPU upload.
+    let captionDescriptor=MTLTextureDescriptor.texture2DDescriptor(pixelFormat:.rgba8Unorm,width:cg.width,height:cg.height,mipmapped:false)
+    captionDescriptor.usage = .shaderRead;captionDescriptor.storageMode = .shared
+    guard let texture=device.makeTexture(descriptor:captionDescriptor),
+      let bitmap=CGContext(data:nil,width:cg.width,height:cg.height,bitsPerComponent:8,bytesPerRow:cg.width*4,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue|CGBitmapInfo.byteOrder32Big.rawValue),
+      let bytes=bitmap.data else{throw HouseError.message("Movie caption texture allocation failed.")}
+    bitmap.draw(cg,in:CGRect(x:0,y:0,width:cg.width,height:cg.height))
+    texture.replace(region:MTLRegionMake2D(0,0,cg.width,cg.height),mipmapLevel:0,withBytes:bytes,bytesPerRow:cg.width*4)
+    captionTexture=texture
     captionViewport=MTLViewport(originX:14,originY:Double(height)-19-Double(cg.height),width:Double(cg.width),height:Double(cg.height),znear:0,zfar:1)
     let library=try device.makeLibrary(source:"""
       #include <metal_stdlib>
