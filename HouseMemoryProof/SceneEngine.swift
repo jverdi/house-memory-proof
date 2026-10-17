@@ -586,6 +586,7 @@ enum NavigationGeometry {
       }
       return feature
     }
+  }
   struct PathEdge {var a:V3;var b:V3}
   static func paths(house:House,options:SceneOptions)->[PathEdge] {
     let stages=SceneBuilder.eligibleStages(house,options:options),active=SceneBuilder.activeUnregisteredSegment(house,options:options)
