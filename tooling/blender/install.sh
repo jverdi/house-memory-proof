@@ -13,7 +13,7 @@ entries=[line.split() for line in Path('build/blender.sha256').read_text().split
 expected=[line[0] for line in entries if line[-1].lstrip('*')==name]
 assert len(expected)==1 and len(expected[0])==64
 actual=hashlib.sha256(Path('build',name).read_bytes()).hexdigest()
-assert actual==expected[0]
+assert actual==expected[0]=='975c58fcb244273838534bba771e64ad87739216b0f9b39a888531a49a72d845'
 Path('build/blender-evidence/dependency.json').write_text(json.dumps({'version':'4.5.3','source':'https://download.blender.org/release/Blender4.5/','sha256':actual},indent=2))
 PY
   mkdir -p build/blender

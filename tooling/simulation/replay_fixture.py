@@ -31,7 +31,10 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
   a.output.parent.mkdir(parents=True,exist_ok=True);a.output.with_suffix('.sandbox.log').write_text(diagnostics.stdout[-30000:]+diagnostics.stderr[-3000:])
  assert positive.returncode==0 and negative.returncode!=0, f'Oracle exclusion controls failed: permitted={positive.returncode} ({positive.stderr.decode()[-1000:]}), denied={negative.returncode} ({negative.stderr.decode()[-1000:]})'
  result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')]+(['--refine'] if a.refine else []),capture_output=True,text=True,timeout=180,cwd=candidate)
- if result.returncode:raise RuntimeError(result.stderr[-5000:])
+ if result.returncode:
+  a.output.parent.mkdir(parents=True,exist_ok=True)
+  a.output.write_text(json.dumps(dict(passed=False,oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),candidateRejected=True,error=result.stderr[-5000:],productionQualified=False),indent=2))
+  raise RuntimeError(result.stderr[-5000:])
  report=json.loads(result.stdout);by_name={x['image']:x for x in report['queries']};positive_accepted=0;false_accepts=0;worst=0.
  for q in oracle['queries']:
   r=by_name[q['image']]

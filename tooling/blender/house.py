@@ -15,9 +15,9 @@ def v(p):return dict(zip(('x','y','z'),map(float,p)))
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 scene=bpy.context.scene;scene.render.engine='CYCLES';scene.cycles.device='CPU';scene.cycles.samples=12;scene.cycles.use_denoising=True
 scene.render.threads_mode='FIXED';scene.render.threads=4
-scene.render.resolution_x=640;scene.render.resolution_y=480;scene.render.resolution_percentage=100
+scene.render.resolution_x=1280;scene.render.resolution_y=960;scene.render.resolution_percentage=100
 scene.render.image_settings.file_format='JPEG';scene.render.image_settings.quality=95
-scene.view_settings.view_transform='Standard';scene.world.color=(.12,.12,.12)
+scene.view_settings.view_transform='AgX';scene.world.color=(.12,.12,.12)
 scene.render.film_transparent=False
 
 def material(name,color,grain=False,metal=0):
@@ -63,10 +63,25 @@ for axis,center in [('Y',(-.8,1.79,1.7)),('X',(2.29,.6,1.65))]:
   if axis=='Y':pos=(center[0]+(i-3)*.065,center[1],center[2]+math.sin(i)*.16);size=(.055,.012,.5)
   else:pos=(center[0],center[1]+(i-3)*.065,center[2]+math.cos(i)*.16);size=(.012,.055,.5)
   box('Wall art',pos,size,m,finished)
+# Persistent printed targets are observed image texture, not privileged pose input.
+# They remain fixed in front of the finish plane across both construction stages.
+for index,(axis,center) in enumerate([('Y',(1.0,1.79,1.9)),('Y',(1.9,1.79,.85)),('X',(2.29,.6,1.0)),('X',(2.29,1.5,2.0))]):
+ pixels=np.ones((256,256,4),dtype=np.float32)
+ for row in range(16):
+  for col in range(16):
+   x=8+col*15;y=8+row*15;size=int(rng.integers(5,13));color=float(rng.choice([0,.08,.2,.35]))
+   pixels[y:y+size,x:x+size,:3]=color
+ image=bpy.data.images.new('Persistent target '+str(index),width=256,height=256);image.pixels.foreach_set(pixels.ravel());image.pack()
+ m=material('Printed target '+str(index),(1,1,1));nodes=m.node_tree.nodes;tex=nodes.new('ShaderNodeTexImage');tex.image=image;tex.interpolation='Linear';m.node_tree.links.new(tex.outputs['Color'],nodes.get('Principled BSDF').inputs['Base Color'])
+ cx0,cy0,cz0=center;half=.20
+ vertices=[(cx0-half,cy0,cz0-half),(cx0+half,cy0,cz0-half),(cx0+half,cy0,cz0+half),(cx0-half,cy0,cz0+half)] if axis=='Y' else [(cx0,cy0-half,cz0-half),(cx0,cy0+half,cz0-half),(cx0,cy0+half,cz0+half),(cx0,cy0-half,cz0+half)]
+ mesh=bpy.data.meshes.new('Target plane');mesh.from_pydata(vertices,[],[(0,1,2,3)]);mesh.update();uv=mesh.uv_layers.new()
+ for loop,coordinate in zip(uv.data,[(0,0),(1,0),(1,1),(0,1)]):loop.uv=coordinate
+ target=bpy.data.objects.new('Persistent printed reference',mesh);scene.collection.objects.link(target);mesh.materials.append(m)
 for position,power,size in [((0,-1,2.7),350,2),((-1,0,2.5),220,1.5)]:
  light=bpy.data.lights.new('Work light','AREA');light.energy=power;light.shape='DISK';light.size=size;o=bpy.data.objects.new('Work light',light);scene.collection.objects.link(o);o.location=position
 camera_data=bpy.data.cameras.new('Camera');camera_data.lens=28;camera_data.sensor_width=36;camera_data.sensor_fit='HORIZONTAL';camera=bpy.data.objects.new('Camera',camera_data);scene.collection.objects.link(camera);scene.camera=camera
-width,height=640,480;dw,dh=192,144;fx=width*28/36;cx=(width-1)/2;cy=(height-1)/2;k=[fx,0,cx,0,fx,cy,0,0,1]
+width,height=1280,960;dw,dh=192,144;fx=width*28/36;cx=(width-1)/2;cy=(height-1)/2;k=[fx,0,cx,0,fx,cy,0,0,1]
 assets={};oracle={'renderer':'Blender 4.5.3 Cycles','syntheticOnly':True,'fieldQualified':False,'mappingCameras':{},'injectedTranslationDriftMetres':.03,'queries':[]}
 room_id=identity('room');rough_id=identity('rough');finish_id=identity('finish');segment_id=identity('segment');now=813974400.
 house=dict(schema=1,id=identity('house'),name='Cycles construction laboratory',created=now,revision=1,rooms=[dict(id=room_id,name='Rendered construction room',level=0,origin=v((0,0,0)),size=v((5,4,2.9)),isDesign=True)],stages=[dict(id=rough_id,name='Rough-in',date=now,kind='synthetic'),dict(id=finish_id,name='Finished',date=now+1,kind='synthetic')],features=[],observations=[],segments=[dict(id=segment_id,roomID=room_id,stageID=rough_id,started=now,interrupted=False,approved=False,referencePoses=[])],dimensions=[],drawings=[],bookmarks=[],references=[],documentaryPhotos=[],connections=[],isDemo=True,notes='Physically rendered analytic scene; not a validated phone sensor model.',closureNotes='')
@@ -113,5 +128,5 @@ box('Unrelated surface',(0.4,.4,1.5),(2,2,3),card)
 image,_,_,pose=capture('vision-query-4',0)
 oracle['queries'].append(dict(image='vision-query-4.jpg',width=width,height=height,intrinsics=k,expectedCamera=pose,shouldMatch=False))
 (dest/'vision-queries.json').write_text(json.dumps(oracle,indent=2));bpy.ops.wm.save_as_mainfile(filepath=str(dest/'construction-house.blend'))
-(dest/'renderer.json').write_text(json.dumps(dict(version=bpy.app.version_string,engine='CYCLES',samples=12,depth='separate triangle ray casts, optical-axis metres',depthNoiseSigmaMetres=.006,rgbResolution=[width,height],depthResolution=[dw,dh],limitations=['One constructed room','Procedural materials','No empirically fitted rolling shutter or multipath model','No physical precision qualification']),indent=2))
+(dest/'renderer.json').write_text(json.dumps(dict(version=bpy.app.version_string,engine='CYCLES',samples=12,depth='separate triangle ray casts, optical-axis metres',depthNoiseSigmaMetres=.006,persistentTargets=4,targetWidthMetres=.4,rgbResolution=[width,height],depthResolution=[dw,dh],limitations=['One constructed room','Procedural materials','No empirically fitted rolling shutter or multipath model','No physical precision qualification']),indent=2))
 print('HOUSE_XRAY_RENDER_COMPLETE',flush=True)
