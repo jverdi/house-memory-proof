@@ -9,6 +9,7 @@ struct PhotoPointPage:View {
   @State private var controls:[PhotoControl?]=[nil,nil,nil]
   @State private var name="Photo-located point"
   @State private var trade:Trade = .unknown
+  @State private var saved=""
   var observations:[Observation]{house.observations.filter{$0.segmentID==segmentID && !$0.documentary}}
   var body:some View {Form{
     Text("Locate a small visible feature without trusting background LiDAR depth. Select the same point in three translated photographs. The first two fit the point; the third independently checks it. Results remain approximate. Photographs use their original sensor orientation.").font(.footnote)
@@ -30,9 +31,10 @@ struct PhotoPointPage:View {
         guard model.house?.id==house.id,model.house?.revision==house.revision else{throw HouseError.message("Project changed. Reopen this tool and repeat the selections.")}
         let chosen=controls.compactMap{$0},point=try PhotoTriangulation.locate(chosen,house:house,segment:segment)
         let feature=Feature(name:name.isEmpty ? "Photo-located point":name,trade:trade,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:[point],triangles:[]),route:[point],sourceIDs:chosen.map{$0.observationID},notes:"Manually identified point; two fitting photos and one independent reprojection check. No validated physical accuracy or inferred service thickness.",segmentID:segment.id,sourceFingerprint:try VisualMapping.fingerprint(house:house,segment:segment),photoControls:chosen)
-        model.edit{$0.features.append(feature)}
+        if model.edit(projectID:house.id,{$0.features.append(feature)}) {saved="Saved \(feature.name) with three source photographs.";controls=[nil,nil,nil]}
       }catch{model.error=error.localizedDescription}
     }.disabled(controls.contains(where:{$0==nil}))
+    if !saved.isEmpty {Text(saved).font(.footnote).foregroundStyle(.mint)}
   }.navigationTitle("Locate from photographs").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil]}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
 }
 struct PhotoPointSurface:UIViewRepresentable {

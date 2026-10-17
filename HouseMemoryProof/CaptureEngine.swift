@@ -39,6 +39,8 @@ import Vision
   private var lastVisualQuery: TimeInterval = 0
   private var visualBusy = false
   private var visualReferences: [(VisualMap, Rigid)] = []
+  private var competingVisualReferences: [VisualMap] = []
+  private var visualConflict = false
   private var currentReferencePoses: [UUID: ReferencePose] = [:]
   init(model: AppModel) {
     self.model = model
@@ -86,7 +88,7 @@ import Vision
       currentReferencePoses = [:]
       markerTransform = nil
       markerSeen = 0
-      visualTransform = nil; visualSeen = 0; lastVisualQuery = 0; visualBusy = false; visualReferences = []
+      visualTransform = nil; visualSeen = 0; lastVisualQuery = 0; visualBusy = false; visualReferences = []; competingVisualReferences = []; visualConflict = false
       loadedWorldMap = false
       referenceConflict = false
       if hasDepth { config.frameSemantics.insert(.sceneDepth) }
@@ -110,17 +112,21 @@ import Vision
           return
         }
         segment = prior
-        for reference in h.visualMaps.filter({ $0.roomID == prior.roomID }).sorted(by: { $0.date > $1.date }).prefix(4) {
+        var visualBytes=0
+        for reference in (h.visualMaps.count<=24 ? h.visualMaps:[]).sorted(by: { $0.date > $1.date }) {
           guard let source = h.segments.first(where: { $0.id == reference.segmentID }),
             let fingerprint = try? VisualMapping.fingerprint(house: h, segment: source), fingerprint == reference.fingerprint,
             let data = try? repo.read(reference.asset), data.count < 20000000,
-            let map = try? JSONDecoder().decode(VisualMap.self, from: data), map.valid, map.segmentID == source.id, map.roomID == prior.roomID, map.fingerprint == fingerprint
+            let map = try? JSONDecoder().decode(VisualMap.self, from: data), map.valid, map.segmentID == source.id, map.roomID == source.roomID, map.stageID == source.stageID, map.frameID == (source.registration == nil ? source.id:nil), map.fingerprint == fingerprint,
+            map.views.allSatisfy({ view in h.observations.contains(where: { $0.id == view.observationID && $0.segmentID == source.id }) })
           else { continue }
+          visualBytes += data.count
+          if visualBytes > 32_000_000 {visualReferences=[];competingVisualReferences=[];break}
+          if map.roomID != prior.roomID {competingVisualReferences.append(map);continue}
           if map.frameID == prior.id { visualReferences.append((map, Rigid())) }
           else if map.frameID == nil, let registration = prior.registration, let matrix = PoseRefinement.matrix(registration.values) {
             visualReferences.append((map, Rigid(values: PoseRefinement.array(simd_inverse(matrix)))))
           }
-          if visualReferences.count >= 2 { break }
         }
         guard config.initialWorldMap != nil || !prior.referencePoses.isEmpty || !visualReferences.isEmpty else {
           message = "No usable saved alignment. Build a visual reference or use source photographs."
@@ -186,7 +192,7 @@ import Vision
         let bv = (0..<4).flatMap { row in (0..<4).map { col in Double(b[col][row]) } }
         disagreement = !VisualMapping.agree(Rigid(values: av), Rigid(values: bv))
       }
-      let eligible = normal && !referenceConflict && !disagreement
+      let eligible = normal && !referenceConflict && !visualConflict && !disagreement
         && (markerFresh || visualFresh || (loadedWorldMap && markerTransform == nil && visualTransform == nil && frame.worldMappingStatus == .mapped))
       if markerFresh, let transform = markerTransform { overlayRoot.simdTransform = transform }
       else if visualFresh, let transform = visualTransform { overlayRoot.simdTransform = transform }
@@ -194,7 +200,7 @@ import Vision
       message =
         eligible
         ? "Approximate historical overlay. Verify against photographs and physical references; no precision calibration yet."
-        : "Alignment unavailable — overlay hidden. Return to the original capture viewpoint."
+        : (visualConflict ? "Visual matches are ambiguous or inconsistent — overlay hidden. Use physical references." : "Alignment unavailable — overlay hidden. Return to the original capture viewpoint.")
       return
     }
     guard pending == 0 else { return }
@@ -244,28 +250,33 @@ import Vision
     CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
     let k = frame.camera.intrinsics
     let calibration = (0..<3).flatMap { row in (0..<3).map { col in Double(k[col][row]) } }
-    let liveCamera = frame.camera.transform, timestamp = frame.timestamp, token = generation, references = visualReferences
+    let liveCamera = frame.camera.transform, timestamp = frame.timestamp, token = generation, references = visualReferences, competitors = competingVisualReferences
     visualBusy = true; lastVisualQuery = timestamp
     Task {
-      let estimates = await Task.detached(priority: .userInitiated) { () -> [Rigid] in
-        guard let features = try? VisualMapping.detect(gray: gray, width: width, height: height, stride: stride) else { return [] }
-        return references.compactMap { reference in
+      let outcome = await Task.detached(priority: .userInitiated) { () -> ([Rigid],Bool) in
+        guard let features = try? VisualMapping.detect(gray: gray, width: width, height: height, stride: stride) else { return ([],false) }
+        if VisualMapping.competingMatch(features,width:width,height:height,intrinsics:calibration,maps:competitors) {return ([],true)}
+        let estimates: [Rigid] = references.compactMap { reference in
           guard let result = VisualMapping.query(features, width: width, height: height, intrinsics: calibration, map: reference.0),
             let pose = PoseRefinement.matrix(result.transform.values), let prior = PoseRefinement.matrix(reference.1.values) else { return nil }
           return Rigid(values: PoseRefinement.array(prior * pose))
         }
+        return (estimates,false)
       }.value
       guard self.generation == token else { return }
       defer { self.visualBusy = false }
+      if outcome.1 {self.visualConflict=true;return}
+      let estimates=outcome.0
       guard self.running, self.reveal, let first = estimates.first else { return }
       // Multiple accepted references must agree in the same saved frame.
       for estimate in estimates.dropFirst() {
-        guard VisualMapping.agree(first, estimate) else { self.visualTransform = nil; return }
+        guard VisualMapping.agree(first, estimate) else { self.visualConflict = true; return }
       }
       let liveValues = (0..<4).flatMap { row in (0..<4).map { col in Double(liveCamera[col][row]) } }
       guard let alignment = VisualMapping.overlay(liveCamera: Rigid(values: liveValues), savedCanonicalCamera: first) else { return }
       var transform = matrix_identity_float4x4
       for row in 0..<4 { for col in 0..<4 { transform[col][row] = Float(alignment.values[row*4+col]) } }
+      self.visualConflict = false
       self.visualTransform = transform
       self.visualSeen = timestamp
     }

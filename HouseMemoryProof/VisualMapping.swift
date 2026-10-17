@@ -94,6 +94,9 @@ enum VisualMapping {
     let result=Rigid(values:PoseRefinement.array(live*simd_inverse(nativeFromCanonical*saved)))
     return result.valid ? result:nil
   }
+  static func competingMatch(_ features:Features,width:Int,height:Int,intrinsics:[Double],maps:[VisualMap])->Bool {
+    maps.contains {query(features,width:width,height:height,intrinsics:intrinsics,map:$0) != nil}
+  }
   static func query(_ features:Features,width:Int,height:Int,intrinsics:[Double],map:VisualMap)->Pose? {
     guard map.valid,features.count>=30,intrinsics.count==9 else{return nil}
     var candidates:[(Pose,V3)]=[]

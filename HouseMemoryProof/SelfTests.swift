@@ -53,7 +53,7 @@ import ImageIO
                     let features=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
                     let result=VisualMapping.query(features,width:query["width"] as! Int,height:query["height"] as! Int,intrinsics:query["intrinsics"] as! [Double],map:map)
                     if query["shouldMatch"] as! Bool {
-                        if let result {let a=result.transform.values,b=query["expectedCamera"] as! [Double];let error=(V3(a[3],a[7],a[11])-V3(b[3],b[7],b[11])).length;worst=max(worst,error);matched+=1}
+                        if let result {guard VisualMapping.competingMatch(features,width:query["width"] as! Int,height:query["height"] as! Int,intrinsics:query["intrinsics"] as! [Double],maps:[map]) else{throw HouseError.message("A duplicated visual room was not flagged as a competing match.")};let a=result.transform.values,b=query["expectedCamera"] as! [Double];let error=(V3(a[3],a[7],a[11])-V3(b[3],b[7],b[11])).length;worst=max(worst,error);matched+=1}
                     }else if result != nil {throw HouseError.message("Unrelated texture was incorrectly localized.")}
                 }
                 guard matched>=2,worst<0.03 else{throw HouseError.message("Image localization: \(matched)/3 held views, worst accepted position error \(worst) m, \(map.points.count) map features.")}
