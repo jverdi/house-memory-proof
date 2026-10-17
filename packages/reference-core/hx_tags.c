@@ -2,6 +2,7 @@
 #include <apriltag/apriltag.h>
 #include <apriltag/tag36h11.h>
 #include <math.h>
+#include <float.h>
 #include <stdlib.h>
 #include <string.h>
 #include "hx_tag_refine.h"
@@ -48,6 +49,11 @@ int32_t hx_tag_detect(const uint8_t* gray,uint32_t bytes,uint32_t width,uint32_t
   apriltag_detections_destroy(found);apriltag_detector_destroy(detector);tag36h11_destroy(family);return count;
 }
 int32_t hx_tag_selftest(void) {
+  // Diverged homography trials must be refused before integer indexing.
+  float samples[4]={0,10,20,30};HXTagPatch patch={samples,0,0,2,2};
+  double value,gx,gy,invalid[]={NAN,INFINITY,-INFINITY,DBL_MAX,-DBL_MAX,-.1,1,2};
+  if(!hx_tag_sample(&patch,.5,.5,&value,&gx,&gy)||value!=15||gx!=10||gy!=20)return -9;
+  for(int i=0;i<8;i++)if(hx_tag_sample(&patch,invalid[i],.5,&value,&gx,&gy)||hx_tag_sample(&patch,.5,invalid[i],&value,&gx,&gy))return -9;
   const int width=640,height=480;uint8_t* image=malloc(width*height);if(!image)return -1;
   uint8_t cells[100];uint32_t ids[8];double xy[64],margin[8];int32_t result=1;
   for(int rotation=0;rotation<4;rotation++) {

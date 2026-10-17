@@ -4,6 +4,7 @@
 // transitions constrain the same projective square as the outside border.
 // No pose, camera prior, query label or metric truth enters this operation.
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 typedef struct {double u,v,level;} HXTagEdge;
@@ -22,8 +23,10 @@ static int hx_tag_project(const double h[8],double u,double v,double* x,double* 
   *x=(h[0]*u+h[1]*v+h[2])/d;*y=(h[3]*u+h[4]*v+h[5])/d;return isfinite(*x)&&isfinite(*y);
 }
 static int hx_tag_sample(const HXTagPatch* p,double x,double y,double* value,double* gx,double* gy) {
-  x-=p->x;y-=p->y;int ix=(int)floor(x),iy=(int)floor(y);
-  if(ix<0||iy<0||ix+1>=p->w||iy+1>=p->h)return 0;
+  x-=p->x;y-=p->y;
+  // Reject diverged trial projections before converting to integer indices.
+  if(!isfinite(x)||!isfinite(y)||x<0||y<0||x>=p->w-1||y>=p->h-1)return 0;
+  int ix=(int)floor(x),iy=(int)floor(y);
   double a=x-ix,b=y-iy,p00=p->pixels[iy*p->w+ix],p10=p->pixels[iy*p->w+ix+1],p01=p->pixels[(iy+1)*p->w+ix],p11=p->pixels[(iy+1)*p->w+ix+1];
   *value=(1-a)*(1-b)*p00+a*(1-b)*p10+(1-a)*b*p01+a*b*p11;
   *gx=(1-b)*(p10-p00)+b*(p11-p01);*gy=(1-a)*(p01-p00)+a*(p11-p10);return 1;
