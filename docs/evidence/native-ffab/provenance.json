@@ -1,0 +1,10 @@
+{
+  "sourceRevision": "ffab99e3b953211972d2d5d29525df379df0c68c",
+  "runID": 39056203326,
+  "artifactID": 12109623625,
+  "verifiedSHA256": "b4ba96153117c361507aa980824fec8119f58fbce9d7089a824e99a4b197d442",
+  "nativeChecks": 93,
+  "nativePassed": true,
+  "captionFrameVisuallyInspected": true,
+  "fullWorkflowStillPending": true
+}
