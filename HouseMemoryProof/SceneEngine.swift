@@ -16,11 +16,21 @@ enum SceneBuilder {
         case .finished:return f.trade == .finish || f.trade == .ceiling || f.trade == .floor || f.trade == .unknown
         case .ghost,.evidence:return true}
     }
+    static func eligibleStages(_ h:House,options:SceneOptions)->Set<UUID> {
+        if let stage=options.stage{return [stage]}
+        let finished=Set(h.stages.filter{$0.name.lowercased().contains("finish")}.map{$0.id})
+        switch options.mode {case .rough:return Set(h.stages.map{$0.id}).subtracting(finished)
+        case .finished:return finished
+        case .ghost,.evidence:return Set(h.stages.map{$0.id})}
+    }
+    static func activeUnregisteredSegment(_ h:House,options:SceneOptions)->UUID? {
+        let stages=eligibleStages(h,options:options)
+        return h.segments.last(where:{(options.room==nil || $0.roomID==options.room) && stages.contains($0.stageID) && $0.registration==nil})?.id
+    }
     static func features(_ h:House,options:SceneOptions)->[Feature] {
-        let relevant=h.segments.filter{(options.room==nil || $0.roomID==options.room) && (options.stage==nil || $0.stageID==options.stage)}
-        let unregistered=relevant.last(where:{$0.registration==nil})?.id
+        let stages=eligibleStages(h,options:options),unregistered=activeUnregisteredSegment(h,options:options)
         return h.features.filter { f in
-            guard visible(f,options) else{return false}
+            guard visible(f,options),stages.contains(f.stageID) || (f.trade == .floor && options.stage==nil) else{return false}
             if let sid=f.segmentID {
                 if let unregistered {return sid==unregistered}
                 return h.segments.first(where:{$0.id==sid})?.registration != nil

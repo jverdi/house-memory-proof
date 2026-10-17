@@ -4,15 +4,17 @@ import AVFoundation
 import UIKit
 import CryptoKit
 
-struct TourShot:Codable {var roomID:UUID;var position:V3;var yaw:Double;var pitch:Double;var caption:String;var duration:Double}
+struct TourShot:Codable {var roomID:UUID;var position:V3;var yaw:Double;var pitch:Double;var caption:String;var duration:Double;var startPhase=0.0;var endPhase=1.0}
 struct TourPlan:Codable {var schema=1;var sourceRevision:Int;var synthetic:Bool;var shots:[TourShot];var excluded:[String];var fps=30;var width=1920;var height=1080}
 enum TourDirector {
-    static func plan(_ h:House,duration:Double=20)->TourPlan {
+    static func plan(_ h:House,duration:Double=20,options:SceneOptions=SceneOptions())->TourPlan {
         var shots:[TourShot]=[],excluded:[String]=[]
-        for r in h.rooms {
+        for r in h.rooms where options.room==nil || options.room==r.id {
+            var scope=options;scope.room=r.id
+            let stages=SceneBuilder.eligibleStages(h,options:scope),unregistered=SceneBuilder.activeUnregisteredSegment(h,options:scope)
             if h.isDemo {
                 shots.append(TourShot(roomID:r.id,position:r.origin+V3(r.size.x/2,r.size.y/2,1.6),yaw:0,pitch:0.08,caption:r.name+" · SYNTHETIC DEMONSTRATION",duration:5))
-            }else if let obs=h.observations.last(where:{$0.roomID==r.id && !$0.documentary}) {
+            }else if let obs=h.observations.last(where:{$0.roomID==r.id && !$0.documentary && stages.contains($0.stageID) && (unregistered==nil || $0.segmentID==unregistered)}) {
                 let m=obs.camera;var position=V3(m[3],-m[11],m[7]);var forward=V3(-m[2],m[10],-m[6])
                 if let registration=h.segments.first(where:{$0.id==obs.segmentID})?.registration {forward=registration.apply(forward)-registration.apply(V3());position=registration.apply(position)}
                 let yaw=atan2(-forward.x,forward.y)
@@ -20,7 +22,11 @@ enum TourDirector {
             }else {excluded.append(r.name+": no captured camera viewpoint")}
         }
         let length=max(5,min(60,duration))/Double(max(1,shots.count));for i in shots.indices{shots[i].duration=length}
-        return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:shots,excluded:excluded)
+        var chunks:[TourShot]=[]
+        for shot in shots {let totalFrames=max(1,Int((shot.duration*30).rounded()));var completed=0
+            while completed<totalFrames {let n=min(150,totalFrames-completed);var part=shot;part.duration=Double(n)/30;part.startPhase=Double(completed)/Double(totalFrames);part.endPhase=Double(completed+n)/Double(totalFrames);chunks.append(part);completed+=n}
+        }
+        return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunks,excluded:excluded)
     }
 }
 @MainActor enum MovieExporter {
@@ -33,7 +39,7 @@ enum TourDirector {
     // Compatibility adapter: AVAssetWriter's pixel buffer adaptor remains available
     // in iOS 26. Its use is isolated here; no live screen recording is performed.
     static func render(_ house:House,repo:Repository,options:SceneOptions,duration:Double=20,width:Int=1920,height:Int=1080,progress:@escaping(Double)->Void) async throws ->URL {
-        var plan=TourDirector.plan(house,duration:duration);plan.width=width;plan.height=height
+        var plan=TourDirector.plan(house,duration:duration,options:options);plan.width=width;plan.height=height
         guard !plan.shots.isEmpty else{throw HouseError.message("A tour needs a captured viewpoint or the synthetic sample house.")}
         guard repo.freeBytes()>800_000_000 else{throw HouseError.message("Free at least 800 MB for movie segments and the final file.")}
         let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
@@ -63,7 +69,7 @@ enum TourDirector {
                     try Task.checkCancellation()
                     guard UIApplication.shared.applicationState != .background,ProcessInfo.processInfo.thermalState != .critical else{throw HouseError.message("Movie checkpoint saved. Keep the app open and cool, then export again to resume.")}
                     while !input.isReadyForMoreMediaData {guard writer.status == .writing else{throw writer.error ?? HouseError.message("Movie encoder stopped.")};try await Task.sleep(nanoseconds:10_000_000)}
-                    camera.eulerAngles.y=Float(shot.yaw+sin(Double(frame)/Double(max(1,frames-1))*Double.pi)*0.65)
+                    camera.eulerAngles.y=Float(shot.yaw+sin((shot.startPhase+(shot.endPhase-shot.startPhase)*Double(frame)/Double(max(1,frames-1)))*Double.pi)*0.65)
                     let image=renderer.snapshot(atTime:Double(frame)/30,with:CGSize(width:width,height:height),antialiasingMode:.none)
                     try autoreleasepool {
                         var buffer:CVPixelBuffer?;let status=CVPixelBufferCreate(kCFAllocatorDefault,width,height,kCVPixelFormatType_32ARGB,[kCVPixelBufferCGImageCompatibilityKey:true,kCVPixelBufferCGBitmapContextCompatibilityKey:true] as CFDictionary,&buffer)

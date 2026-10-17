@@ -89,6 +89,8 @@ import ImageIO
         guard let segment,let repo=model?.repository else{return}
         guard repo.freeBytes()>500_000_000 else{message="Storage reserve reached. Saving this session.";stop();return}
         pending+=1;let token=generation;let houseID=houseID
+        let orientation:Int
+        switch (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.interfaceOrientation {case .landscapeRight:orientation=1;case .landscapeLeft:orientation=3;case .portraitUpsideDown:orientation=8;default:orientation=6}
         // One retained frame maximum; no unbounded ARFrame queue.
         DispatchQueue.global(qos:.utility).async { [weak self] in
             do {
@@ -108,7 +110,7 @@ import ImageIO
                 for row in 0..<4{for col in 0..<4{camera.append(Double(t[col][row]))}}
                 for row in 0..<3{for col in 0..<3{intrinsics.append(Double(k[col][row]))}}
                 let quality=Self.sharpness(image)
-                let obs=Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:frame.timestamp,image:imageKey,depth:depthKey,confidence:confidenceKey,depthWidth:dw,depthHeight:dh,width:image.width,height:image.height,camera:camera,intrinsics:intrinsics,tracking:String(describing:frame.camera.trackingState),light:Double(frame.lightEstimate?.ambientIntensity ?? 0),sharpness:quality,documentary:documentary)
+                let obs=Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:frame.timestamp,image:imageKey,depth:depthKey,confidence:confidenceKey,depthWidth:dw,depthHeight:dh,width:image.width,height:image.height,camera:camera,intrinsics:intrinsics,tracking:String(describing:frame.camera.trackingState),light:Double(frame.lightEstimate?.ambientIntensity ?? 0),sharpness:quality,documentary:documentary,imageOrientation:orientation)
                 Task {@MainActor in
                     guard let self else{return};self.pending-=1
                     guard self.generation==token,self.model?.selected==houseID else{return}
@@ -174,8 +176,8 @@ struct CaptureSurface:UIViewRepresentable {
     static func dismantleUIView(_ v:ARSCNView,coordinator:()){v.session.pause()}
 }
 enum TextRecognition {
-    static func read(_ image:CGImage) async throws ->String {try await Task.detached {
+    static func read(_ image:CGImage,orientation:CGImagePropertyOrientation = .right) async throws ->String {try await Task.detached {
         let r=VNRecognizeTextRequest();r.recognitionLevel = .accurate;r.usesLanguageCorrection=false
-        try VNImageRequestHandler(cgImage:image,orientation:.right,options:[:]).perform([r]);return (r.results ?? []).compactMap{$0.topCandidates(1).first?.string}.joined(separator:"\n")
+        try VNImageRequestHandler(cgImage:image,orientation:orientation,options:[:]).perform([r]);return (r.results ?? []).compactMap{$0.topCandidates(1).first?.string}.joined(separator:"\n")
     }.value}
 }

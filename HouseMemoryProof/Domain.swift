@@ -75,9 +75,10 @@ struct Observation:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var segmentID:UUID;var timestamp:Double;var date=Date()
     var image:String;var depth:String?;var confidence:String?;var depthWidth:Int=0;var depthHeight:Int=0
     var width:Int;var height:Int;var camera:[Double];var intrinsics:[Double]
-    var tracking:String;var light:Double;var sharpness:Double;var note="";var documentary=false
+    var tracking:String;var light:Double;var sharpness:Double;var note="";var documentary=false;var imageOrientation:Int?=nil
     // Native camera transform is row-major, ARKit right/up/back. No pretend calibration.
 }
+struct DocumentaryPhoto:Codable,Identifiable,Equatable {var id=UUID();var image:String;var date=Date();var note="";var roomID:UUID?;var stageID:UUID?}
 struct Segment:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var interrupted=false;var approved=false;var referencePoses:[ReferencePose]=[]
 }
@@ -92,8 +93,13 @@ struct Bookmark:Codable,Identifiable,Equatable { var id=UUID();var name:String;v
 struct House:Codable,Identifiable,Equatable {
     var schema=1;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
+    var documentaryPhotos:[DocumentaryPhoto]=[]
     var references:[ReferenceBoard]=[];var isDemo=false;var notes="";var closureNotes=""
-    var assets:Set<String> { Set(observations.flatMap{[$0.image,$0.depth,$0.confidence].compactMap{$0}}+drawings.map{$0.asset}+segments.compactMap{$0.worldMap}+references.flatMap{[$0.image,$0.pdf]}+features.compactMap{$0.texture}) }
+    var assets:Set<String> {
+        var keys=observations.flatMap{[$0.image,$0.depth,$0.confidence].compactMap{$0}}
+        keys+=drawings.map{$0.asset};keys+=segments.compactMap{$0.worldMap};keys+=references.flatMap{[$0.image,$0.pdf]};keys+=features.compactMap{$0.texture};keys+=documentaryPhotos.map{$0.image}
+        return Set(keys)
+    }
     func validate() throws {
         guard schema==1 else {throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
         guard rooms.count<=100,features.count<=10000,observations.count<=50000 else{throw HouseError.message("Project exceeds this build's tested limits.")}
@@ -174,6 +180,7 @@ extension House {
         dimensions=try c.decodeIfPresent([Dimension].self,forKey:.dimensions) ?? []
         drawings=try c.decodeIfPresent([Drawing].self,forKey:.drawings) ?? []
         bookmarks=try c.decodeIfPresent([Bookmark].self,forKey:.bookmarks) ?? []
+        documentaryPhotos=try c.decodeIfPresent([DocumentaryPhoto].self,forKey:.documentaryPhotos) ?? []
         references=try c.decodeIfPresent([ReferenceBoard].self,forKey:.references) ?? []
         isDemo=try c.decodeIfPresent(Bool.self,forKey:.isDemo) ?? false
         notes=try c.decodeIfPresent(String.self,forKey:.notes) ?? ""
