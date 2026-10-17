@@ -52,7 +52,7 @@ enum SceneBuilder {
     let unregistered = activeUnregisteredSegment(h, options: options)
     let current=DerivedEvidence.currentIDs(h)
     return h.features.filter { f in
-      let admitted=includeHiddenLayers ? (!f.hidden && f.artifactValid != false && (options.room==nil || options.room==f.roomID)):visible(f,options)
+      let admitted=includeHiddenLayers ? (f.artifactValid != false && (options.room==nil || options.room==f.roomID)):visible(f,options)
       guard current.contains(f.id),admitted,
         stages.contains(f.stageID) || (f.trade == .floor && options.stage == nil)
       else { return false }

@@ -829,6 +829,8 @@ import Darwin
                 guard (V3(ar:controller.camera.simdPosition)-first).length<1e-5 else{return false}
                 let index=try SpatialDisplayIndex(features:NavigationGeometry.collisionFeatures(h,options:hidden))
                 guard try SpatialClearance(index:index,camera:first).walkingDestination(from:first,toward:V3(3,3.4,1.6))==nil else{return false}
+                h.features[1].hidden=true;h.revision+=1;controller.load(h,hidden);controller.stepMove(SIMD2(0,1))
+                guard NavigationGeometry.collisionFeatures(h,options:hidden).count==2,(V3(ar:controller.camera.simdPosition)-first).length<1e-5 else{return false}
                 controller.stepLook(yaw:Float.pi/12,pitch:Float.pi/12)
                 guard abs(controller.yaw-Float.pi/12)<1e-6,abs(controller.pitch-Float.pi/12)<1e-6 else{return false}
                 controller.flying=true;controller.stepMove(SIMD2(0,1))
