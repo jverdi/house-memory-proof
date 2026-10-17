@@ -67,7 +67,8 @@ def request(token, path, body=None):
                                           'Content-Type': 'application/json'})
     try:
         with urllib.request.urlopen(req, timeout=45) as response:
-            return json.load(response)
+            raw = response.read()
+            return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as error:
         # Report only status and Apple's enum-style error codes, never request
         # headers, tokens, credentials, or arbitrary server response bodies.
