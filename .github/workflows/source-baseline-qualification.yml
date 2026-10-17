@@ -1,4 +1,4 @@
-name: Qualify pairwise source camera baseline
+name: Qualify source baseline and contradictory depth refusal
 on:
   push:
     branches: [main]

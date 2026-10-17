@@ -26,7 +26,7 @@ enum VisualMapping {
   struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v13-pairwise-source-baseline";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v14-contradictory-depth-abstention";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -109,7 +109,14 @@ enum VisualMapping {
         // with independent image provenance and agreement with continuous depth.
         // Descriptor matching and all query eligibility gates remain unchanged.
         let key=PixelIdentity(u,v)
-        if conflicts[o.id]?.contains(key) != true,let landmark=optimized[o.id]?[key],(landmark-point).length<=0.025 {point=landmark}
+        // A triangulated foreground detail can lie in front of a depth pixel
+        // that sees the background. Contradictory evidence must remove the
+        // correspondence, never silently move that image detail onto the wall.
+        guard conflicts[o.id]?.contains(key) != true else{continue}
+        if let landmark=optimized[o.id]?[key] {
+          guard (landmark-point).length<=0.025 else{continue}
+          point=landmark
+        }
         if let t=segment.registration{point=t.apply(point)}
         map.points.append(point);map.descriptors.append(features.descriptors.subdata(in:i*32..<(i+1)*32))
       }

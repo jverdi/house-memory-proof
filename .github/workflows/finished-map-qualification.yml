@@ -1,4 +1,4 @@
-name: Qualify observed finished visual maps
+name: Qualify observed finished visual maps and depth refusal
 on:
   push:
     branches: [main]

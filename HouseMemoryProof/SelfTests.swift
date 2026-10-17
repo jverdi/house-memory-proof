@@ -215,7 +215,11 @@ import Darwin
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(capture));try decoded.validate()
                 guard decoded.observations==original,decoded.segments[0].poseSolution==result.solution,(result.solution.bundleCheckRMS ?? 100)<2,DerivedEvidence.currentIDs(decoded).contains(result.feature.id),result.solution.landmarks?.count==result.solution.bundlePointCount else{return false}
                 let map=try VisualMapping.build(house:decoded,segment:decoded.segments[0],repo:repo),optimized=Set(result.solution.landmarks!.map{$0.point})
-                guard map.points.contains(where:{optimized.contains($0)}) else{return false}
+                guard map.points.contains(where:{optimized.contains($0)}),let supportedIndex=result.solution.landmarks!.firstIndex(where:{map.points.contains($0.point)}) else{return false}
+                var foreground=decoded
+                foreground.segments[0].poseSolution!.landmarks![supportedIndex].point.y-=0.5
+                let contradicted=try VisualMapping.build(house:foreground,segment:foreground.segments[0],repo:repo)
+                guard contradicted.points.count<map.points.count,foreground.observations==original else{throw HouseError.message("A photograph landmark with contradictory background depth was silently relocated instead of excluded.")}
                 var corrupted=decoded;corrupted.segments[0].poseSolution?.landmarks?[0].controls[0].observationID=UUID()
                 do{try corrupted.validate();return false}catch{}
                 var shifted=decoded;shifted.segments[0].poseSolution?.landmarks?[0].point.x+=0.01
