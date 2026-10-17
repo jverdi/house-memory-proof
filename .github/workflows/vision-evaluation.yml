@@ -50,6 +50,7 @@ jobs:
             ceres-2.2.0-eigen3.4-arm64-v3
             ceres-host-bootstrap-v1
       - name: Build shared production core as isolated command-line candidate
+        id: candidate
         run: bash tooling/opencv/build-host.sh
       - name: Preserve compiled SDK even if candidate qualification fails
         if: always() && hashFiles('build/opencv-host/opencv2.framework/opencv2') != ''
@@ -75,10 +76,21 @@ jobs:
       - name: Exercise separate room and floor map identities
         timeout-minutes: 25
         run: |
+          failed=0
           for seed in 905771 683431; do
-            python3 ci/run_bounded.py 300 build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/house-layout-$seed" --seed "$seed"
-            python3 ci/run_bounded.py 660 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/house-layout-$seed" --output "build/vision-evaluation/house-layout-$seed.json" --refine --bundle --house
+            if python3 ci/run_bounded.py 300 build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/house-layout-$seed" --seed "$seed"; then
+              python3 ci/run_bounded.py 660 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/house-layout-$seed" --output "build/vision-evaluation/house-layout-$seed.json" --refine --bundle --house || failed=1
+            else
+              failed=1
+            fi
           done
+          exit "$failed"
+      - name: Exercise closing walls with retained references and rejection challenges
+        if: always() && !cancelled() && steps.candidate.outcome == 'success'
+        timeout-minutes: 15
+        run: |
+          python3 ci/run_bounded.py 300 build/vision-env/bin/python tooling/simulation/house_layout_fixture.py build/house-paired --seed 905771 --paired
+          python3 ci/run_bounded.py 660 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/house-paired --output build/vision-evaluation/house-paired.json --refine --bundle --house
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -142,7 +142,9 @@ import Darwin
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
                 let original=capture.observations
                 capture.segments[0].poseSolution=try PoseGraph.build(house:capture,segment:capture.segments[0],repo:repo)
+                let graph=capture.segments[0].poseSolution!,anchorID=graph.anchorObservationID!
                 let result=try BundleRefinement.build(house:capture,segment:capture.segments[0],repo:repo)
+                guard result.solution.anchorObservationID==anchorID,let before=graph.cameras[anchorID.uuidString],let after=result.solution.cameras[anchorID.uuidString],zip(before,after).allSatisfy({abs($0-$1)<1e-10}) else{return false}
                 capture.segments[0].poseSolution=result.solution;capture.features=[result.feature]
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(capture));try decoded.validate()
                 return decoded.observations==original && decoded.segments[0].poseSolution==result.solution && (result.solution.bundleCheckRMS ?? 100)<2 && DerivedEvidence.currentIDs(decoded).contains(result.feature.id)

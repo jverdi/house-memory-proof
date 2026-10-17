@@ -13,9 +13,13 @@ enum BundleRefinement {
     let selected=PoseRefinement.selected(raw,segment:segment,house:house).0
     let used=Set(tracks.flatMap{$0.controls.map{$0.observationID}})
     var fits:[UUID:Int]=[:];for track in tracks {for control in track.controls.prefix(2) {fits[control.observationID,default:0]+=1}}
-    // Anchor the best-supported original camera in the same capture frame.
-    let observations=selected.filter{used.contains($0.id)}.sorted{a,b in let x=fits[a.id,default:0],y=fits[b.id,default:0];return x==y ? a.timestamp<b.timestamp:x>y}
-    guard observations.count>=3,observations.count<=120,(observations.first.map{fits[$0.id,default:0]} ?? 0)>=20 else{throw HouseError.message("Joint refinement needs an anchor with at least twenty independently checked tracks.")}
+    // Camera zero fixes the solver gauge. Preserve the pose graph's original
+    // anchor rather than freezing an arbitrary already-corrected camera.
+    let supported=selected.filter{used.contains($0.id)}.sorted{a,b in a.timestamp==b.timestamp ? a.id.uuidString<b.id.uuidString:a.timestamp<b.timestamp}
+    let anchorID=segment.poseSolution?.anchorObservationID ?? supported.first(where:{fits[$0.id,default:0]>=20})?.id
+    guard let anchorID,let anchor=supported.first(where:{$0.id==anchorID}),fits[anchorID,default:0]>=20 else{throw HouseError.message("Joint refinement needs twenty independently checked tracks on the established anchor. Capture more overlap; the reference frame was not changed.")}
+    let observations=[anchor]+supported.filter{$0.id != anchorID}
+    guard observations.count>=3,observations.count<=120 else{throw HouseError.message("Joint refinement needs three to 120 supported cameras.")}
     let lookup=Dictionary(uniqueKeysWithValues:observations.enumerated().map{($0.element.id,$0.offset)})
     let cameras=observations.flatMap{$0.camera},points=vertices.flatMap{[$0.x,$0.z,-$0.y]}
     let intrinsics=observations.flatMap{[$0.intrinsics[0],$0.intrinsics[4],$0.intrinsics[2],$0.intrinsics[5]]}

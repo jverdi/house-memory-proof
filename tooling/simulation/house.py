@@ -32,7 +32,7 @@ def render(items,position,yaw,width,height,texture_seed=None):
  yy,xx=np.mgrid[:height,:width];right=np.array([math.cos(yaw),-math.sin(yaw),0]);forward=np.array([math.sin(yaw),math.cos(yaw),0]);up=np.array([0,0,1])
  rays=(xx[...,None]-cx)/fx*right-(yy[...,None]-cy)/fy*up+forward
  inv=np.divide(1,rays,out=np.full_like(rays,np.inf),where=np.abs(rays)>1e-12)
- nearest=np.full((height,width),np.inf);colors=np.zeros((height,width,3),np.uint8)+15
+ nearest=np.full((height,width),np.inf);colors=np.zeros((height,width,3),np.uint8)+15;texture_mask=np.ones((height,width),bool)
  for item in items:
   low=np.array(item['low']);high=np.array(item['high'])
   with np.errstate(invalid='ignore'):
@@ -47,7 +47,7 @@ def render(items,position,yaw,width,height,texture_seed=None):
    leaving[...,axis][parallel]=np.inf if inside else -np.inf
   near=entering.max(axis=2);far=leaving.min(axis=2);hit=np.where(near>1e-8,near,far)
   selected=(far>=near)&(hit>1e-8)&(hit<nearest)&(hit<5)
-  nearest[selected]=hit[selected];colors[selected]=item['color']
+  nearest[selected]=hit[selected];colors[selected]=item['color'];texture_mask[selected]=not item.get('textureless',False)
  # Stable spatial texture helps the renderer exhibit blur/lighting changes.
  finite=np.isfinite(nearest);safe=np.where(finite,nearest,0)
  surface=position+rays*safe[...,None]
@@ -57,6 +57,7 @@ def render(items,position,yaw,width,height,texture_seed=None):
   value=((cell[...,0]*73856093)^(cell[...,1]*19349663)^(cell[...,2]*83492791)^texture_seed).astype(np.uint64)
   value=(value^(value>>13))*np.uint64(1274126177);value=value^(value>>16)
   pattern=.25+.75*(value%256)/255
+ pattern=np.where(texture_mask,pattern,1.0)
  colors=(colors*pattern[...,None]).astype(np.uint8)
  rotation=np.stack([right,up,-forward],axis=1)
  adapter=np.array([[1,0,0],[0,0,1],[0,-1,0]])

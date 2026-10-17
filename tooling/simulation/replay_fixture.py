@@ -10,11 +10,18 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
   for item in z.infolist():
    path=Path(item.filename);assert not path.is_absolute() and '..' not in path.parts
   z.extractall(candidate)
- queries=[]
- for q in oracle['queries']:
-  queries.append({key:q[key] for key in ('image','width','height','intrinsics','segmentID') if key in q})
-  shutil.copyfile(fixture/q['image'],candidate/q['image'])
- (candidate/'queries.json').write_text(json.dumps({'queries':queries}))
+ queries=[];original_names={}
+ assert len({q['image'] for q in oracle['queries']})==len(oracle['queries']), 'Duplicate evaluator query identities'
+ for index,q in enumerate(oracle['queries']):
+  image=(fixture/q['image']).read_bytes()
+  neutral=hashlib.sha256(str(index).encode()+b'\0'+image).hexdigest()[:32]+'.jpg'
+  original_names[neutral]=q['image'];(candidate/neutral).write_bytes(image)
+  item={key:q[key] for key in ('width','height','intrinsics','segmentID') if key in q};item['image']=neutral;queries.append(item)
+ # Scenario names and nominal/negative ordering are evaluator-only. Hash ordering
+ # is repeatable and independent of the expected match/pose labels.
+ queries.sort(key=lambda q:q['image'])
+ specification=json.dumps({'queries':queries},sort_keys=True)
+ (candidate/'queries.json').write_text(specification)
  denied=root/'oracle.json';denied.write_text(json.dumps(oracle))
  # System libraries / executables are readable. Only candidate data and the frozen
  # executable are admitted from the workspace. The evaluator's oracle is outside.
@@ -35,9 +42,15 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
   a.output.parent.mkdir(parents=True,exist_ok=True)
   a.output.write_text(json.dumps(dict(passed=False,oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),candidateRejected=True,error=result.stderr[-5000:],productionQualified=False),indent=2))
   raise RuntimeError(result.stderr[-5000:])
- report=json.loads(result.stdout);by_name={x['image']:x for x in report['queries']};positive_accepted=0;false_accepts=0;worst=0.
+ report=json.loads(result.stdout)
+ assert len(report['queries'])==len(queries) and {q['image'] for q in report['queries']}==set(original_names), 'Candidate omitted or duplicated queries'
+ for query in report['queries']:query['image']=original_names[query['image']]
+ order={q['image']:index for index,q in enumerate(oracle['queries'])};report['queries'].sort(key=lambda q:order[q['image']])
+ report['candidateQuerySpecificationSHA256']=hashlib.sha256(specification.encode()).hexdigest()
+ report['queryLabelsExcluded']=True
+ by_name={x['image']:x for x in report['queries']};positive_accepted=0;false_accepts=0;worst=0.
  for q in oracle['queries']:
-  r=by_name[q['image']]
+  r=by_name[q['image']];r['scenario']=q.get('scenario','nominal' if q['shouldMatch'] else 'unrelated')
   if q['shouldMatch'] is None:
    r['exploratoryScenario']=q.get('scenario','unscored query');continue
   if r['accepted'] and q['shouldMatch']:
@@ -50,6 +63,14 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
   p95=accepted_errors[max(0,math.ceil(len(accepted_errors)*.95)-1)] if accepted_errors else None
   availability=positive_accepted/max(1,report['positiveQueries'])
   report.update(p95Metres=p95,availability=availability,passed=availability>=.9 and p95 is not None and p95<=.010 and worst<=.025 and false_accepts==0 and report['mapCount']==4)
+  scenarios={}
+  for label in sorted(set(q.get('scenario','nominal') for q in oracle['queries'] if q['shouldMatch'] is True)):
+   expected=[q for q in oracle['queries'] if q['shouldMatch'] is True and q.get('scenario','nominal')==label]
+   errors=sorted(by_name[q['image']]['evaluatorPositionErrorMetres'] for q in expected if by_name[q['image']]['accepted'])
+   fraction=len(errors)/len(expected);tail=errors[max(0,math.ceil(len(errors)*.95)-1)] if errors else None
+   scenarios[label]=dict(attempts=len(expected),accepted=len(errors),availability=fraction,p95Metres=tail,worstMetres=max(errors,default=None),passed=fraction>=.9 and tail is not None and tail<=.010 and max(errors)<=.025)
+  report['scenarioMetrics']=scenarios
+  report['passed']=report['passed'] and all(s['passed'] for s in scenarios.values())
   report['limitations']=['Four-room/two-level analytic construction layout','Incomplete corner coverage; no unseen cavity completeness claim','No calibrated phone sensor model','Finished-stage and full-house registration qualification remain separate']
  if a.refine:
   errors=[]

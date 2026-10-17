@@ -276,7 +276,7 @@ enum Exporter {
             while bin.count % 4 != 0 { bin.append(0) }
             images.append([
               "bufferView": views.count - 1,
-              "mimeType": key.hasSuffix("png") ? "image/png" : "image/jpeg",
+              "mimeType": (key as NSString).pathExtension.lowercased()=="png" ? "image/png" : "image/jpeg",
             ])
             textureIDs[key] = textures.count
             textures.append(["source": images.count - 1])

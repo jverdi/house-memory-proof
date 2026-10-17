@@ -95,6 +95,9 @@ struct ReferencesPage: View {
           } catch { model.error = error.localizedDescription }
         }
       }
+      Section {
+        Text("For a rough-in to finished-stage handoff, retain at least three distinct fixed references; four provide extra coverage. Spread them across upper and lower viewing regions and two wall planes, where they remain visible after drywall. Capture translated, overlapping views of them in both stages. A cluster high on one wall may not constrain visual alignment.").font(.footnote)
+      }
       ForEach(house.references) { board in
         NavigationLink(board.name) { ReferenceEditor(board: board) }
       }
