@@ -133,7 +133,7 @@ struct ReferenceEditor: View {
                     if !h.features[k].sourceIDs.isEmpty {
                       h.features[k].artifactValid = false
                       h.features[k].hidden = true
-                    } else if h.features[k].name == "Observed LiDAR surface" {
+                    } else if h.features[k].resolvedGeometrySource == .capturedMesh {
                       h.features[k].hidden = false
                     }
                   }

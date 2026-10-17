@@ -400,10 +400,7 @@ import Vision
           var saved = self.model?.acceptStagedCapture(obs,projectID:houseID) == true
           if saved,self.count % 5 == 0 {
             saved = self.model?.edit(projectID: houseID) { h in
-              h.features.removeAll {
-                $0.segmentID == segment.id && $0.name == "Observed LiDAR surface"
-              }
-              h.features.append(contentsOf: self.meshes.values.flatMap{$0})
+              MeshSemantics.publishCaptured(self.meshes.values.flatMap{$0},segmentID:segment.id,into:&h)
               if let i = h.segments.firstIndex(where: { $0.id == segment.id }) {
                 h.segments[i].referencePoses = Array(self.currentReferencePoses.values)
               }
@@ -597,8 +594,7 @@ import Vision
     guard let segment,let houseID,let model,let repo=model.repository else{finishCaptureState();return}
     let features = meshes.values.flatMap{$0}
     let saved = model.edit(projectID: houseID) { h in
-      h.features.removeAll { $0.segmentID == segment.id }
-      h.features.append(contentsOf: features)
+      MeshSemantics.publishCaptured(features,segmentID:segment.id,into:&h)
       if let i = h.segments.firstIndex(where: { $0.id == segment.id }) {
         h.segments[i].referencePoses = Array(currentReferencePoses.values)
       }

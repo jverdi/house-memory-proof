@@ -25,7 +25,7 @@ enum CoverageAnalyzer {
       segmentID: segment.id, revision: house.revision, sampledPatches: 0, supportedPatches: 0,
       insufficientViews: 0, poorQuality: 0, missingDepth: 0, observedArea: 0, supportedArea: 0)
     let surfaces = house.features.filter {
-      $0.segmentID == segment.id && $0.name == "Observed LiDAR surface"
+      $0.segmentID == segment.id && $0.resolvedGeometrySource == .capturedMesh
     }
     for f in surfaces {
       try Task.checkCancellation()

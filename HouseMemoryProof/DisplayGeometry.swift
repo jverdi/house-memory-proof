@@ -137,7 +137,120 @@ enum MeshSemantics {
         part.triangles.append(indices[source]!)
       }}
       let trade:Trade=label=="floor" ? .floor:label=="ceiling" ? .ceiling:label=="wall" ? (stage.category == .finished ? .finish:.structure):.unknown
-      return Feature(id:identity(anchor:anchor,label:label),name:"Observed "+label+" surface",trade:trade,roomID:roomID,stageID:stage.id,kind:.observed,mesh:part,notes:"ARKit face classification suggestion; unreviewed. It does not identify hidden electrical, plumbing or HVAC systems.",segmentID:segmentID,captureClassification:label,captureAnchorID:anchor)
+      return Feature(id:identity(anchor:anchor,label:label),name:"Observed "+label+" surface",trade:trade,roomID:roomID,stageID:stage.id,kind:.observed,mesh:part,notes:"ARKit face classification suggestion; unreviewed. It does not identify hidden electrical, plumbing or HVAC systems.",segmentID:segmentID,captureClassification:label,captureAnchorID:anchor,geometrySource:.capturedMesh)
     }
+  }
+}
+
+extension MeshSemantics {
+  static func publishCaptured(_ snapshot:[Feature],segmentID:UUID,into house:inout House) {
+    let old=Dictionary(house.features.filter{$0.segmentID==segmentID && $0.resolvedGeometrySource == .capturedMesh}.map{($0.id,$0)},uniquingKeysWith:{a,_ in a})
+    let replacements=snapshot.filter{$0.segmentID==segmentID && $0.resolvedGeometrySource == .capturedMesh}.map{input in
+      var feature=input
+      if let prior=old[input.id] {
+        feature.revision=prior.revision+(prior.mesh==input.mesh ? 0:1)
+        feature.name=prior.name;feature.hidden=prior.hidden
+        if prior.reviewed {feature.trade=prior.trade;feature.reviewed=true}
+      }
+      return feature
+    }
+    house.features.removeAll{$0.segmentID==segmentID && $0.resolvedGeometrySource == .capturedMesh}
+    house.features.append(contentsOf:replacements)
+  }
+  // Transfer display labels only where every fused triangle vertex agrees with
+  // nearby, similarly oriented original faces. Unseen/ambiguous faces stay
+  // unclassified; no geometry or measurement is inferred from a label.
+  static func transfer(_ surface:Feature,from originals:[Feature])throws->[Feature] {
+    guard surface.mesh.valid else{throw HouseError.message("Invalid reconstructed surface.")}
+    let sources=originals.filter{$0.segmentID==surface.segmentID && $0.resolvedGeometrySource == .capturedMesh}
+    let index=try CapturedFaceLabels(sources)
+    var meshes:[String:Mesh]=[:],lookups:[String:[Int32:Int32]]=[:],trades:[String:Trade]=[:]
+    for face in stride(from:0,to:surface.mesh.triangles.count,by:3) {
+      if face%3000==0 {try Task.checkCancellation()}
+      let ids=Array(surface.mesh.triangles[face..<face+3]),p=ids.map{surface.mesh.vertices[Int($0)]}
+      let normal=(p[1]-p[0]).cross(p[2]-p[0]).normalized
+      let labels=p.map{index.label(at:$0,normal:normal)}
+      let same=labels[0] != nil && labels.allSatisfy{$0?.0==labels[0]?.0 && $0?.1==labels[0]?.1}
+      let label=same ? labels[0]!.0:"unknown",trade=same ? labels[0]!.1:Trade.unknown
+      var mesh=meshes[label] ?? Mesh(),lookup=lookups[label] ?? [:]
+      for id in ids {
+        if lookup[id]==nil {lookup[id]=Int32(mesh.vertices.count);mesh.vertices.append(surface.mesh.vertices[Int(id)])}
+        mesh.triangles.append(lookup[id]!)
+      }
+      meshes[label]=mesh;lookups[label]=lookup;trades[label]=trade
+    }
+    return meshes.keys.sorted().map{label in
+      var result=surface;result.id=identity(anchor:surface.id,label:label);result.mesh=meshes[label]!
+      result.captureClassification=label;result.captureAnchorID=nil;result.trade=trades[label]!
+      result.name="Reconstructed \(label) surface";result.hidden=false
+      result.notes += " Display classification transferred only within 3 cm of agreeing captured faces; unreviewed and not a service identification."
+      return result
+    }
+  }
+}
+
+private struct CapturedFaceLabels {
+  struct Face {var a:V3;var b:V3;var c:V3;var normal:V3;var label:String;var trade:Trade;var bounds:SpatialClearance.Bounds}
+  struct Node {var bounds:SpatialClearance.Bounds;var start:Int;var count:Int;var left = -1;var right = -1}
+  var faces:[Face]=[];var nodes:[Node]=[]
+  init(_ originals:[Feature])throws {
+    for f in originals {
+      guard let label=f.captureClassification,label != "unknown",f.mesh.valid else{continue}
+      guard f.mesh.triangles.count/3<=500000-faces.count else{throw HouseError.message("Classified surface exceeds the local processing budget. Reconstruct a smaller capture session.")}
+      for i in stride(from:0,to:f.mesh.triangles.count,by:3) {
+        if i%3000==0 {try Task.checkCancellation()}
+        let a=f.mesh.vertices[Int(f.mesh.triangles[i])],b=f.mesh.vertices[Int(f.mesh.triangles[i+1])],c=f.mesh.vertices[Int(f.mesh.triangles[i+2])]
+        let n=(b-a).cross(c-a);guard n.length>1e-9 else{continue}
+        let bounds=SpatialClearance.Bounds(low:a,high:a).union(.init(low:b,high:b)).union(.init(low:c,high:c))
+        faces.append(Face(a:a,b:b,c:c,normal:n.normalized,label:label,trade:f.trade,bounds:bounds))
+      }
+    }
+    if !faces.isEmpty {_ = try build(0,faces.count)}
+  }
+  private mutating func build(_ start:Int,_ end:Int)throws->Int {
+    try Task.checkCancellation()
+    var bounds=faces[start].bounds
+    for i in start+1..<end {bounds=bounds.union(faces[i].bounds)}
+    let index=nodes.count;nodes.append(Node(bounds:bounds,start:start,count:end-start))
+    if end-start>16 {
+      let size=bounds.high-bounds.low,axis=size.x>=size.y && size.x>=size.z ? 0:size.y>=size.z ? 1:2
+      func coordinate(_ f:Face)->Double {let c=f.bounds.centre;return axis==0 ? c.x:axis==1 ? c.y:c.z}
+      faces.replaceSubrange(start..<end,with:faces[start..<end].sorted{coordinate($0)<coordinate($1)})
+      let middle=(start+end)/2,left=try build(start,middle),right=try build(middle,end)
+      nodes[index].left=left;nodes[index].right=right;nodes[index].count=0
+    }
+    return index
+  }
+  private func closest(_ p:V3,_ f:Face)->V3 {
+    let ab=f.b-f.a,ac=f.c-f.a,ap=p-f.a,d1=ab.dot(ap),d2=ac.dot(ap)
+    if d1<=0 && d2<=0{return f.a}
+    let bp=p-f.b,d3=ab.dot(bp),d4=ac.dot(bp)
+    if d3>=0 && d4<=d3{return f.b}
+    let vc=d1*d4-d3*d2
+    if vc<=0 && d1>=0 && d3<=0{return f.a+ab*(d1/(d1-d3))}
+    let cp=p-f.c,d5=ab.dot(cp),d6=ac.dot(cp)
+    if d6>=0 && d5<=d6{return f.c}
+    let vb=d5*d2-d1*d6
+    if vb<=0 && d2>=0 && d6<=0{return f.a+ac*(d2/(d2-d6))}
+    let va=d3*d6-d5*d4
+    if va<=0 && d4-d3>=0 && d5-d6>=0{return f.b+(f.c-f.b)*((d4-d3)/((d4-d3)+(d5-d6)))}
+    let denominator=va+vb+vc
+    guard abs(denominator)>1e-18 else{return f.a}
+    return f.a+ab*(vb/denominator)+ac*(vc/denominator)
+  }
+  func label(at p:V3,normal:V3)->(String,Trade)? {
+    guard !nodes.isEmpty,normal.length>0.9 else{return nil}
+    var stack=[0],result:(String,Trade)?
+    while let i=stack.popLast() {
+      let node=nodes[i];guard node.bounds.intersects(p,p,radius:0.03) else{continue}
+      if node.count==0 {stack.append(node.left);stack.append(node.right);continue}
+      for j in node.start..<node.start+node.count {
+        let f=faces[j]
+        guard abs(normal.dot(f.normal))>=0.95,(closest(p,f)-p).length<=0.03 else{continue}
+        if let prior=result,prior.0 != f.label || prior.1 != f.trade{return nil}
+        result=(f.label,f.trade)
+      }
+    }
+    return result
   }
 }

@@ -20,7 +20,7 @@ enum SimulatedCapture {
       Feature(
         name: "Observed LiDAR surface", trade: .unknown, roomID: s.roomID, stageID: s.stageID,
         kind: .synthetic, mesh: .box(center: V3(0, 2, 1.4), size: V3(2.4, 0.01, 2.0)),
-        notes: "Synthetic target; never a real observation.", segmentID: s.id)
+        notes: "Synthetic target; never a real observation.", segmentID: s.id,geometrySource:.capturedMesh)
     ]
     let w = 192
     let height = 144

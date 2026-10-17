@@ -541,7 +541,7 @@ struct ReconstructionPage: View {
                   "Project changed while processing. Candidate was not published; retry.")
               }
               model.edit {
-                $0.features.removeAll { $0.segmentID == s.id && $0.name == feature.name }
+                $0.features.removeAll { $0.segmentID == s.id && $0.resolvedGeometrySource == .depthPoints }
                 $0.features.append(feature)
               }
               return nil
@@ -578,7 +578,7 @@ struct ReconstructionPage: View {
                 h.segments[index].poseSolution = solution
                 h.visualMaps.removeAll { $0.segmentID == s.id }
                 for i in h.features.indices
-                where h.features[i].segmentID == s.id {
+                where h.features[i].segmentID == s.id && h.features[i].resolvedGeometrySource != .capturedMesh {
                   h.features[i].artifactValid = false
                   h.features[i].hidden = true
                 }
@@ -595,7 +595,7 @@ struct ReconstructionPage: View {
                 guard let index=h.segments.firstIndex(where:{$0.id==s.id}) else{return}
                 h.segments[index].poseSolution=result.solution
                 h.visualMaps.removeAll{$0.segmentID==s.id}
-                for i in h.features.indices where h.features[i].segmentID==s.id {h.features[i].artifactValid=false;h.features[i].hidden=true}
+                for i in h.features.indices where h.features[i].segmentID==s.id && h.features[i].resolvedGeometrySource != .capturedMesh {h.features[i].artifactValid=false;h.features[i].hidden=true}
                 h.features.removeAll{$0.segmentID==s.id && $0.name==result.feature.name}
                 h.features.append(result.feature)
               };return nil
@@ -615,21 +615,22 @@ struct ReconstructionPage: View {
               let surface = try await SurfaceReconstruction.build(
                 house: house, segment: s, repo: repo
               ) { model.progress = $0 }
+              let surfaces = try await LocalWorker.run {try MeshSemantics.transfer(surface, from: house.features)}
               try Task.checkCancellation()
               guard model.house?.id == house.id, model.house?.revision == revision else {
                 throw HouseError.message("Project changed; surface candidate not published.")
               }
               model.edit { h in
-                h.features.removeAll { $0.segmentID == s.id && $0.name == surface.name }
+                h.features.removeAll { $0.segmentID == s.id && ($0.resolvedGeometrySource == .depthFusion || $0.resolvedGeometrySource == .photoTexture) }
                 for i in h.features.indices {
                   if h.features[i].segmentID == s.id
-                    && (h.features[i].name == "Observed LiDAR surface"
-                      || h.features[i].name.hasPrefix("Fused depth"))
+                    && (h.features[i].resolvedGeometrySource == .capturedMesh
+                      || h.features[i].resolvedGeometrySource == .depthPoints)
                   {
                     h.features[i].hidden = true
                   }
                 }
-                h.features.append(surface)
+                h.features.append(contentsOf: surfaces)
               }
               return nil
             }
@@ -648,16 +649,16 @@ struct ReconstructionPage: View {
               model.edit { h in
                 for i in h.features.indices {
                   if h.features[i].segmentID == s.id
-                    && (h.features[i].name == "Observed LiDAR surface"
-                      || h.features[i].name == "Reconstructed depth surface")
+                    && (h.features[i].resolvedGeometrySource == .capturedMesh
+                      || h.features[i].resolvedGeometrySource == .depthFusion
+                      || h.features[i].resolvedGeometrySource == .depthPoints)
                   {
                     h.features[i].hidden = true
                   }
                 }
                 h.features.removeAll {
                   $0.segmentID == s.id
-                    && ($0.name == "Photo-textured surface"
-                      || $0.name == "Untextured surface · missing photo support")
+                    && $0.resolvedGeometrySource == .photoTexture
                 }
                 h.features.append(contentsOf: features)
               }

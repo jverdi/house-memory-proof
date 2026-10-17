@@ -137,6 +137,38 @@ import Darwin
                 guard !SceneBuilder.features(h,options:SceneOptions()).contains(where:{$0.trade == .ceiling}),SceneBuilder.features(h,options:SceneOptions(ceilings:true)).contains(where:{$0.trade == .ceiling}) else{return false}
                 return MeshSemantics.partition(mesh,labels:["floor","ceiling","unsupported"],anchor:anchor,roomID:room.id,stage:stage,segmentID:segment.id).map{$0.id}==parts.map{$0.id}
             }
+            await check("Repeated classified capture snapshots keep identity and invalidate changed source geometry") {
+                var h=House.empty("Capture updates");let room=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:room.id,stageID:stage.id);h.segments=[segment]
+                let mesh=Mesh(vertices:[V3(),V3(1,0,0),V3(0,1,0)],triangles:[0,1,2]),anchor=UUID()
+                let first=MeshSemantics.partition(mesh,labels:["floor"],anchor:anchor,roomID:room.id,stage:stage,segmentID:segment.id)
+                MeshSemantics.publishCaptured(first,segmentID:segment.id,into:&h)
+                h.features[0].name="Owner's renamed floor"
+                let annotation=Feature(name:"Traced route",trade:.electrical,roomID:room.id,stageID:stage.id,kind:.observed,mesh:mesh,segmentID:segment.id,annotationSources:[AnnotationDependency(featureID:first[0].id,revision:1,segmentID:segment.id,registration:nil)])
+                h.features.append(annotation)
+                MeshSemantics.publishCaptured(first,segmentID:segment.id,into:&h);try h.validate()
+                guard h.features.count==2,DerivedEvidence.currentIDs(h).contains(annotation.id) else{return false}
+                var changed=first;changed[0].mesh.vertices[0].z=0.02
+                MeshSemantics.publishCaptured(changed,segmentID:segment.id,into:&h);try h.validate()
+                guard let floor=h.features.first(where:{$0.id==first[0].id}) else{return false}
+                return h.features.count==2 && floor.name=="Owner's renamed floor" && floor.revision==2 && !DerivedEvidence.currentIDs(h).contains(annotation.id)
+            }
+            await check("Surface refinement retains supported ceiling labels and leaves conflicts unknown") {
+                var h=House.empty("Classified surface");let room=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:room.id,stageID:stage.id);h.segments=[segment]
+                let mesh=Mesh(vertices:[V3(0,0,2),V3(1,0,2),V3(0,1,2)],triangles:[0,1,2])
+                let originals=MeshSemantics.partition(mesh,labels:["ceiling"],anchor:UUID(),roomID:room.id,stage:stage,segmentID:segment.id)
+                var fused=Feature(name:"Renamed fusion",trade:.unknown,roomID:room.id,stageID:stage.id,kind:.synthetic,mesh:mesh,segmentID:segment.id,geometrySource:.depthFusion)
+                fused.mesh.vertices=fused.mesh.vertices.map{$0+V3(0,0,0.015)}
+                let parts=try MeshSemantics.transfer(fused,from:originals)
+                guard parts.count==1,parts[0].trade == .ceiling,parts[0].mesh==fused.mesh else{return false}
+                h.features=parts
+                guard SceneBuilder.features(h,options:SceneOptions()).isEmpty,SceneBuilder.features(h,options:SceneOptions(ceilings:true)).count==1 else{return false}
+                var conflict=originals[0];conflict.id=UUID();conflict.captureClassification="floor";conflict.trade = .floor
+                let ambiguous=try MeshSemantics.transfer(fused,from:originals+[conflict])
+                guard ambiguous.count==1,ambiguous[0].trade == .unknown else{return false}
+                fused.mesh.vertices=fused.mesh.vertices.map{$0+V3(0,0,0.1)}
+                let unsupported=try MeshSemantics.transfer(fused,from:originals)
+                return unsupported.count==1 && unsupported[0].trade == .unknown && unsupported[0].mesh==fused.mesh
+            }
             await check("Field evidence separates validation, preserves abstentions and never enables precision") {
                 var h=House.empty("Field record")
                 let dimension=Dimension(name:"Fixture width",a:V3(),b:V3(1.01,0,0),roomID:h.rooms[0].id,sourceRevision:1)
@@ -543,11 +575,13 @@ import Darwin
                 let pointGLB=try Exporter.glb(pointHouse,options:SceneOptions()),pointUSD=try Exporter.usdz(pointHouse,options:SceneOptions())
                 for (from,name) in [(pointGLB,"points.glb"),(pointUSD,"points.usdz")]{let target=mainRepo.root.appendingPathComponent(name);try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:from,to:target)}
                 let error=feature.mesh.vertices.map{abs($0.y-2)}.max() ?? .infinity
-                let textured=try TextureBuilder.build(house:fixture,segment:fixture.segments[0],repo:mainRepo)
+                var renamed=fixture;renamed.features[0].name="Renamed construction surface";renamed.features[0].hidden=true
+                let coverage=try CoverageAnalyzer.analyze(house:renamed,segment:renamed.segments[0],repo:mainRepo)
+                let textured=try TextureBuilder.build(house:renamed,segment:renamed.segments[0],repo:mainRepo)
                 var candidate=fixture;candidate.features=textured
                 let glb=try Exporter.glb(candidate,options:SceneOptions());try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("textured.glb"));try FileManager.default.copyItem(at:glb,to:mainRepo.root.appendingPathComponent("textured.glb"))
                 let usd=try Exporter.usdz(candidate,options:SceneOptions());try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("textured.usdz"));try FileManager.default.copyItem(at:usd,to:mainRepo.root.appendingPathComponent("textured.usdz"))
-                results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":feature.mesh.vertices.count>100 && error<0.003 && textured.contains{$0.texture != nil},"points":feature.mesh.vertices.count,"maxPlaneErrorMetres":error,"syntheticOnly":true])
+                results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":feature.mesh.vertices.count>100 && error<0.003 && coverage.sampledPatches>0 && textured.allSatisfy{!$0.hidden && $0.resolvedGeometrySource == .photoTexture} && textured.contains{$0.texture != nil},"points":feature.mesh.vertices.count,"maxPlaneErrorMetres":error,"syntheticOnly":true])
             }catch{results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":false,"error":error.localizedDescription])}
             do {
                 guard let bundle=Bundle.main.url(forResource:"IFC",withExtension:nil) else{throw HouseError.message("Simulation bundle missing.")}

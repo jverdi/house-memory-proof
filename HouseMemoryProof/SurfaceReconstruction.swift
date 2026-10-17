@@ -73,6 +73,6 @@ enum SurfaceReconstruction {
       sourceIDs: observations.map { $0.id },
       notes:
         "Sparse 2 cm signed-distance fusion, 6 cm truncation and ≥3 distinct views. Depth discontinuities are excluded. \(referenceSupported ? "Locally constrained camera estimates were used; unsupported frames were excluded.":"Uses unoptimized camera priors.") Thin services, occlusions and precision remain unqualified.",
-      segmentID: segment.id, sourceFingerprint: try VisualMapping.fingerprint(house:house,segment:segment))
+      segmentID: segment.id, sourceFingerprint: try VisualMapping.fingerprint(house:house,segment:segment),geometrySource:.depthFusion)
   }
 }

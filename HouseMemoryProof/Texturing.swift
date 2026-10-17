@@ -33,30 +33,15 @@ enum TextureBuilder {
     let raw = house.observations.filter {
       $0.segmentID == segment.id && $0.depth != nil && !$0.documentary
     }.sorted { $0.sharpness > $1.sharpness }
-    let usesSurface = house.features.contains {
-      $0.segmentID == segment.id && $0.name == "Reconstructed depth surface"
-        && $0.artifactValid != false
-    }
-    let observations =
-      usesSurface ? PoseRefinement.selected(raw, segment: segment, house: house).0 : raw
-    let candidates = Array(observations.filter{$0.light>100}.prefix(16))
-    let cameras = try candidates.map {
-      Camera(observation: $0, depth: try $0.depth.map { try repo.read($0) })
-    }
-    guard !cameras.isEmpty else {
-      throw HouseError.message(
-        "No posed depth photographs are available for visibility-tested textures.")
-    }
-    let reconstructed = house.features.filter {
-      $0.segmentID == segment.id && $0.name == "Reconstructed depth surface"
-        && $0.artifactValid != false && !$0.mesh.triangles.isEmpty
-    }
-    let input =
-      reconstructed.isEmpty
-      ? house.features.filter {
-        $0.segmentID == segment.id && $0.name == "Observed LiDAR surface"
-          && !$0.mesh.triangles.isEmpty
-      } : reconstructed
+    let current=DerivedEvidence.currentIDs(house)
+    let eligible=house.features.filter{$0.segmentID==segment.id && current.contains($0.id) && !$0.mesh.triangles.isEmpty}
+    let reconstructed=eligible.filter{$0.resolvedGeometrySource == .depthFusion}
+    let usesSurface = !reconstructed.isEmpty
+    let observations = usesSurface ? PoseRefinement.selected(raw,segment:segment,house:house).0:raw
+    let candidates=Array(observations.filter{$0.light>100}.prefix(16))
+    let cameras=try candidates.map{Camera(observation:$0,depth:try $0.depth.map{try repo.read($0)})}
+    guard !cameras.isEmpty else{throw HouseError.message("No posed depth photographs are available for visibility-tested textures.")}
+    let input=reconstructed.isEmpty ? eligible.filter{$0.resolvedGeometrySource == .capturedMesh}:reconstructed
     guard !input.isEmpty else {
       throw HouseError.message("This session has no original LiDAR triangle surfaces to texture.")
     }
@@ -95,6 +80,8 @@ enum TextureBuilder {
       for (j, patch) in patches.sorted(by: { $0.key < $1.key }) {
         var copy = f
         copy.id = UUID()
+        copy.geometrySource = .photoTexture
+        copy.hidden = false
         copy.name = "Photo-textured surface"
         copy.mesh = patch.0
         copy.uv = patch.1
@@ -107,6 +94,8 @@ enum TextureBuilder {
       if !remainder.triangles.isEmpty {
         var copy = f
         copy.id = UUID()
+        copy.geometrySource = .photoTexture
+        copy.hidden = false
         copy.name = "Untextured surface · missing photo support"
         copy.mesh = remainder
         output.append(copy)

@@ -74,10 +74,22 @@ struct Stage:Codable,Identifiable,Equatable {
 struct AnnotationDependency:Codable,Equatable {
     var featureID:UUID;var revision:Int;var segmentID:UUID?;var registration:Rigid?
 }
+enum GeometrySource:String,Codable {case capturedMesh,depthPoints,depthFusion,photoTexture}
 struct Feature:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var trade:Trade;var roomID:UUID;var stageID:UUID;var kind:EvidenceKind
     var mesh:Mesh;var route:[V3]=[];var sourceIDs:[UUID]=[];var notes="";var endpoint="";var reviewed=false
-    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil;var sourceFingerprint:String?=nil;var photoControls:[PhotoControl]?=nil;var pointTracks:[PointTrack]?=nil;var annotationSources:[AnnotationDependency]?=nil;var captureClassification:String?=nil;var captureAnchorID:UUID?=nil
+    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil;var sourceFingerprint:String?=nil;var photoControls:[PhotoControl]?=nil;var pointTracks:[PointTrack]?=nil;var annotationSources:[AnnotationDependency]?=nil;var captureClassification:String?=nil;var captureAnchorID:UUID?=nil;var geometrySource:GeometrySource?=nil
+    var resolvedGeometrySource:GeometrySource? {
+        if let geometrySource{return geometrySource}
+        // Read-only compatibility for pre-role archives. Newly generated
+        // geometry carries a role that survives user renaming.
+        if name=="Observed LiDAR surface" {return .capturedMesh}
+        if name.hasPrefix("Fused depth") {return .depthPoints}
+        if name=="Reconstructed depth surface" {return .depthFusion}
+        if name=="Photo-textured surface" || name=="Untextured surface · missing photo support" {return .photoTexture}
+        if captureAnchorID != nil{return .capturedMesh}
+        return nil
+    }
 }
 struct Observation:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var segmentID:UUID;var timestamp:Double;var date=Date()
