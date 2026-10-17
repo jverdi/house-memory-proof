@@ -607,6 +607,10 @@ struct CapturePage: View {
                 ).font(.caption).foregroundStyle(.secondary)
               }
             }.disabled(s.worldMap == nil && s.referencePoses.isEmpty && !house.visualMaps.contains(where:{$0.roomID==s.roomID}))
+            Button("Process capture") {model.processCapture(projectID:house.id,segmentID:s.id)}.disabled(model.busy || model.captureInProgress)
+            if let report=house.processingReports.first(where:{$0.segmentID==s.id}) {
+              NavigationLink(report.complete ? "Processing report":"Processing report · needs attention") {CaptureProcessingReportPage(report:report)}
+            }
           }
         }
       }.navigationTitle("Capture").onAppear {
@@ -631,6 +635,7 @@ struct CapturePage: View {
   }
 }
 struct CaptureSessionView: View {
+  @EnvironmentObject private var model:AppModel
   @Environment(\.dismiss) var dismiss
   @Environment(\.scenePhase) var phase
   @StateObject var controller: CaptureController
@@ -662,6 +667,11 @@ struct CaptureSessionView: View {
         Spacer()
         VStack(spacing: 12) {
           Text(controller.message).font(.callout)
+          if model.busy {
+            Text(model.status).font(.caption)
+            ProgressView(value:model.progress)
+            Button("Pause processing") {model.cancelOperation()}
+          }
           if prior != nil && !controller.running {
             Picker("Reveal volume",selection:$boundaryID) {
               Text("Choose wall or ceiling").tag(Optional<UUID>.none)
@@ -684,7 +694,7 @@ struct CaptureSessionView: View {
             } else {
               Button(controller.processing ? "Saving…" : "Start") {
                 controller.start(room: room, stage: stage, prior: prior, reveal: prior != nil, boundary:boundaries.first(where:{$0.id==boundaryID}))
-              }.buttonStyle(.borderedProminent).disabled(controller.processing)
+              }.buttonStyle(.borderedProminent).disabled(controller.processing || model.busy)
             }
           }
         }.padding().background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))

@@ -528,6 +528,11 @@ struct ReconstructionPage: View {
       ).font(.footnote)
       ForEach(house.segments) { s in
         VStack(alignment: .leading) {
+          Button("Process this capture") {model.processCapture(projectID:house.id,segmentID:s.id)}
+            .buttonStyle(.borderedProminent).disabled(model.busy || model.captureInProgress)
+          if let report=house.processingReports.first(where:{$0.segmentID==s.id}) {
+            NavigationLink(report.complete ? "Processing report":"Processing report · needs attention") {CaptureProcessingReportPage(report:report)}
+          }
           Button {
             guard let repo = model.repository else { return }
             let revision = house.revision
@@ -710,5 +715,21 @@ struct AboutPage: View {
         license = "Bundled web-ifc license was not found; see repository THIRD_PARTY.md."
       }
     }
+  }
+}
+
+struct CaptureProcessingReportPage:View {
+  var report:CaptureProcessingReport
+  var body:some View {
+    List {
+      Text("Saved photographs are unchanged. These results describe processing at the date below; later capture changes may require another run. They do not establish physical accuracy or hidden-service completeness.").font(.footnote)
+      Text(report.date.formatted()).font(.caption)
+      ForEach(Array(report.steps.enumerated()),id:\.offset) {_,step in
+        VStack(alignment:.leading,spacing:6) {
+          Label(step.name,systemImage:step.passed ? "checkmark.circle":"exclamationmark.circle").foregroundStyle(step.passed ? .mint:.orange)
+          Text(step.detail).font(.footnote)
+        }
+      }
+    }.navigationTitle("Processing report")
   }
 }

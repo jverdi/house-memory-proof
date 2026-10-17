@@ -115,6 +115,7 @@ struct House:Codable,Identifiable,Equatable {
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
     var boundaries:[RevealBoundary]=[]
     var fieldChecks:[FieldCheck]=[]
+    var processingReports:[CaptureProcessingReport]=[]
     var visualMaps:[VisualMapReference]=[]
     var connections:[ServiceConnection]=[]
     var documentaryPhotos:[DocumentaryPhoto]=[]
@@ -128,6 +129,7 @@ struct House:Codable,Identifiable,Equatable {
     func validate() throws {
         guard schema==1 else {throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
         guard rooms.count<=100,features.count<=10000,observations.count<=50000 else{throw HouseError.message("Project exceeds this build's supported metadata limits.")}
+        guard processingReports.count<=1000,processingReports.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid capture processing report.")}
         guard fieldChecks.count<=10000,Set(fieldChecks.map{$0.id}).count==fieldChecks.count,fieldChecks.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid field evidence records.")}
         let roomIDs=Set(rooms.map{$0.id}),stageIDs=Set(stages.map{$0.id})
         guard roomIDs.count==rooms.count,stageIDs.count==stages.count,Set(features.map{$0.id}).count==features.count else{throw HouseError.message("Duplicate identities in project.")}
@@ -135,6 +137,7 @@ struct House:Codable,Identifiable,Equatable {
         for f in features {guard f.mesh.valid,roomIDs.contains(f.roomID),stageIDs.contains(f.stageID),f.route.allSatisfy({$0.finite}) else{throw HouseError.message("Invalid geometry or source relationships.")}}
         guard Set(segments.map{$0.id}).count==segments.count,Set(observations.map{$0.id}).count==observations.count else{throw HouseError.message("Duplicate capture identities.")}
         let segmentIDs=Set(segments.map{$0.id})
+        guard Set(processingReports.map{$0.segmentID}).count==processingReports.count,processingReports.allSatisfy({segmentIDs.contains($0.segmentID)}) else{throw HouseError.message("Processing report references an absent or repeated capture.")}
         guard boundaries.count<=1000,Set(boundaries.map{$0.id}).count==boundaries.count,boundaries.allSatisfy({$0.valid && segmentIDs.contains($0.segmentID)}) else{throw HouseError.message("Invalid wall or ceiling boundary.")}
         let segmentByID=Dictionary(uniqueKeysWithValues:segments.map{($0.id,$0)})
         for f in features {if let sid=f.segmentID,!segmentIDs.contains(sid){throw HouseError.message("Feature references an absent capture session.")};if let uv=f.uv {guard uv.count==f.mesh.vertices.count,uv.allSatisfy({$0.u.isFinite && $0.v.isFinite}) else{throw HouseError.message("Invalid texture coordinates.")}}}
@@ -225,6 +228,7 @@ extension House {
         bookmarks=try c.decodeIfPresent([Bookmark].self,forKey:.bookmarks) ?? []
         boundaries=try c.decodeIfPresent([RevealBoundary].self,forKey:.boundaries) ?? []
         fieldChecks=try c.decodeIfPresent([FieldCheck].self,forKey:.fieldChecks) ?? []
+        processingReports=try c.decodeIfPresent([CaptureProcessingReport].self,forKey:.processingReports) ?? []
         visualMaps=try c.decodeIfPresent([VisualMapReference].self,forKey:.visualMaps) ?? []
         connections=try c.decodeIfPresent([ServiceConnection].self,forKey:.connections) ?? []
         documentaryPhotos=try c.decodeIfPresent([DocumentaryPhoto].self,forKey:.documentaryPhotos) ?? []

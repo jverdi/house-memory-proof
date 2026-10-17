@@ -132,3 +132,10 @@ enum FieldEvidence {
     return FieldSummary(attempts:nominal.count,accepted:errors.count,p95Metres:errors.isEmpty ? nil:errors[max(0,Int(ceil(Double(errors.count)*0.95))-1)],maximumMetres:errors.last,criticalChallenges:selected.filter{$0.kind == .rejection}.count,visibleOnRejectionChallenges:selected.filter{$0.kind == .rejection && $0.overlayWasVisible==true}.count,truthWithinTwoMillimetres:nominal.filter{$0.truthUncertainty<=0.002}.count,independentSessions:Set(selected.map{$0.session}).count)
   }
 }
+
+struct CaptureProcessingStep:Codable,Equatable {var name:String;var passed:Bool;var detail:String}
+struct CaptureProcessingReport:Codable,Identifiable,Equatable {
+  var id=UUID();var segmentID:UUID;var sourceRevision:Int;var sourceFingerprint:String;var date=Date();var seconds:Double;var steps:[CaptureProcessingStep]
+  var complete:Bool {steps.allSatisfy{$0.passed}}
+  var valid:Bool {sourceRevision>=0 && seconds.isFinite && seconds>=0 && steps.count<=12 && steps.allSatisfy{$0.name.count<=200 && $0.detail.count<=10000}}
+}

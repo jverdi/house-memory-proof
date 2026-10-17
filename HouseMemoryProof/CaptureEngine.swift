@@ -54,6 +54,11 @@ import Vision
     view.automaticallyUpdatesLighting = true
     view.scene = SCNScene()
   }
+  deinit {
+    mapWatchdog?.cancel()
+    let owner=model,token=captureLease
+    if let token {Task { @MainActor in owner?.endCapture(token) }}
+  }
   func start(room: Room, stage: Stage, prior: Segment? = nil, reveal: Bool = false, boundary:RevealBoundary? = nil) {
     guard supported, let h = model?.house else {
       message = "AR tracking is unavailable. You can still view, import, annotate and export."
@@ -610,11 +615,15 @@ import Vision
       guard let self,self.mapRequest==request else{return}
       self.finishCaptureState()
       self.message="Photos and geometry saved. ARKit did not return a world map; use reference boards or a visual reference for alignment."
+      if UIApplication.shared.applicationState == .active {model.processCapture(projectID:houseID,segmentID:segment.id,automatic:true)}
     }
     view.session.getCurrentWorldMap { [weak self] map, error in
       Task { @MainActor in
         guard let self,self.mapRequest==request else{return}
-        defer {self.finishCaptureState()}
+        defer {
+          self.finishCaptureState()
+          if UIApplication.shared.applicationState == .active {model.processCapture(projectID:houseID,segmentID:segment.id,automatic:true)}
+        }
         do {
           if let error {throw error}
           if let map {

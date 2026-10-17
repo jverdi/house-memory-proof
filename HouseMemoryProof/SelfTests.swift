@@ -588,6 +588,17 @@ import Darwin
                 let glb=try Exporter.glb(candidate,options:SceneOptions());try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("textured.glb"));try FileManager.default.copyItem(at:glb,to:mainRepo.root.appendingPathComponent("textured.glb"))
                 let usd=try Exporter.usdz(candidate,options:SceneOptions());try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("textured.usdz"));try FileManager.default.copyItem(at:usd,to:mainRepo.root.appendingPathComponent("textured.usdz"))
                 results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":feature.mesh.vertices.count>100 && error<0.003 && coverage.sampledPatches>0 && textured.allSatisfy{!$0.hidden && $0.resolvedGeometrySource == .photoTexture} && textured.contains{$0.texture != nil},"points":feature.mesh.vertices.count,"maxPlaneErrorMetres":error,"syntheticOnly":true])
+                mark("Integrated capture processing and interrupted publication")
+                try mainRepo.save(fixture)
+                var interrupted=false
+                do {_ = try await CaptureProcessing.build(house:fixture,segmentID:fixture.segments[0].id,repo:mainRepo,checkpoint:{stage in if stage=="surfaces-prepared" {throw CancellationError()}}){_,_ in}}
+                catch is CancellationError {interrupted=true}
+                let before=try mainRepo.all().first{$0.id==fixture.id}
+                let processed=try await CaptureProcessing.build(house:fixture,segmentID:fixture.segments[0].id,repo:mainRepo){_,_ in}
+                let report=processed.processingReports.last!
+                let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(processed));try restored.validate()
+                results.append(["test":"Integrated capture processing retains originals and does not publish an interrupted candidate","passed":interrupted && before?.observations==fixture.observations && before?.features==fixture.features && processed.observations==fixture.observations && restored.processingReports==processed.processingReports && report.steps.count==6 && report.steps.contains{$0.name=="Triangle surfaces" && $0.passed} && report.steps.contains{$0.name=="Photo textures" && $0.passed},"steps":report.steps.map{["name":$0.name,"passed":$0.passed,"detail":$0.detail] as [String:Any]}])
+
             }catch{results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":false,"error":error.localizedDescription])}
             do {
                 guard let bundle=Bundle.main.url(forResource:"IFC",withExtension:nil) else{throw HouseError.message("Simulation bundle missing.")}
