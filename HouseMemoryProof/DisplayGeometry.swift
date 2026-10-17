@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 // Display-only reduction retains original triangles/points and interpolates nothing.
 // Metric evidence, exports and collision geometry always use full originals.
@@ -108,5 +109,35 @@ struct SpatialDisplayIndex {
       }
     }
     return(feature,mesh,feature.uv==nil ? nil:uv)
+  }
+}
+
+// ARKit's face labels are suggestions. Preserve their provenance separately
+// from reviewed service identities, and retain unclassified faces explicitly.
+enum MeshSemantics {
+  static func identity(anchor:UUID,label:String)->UUID {
+    var bytes=Array(SHA256.hash(data:Data((anchor.uuidString+"|"+label).utf8)).prefix(16))
+    bytes[6]=(bytes[6]&15)|80;bytes[8]=(bytes[8]&63)|128
+    let groups=[0..<4,4..<6,6..<8,8..<10,10..<16]
+    return UUID(uuidString:groups.map{range in range.map{String(format:"%02x",bytes[$0])}.joined()}.joined(separator:"-"))!
+  }
+  static func partition(_ mesh:Mesh,labels:[String],anchor:UUID,roomID:UUID,stage:Stage,segmentID:UUID)->[Feature] {
+    guard mesh.valid,!mesh.triangles.isEmpty else{return []}
+    let admitted=Set(["wall","floor","ceiling","door","window","table","seat","unknown"])
+    var groups:[String:[Int]] = [:]
+    for face in 0..<(mesh.triangles.count/3) {
+      let supplied=face<labels.count ? labels[face]:"unknown",label=admitted.contains(supplied) ? supplied:"unknown"
+      groups[label,default:[]].append(face)
+    }
+    return groups.keys.sorted().map{label in
+      var part=Mesh(),indices:[Int32:Int32]=[:]
+      for face in groups[label]! {for corner in 0..<3 {
+        let source=mesh.triangles[face*3+corner]
+        if indices[source]==nil {indices[source]=Int32(part.vertices.count);part.vertices.append(mesh.vertices[Int(source)])}
+        part.triangles.append(indices[source]!)
+      }}
+      let trade:Trade=label=="floor" ? .floor:label=="ceiling" ? .ceiling:label=="wall" ? (stage.category == .finished ? .finish:.structure):.unknown
+      return Feature(id:identity(anchor:anchor,label:label),name:"Observed "+label+" surface",trade:trade,roomID:roomID,stageID:stage.id,kind:.observed,mesh:part,notes:"ARKit face classification suggestion; unreviewed. It does not identify hidden electrical, plumbing or HVAC systems.",segmentID:segmentID,captureClassification:label,captureAnchorID:anchor)
+    }
   }
 }

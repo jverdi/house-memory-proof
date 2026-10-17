@@ -22,7 +22,7 @@ import Vision
   private var lastFrameTime: TimeInterval = 0
   private var lastPosition = SIMD3<Float>(repeating: 0)
   private var lastForward = SIMD3<Float>(0, 0, -1)
-  private var meshes: [UUID: Feature] = [:]
+  private var meshes: [UUID: [Feature]] = [:]
   private var pending = 0
   private var stopping = false
   private var generation = UUID()
@@ -384,7 +384,7 @@ import Vision
               h.features.removeAll {
                 $0.segmentID == segment.id && $0.name == "Observed LiDAR surface"
               }
-              h.features.append(contentsOf: self.meshes.values)
+              h.features.append(contentsOf: self.meshes.values.flatMap{$0})
               if let i = h.segments.firstIndex(where: { $0.id == segment.id }) {
                 h.segments[i].referencePoses = Array(self.currentReferencePoses.values)
               }
@@ -517,15 +517,33 @@ import Vision
           g.faces.bytesPerIndex == 4 ? ptr.load(as: UInt32.self) : UInt32(ptr.load(as: UInt16.self))
         triangles.append(Int32(value))
       }
-      let f = Feature(
-        id: a.identifier, name: "Observed LiDAR surface", trade: .unknown, roomID: segment.roomID,
-        stageID: segment.stageID, kind: .observed,
-        mesh: Mesh(vertices: vertices, triangles: triangles), segmentID: segment.id)
-      let total =
-        meshes.values.reduce(0) { $0 + $1.mesh.vertices.count }
-        - (meshes[a.identifier]?.mesh.vertices.count ?? 0) + vertices.count
+      var labels:[String]=[]
+      for face in 0..<g.faces.count {
+        var label="unknown"
+        if let source=g.classification,face<source.count {
+          let offset=source.offset+face*source.stride
+          if offset>=0,offset<source.buffer.length {
+            let raw=Int(source.buffer.contents().advanced(by:offset).load(as:UInt8.self))
+            switch ARMeshClassification(rawValue:raw) ?? .none {
+            case .wall:label="wall"
+            case .floor:label="floor"
+            case .ceiling:label="ceiling"
+            case .door:label="door"
+            case .window:label="window"
+            case .table:label="table"
+            case .seat:label="seat"
+            default:break
+            }
+          }
+        }
+        labels.append(label)
+      }
+      guard let stage=model?.house?.stages.first(where:{$0.id==segment.stageID}) else{continue}
+      var parts=MeshSemantics.partition(Mesh(vertices:vertices,triangles:triangles),labels:labels,anchor:a.identifier,roomID:segment.roomID,stage:stage,segmentID:segment.id)
+      for i in parts.indices {let id=parts[i].id;parts[i].revision=(meshes[a.identifier]?.first(where:{$0.id==id})?.revision ?? 0)+1}
+      let total=meshes.values.flatMap{$0}.reduce(0){$0+$1.mesh.vertices.count}-(meshes[a.identifier] ?? []).reduce(0){$0+$1.mesh.vertices.count}+parts.reduce(0){$0+$1.mesh.vertices.count}
       if (meshes.count < 120 || meshes[a.identifier] != nil) && total <= 250000 {
-        meshes[a.identifier] = f
+        meshes[a.identifier] = parts
       } else {
         message =
           "Surface budget reached. Stop and start a new segment; original photographs continue saving."
@@ -548,7 +566,7 @@ import Vision
   }
   private func finishStop() {
     guard processing, let segment, let houseID, let model, let repo = model.repository else { return }
-    let features = Array(meshes.values)
+    let features = meshes.values.flatMap{$0}
     let saved = model.edit(projectID: houseID) { h in
       h.features.removeAll { $0.segmentID == segment.id }
       h.features.append(contentsOf: features)

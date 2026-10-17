@@ -99,6 +99,15 @@ import Darwin
                 h=restored;h.features[0].artifactValid=false
                 return !DerivedEvidence.currentIDs(h).contains(annotation.id)
             }
+            check("Capture face labels preserve every triangle and isolate ceiling layers") {
+                var h=House.empty("Face labels");let room=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:room.id,stageID:stage.id);h.segments=[segment]
+                let mesh=Mesh(vertices:[V3(),V3(1,0,0),V3(0,1,0),V3(0,0,1)],triangles:[0,1,2,0,2,3,1,2,3])
+                let anchor=UUID(),parts=MeshSemantics.partition(mesh,labels:["floor","ceiling","unsupported"],anchor:anchor,roomID:room.id,stage:stage,segmentID:segment.id)
+                h.features=parts;try h.validate()
+                guard parts.count==3,parts.reduce(0,{$0+$1.mesh.triangles.count})==9,parts.allSatisfy({$0.mesh.valid && $0.captureAnchorID==anchor}),Set(parts.map{$0.id}).count==3 else{return false}
+                guard !SceneBuilder.features(h,options:SceneOptions()).contains(where:{$0.trade == .ceiling}),SceneBuilder.features(h,options:SceneOptions(ceilings:true)).contains(where:{$0.trade == .ceiling}) else{return false}
+                return MeshSemantics.partition(mesh,labels:["floor","ceiling","unsupported"],anchor:anchor,roomID:room.id,stage:stage,segmentID:segment.id).map{$0.id}==parts.map{$0.id}
+            }
             check("Construction category survives arbitrary stage names") {
                 var h=house;h.stages[0].name="After inspection";h.stages[0].phase = .rough;h.stages[1].name="Ready to paint";h.stages[1].phase = .finished
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))

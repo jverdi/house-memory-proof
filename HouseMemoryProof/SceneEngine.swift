@@ -25,7 +25,7 @@ enum SceneBuilder {
     if f.trade == .ceiling && !o.ceilings { return false }
     if let stage = o.stage, f.stageID != stage { return false }
     switch o.mode {
-    case .rough: return f.trade != .finish && f.trade != .ceiling
+    case .rough: return f.trade != .finish
     case .finished:
       return f.trade == .finish || f.trade == .ceiling || f.trade == .floor || f.trade == .unknown
     case .ghost, .evidence: return true

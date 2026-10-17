@@ -274,6 +274,8 @@ enum Exporter {
           "sourceObservations": f.sourceIDs.map { $0.uuidString },
           "sourceGeometry": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.annotationSources ?? [])),
           "sourceRevision": f.revision,
+          "captureClassification": f.captureClassification ?? "unclassified",
+          "captureAnchor": f.captureAnchorID?.uuidString ?? "",
         ],
       ])
     }
