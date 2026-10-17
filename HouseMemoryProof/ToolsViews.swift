@@ -522,6 +522,15 @@ struct ReconstructionPage: View {
               ).font(.caption)
             }
           }.disabled(model.busy)
+          Button("Triangulate photograph details") {
+            guard let repo=model.repository else{return};let revision=house.revision
+            model.perform("Matching and independently checking photograph details") {
+              let result=try await LocalWorker.run {try PhotoReconstruction.build(house:house,segment:s,repo:repo)}
+              guard model.house?.id==house.id,model.house?.revision==revision else{throw HouseError.message("Capture changed; photograph points were not published.")}
+              model.edit {h in h.features.removeAll{$0.segmentID==s.id && $0.name==result.name};h.features.append(result)}
+              return nil
+            }
+          }.disabled(model.busy)
           Button("Refine local camera poses") {
             guard let repo = model.repository else { return }
             let revision = house.revision

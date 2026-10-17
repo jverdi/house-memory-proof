@@ -89,3 +89,5 @@ struct RevealBoundary: Codable, Identifiable, Equatable {
   func contains(_ p:V3)->Bool {let q=coordinates(p);return q.x>=0 && q.x<=width && q.y>=0 && q.y<=height && q.z>=(-finishOffset) && q.z<=depth}
   func viewedFromFront(_ camera:V3)->Bool {coordinates(camera).z < -finishOffset-0.05}
 }
+
+struct PointTrack:Codable,Equatable {var controls:[PhotoControl]}

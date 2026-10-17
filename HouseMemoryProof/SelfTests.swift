@@ -46,6 +46,14 @@ import ImageIO
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))
                 return SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.rough))==[h.stages[0].id] && SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.finished))==[h.stages[1].id]
             }
+            check("RGB-only multi-view triangulation retains independent point provenance") {
+                let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
+                var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
+                for i in capture.observations.indices {capture.observations[i].depth=nil;capture.observations[i].confidence=nil}
+                let result=try PhotoReconstruction.build(house:capture,segment:capture.segments[0],repo:repo)
+                capture.features=[result];try capture.validate()
+                return result.mesh.vertices.count>=20 && result.pointTracks?.count==result.mesh.vertices.count && result.pointTracks!.allSatisfy{$0.controls.count>=3}
+            }
             check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
             check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
             check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}
