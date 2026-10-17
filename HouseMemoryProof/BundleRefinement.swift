@@ -17,7 +17,7 @@ enum BundleRefinement {
     let observations=selected.filter{used.contains($0.id)}.sorted{a,b in let x=fits[a.id,default:0],y=fits[b.id,default:0];return x==y ? a.timestamp<b.timestamp:x>y}
     guard observations.count>=3,observations.count<=120,(observations.first.map{fits[$0.id,default:0]} ?? 0)>=20 else{throw HouseError.message("Joint refinement needs an anchor with at least twenty independently checked tracks.")}
     let lookup=Dictionary(uniqueKeysWithValues:observations.enumerated().map{($0.element.id,$0.offset)})
-    var cameras=observations.flatMap{$0.camera},points=vertices.flatMap{[$0.x,$0.z,-$0.y]}
+    let cameras=observations.flatMap{$0.camera},points=vertices.flatMap{[$0.x,$0.z,-$0.y]}
     let intrinsics=observations.flatMap{[$0.intrinsics[0],$0.intrinsics[4],$0.intrinsics[2],$0.intrinsics[5]]}
     var depths:[UUID:Data]=[:],confidences:[UUID:Data]=[:]
     for o in observations {try Task.checkCancellation();if let key=o.depth {depths[o.id]=try repo.read(key)};if let key=o.confidence {confidences[o.id]=try repo.read(key)}}

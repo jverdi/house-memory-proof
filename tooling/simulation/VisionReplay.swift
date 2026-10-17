@@ -17,7 +17,8 @@ final class DiskEvidence:EvidenceAssetReader {
       let status=hx_vision_selftest(&maximum,&falseAccepts)
       var graphError=0.0;let graphStatus=hx_graph_selftest(&graphError)
       print(String(data:try JSONSerialization.data(withJSONObject:["passed":status==1 && graphStatus==1,"status":status,"graphStatus":graphStatus,"graphMaxPositionErrorMetres":graphError,"maxPositionErrorMetres":maximum,"randomCorrespondenceFalseAccepts":falseAccepts,"positiveCases":200,"negativeCases":300,"imageQualification":false],options:[.sortedKeys]),encoding:.utf8)!)
-      guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed.")}
+      fflush(stdout)
+      guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed at gate \(graphStatus).")}
       guard status==1 else{throw HouseError.message("Native vision diagnostics failed.")};return
     }
     guard (3...5).contains(CommandLine.arguments.count),CommandLine.arguments.dropFirst(3).allSatisfy({["--refine","--bundle"].contains($0)}) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}

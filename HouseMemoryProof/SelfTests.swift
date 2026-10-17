@@ -59,6 +59,26 @@ import ImageIO
                 guard reduced.0.valid,reduced.0.vertices.count<=9,reduced.0.triangles.count<=9,reduced.1?.count==reduced.0.vertices.count else{return false}
                 return zip(reduced.0.vertices,reduced.1!).allSatisfy{mesh.vertices.contains($0.0) && $0.1.u==$0.0.x && $0.1.v==$0.0.y} && mesh.vertices.count==8
             }
+            check("Spatial display tiles preserve source primitives, UVs, budgets and room movement") {
+                var features:[Feature]=[]
+                for i in 0..<80 {
+                    var f=house.features[0];f.id=UUID();f.mesh = .box(center:V3(Double(i)-40,Double(i%4),0),size:V3(1,1,2))
+                    f.uv=f.mesh.vertices.map{UV(u:$0.x,v:$0.y)};f.texture="texture-\(i).jpg";features.append(f)
+                }
+                let index=try SpatialDisplayIndex(features:features)
+                guard index.tiles.reduce(0,{$0+$1.primitives.count})==80*12 else{return false}
+                for i in features.indices {let references=index.tiles.filter{$0.feature==i}.flatMap{$0.primitives};guard references.count==12,Set(references).count==12 else{return false}}
+                let near=index.plan(camera:V3(-40,0,1.6),budget:600,residents:20),far=index.plan(camera:V3(40,0,1.6),budget:600,residents:20)
+                guard near.count<=20,near.reduce(0,{$0+$1.budget})<=600,near.first?.tile != far.first?.tile else{return false}
+                let textures=Set(near.filter{$0.textured}.compactMap{index.features[index.tiles[$0.tile].feature].texture})
+                guard textures.count<=24 else{return false}
+                for a in near {
+                    let (f,m,uv)=index.materialize(a)
+                    guard m.valid,m.triangles.count<=a.budget,m.vertices.count<=a.budget,uv?.count==m.vertices.count else{return false}
+                    guard zip(m.vertices,uv!).allSatisfy({f.mesh.vertices.contains($0.0) && $0.1.u==$0.0.x && $0.1.v==$0.0.y}) else{return false}
+                }
+                do {_=try SpatialDisplayIndex(features:features,primitiveLimit:10);return false}catch{return true}
+            }
             check("Construction category survives arbitrary stage names") {
                 var h=house;h.stages[0].name="After inspection";h.stages[0].phase = .rough;h.stages[1].name="Ready to paint";h.stages[1].phase = .finished
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))

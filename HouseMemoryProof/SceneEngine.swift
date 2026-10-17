@@ -83,7 +83,7 @@ enum SceneBuilder {
     }
     return SCNGeometry(sources: sources, elements: [element])
   }
-  static func scene(_ h: House, options: SceneOptions) -> SCNScene {
+  static func baseScene() -> SCNScene {
     let scene = SCNScene()
     scene.background.contents = UIColor(red: 0.035, green: 0.055, blue: 0.08, alpha: 1)
     scene.lightingEnvironment.intensity = 0.8
@@ -98,6 +98,10 @@ enum SceneBuilder {
     sun.light?.intensity = 1100
     sun.eulerAngles = SCNVector3(-0.7, -0.5, 0)
     scene.rootNode.addChildNode(sun)
+    return scene
+  }
+  static func scene(_ h: House, options: SceneOptions) -> SCNScene {
+    let scene=baseScene()
     // Unregistered sessions have independent frames; never silently overlay them.
     var textureCache: [String: UIImage] = [:]
     let visibleFeatures=features(h,options:options)
@@ -108,7 +112,13 @@ enum SceneBuilder {
       if let sid = f.segmentID, let t = h.segments.first(where: { $0.id == sid })?.registration {
         mesh.vertices = mesh.vertices.map { t.apply($0) }
       }
-      let n = SCNNode(geometry: geometry(mesh, uv: reduced.1))
+      let n=node(f,mesh:mesh,uv:reduced.1,options:options,textures:&textureCache)
+      scene.rootNode.addChildNode(n)
+    }
+    return scene
+  }
+  static func node(_ f:Feature,mesh:Mesh,uv:[UV]?,options:SceneOptions,textures:inout [String:UIImage],textured:Bool=true)->SCNNode {
+      let n = SCNNode(geometry: geometry(mesh, uv: uv))
       n.name = f.id.uuidString
       let m = SCNMaterial()
       m.lightingModel = .physicallyBased
@@ -119,9 +129,9 @@ enum SceneBuilder {
         m.transparency = 0.17
         m.writesToDepthBuffer = false
       }
-      if let key = f.texture {
+      if textured,let key = f.texture {
         let root = Repository.defaultRoot.appendingPathComponent("assets")
-        if textureCache[key] == nil,textureCache.count<DisplayGeometry.textureBudget,
+        if textures[key] == nil,textures.count<DisplayGeometry.textureBudget,
           let source = CGImageSourceCreateWithURL(root.appendingPathComponent(key) as CFURL, nil),
           let cg = CGImageSourceCreateThumbnailAtIndex(
             source, 0,
@@ -130,14 +140,12 @@ enum SceneBuilder {
               kCGImageSourceThumbnailMaxPixelSize: 768,
             ] as CFDictionary)
         {
-          textureCache[key] = UIImage(cgImage: cg)
+          textures[key] = UIImage(cgImage: cg)
         }
-        if let image = textureCache[key] { m.diffuse.contents = image }
+        if let image = textures[key] { m.diffuse.contents = image }
       }
       n.geometry?.materials = [m]
-      scene.rootNode.addChildNode(n)
-    }
-    return scene
+      return n
   }
   static func camera(at p: V3, yaw: Double = 0, pitch: Double = 0) -> SCNNode {
     let n = SCNNode()
@@ -158,6 +166,35 @@ extension UIColor {
   }
 }
 
+@MainActor final class SpatialSceneStream {
+  let index:SpatialDisplayIndex
+  let scene:SCNScene
+  let options:SceneOptions
+  var nodes:[Int:SCNNode]=[:]
+  var allocations:[Int:SpatialDisplayIndex.Allocation]=[:]
+  var pending:[SpatialDisplayIndex.Allocation]=[]
+  var textures:[String:UIImage]=[:]
+  var lastCamera:V3?
+  var lastUpdate=0.0
+  init(index:SpatialDisplayIndex,scene:SCNScene,options:SceneOptions){self.index=index;self.scene=scene;self.options=options}
+  func update(camera:V3,time:Double) {
+    if lastCamera==nil || (time-lastUpdate>=0.5 && (camera-lastCamera!).length>=1) {
+      lastCamera=camera;lastUpdate=time
+      let plan=index.plan(camera:camera),needed=Set(plan.map{$0.tile})
+      for id in Array(nodes.keys) where !needed.contains(id) {nodes.removeValue(forKey:id)?.removeFromParentNode();allocations.removeValue(forKey:id)}
+      let textureKeys=Set(plan.filter{$0.textured}.compactMap{index.features[index.tiles[$0.tile].feature].texture})
+      textures=textures.filter{textureKeys.contains($0.key)}
+      pending=plan.filter{allocations[$0.tile] != $0}
+      // Remove superseded GPU geometry before replacements allocate memory.
+      for next in pending {nodes.removeValue(forKey:next.tile)?.removeFromParentNode();allocations.removeValue(forKey:next.tile)}
+    }
+    guard !pending.isEmpty else{return}
+    let next=pending.removeFirst(),(feature,mesh,uv)=index.materialize(next)
+    let node=SceneBuilder.node(feature,mesh:mesh,uv:uv,options:options,textures:&textures,textured:next.textured)
+    scene.rootNode.addChildNode(node);nodes[next.tile]=node;allocations[next.tile]=next
+  }
+}
+
 @MainActor final class WalkController: NSObject, ObservableObject {
   let view = SCNView(
     frame: .zero,
@@ -169,6 +206,8 @@ extension UIColor {
   @Published var flying = false
   @Published var orbit = false
   private var clearance = SpatialClearance(features: [])
+  private var stream:SpatialSceneStream?
+  private var preparingScene=false
   private var cameraCorridor: [V3] = []
   private var recordedPaths:[NavigationGeometry.PathEdge]=[]
   @Published var navigationNotice = ""
@@ -194,6 +233,7 @@ extension UIColor {
     view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tap(_:))))
   }
   func start() {
+    view.isPlaying=true
     guard timer == nil else { return }
     let t = CADisplayLink(target: self, selector: #selector(tick(_:)))
     t.add(to: .main, forMode: .common)
@@ -216,13 +256,34 @@ extension UIColor {
     house = h
     options = o
     revision = h.revision
-    clearance = SpatialClearance(features: Exporter.canonicalFeatures(h, options: o))
+    stream=nil
     cameraCorridor = NavigationGeometry.positions(house:h,options:o)
     recordedPaths=NavigationGeometry.paths(house:h,options:o)
-    navigationNotice = clearance.complete ? DisplayGeometry.notice(SceneBuilder.features(h,options:o)) : "Walk collision budget exceeded. Choose one room or use Free fly."
-    let scene = SceneBuilder.scene(h, options: o)
-    scene.rootNode.addChildNode(camera)
-    view.scene = scene
+    let visible=SceneBuilder.features(h,options:o)
+    let large=visible.reduce(0){$0+DisplayGeometry.cost($1.mesh)}>DisplayGeometry.sceneVertexBudget || visible.count>512
+    let scene=large ? SceneBuilder.baseScene():SceneBuilder.scene(h,options:o)
+    scene.rootNode.addChildNode(camera);view.scene=scene
+    preparingScene=large
+    if large {
+      navigationNotice="Preparing nearby house detail…"
+      Task {
+        do {
+          let prepared=try await LocalWorker.run { () throws -> (SpatialDisplayIndex,SpatialClearance) in
+            let canonical=Exporter.canonicalFeatures(h,options:o)
+            return(try SpatialDisplayIndex(features:canonical),SpatialClearance(features:canonical))
+          }
+          guard self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
+          self.clearance=prepared.1;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
+          self.navigationNotice=prepared.1.complete ? "Nearby detail loads as you move; distant geometry is simplified. Measurements and exports use originals.":"Walk collision budget exceeded. Select a room or use Free fly."
+        }catch {
+          guard self.view.scene===scene else{return}
+          self.navigationNotice=error.localizedDescription
+        }
+      }
+    } else {
+      clearance=SpatialClearance(features:Exporter.canonicalFeatures(h,options:o))
+      navigationNotice=clearance.complete ? "":"Walk collision budget exceeded. Choose one room or use Free fly."
+    }
     view.pointOfView = camera
     if fresh, let room = h.rooms.first(where: { $0.id == o.room }) ?? h.rooms.first {
       jump(room)
@@ -334,7 +395,9 @@ extension UIColor {
       move = .zero
       hadController = false
     }
-    guard !orbit else { return }
+    let displayed=view.pointOfView?.presentation.simdWorldPosition ?? camera.simdPosition
+    stream?.update(camera:V3(ar:displayed),time:link.timestamp)
+    guard !orbit,!preparingScene else { return }
     let forward = SIMD3<Float>(-sin(yaw), 0, -cos(yaw))
     let right = SIMD3<Float>(cos(yaw), 0, -sin(yaw))
     let delta = (forward * move.y + right * move.x + SIMD3(0, vertical, 0)) * dt * 1.3

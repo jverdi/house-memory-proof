@@ -1,4 +1,8 @@
+#define EIGEN_MPL2_ONLY
 #include "hx_graph.h"
+#include <ceres/ceres.h>
+#include <ceres/rotation.h>
+#include <array>
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 #include <algorithm>
@@ -10,6 +14,17 @@
 namespace {
 using M=cv::Matx33d;using V=cv::Vec3d;
 struct Pose{M r;V t;};
+struct GraphFactor {
+ std::array<double,4> inverseMeasured;V translation;
+ explicit GraphFactor(Pose p):translation(p.t){V aa;cv::Rodrigues(p.r,aa);double q[4];ceres::AngleAxisToQuaternion(aa.val,q);inverseMeasured={q[0],-q[1],-q[2],-q[3]};}
+ template<class T>bool operator()(const T* a,const T* b,T* residual)const {
+  T inverseA[3]={-a[0],-a[1],-a[2]},delta[3]={b[3]-a[3],b[4]-a[4],b[5]-a[5]},relativeT[3];ceres::AngleAxisRotatePoint(inverseA,delta,relativeT);
+  for(int i=0;i<3;i++)residual[i]=relativeT[i]-T(translation[i]);
+  T qa[4],qb[4],relativeQ[4],measured[4],errorQ[4],angle[3];ceres::AngleAxisToQuaternion(inverseA,qa);ceres::AngleAxisToQuaternion(b,qb);ceres::QuaternionProduct(qa,qb,relativeQ);
+  for(int i=0;i<4;i++)measured[i]=T(inverseMeasured[i]);ceres::QuaternionProduct(measured,relativeQ,errorQ);ceres::QuaternionToAngleAxis(errorQ,angle);
+  for(int i=0;i<3;i++)residual[i+3]=angle[i]*T(.5);return true;
+ }
+};
 bool homogeneous(const double* p){return std::isfinite(p[12])&&std::isfinite(p[13])&&std::isfinite(p[14])&&std::isfinite(p[15])&&std::abs(p[12])+std::abs(p[13])+std::abs(p[14])+std::abs(p[15]-1)<1e-6;}
 Pose read(const double* p){return {M(p[0],p[1],p[2],p[4],p[5],p[6],p[8],p[9],p[10]),V(p[3],p[7],p[11])};}
 void write(Pose p,double* out){for(int i=0;i<16;i++)out[i]=0;out[15]=1;for(int i=0;i<3;i++){out[i*4+3]=p.t[i];for(int j=0;j<3;j++)out[i*4+j]=p.r(i,j);}}
@@ -41,22 +56,14 @@ extern "C" int32_t hx_graph_optimize(const double* priors,uint32_t n,const HXGra
  std::set<std::pair<uint32_t,uint32_t>> uniqueEdges;
  for(uint32_t e=0;e<ne;e++){auto edge=edges[e];if(edge.a>=n||edge.b>=n||edge.a==edge.b)return -1;Pose p=read(edge.a_from_b);if(!valid(p)||!homogeneous(edge.a_from_b)||!uniqueEdges.insert({std::min(edge.a,edge.b),std::max(edge.a,edge.b)}).second)return -1;measurements.push_back(p);adjacency[edge.a].push_back(edge.b);adjacency[edge.b].push_back(edge.a);}
  std::vector<bool> seen(n,false);std::queue<int> queue;queue.push(0);seen[0]=true;while(!queue.empty()){int i=queue.front();queue.pop();for(int j:adjacency[i])if(!seen[j]){seen[j]=true;queue.push(j);}}if(std::find(seen.begin(),seen.end(),false)!=seen.end())return 0;
- auto started=std::chrono::steady_clock::now();
- int dimensions=(n-1)*6;double damping=1e-5;
- auto cost=[&](const std::vector<Pose>& p){double value=0;for(uint32_t e=0;e<ne;e++){double x=cv::norm(residual(p[edges[e].a],p[edges[e].b],measurements[e]));value+=x<=.02?.5*x*x:.02*(x-.01);}return value;};
- double current=cost(poses);
- for(int iteration=0;iteration<30;iteration++){
-  if(std::chrono::duration<double>(std::chrono::steady_clock::now()-started).count()>20)return 0;
-  cv::Mat H=cv::Mat::zeros(dimensions,dimensions,CV_64F),g=cv::Mat::zeros(dimensions,1,CV_64F);
-  for(uint32_t e=0;e<ne;e++){auto edge=edges[e];auto r=residual(poses[edge.a],poses[edge.b],measurements[e]);double weight=std::min(1.,.02/std::max(1e-12,cv::norm(r)));std::vector<std::pair<int,cv::Vec<double,6>>> derivatives;
-   for(int side=0;side<2;side++){int node=side?edge.b:edge.a;if(node==0)continue;for(int axis=0;axis<6;axis++){Pose a=poses[edge.a],b=poses[edge.b];if(side)b=perturb(b,axis,1e-6);else a=perturb(a,axis,1e-6);derivatives.push_back({(node-1)*6+axis,(residual(a,b,measurements[e])-r)*(1e6)});}}
-   for(auto& a:derivatives){g.at<double>(a.first)+=weight*a.second.dot(r);for(auto& b:derivatives)H.at<double>(a.first,b.first)+=weight*a.second.dot(b.second);}
-  }
-  for(int i=0;i<dimensions;i++)H.at<double>(i,i)+=damping;
-  cv::Mat step;if(!cv::solve(H,-g,step,cv::DECOMP_CHOLESKY))return 0;std::vector<Pose> proposed=poses;
-  for(uint32_t node=1;node<n;node++)for(int axis=0;axis<6;axis++)proposed[node]=perturb(proposed[node],axis,step.at<double>((node-1)*6+axis));
-  double next=cost(proposed);if(next<current){poses=proposed;current=next;damping=std::max(1e-9,damping*.3);if(cv::norm(step)<1e-7)break;}else{damping*=10;if(damping>1e5)break;}
- }
+ std::vector<std::array<double,6>> parameters(n);
+ for(uint32_t i=0;i<n;i++){V aa=logR(poses[i].r);for(int axis=0;axis<3;axis++){parameters[i][axis]=aa[axis];parameters[i][axis+3]=poses[i].t[axis];}}
+ ceres::Problem problem;
+ for(uint32_t e=0;e<ne;e++)problem.AddResidualBlock(new ceres::AutoDiffCostFunction<GraphFactor,6,6,6>(new GraphFactor(measurements[e])),new ceres::HuberLoss(.02),parameters[edges[e].a].data(),parameters[edges[e].b].data());
+ problem.SetParameterBlockConstant(parameters[0].data());
+ ceres::Solver::Options options;options.linear_solver_type=ceres::SPARSE_NORMAL_CHOLESKY;options.sparse_linear_algebra_library_type=ceres::EIGEN_SPARSE;options.max_num_iterations=30;options.max_solver_time_in_seconds=20;options.num_threads=1;options.logging_type=ceres::SILENT;
+ ceres::Solver::Summary summary;ceres::Solve(options,&problem,&summary);if(!summary.IsSolutionUsable())return 0;
+ for(uint32_t i=0;i<n;i++){const auto& p=parameters[i];V aa(p[0],p[1],p[2]);cv::Rodrigues(aa,poses[i].r);poses[i].t=V(p[3],p[4],p[5]);}
  *maximum=0;for(uint32_t e=0;e<ne;e++){Pose actual=relative(poses[edges[e].a],poses[edges[e].b]);double position=cv::norm(actual.t-measurements[e].t),angle=cv::norm(logR(measurements[e].r.t()*actual.r));*maximum=std::max(*maximum,position);if(position>.025||angle>3*CV_PI/180)return 0;}
  for(uint32_t i=0;i<n;i++){if(!valid(poses[i])||cv::norm(poses[i].t-original[i].t)>.25||cv::norm(logR(original[i].r.t()*poses[i].r))>10*CV_PI/180)return 0;write(poses[i],output+i*16);}return 1;
 } catch(...){return -2;}

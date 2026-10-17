@@ -17,12 +17,12 @@ if [ ! -f build/opencv-host/opencv2.framework/opencv2 ]; then
     --without=video --without=videoio --without=objdetect --without=gapi --without=world --without=ts \
     2>&1 | tee build/vision-evaluation/sdk-build.log
 fi
+bash tooling/solver/build.sh host
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 \
   -F build/opencv-host -c packages/visual-core/hx_vision.cpp -o build/vision-core.o
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 \
   -F build/opencv-host -c packages/visual-core/hx_vision_test.cpp -o build/vision-core-test.o
-clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-host -c packages/visual-core/hx_graph.cpp -o build/graph-core.o
-bash tooling/solver/build.sh host
+clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-host -I build/ceres/host/include -c packages/visual-core/hx_graph.cpp -o build/graph-core.o
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -I build/ceres/host/include -c packages/visual-core/hx_bundle.cpp -o build/bundle-core.o
 swiftc -O -swift-version 5 -parse-as-library -target arm64-apple-macos14.0 \
   -import-objc-header packages/visual-core/hx_replay.h \
