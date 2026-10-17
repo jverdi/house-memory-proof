@@ -26,7 +26,7 @@ enum VisualMapping {
   struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v12-camera-pixel-centres";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v13-pairwise-source-baseline";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -201,6 +201,15 @@ enum VisualMapping {
     }
     return false
   }
+  // A capture can reverse direction. Baseline is a property of any pair of
+  // supporting cameras, never of whichever view happens to be first.
+  static func hasSourceBaseline(_ positions:[V3])->Bool {
+    guard (2...120).contains(positions.count),positions.allSatisfy({$0.finite}) else{return false}
+    for a in positions.indices {for b in positions.indices where b>a {
+      if (positions[a]-positions[b]).length>=0.15{return true}
+    }}
+    return false
+  }
   struct SourceMatches {var id:UUID;var position:V3;var matches:[Int:V3]}
   static func fusedPoints(_ sources:[SourceMatches])->[(Int,V3)] {
     var repeated:[Int:[(V3,V3)]]=[:]
@@ -211,7 +220,7 @@ enum VisualMapping {
       func median(_ values:[Double])->Double {let sorted=values.sorted();return sorted[sorted.count/2]}
       let centre=V3(median(samples.map{$0.0.x}),median(samples.map{$0.0.y}),median(samples.map{$0.0.z}))
       let supported=samples.filter{($0.0-centre).length<=0.025}
-      guard supported.count>=2,supported.contains(where:{($0.1-supported[0].1).length>=0.15}) else{continue}
+      guard hasSourceBaseline(supported.map{$0.1}) else{continue}
       result.append((query,supported.reduce(V3()){$0+$1.0}*(1/Double(supported.count))))
     }
     return result
@@ -288,7 +297,7 @@ enum VisualMapping {
       func median(_ values:[Double])->Double {let ordered=values.sorted();return ordered[ordered.count/2]}
       let centre=V3(median(samples.map{$0.0.x}),median(samples.map{$0.0.y}),median(samples.map{$0.0.z}))
       let supported=samples.filter{($0.0-centre).length<=0.025}
-      guard supported.count>=2,supported.contains(where:{($0.1-supported[0].1).length>=0.15}) else{continue}
+      guard hasSourceBaseline(supported.map{$0.1}) else{continue}
       let point=supported.reduce(V3()){$0+$1.0}*(1/Double(supported.count))
       xyz += [point.x,point.y,point.z];xy += [Double(features.xy[query*2])*Double(width),Double(features.xy[query*2+1])*Double(height)]
     }
@@ -302,3 +311,4 @@ enum VisualMapping {
     return Pose(transform:transform,inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:candidates.flatMap{$0.pose.sources})
   }
 }
+

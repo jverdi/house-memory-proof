@@ -466,6 +466,24 @@ import Darwin
                 guard VisualMapping.consensus([pose(0),pose(0.01)],positions:[V3(),V3(0.2,0,0)])==[0,1] else{return false}
                 return VisualMapping.consensus([pose(0),pose(0.01)],positions:[V3(),V3(0.01,0,0)]).isEmpty
             }
+            await check("Repeated-feature camera baseline is invariant to capture order") {
+                let point=V3(1,2,3),positions=[V3(),V3(-0.1,0,0),V3(0.1,0,0)]
+                let permutations=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]]
+                for order in permutations {
+                    let sources=order.map{VisualMapping.SourceMatches(id:UUID(),position:positions[$0],matches:[7:point])}
+                    let fused=VisualMapping.fusedPoints(sources)
+                    guard fused.count==1,fused[0].0==7,(fused[0].1-point).length<1e-12 else{return false}
+                }
+                guard VisualMapping.hasSourceBaseline([V3(),V3(0.15,0,0)]),
+                    !VisualMapping.hasSourceBaseline([V3(),V3(0.14999,0,0)]),
+                    !VisualMapping.hasSourceBaseline([V3(),V3(),V3()]),
+                    !VisualMapping.hasSourceBaseline([V3(),V3(.nan,0,0)]) else{return false}
+                let narrow=[-0.04,0,0.04].map{VisualMapping.SourceMatches(id:UUID(),position:V3($0,0,0),matches:[7:point])}
+                guard VisualMapping.fusedPoints(narrow).isEmpty else{return false}
+                // A spatially inconsistent landmark cannot supply the baseline.
+                let outlier=narrow+[VisualMapping.SourceMatches(id:UUID(),position:V3(0.3,0,0),matches:[7:V3(8,8,8)])]
+                return VisualMapping.fusedPoints(outlier).isEmpty
+            }
             await check("Native visual feature matching and robust PnP diagnostics"){
                 var error=0.0;var falseAccepts:UInt32=0
                 let status=hx_vision_selftest(&error,&falseAccepts)

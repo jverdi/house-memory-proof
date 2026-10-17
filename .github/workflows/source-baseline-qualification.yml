@@ -1,0 +1,128 @@
+name: Qualify pairwise source camera baseline
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/source-baseline-qualification.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: source-baseline-qualification
+  cancel-in-progress: true
+jobs:
+  replay:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Build exact committed runtime before evaluation
+        run: |
+          mkdir -p build/vision-evaluation
+          git rev-parse HEAD > build/vision-evaluation/source-revision.txt
+          bash tooling/opencv/build-host.sh
+          shasum -a 256 build/vision-replay > build/vision-evaluation/candidate-sha256.txt
+          python3 -m venv build/vision-env
+          build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+      - name: Preserve all four unchanged house diagnostics
+        run: |
+          failed=0
+          bundle=--bundle
+          for spec in 'rough-a 905771' 'rough-b 683431' 'paired 905771 --paired' 'staggered 905771 --paired --staggered'; do
+            read -r name seed arg1 arg2 <<< "$spec"
+            if build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/$name" --seed "$seed" ${arg1:-} ${arg2:-}; then
+              python3 ci/run_bounded.py 600 build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/$name" --output "build/vision-evaluation/$name.json" --refine ${bundle:-} --house || failed=1
+            else
+              failed=1
+            fi
+          done
+          exit "$failed"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-baseline-house-diagnostics
+          path: build/vision-evaluation/
+          retention-days: 14
+  evaluate:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+          restore-keys: ceres-2.2.0-eigen3.4-arm64-v3
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - name: Compile exact runtime before drawing protected configurations
+        run: |
+          mkdir -p build/stress-evidence
+          git rev-parse HEAD > build/stress-evidence/source-${{ matrix.shard }}.txt
+          bash tooling/opencv/build-host.sh
+          cp build/vision-evaluation/core-diagnostics.json build/stress-evidence/core-${{ matrix.shard }}.json
+      - name: Run isolated analytic stress shard
+        run: |
+          python3 -m venv build/stress-env
+          build/stress-env/bin/pip install --timeout 30 numpy==2.3.5 pillow==11.3.0
+          GITHUB_SHA="$(git rev-parse HEAD)" build/stress-env/bin/python tooling/simulation/qualification_sweep.py --executable build/vision-replay --shard ${{ matrix.shard }} --output build/stress-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-baseline-stress-${{ matrix.shard }}
+          path: build/stress-evidence/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-baseline-replay-records-${{ matrix.shard }}
+          path: build/replay-records-${{ matrix.shard }}/
+          retention-days: 90
+  score:
+    needs: evaluate
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: source-baseline-stress-*
+          path: build/stress-evidence
+          merge-multiple: true
+      - name: Enforce complete denominators and unchanged spatial targets
+        run: python3 tooling/simulation/qualification_sweep.py --aggregate --output build/stress-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-baseline-stress-summary
+          path: build/stress-evidence/summary.json
+          retention-days: 90
+
