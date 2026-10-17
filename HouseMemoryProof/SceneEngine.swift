@@ -140,12 +140,20 @@ enum SceneBuilder {
               kCGImageSourceThumbnailMaxPixelSize: 768,
             ] as CFDictionary)
         {
-          textures[key] = UIImage(cgImage: cg)
+          let used=decodedTextureBytes(textures)
+          let (bytes,overflow)=cg.bytesPerRow.multipliedReportingOverflow(by:cg.height)
+          if !overflow,bytes<=DisplayGeometry.textureByteBudget-used { textures[key] = UIImage(cgImage: cg) }
         }
         if let image = textures[key] { m.diffuse.contents = image }
       }
       n.geometry?.materials = [m]
       return n
+  }
+  static func decodedTextureBytes(_ textures:[String:UIImage])->Int {
+    textures.values.reduce(0) {total,image in
+      guard let cg=image.cgImage else{return total}
+      return total+cg.bytesPerRow*cg.height
+    }
   }
   static func camera(at p: V3, yaw: Double = 0, pitch: Double = 0) -> SCNNode {
     let n = SCNNode()
@@ -208,6 +216,8 @@ extension UIColor {
   @Published var orbit = false
   private var clearance = SpatialClearance(features: [])
   private var stream:SpatialSceneStream?
+  private var collisionTask:Task<Void,Never>?
+  private var collisionRequest=UUID()
   private var preparingScene=false
   private var cameraCorridor: [V3] = []
   private var recordedPaths:[NavigationGeometry.PathEdge]=[]
@@ -246,6 +256,7 @@ extension UIColor {
     move = .zero
     vertical = 0
     lastTime = 0
+    collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
   }
   func load(_ h: House, _ o: SceneOptions) {
     guard revision != h.revision || house?.id != h.id || options != o else { return }
@@ -258,6 +269,7 @@ extension UIColor {
     house = h
     options = o
     revision = h.revision
+    collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
     stream=nil
     cameraCorridor = NavigationGeometry.positions(house:h,options:o)
     recordedPaths=NavigationGeometry.paths(house:h,options:o)
@@ -270,13 +282,15 @@ extension UIColor {
       navigationNotice="Preparing nearby house detail…"
       Task {
         do {
+          let position=V3(ar:self.camera.simdPosition)
           let prepared=try await LocalWorker.run { () throws -> (SpatialDisplayIndex,SpatialClearance) in
             let canonical=Exporter.canonicalFeatures(h,options:o)
-            return(try SpatialDisplayIndex(features:canonical),SpatialClearance(features:canonical))
+            let index=try SpatialDisplayIndex(features:canonical)
+            return(index,try SpatialClearance(index:index,camera:position))
           }
           guard self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
           self.clearance=prepared.1;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
-          self.navigationNotice=prepared.1.complete ? "Nearby detail loads as you move; distant geometry is simplified. Measurements and exports use originals.":"Walk collision budget exceeded. Select a room or use Free fly."
+          self.navigationNotice=prepared.1.complete ? "Nearby detail loads as you move; distant geometry is simplified. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
         }catch {
           guard self.view.scene===scene else{return}
           self.navigationNotice=error.localizedDescription
@@ -306,6 +320,23 @@ extension UIColor {
           pitch = camera.eulerAngles.x
           flying = true
         }
+      }
+    }
+  }
+  private func updateCollision(at position:V3) {
+    guard let stream,collisionTask==nil,
+      clearance.coverageCentre.map({(position-$0).length>=1}) ?? true else{return}
+    let request=UUID(),index=stream.index;collisionRequest=request
+    collisionTask=Task {
+      defer {if self.collisionRequest==request {self.collisionTask=nil}}
+      do {
+        let next=try await LocalWorker.run {try SpatialClearance(index:index,camera:position)}
+        guard !Task.isCancelled,self.collisionRequest==request,self.stream===stream else{return}
+        self.clearance=next
+        self.navigationNotice=next.complete ? "Nearby detail loads as you move; distant geometry is simplified. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
+      }catch is CancellationError {}catch {
+        guard self.collisionRequest==request else{return}
+        self.navigationNotice="Nearby collision preparation failed. Walking remains limited to the last checked area."
       }
     }
   }
@@ -400,6 +431,7 @@ extension UIColor {
     }
     let displayed=view.pointOfView?.presentation.simdWorldPosition ?? camera.simdPosition
     stream?.update(camera:V3(ar:displayed),time:link.timestamp)
+    updateCollision(at:V3(ar:camera.simdPosition))
     guard !orbit,!preparingScene else { return }
     let forward = SIMD3<Float>(-sin(yaw), 0, -cos(yaw))
     let right = SIMD3<Float>(cos(yaw), 0, -sin(yaw))

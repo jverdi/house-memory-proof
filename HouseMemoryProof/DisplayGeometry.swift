@@ -6,6 +6,7 @@ import CryptoKit
 enum DisplayGeometry {
   static let sceneVertexBudget=400000
   static let textureBudget=24
+  static let textureByteBudget=64*1024*1024
   static func cost(_ mesh:Mesh)->Int {max(mesh.vertices.count,mesh.triangles.count)}
   static func budget(for mesh:Mesh,total:Int,objects:Int)->Int {
     let minimum=3,maxShared=max(0,sceneVertexBudget-minimum*objects)

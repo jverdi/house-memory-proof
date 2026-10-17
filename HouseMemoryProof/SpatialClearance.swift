@@ -44,6 +44,9 @@ struct SpatialClearance {
   private var items: [Bounds] = []
   private var nodes: [Node] = []
   private(set) var complete = true
+  private(set) var coverageCentre: V3?
+  private var coverageRadius = 0.0
+  var primitiveCount: Int { items.count }
   init(features: [Feature], limit: Int = 500000) {
     for f in features {
       let m = f.mesh
@@ -66,6 +69,35 @@ struct SpatialClearance {
       }
     }
     if !items.isEmpty { _ = build(0, items.count) }
+  }
+  // Use original primitive bounds, not display LOD. The tile bounds include
+  // crossing triangles whose centres lie outside this neighbourhood.
+  init(index: SpatialDisplayIndex, camera: V3, radius: Double = 4, limit: Int = 500000) throws {
+    coverageCentre = camera
+    coverageRadius = radius
+    guard camera.finite, radius.isFinite, radius > 0, limit > 0 else { complete = false; return }
+    for tile in index.tiles {
+      try Task.checkCancellation()
+      let dx=max(0,max(tile.low.x-camera.x,camera.x-tile.high.x))
+      let dy=max(0,max(tile.low.y-camera.y,camera.y-tile.high.y))
+      let dz=max(0,max(tile.low.z-camera.z,camera.z-tile.high.z))
+      guard dx*dx+dy*dy+dz*dz <= radius*radius else { continue }
+      let mesh=index.features[tile.feature].mesh
+      for (offset,primitive) in tile.primitives.enumerated() {
+        if offset%4096==0 { try Task.checkCancellation() }
+        guard items.count < limit else { complete=false; items=[]; return }
+        if mesh.triangles.isEmpty {
+          let p=mesh.vertices[primitive]; items.append(Bounds(low:p,high:p))
+        } else {
+          let a=mesh.vertices[Int(mesh.triangles[primitive*3])]
+          let b=mesh.vertices[Int(mesh.triangles[primitive*3+1])]
+          let c=mesh.vertices[Int(mesh.triangles[primitive*3+2])]
+          items.append(Bounds(low:a,high:a).union(Bounds(low:b,high:b)).union(Bounds(low:c,high:c)))
+        }
+      }
+    }
+    if !items.isEmpty { _ = build(0, items.count) }
+    try Task.checkCancellation()
   }
   private mutating func build(_ start: Int, _ end: Int) -> Int {
     var bounds = items[start]
@@ -91,6 +123,11 @@ struct SpatialClearance {
   }
   func isClear(from a: V3, to b: V3, radius: Double) -> Bool {
     guard complete, a.finite, b.finite, radius.isFinite, radius >= 0 else { return false }
+    if let centre=coverageCentre {
+      // A sphere is convex: bounding both swept endpoints bounds the entire move.
+      guard (a-centre).length+radius<=coverageRadius,
+        (b-centre).length+radius<=coverageRadius else { return false }
+    }
     guard !nodes.isEmpty else { return true }
     var stack = [0]
     while let index = stack.popLast() {

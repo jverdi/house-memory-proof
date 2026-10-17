@@ -507,6 +507,20 @@ import Darwin
                 let limited=SpatialClearance(features:[f],limit:1)
                 return box.intersects(V3(-1,0.5,0.5),V3(2,0.5,0.5),radius:0) && !box.intersects(V3(-1,2,0.5),V3(2,2,0.5),radius:0) && !limited.complete && !limited.isClear(from:V3(5),to:V3(6),radius:0.15)
             }
+            await check("Local clearance covers crossing triangles, refuses unchecked movement and retains dense limits") {
+                // The triangle centre lies far outside the local region; its full bounds cross it.
+                let mesh=Mesh(vertices:[V3(-1,1,-1),V3(100,1,-1),V3(-1,1,100)],triangles:[0,1,2])
+                let f=Feature(name:"Long wall",trade:.structure,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:mesh)
+                let index=try SpatialDisplayIndex(features:[f]),local=try SpatialClearance(index:index,camera:V3())
+                let dense=try SpatialClearance(index:index,camera:V3(),limit:0)
+                let empty=try SpatialClearance(index:SpatialDisplayIndex(features:[]),camera:V3())
+                return local.complete && local.primitiveCount==1 && local.isClear(from:V3(),to:V3(0.2,0,0),radius:0.15)
+                  && !local.isClear(from:V3(),to:V3(0,2,0),radius:0.15)
+                  && !local.isClear(from:V3(),to:V3(4,0,0),radius:0.15)
+                  && !dense.complete && !dense.isClear(from:V3(),to:V3(0.1,0,0),radius:0.15)
+                  && empty.isClear(from:V3(),to:V3(1,0,0),radius:0.15)
+                  && !empty.isClear(from:V3(),to:V3(5,0,0),radius:0.15)
+            }
             await check("Tour path rejects observed wall and accepts supported camera corridor"){
                 var h=House.empty("Path test");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
                 for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}
@@ -622,7 +636,7 @@ import Darwin
             }catch{results.append(["test":"Paired simulated house integration","passed":false,"error":error.localizedDescription])}
             if includeMovie || ProcessInfo.processInfo.arguments.contains("--video-test") {
                 mark("100-space scene capacity")
-                do{results.append(try await largeSceneReport(root:mainRepo.root))}
+                do{results.append(try await largeSceneReport(repo:mainRepo))}
                 catch{results.append(["test":"100-space two-stage capacity and native streamed render","passed":false,"error":error.localizedDescription])}
                 do {
                     mark("1080p30 movie encode and cache reuse")
@@ -665,7 +679,7 @@ extension SelfTests {
         guard status==KERN_SUCCESS else{return [:]}
         return ["physicalFootprintBytes":info.phys_footprint,"residentBytes":info.resident_size,"lifetimeResidentPeakBytes":info.resident_size_peak]
     }
-    nonisolated static func prepareLargeScene()throws->(House,SpatialDisplayIndex,[String:Any]) {
+    nonisolated static func prepareLargeScene(textureKeys:[String])throws->(House,SpatialDisplayIndex,[String:Any]) {
         let started=ProcessInfo.processInfo.systemUptime
         var h=House.empty("Synthetic capacity workload");h.isDemo=true;h.rooms=[]
         h.stages[0].phase = .rough;h.stages[1].phase = .finished
@@ -675,15 +689,16 @@ extension SelfTests {
             let origin=V3(Double(roomIndex%5)*6,Double((roomIndex/5)%4)*6,Double(roomIndex/20)*3.5)
             let room=Room(name:"Capacity space \(roomIndex+1)",level:roomIndex/20,origin:origin,size:V3(5,5,3));h.rooms.append(room)
             for stage in 0..<2 {
-                var mesh=Mesh()
+                var mesh=Mesh(),uv:[UV]=[]
                 for y in 0...side {for x in 0...side {
                     mesh.vertices.append(origin+V3(Double(x)*5/Double(side),4.8+Double(stage)*0.05,Double(y)*3/Double(side)))
+                    uv.append(UV(u:Double(x)/Double(side),v:Double(y)/Double(side)))
                 }}
                 for y in 0..<side {for x in 0..<side {
                     let a=Int32(y*(side+1)+x),b=a+1,c=a+Int32(side+1),d=c+1
                     mesh.triangles += [a,b,c,b,d,c]
                 }}
-                h.features.append(Feature(name:"Capacity wall",trade:stage==0 ? .structure:.finish,roomID:room.id,stageID:h.stages[stage].id,kind:.synthetic,mesh:mesh))
+                h.features.append(Feature(name:"Capacity wall",trade:stage==0 ? .structure:.finish,roomID:room.id,stageID:h.stages[stage].id,kind:.synthetic,mesh:mesh,texture:textureKeys[(roomIndex*2+stage)%textureKeys.count],uv:uv))
             }
         }
         try h.validate()
@@ -708,13 +723,31 @@ extension SelfTests {
         timings.sort()
         return(h,index,["rooms":100,"levels":5,"stages":2,"sourceTriangles":1_000_000,"metadataBytes":bytes.count,"tiles":index.tiles.count,"maximumResidentTiles":maxResident,"maximumResidentEntries":maxCost,"planP95Milliseconds":timings[Int(ceil(Double(timings.count)*0.95))-1],"preparationSeconds":ProcessInfo.processInfo.systemUptime-started,"memoryAfterPreparation":memorySample()])
     }
-    static func largeSceneReport(root:URL) async throws->[String:Any] {
-        let prepared=try await LocalWorker.run{try prepareLargeScene()}
+    static func largeSceneReport(repo:Repository) async throws->[String:Any] {
+        let root=repo.root
+        // Exercise real image decoding with more distinct assets than the resident cache.
+        var textureKeys:[String]=[]
+        for index in 0..<32 {
+            try Task.checkCancellation()
+            let bytes=try autoreleasepool { () throws -> Data in
+                let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
+                let image=UIGraphicsImageRenderer(size:CGSize(width:768,height:768),format:format).image {context in
+                    for y in 0..<12 {for x in 0..<12 {
+                        UIColor(hue:CGFloat(index)/32,saturation:0.5,brightness:(x+y)%2==0 ? 0.9:0.35,alpha:1).setFill()
+                        context.fill(CGRect(x:x*64,y:y*64,width:64,height:64))
+                    }}
+                }
+                guard let bytes=image.pngData() else{throw HouseError.message("Capacity texture encoding failed.")};return bytes
+            }
+            textureKeys.append(try repo.put(bytes,ext:"png"))
+        }
+        let keys=textureKeys
+        let prepared=try await LocalWorker.run{try prepareLargeScene(textureKeys:keys)}
         let h=prepared.0,index=prepared.1,scene=SceneBuilder.baseScene(),options=SceneOptions(mode:.evidence)
         let stream=SpatialSceneStream(index:index,scene:scene,options:options)
         let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene
         let camera=SceneBuilder.camera(at:V3());scene.rootNode.addChildNode(camera);renderer.pointOfView=camera
-        var frameTimes:[Double]=[],memories:[[String:UInt64]]=[],sharpFrames=0,loads:[Double]=[]
+        var frameTimes:[Double]=[],memories:[[String:UInt64]]=[],sharpFrames=0,loads:[Double]=[],collisionCounts:[Int]=[],textureCounts:[Int]=[],decodedBytes:[Int]=[]
         for (visit,roomIndex) in [0,99].enumerated() {
             let room=h.rooms[roomIndex],position=room.origin+V3(2.5,-1,1.5),start=ProcessInfo.processInfo.systemUptime
             camera.simdPosition=position.render;camera.look(at:SCNVector3((room.origin+V3(2.5,4.8,1.5)).render))
@@ -723,6 +756,17 @@ extension SelfTests {
             for tick in 0..<513 {try Task.checkCancellation();stream.update(camera:position,time:Double(visit*1000+tick)/30);if tick%16==0 {await Task.yield()}}
             guard stream.pending.isEmpty,stream.nodes.count<=512,stream.allocations.values.reduce(0,{$0+$1.budget})<=DisplayGeometry.sceneVertexBudget else{throw HouseError.message("Capacity scene did not settle within its residency budget.")}
             loads.append(ProcessInfo.processInfo.systemUptime-start)
+            let rasterBytes=SceneBuilder.decodedTextureBytes(stream.textures)
+            guard !stream.textures.isEmpty,stream.textures.count<=DisplayGeometry.textureBudget,rasterBytes<=DisplayGeometry.textureByteBudget else{throw HouseError.message("Capacity textures exceed decoded residency limits.")}
+            textureCounts.append(stream.textures.count);decodedBytes.append(rasterBytes)
+            let inside=room.origin+V3(2.5,2,1.6)
+            let local=try await LocalWorker.run{try SpatialClearance(index:index,camera:inside)}
+            guard local.complete,local.primitiveCount>0,local.primitiveCount<=500000,
+              local.isClear(from:inside,to:inside+V3(0.3,0,0),radius:0.15),
+              !local.isClear(from:inside,to:room.origin+V3(2.5,5.2,1.6),radius:0.15),
+              !local.isClear(from:inside,to:inside+V3(4.1,0,0),radius:0.15)
+            else{throw HouseError.message("Capacity local collision lost wall or coverage bounds.")}
+            collisionCounts.append(local.primitiveCount)
             for frame in 0..<30 {
                 try Task.checkCancellation();let before=ProcessInfo.processInfo.systemUptime
                 let image=autoreleasepool{renderer.snapshot(atTime:Double(frame)/30,with:CGSize(width:640,height:360),antialiasingMode:.none)}
@@ -736,7 +780,10 @@ extension SelfTests {
         report["offscreenFrames"]=frameTimes.count;report["offscreenSize"]=[640,360]
         report["offscreenP50Milliseconds"]=frameTimes[frameTimes.count/2];report["offscreenP95Milliseconds"]=frameTimes[Int(ceil(Double(frameTimes.count)*0.95))-1]
         report["residencyLoadSeconds"]=loads;report["memorySamples"]=memories
-        report["limitations"]="Synthetic tiled walls without photo textures or capture data. Offscreen snapshot time includes readback; it is not sustained display FPS, device thermal qualification, reconstruction completeness or navigation-topology evidence."
+        report["sourceTextureCount"]=textureKeys.count;report["residentTextureCounts"]=textureCounts
+        report["decodedTextureBytes"]=decodedBytes;report["decodedTextureByteBudget"]=DisplayGeometry.textureByteBudget
+        report["localCollisionPrimitives"]=collisionCounts;report["localCollisionRadiusMetres"]=4
+        report["limitations"]="Synthetic tiled walls with procedural textures, local original-geometry collision and no capture data. Decoded raster bounds exclude GPU/driver allocations. Offscreen snapshot time includes readback; it is not sustained display FPS, device thermal qualification, reconstruction completeness or navigation-topology evidence."
         report["physicalDeviceQualified"]=false
         return report
     }
