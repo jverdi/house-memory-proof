@@ -25,7 +25,7 @@ final class Repository: EvidenceAssetReader {
     else { throw HouseError.message("Could not open local project database.") }
     sqlite3_busy_timeout(db, 3000)
     try execute(
-      "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL, json BLOB NOT NULL); CREATE TABLE IF NOT EXISTS history(id TEXT, revision INTEGER, json BLOB, PRIMARY KEY(id,revision)); CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, state TEXT, json BLOB);"
+      "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL, json BLOB NOT NULL); CREATE TABLE IF NOT EXISTS history(id TEXT, revision INTEGER, json BLOB, PRIMARY KEY(id,revision)); CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, state TEXT, json BLOB); CREATE TABLE IF NOT EXISTS capture_records(project_id TEXT NOT NULL, id TEXT NOT NULL, json BLOB NOT NULL, PRIMARY KEY(project_id,id));"
     )
   }
   deinit { sqlite3_close(db) }
@@ -55,7 +55,14 @@ final class Repository: EvidenceAssetReader {
       guard let p = sqlite3_column_blob(s, 1) else { continue }
       let data = Data(bytes: p, count: n)
       do {
-        let h = try JSONDecoder().decode(House.self, from: data)
+        var h = try JSONDecoder().decode(House.self, from: data)
+        let pending=try captureRecords(projectID:h.id)
+        guard Set(h.observations.map{$0.id}).count==h.observations.count else{throw HouseError.message("Duplicate capture identities in the stored project.")}
+        var known=Dictionary(uniqueKeysWithValues:h.observations.map{($0.id,$0)})
+        for observation in pending {
+          if let existing=known[observation.id] {guard existing==observation else{throw HouseError.message("Conflicting durable capture identities; originals preserved.")}}
+          else {h.observations.append(observation);h.revision+=1;known[observation.id]=observation}
+        }
         try h.validate()
         result.append(h)
       } catch {
@@ -125,11 +132,46 @@ final class Repository: EvidenceAssetReader {
       guard sqlite3_step(trim) == SQLITE_DONE else {
         throw HouseError.message("Could not maintain revision history.")
       }
+      let included=Set(h.observations.map{$0.id})
+      for observation in try captureRecords(projectID:h.id) where included.contains(observation.id) {
+        let remove=try statement("DELETE FROM capture_records WHERE project_id=? AND id=?")
+        defer{sqlite3_finalize(remove)}
+        for (index,value) in [h.id.uuidString,observation.id.uuidString].enumerated(){_=value.withCString{sqlite3_bind_text(remove,Int32(index+1),$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))}}
+        guard sqlite3_step(remove)==SQLITE_DONE else{throw HouseError.message("Could not finish the capture checkpoint.")}
+      }
       try execute("COMMIT")
     } catch {
       try? execute("ROLLBACK")
       throw error
     }
+  }
+  private func captureRecords(projectID:UUID)throws->[Observation] {
+    let query=try statement("SELECT json FROM capture_records WHERE project_id=? ORDER BY rowid")
+    defer{sqlite3_finalize(query)}
+    _=projectID.uuidString.withCString{sqlite3_bind_text(query,1,$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))}
+    var result:[Observation]=[],status=sqlite3_step(query)
+    while status==SQLITE_ROW {
+      guard result.count<50000,let bytes=sqlite3_column_blob(query,0),sqlite3_column_bytes(query,0)<=1000000 else{throw HouseError.message("Durable capture record exceeds its admission budget.")}
+      result.append(try JSONDecoder().decode(Observation.self,from:Data(bytes:bytes,count:Int(sqlite3_column_bytes(query,0)))))
+      status=sqlite3_step(query)
+    }
+    guard status==SQLITE_DONE else{throw HouseError.message("Could not read durable capture records.")};return result
+  }
+  func stageCapture(_ observation:Observation,projectID:UUID,room:Room,stage:Stage,segment:Segment)throws {
+    lock.lock();defer{lock.unlock()}
+    var validation=House(name:"Capture admission");validation.rooms=[room];validation.stages=[stage]
+    var frame=segment;frame.poseSolution=nil;frame.registrationLink=nil
+    validation.segments=[frame];validation.observations=[observation];try validation.validate()
+    let bytes=try JSONEncoder().encode(observation)
+    guard bytes.count<=1000000 else{throw HouseError.message("Capture metadata exceeds its admission budget.")}
+    let query=try statement("INSERT OR IGNORE INTO capture_records(project_id,id,json) SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM projects WHERE id=?)")
+    defer{sqlite3_finalize(query)}
+    for (index,value) in [(1,projectID.uuidString),(2,observation.id.uuidString),(4,projectID.uuidString)] {_=value.withCString{sqlite3_bind_text(query,Int32(index),$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))}}
+    _=bytes.withUnsafeBytes{sqlite3_bind_blob(query,3,$0.baseAddress,Int32(bytes.count),unsafeBitCast(-1,to:sqlite3_destructor_type.self))}
+    guard sqlite3_step(query)==SQLITE_DONE else{throw HouseError.message("Could not durably save this photograph's metadata.")}
+    let check=try statement("SELECT json FROM capture_records WHERE project_id=? AND id=?");defer{sqlite3_finalize(check)}
+    for (index,value) in [projectID.uuidString,observation.id.uuidString].enumerated(){_=value.withCString{sqlite3_bind_text(check,Int32(index+1),$0,-1,unsafeBitCast(-1,to:sqlite3_destructor_type.self))}}
+    guard sqlite3_step(check)==SQLITE_ROW,let stored=sqlite3_column_blob(check,0),try JSONDecoder().decode(Observation.self,from:Data(bytes:stored,count:Int(sqlite3_column_bytes(check,0))))==observation else{throw HouseError.message("Original project is missing or the capture identity conflicts; its recovery journal remains intact.")}
   }
   func previous(_ id: UUID) throws -> House? {
     lock.lock()
@@ -270,6 +312,11 @@ final class Repository: EvidenceAssetReader {
     guard var h = houses.first(where: { $0.id == projectID }) else { return false }
     body(&h)
     return commit(h, select: false)
+  }
+  @discardableResult func acceptStagedCapture(_ observation:Observation,projectID:UUID)->Bool {
+    guard let index=houses.firstIndex(where:{$0.id==projectID}) else{error="Capture project is unavailable; its durable record will recover on reopening.";return false}
+    if let existing=houses[index].observations.first(where:{$0.id==observation.id}) {return existing==observation}
+    houses[index].observations.append(observation);houses[index].revision+=1;return true
   }
   func create(_ name: String, demo: Bool = false) {
     commit(demo ? DemoFactory.make() : House.empty(name.isEmpty ? "My house" : name))

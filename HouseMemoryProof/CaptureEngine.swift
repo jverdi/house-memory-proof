@@ -290,7 +290,9 @@ import Vision
     }
   }
   private func retain(_ frame: ARFrame, documentary: Bool) {
-    guard let segment, let houseID, let repo = model?.repository else { return }
+    guard let segment, let houseID, let repo = model?.repository,
+      let project=model?.houses.first(where:{$0.id==houseID}),
+      let room=project.rooms.first(where:{$0.id==segment.roomID}),let stage=project.stages.first(where:{$0.id==segment.stageID}) else { return }
     guard repo.freeBytes() > 500_000_000 else {
       message = "Storage reserve reached. Saving this session."
       stop()
@@ -370,13 +372,15 @@ import Vision
           documentary: documentary, imageOrientation: orientation,
           referenceObservations: observedReferences)
         try repo.journalCapture(projectID: houseID, observation: obs)
+        try repo.stageCapture(obs,projectID:houseID,room:room,stage:stage,segment:segment)
+        try repo.finishCaptureJournal(obs.id)
         Task { @MainActor in
           guard let self else { return }
           self.pending -= 1
           guard self.generation == token else { return }
-          let saved = self.model?.edit(projectID: houseID) { h in
-            h.observations.append(obs)
-            if self.count % 5 == 0 {
+          var saved = self.model?.acceptStagedCapture(obs,projectID:houseID) == true
+          if saved,self.count % 5 == 0 {
+            saved = self.model?.edit(projectID: houseID) { h in
               h.features.removeAll {
                 $0.segmentID == segment.id && $0.name == "Observed LiDAR surface"
               }
@@ -384,14 +388,13 @@ import Vision
               if let i = h.segments.firstIndex(where: { $0.id == segment.id }) {
                 h.segments[i].referencePoses = Array(self.currentReferencePoses.values)
               }
-            }
+            } == true
           }
           guard saved == true else {
-            self.message = "Capture metadata could not be committed. Its recovery journal is preserved; reopen the app after resolving storage."
+            self.message = "The project checkpoint could not be committed. Durable photo records are preserved; reopen the app after resolving storage."
             if self.running { self.stop() } else if self.stopping && self.pending == 0 { self.finishStop() }
             return
           }
-          try? repo.finishCaptureJournal(obs.id)
           self.count += 1
           let p = self.lastPosition
           self.cellSet.insert("\(Int(floor(p.x/0.25))):\(Int(floor(p.z/0.25)))")

@@ -12,6 +12,21 @@ import ImageIO
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
+            check("Durable capture rows recover without rewriting the project and survive a stale checkpoint") {
+                var h=try SimulatedCapture.make(repo:repo);let original=h.observations;h.observations=[];try repo.save(h)
+                let room=h.rooms[0],stage=h.stages.first{$0.id==h.segments[0].stageID}!,segment=h.segments[0]
+                for o in original.prefix(2) {try repo.stageCapture(o,projectID:h.id,room:room,stage:stage,segment:segment)}
+                let reopened=try Repository(root:repo.root)
+                guard let restored=try reopened.all().first(where:{$0.id==h.id}),restored.observations==Array(original.prefix(2)) else{return false}
+                // A checkpoint created before the second append must not erase it.
+                h.observations=[original[0]];try repo.save(h)
+                guard let after=try reopened.all().first(where:{$0.id==h.id}),after.observations==Array(original.prefix(2)) else{return false}
+                try repo.save(after)
+                guard try reopened.all().first(where:{$0.id==h.id})?.observations==after.observations else{return false}
+                try repo.stageCapture(original[2],projectID:h.id,room:room,stage:stage,segment:segment)
+                var conflicting=original[2];conflicting.note="Conflicting record"
+                do {try repo.stageCapture(conflicting,projectID:h.id,room:room,stage:stage,segment:segment);return false}catch{return true}
+            }
             check("Reveal clips crossing triangles and rejects opposite wall and viewpoint") {
                 let b=RevealBoundary(name:"Test",segmentID:UUID(),origin:V3(),horizontal:V3(1,0,0),vertical:V3(0,1,0),width:1,height:1,depth:0.2,finishOffset:0.01,sourceFingerprint:"test")
                 var f=house.features[0];f.mesh=Mesh(vertices:[V3(-1,0.2,0.1),V3(2,0.2,0.1),V3(0.5,2,0.1)],triangles:[0,1,2]);f.uv=[UV(u:0,v:0),UV(u:1,v:0),UV(u:0.5,v:1)]

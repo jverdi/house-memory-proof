@@ -642,6 +642,7 @@ struct ReconstructionPage: View {
 struct AboutPage: View {
   @State private var license = "Loading bundled license…"
   @State private var visionLicense = ""
+  @State private var solverLicenses = ""
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
@@ -657,10 +658,13 @@ struct AboutPage: View {
         Text(
           "Native visual matching: OpenCV 4.13.0, Apache License 2.0. Built from official pinned source."
         )
+        Text("Joint optimization: Ceres 2.2.0 (BSD-3-Clause) and Eigen 3.4.0 (MPL-2.0), built from pinned unmodified source.")
+        Text(solverLicenses).font(.system(size:11,design:.monospaced)).textSelection(.enabled)
         Text(visionLicense).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
         Text(license).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
       }.padding()
     }.navigationTitle("About").task {
+      solverLicenses=["CERES-LICENSE.txt","EIGEN-LICENSE.txt"].compactMap{name in Bundle.main.url(forResource:"IFC",withExtension:nil).flatMap{try? String(contentsOf:$0.appendingPathComponent(name),encoding:.utf8)}}.joined(separator:"\n\n")
       if let url = Bundle.main.url(forResource: "IFC", withExtension: nil)?.appendingPathComponent(
         "OPENCV-LICENSE.txt"), let text = try? String(contentsOf: url, encoding: .utf8)
       {

@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/vision-evaluation.yml
       - tooling/opencv/build-host.sh
+      - tooling/solver/**
       - tooling/simulation/VisionReplay.swift
       - tooling/simulation/replay_fixture.py
       - tooling/simulation/vision_matrix.py

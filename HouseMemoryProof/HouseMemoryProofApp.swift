@@ -7,12 +7,17 @@ import Darwin
     WindowGroup {
       RootView().environmentObject(model).preferredColorScheme(.dark).tint(Color.mint).task {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--journal-fault"),let repo=model.repository {
+        if (ProcessInfo.processInfo.arguments.contains("--journal-fault") || ProcessInfo.processInfo.arguments.contains("--capture-row-fault")),let repo=model.repository {
           do {
             var h=try SimulatedCapture.make(repo:repo);let observation=h.observations[0];h.observations=[];h.name="Process recovery fixture"
             guard model.commit(h) else{return}
             try repo.journalCapture(projectID:h.id,observation:observation)
-            try DurableFiles.write(try JSONSerialization.data(withJSONObject:["project":h.id.uuidString,"observation":observation.id.uuidString]),to:repo.root.appendingPathComponent("fault-ready.json"))
+            let rowFault=ProcessInfo.processInfo.arguments.contains("--capture-row-fault")
+            if rowFault {
+              try repo.stageCapture(observation,projectID:h.id,room:h.rooms[0],stage:h.stages.first{$0.id==observation.stageID}!,segment:h.segments[0])
+              try repo.finishCaptureJournal(observation.id)
+            }
+            try DurableFiles.write(try JSONSerialization.data(withJSONObject:["project":h.id.uuidString,"observation":observation.id.uuidString,"fault":rowFault ? "SIGKILL after capture row commit, before project checkpoint":"SIGKILL after durable journal, before observation SQLite commit"]),to:repo.root.appendingPathComponent("fault-ready.json"))
             raise(SIGKILL)
           }catch{model.error=error.localizedDescription}
         }
@@ -22,7 +27,7 @@ import Darwin
             let h=model.houses.first{$0.id.uuidString==expected["project"]}
             let passed=h?.observations.filter{$0.id.uuidString==expected["observation"]}.count==1
             let count=try h.map{try repo.integrity($0)} ?? 0
-            try DurableFiles.write(try JSONSerialization.data(withJSONObject:["passed":passed && count>0,"recoveredExactlyOnce":passed,"verifiedAssets":count,"fault":"SIGKILL after durable journal, before observation SQLite commit","powerLossQualified":false]),to:repo.root.appendingPathComponent("process-recovery.json"))
+            try DurableFiles.write(try JSONSerialization.data(withJSONObject:["passed":passed && count>0,"recoveredExactlyOnce":passed,"verifiedAssets":count,"fault":expected["fault"] ?? "unknown","powerLossQualified":false]),to:repo.root.appendingPathComponent("process-recovery.json"))
           }catch{model.error=error.localizedDescription}
         }
         #endif

@@ -82,8 +82,10 @@ print('All native self-tests passed:',len(r['tests']))
 PYTEST
 
 # Kill at the journal/SQLite boundary, then verify recovery in a new process.
-xcrun simctl terminate "$device_id" com.example.HouseMemoryProof
-xcrun simctl launch "$device_id" com.example.HouseMemoryProof --journal-fault
+for fault_mode in journal capture-row; do
+xcrun simctl terminate "$device_id" com.example.HouseMemoryProof 2>/dev/null || true
+rm -f "$app_root/fault-ready.json" "$app_root/process-recovery.json"
+xcrun simctl launch "$device_id" com.example.HouseMemoryProof "--$fault_mode-fault"
 for attempt in $(seq 1 30); do
   if [ -f "$app_root/fault-ready.json" ]; then break; fi
   sleep 1
@@ -94,8 +96,9 @@ for attempt in $(seq 1 30); do
   if [ -f "$app_root/process-recovery.json" ]; then break; fi
   sleep 1
 done
-cp "$app_root/process-recovery.json" build/evidence/process-recovery.json
-python3 -c "import json; r=json.load(open('build/evidence/process-recovery.json')); assert r['passed'],r"
+cp "$app_root/process-recovery.json" "build/evidence/process-recovery-$fault_mode.json"
+python3 -c "import json; r=json.load(open('build/evidence/process-recovery-$fault_mode.json')); assert r['passed'],r"
+done
 
 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
