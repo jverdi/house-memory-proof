@@ -161,12 +161,31 @@ enum StreamingArchive {
     guard end.uint32(0) == 0x0605_4b50, end.uint16(20) == 0 else {
       throw HouseError.message("Incomplete or unsupported archive footer.")
     }
+    guard end.uint16(4)==0,end.uint16(6)==0,end.uint16(8)==end.uint16(10) else {
+      throw HouseError.message("Multi-volume archives are unsupported.")
+    }
+    var directoryOffset=UInt64(end.uint32(16)),directorySize=UInt64(end.uint32(12)),entryCount=UInt64(end.uint16(10)),directoryEnd=length-22
+    if directoryOffset==UInt32.max || directorySize==UInt32.max || entryCount==UInt16.max {
+      guard length>=98 else{throw HouseError.message("Truncated ZIP64 footer.")}
+      try f.seek(toOffset:length-42);let locator=try exact(f,20)
+      guard locator.uint32(0)==0x0706_4b50,locator.uint32(4)==0,locator.uint32(16)==1 else{throw HouseError.message("Invalid ZIP64 locator.")}
+      let location=locator.uint64(8)
+      guard location<=length-98 else{throw HouseError.message("Invalid ZIP64 directory offset.")}
+      try f.seek(toOffset:location);let footer=try exact(f,56)
+      guard footer.uint32(0)==0x0606_4b50,footer.uint64(4)==44,location+56==length-42,
+        footer.uint32(16)==0,footer.uint32(20)==0,footer.uint64(24)==footer.uint64(32)
+      else{throw HouseError.message("Incomplete or unsupported ZIP64 directory.")}
+      entryCount=footer.uint64(32);directorySize=footer.uint64(40);directoryOffset=footer.uint64(48);directoryEnd=location
+    }
+    guard entryCount>0,entryCount<=160000,directoryOffset<=directoryEnd,directorySize==directoryEnd-directoryOffset else {
+      throw HouseError.message("Archive directory length or entry count is invalid.")
+    }
     var offset: UInt64 = 0
     var result: [String: Record] = [:]
-    while offset + 30 <= length {
+    var localHeaders:[String:UInt64]=[:]
+    while offset < directoryOffset {
       try f.seek(toOffset: offset)
       let h = try exact(f, 30)
-      if h.uint32(0) == 0x0201_4b50 { break }
       guard h.uint32(0) == 0x0403_4b50, h.uint16(6) & 9 == 0, h.uint16(8) == 0 else {
         throw HouseError.message("Only complete, uncompressed House Xray archives are supported.")
       }
@@ -197,12 +216,44 @@ enum StreamingArchive {
         guard found else { throw HouseError.message("Missing ZIP64 sizes.") }
       }
       let start = offset + UInt64(30 + nl + el)
-      guard size == compressed, start <= length, size <= length - start, result.count < 160000
+      guard size == compressed, start <= directoryOffset, size <= directoryOffset - start, result.count < 160000
       else { throw HouseError.message("Truncated or oversized archive index.") }
       result[name] = Record(name: name, offset: start, size: size, crc: h.uint32(14))
+      localHeaders[name]=offset
       offset = start + size
     }
-    guard !result.isEmpty else { throw HouseError.message("Archive contains no entries.") }
+    guard offset==directoryOffset,UInt64(result.count)==entryCount else{throw HouseError.message("Archive entry count differs from its committed directory.")}
+    var seen=Set<String>()
+    for _ in 0..<Int(entryCount) {
+      guard offset<=directoryEnd,directoryEnd-offset>=46 else{throw HouseError.message("Truncated central directory.")}
+      try f.seek(toOffset:offset);let header=try exact(f,46)
+      guard header.uint32(0)==0x0201_4b50,header.uint16(8)&9==0,header.uint16(10)==0,header.uint16(34)==0 else{throw HouseError.message("Unsupported central directory entry.")}
+      let names=Int(header.uint16(28)),extras=Int(header.uint16(30)),comments=Int(header.uint16(32)),length=UInt64(46+names+extras+comments)
+      guard length<=directoryEnd-offset else{throw HouseError.message("Truncated central directory name.")}
+      let nameData=try exact(f,names),extra=try exact(f,extras)
+      guard let name=String(data:nameData,encoding:.utf8),seen.insert(name).inserted,let local=result[name] else{throw HouseError.message("Central directory names disagree with stored evidence.")}
+      var size=UInt64(header.uint32(24)),compressed=UInt64(header.uint32(20)),localOffset=UInt64(header.uint32(42))
+      if size==UInt32.max || compressed==UInt32.max || localOffset==UInt32.max {
+        var cursor=0,found=false
+        while cursor+4<=extra.count {
+          let kind=extra.uint16(cursor),count=Int(extra.uint16(cursor+2));cursor+=4
+          guard count<=extra.count-cursor else{throw HouseError.message("Malformed ZIP64 central directory extra.")}
+          if kind==1 {
+            let end=cursor+count
+            func value()throws->UInt64 {guard cursor+8<=end else{throw HouseError.message("Missing ZIP64 directory value.")};defer{cursor+=8};return extra.uint64(cursor)}
+            if size==UInt32.max {size=try value()}
+            if compressed==UInt32.max {compressed=try value()}
+            if localOffset==UInt32.max {localOffset=try value()}
+            found=true;break
+          }
+          cursor+=count
+        }
+        guard found else{throw HouseError.message("Missing ZIP64 central directory sizes.")}
+      }
+      guard size==local.size,compressed==size,localOffset==localHeaders[name],header.uint32(16)==local.crc else{throw HouseError.message("Archive directory and evidence headers disagree.")}
+      offset+=length
+    }
+    guard offset==directoryEnd else{throw HouseError.message("Uncommitted bytes in archive directory.")}
     return result
   }
   static func exact(_ f: FileHandle, _ count: Int) throws -> Data {

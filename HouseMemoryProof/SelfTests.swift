@@ -589,6 +589,42 @@ import Darwin
             await check("Invalid mesh indices rejected"){!Mesh(vertices:[V3()],triangles:[0,1,2]).valid}
             await check("Empty routes remain empty without invalid ranges"){Mesh.route([],radius:0.01).vertices.isEmpty && Mesh.route([V3()],radius:0.01).vertices.isEmpty}
             await check("Reject nonfinite mesh"){!Mesh(vertices:[V3(.nan,0,0)],triangles:[]).valid}
+            await check("Archive directory corruption cannot masquerade as a complete restore") {
+                let source=folder.appendingPathComponent("directory-source.bin"),archive=folder.appendingPathComponent("directory-valid.zip")
+                try Data("original".utf8).write(to:source)
+                _ = try StreamingArchive.write([.init(name:"entry.bin",url:source)],to:archive)
+                let records=try StreamingArchive.index(archive)
+                guard let entry=records["entry.bin"],try StreamingArchive.read(entry,from:archive)==Data("original".utf8) else{return false}
+                let original=try Data(contentsOf:archive),central=Int(entry.offset+entry.size)
+                for index in [central+16,central+42,original.count-12,original.count-34] {
+                    var bytes=original;bytes[index] ^= 1
+                    let damaged=folder.appendingPathComponent("directory-damaged-\(index).zip");try bytes.write(to:damaged)
+                    do {_ = try StreamingArchive.index(damaged);return false}catch{}
+                }
+                return true
+            }
+            await check("ZIP64 indexing preserves offsets beyond four GiB without reading payload") {
+                let source=folder.appendingPathComponent("zip64-source.bin"),small=folder.appendingPathComponent("zip64-small.zip"),large=folder.appendingPathComponent("zip64-sparse.zip")
+                try Data("small".utf8).write(to:source)
+                _ = try StreamingArchive.write([.init(name:"entry.bin",url:source)],to:small)
+                guard let record=try StreamingArchive.index(small)["entry.bin"] else{return false}
+                let bytes=try Data(contentsOf:small),oldCentral=Int(record.offset+record.size),size=UInt64(UInt32.max)+124,newCentral=record.offset+size
+                var header=Data(bytes.prefix(Int(record.offset))),tail=Data(bytes.dropFirst(oldCentral))
+                func replace(_ data:inout Data,_ offset:Int,_ value:UInt64) {var b=Data();b.le(value);data.replaceSubrange(offset..<(offset+8),with:b)}
+                let nameCount="entry.bin".utf8.count
+                replace(&header,30+nameCount+4,size);replace(&header,30+nameCount+12,size)
+                replace(&tail,46+nameCount+4,size);replace(&tail,46+nameCount+12,size)
+                let tailCount=tail.count
+                replace(&tail,tailCount-98+48,newCentral)
+                replace(&tail,tailCount-42+8,newCentral+UInt64(tailCount-98))
+                FileManager.default.createFile(atPath:large.path,contents:nil)
+                let output=try FileHandle(forWritingTo:large)
+                defer{try? output.close();try? FileManager.default.removeItem(at:large)}
+                try output.write(contentsOf:header);try output.seek(toOffset:newCentral);try output.write(contentsOf:tail);try output.close()
+                guard let indexed=try StreamingArchive.index(large)["entry.bin"],indexed.offset==record.offset,indexed.size==size else{return false}
+                do {_ = try StreamingArchive.read(indexed,from:large);return false}catch{}
+                return true
+            }
             await check("Archive metadata and original roundtrip"){let key=try repo.put(Data("source drawing".utf8),ext:"txt");house.drawings.append(Drawing(name:"source.txt",asset:key));let url=try Exporter.archive(house,repo:repo);try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("test.hxray"));try FileManager.default.copyItem(at:url,to:mainRepo.root.appendingPathComponent("test.hxray"));let fresh=try Repository(root:folder.appendingPathComponent("restore"));let restored=try Exporter.restore(url,repo:fresh);let verified=try fresh.integrity(restored);return restored.id != house.id && restored.features==house.features && restored.assets==house.assets && verified==1}
             await check("Coordinated folder snapshot is independently restorable"){
                 let folder=repo.root.appendingPathComponent("snapshots",isDirectory:true);try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
