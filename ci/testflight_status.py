@@ -5,6 +5,7 @@ from pathlib import Path
 import time
 import urllib.parse
 from apple_access import make_token, request
+from testflight_readiness import ready_for_owner
 
 bundle = os.environ.get('APP_BUNDLE_ID') or 'com.jverdi.housememoryproof'
 version = os.environ.get('TARGET_BUILD', '')
@@ -67,9 +68,11 @@ while True:
                 groups.append(group)
         report['builds'].append({'id': build['id'], 'version': attrs['version'],
             'processing_state': attrs['processingState'], 'expired': attrs['expired'],
+            'uploaded_date': attrs.get('uploadedDate'), 'expiration_date': attrs.get('expirationDate'),
             'beta_state': detail.get('attributes', {}),
             'groups': [{'id': g['id'], 'name': g['attributes']['name'],
                         'internal': g['attributes']['isInternalGroup']} for g in groups]})
+    report['ready_for_owner']=ready_for_owner(report)
     Path('build/evidence').mkdir(parents=True, exist_ok=True)
     Path('build/evidence/testflight-status.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report), flush=True)
@@ -78,3 +81,5 @@ while True:
     if time.monotonic() >= deadline:
         break
     time.sleep(30)
+if version and not report['ready_for_owner']:
+    raise SystemExit('The requested build is not yet verified ready for its owner. Inspect the retained Apple status; do not infer delivery from upload success.')

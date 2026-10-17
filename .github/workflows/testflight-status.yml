@@ -2,7 +2,7 @@ name: Inspect TestFlight readiness
 on:
   push:
     branches: [main]
-    paths: [ci/testflight_status.py, .github/workflows/testflight-status.yml]
+    paths: [ci/testflight_status.py, ci/testflight_readiness.py, ci/test_testflight_readiness.py, .github/workflows/testflight-status.yml]
   workflow_dispatch:
   workflow_run:
     workflows: [Build and deliver House Proof]
@@ -11,13 +11,15 @@ permissions:
   contents: read
 jobs:
   inspect:
-    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.head_commit.message, '[release]'))
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && (contains(github.event.workflow_run.head_commit.message, '[release]') || (github.event.workflow_run.event == 'workflow_dispatch' && github.event.workflow_run.head_branch == 'personal-beta')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
+      - name: Verify owner delivery gate
+        run: python3 -m unittest discover -s ci -p test_testflight_readiness.py
       - name: Inspect Apple processing and internal testing state
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
