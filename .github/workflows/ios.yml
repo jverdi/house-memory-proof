@@ -27,6 +27,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Compile, launch, and capture evidence
         run: bash ci/simulator.sh
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Verify portable core and independent export readers
         run: |
           python3 tooling/hm test

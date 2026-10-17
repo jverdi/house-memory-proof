@@ -5,6 +5,17 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+"0ADCA819A68055491400E8E4" = {isa=PBXFileReference; lastKnownFileType=sourcecode.swift; path="HouseXrayUITests/Smoke.swift"; sourceTree=SOURCE_ROOT;};
+"18D31C8CB43D2283DAC4970F" = {isa=PBXFileReference; explicitFileType="wrapper.cfbundle"; path=HouseXrayUITests.xctest; sourceTree=BUILT_PRODUCTS_DIR;};
+"8C1ABAF72B37D1E2329CB3EA" = {isa=PBXBuildFile; fileRef=0ADCA819A68055491400E8E4;};
+"5E81B2AAA090DA3F4E00409A" = {isa=PBXSourcesBuildPhase; buildActionMask=2147483647; files=(8C1ABAF72B37D1E2329CB3EA,); runOnlyForDeploymentPostprocessing=0;};
+"7817532CA20423FCD0E041EC" = {isa=XCBuildConfiguration; name=Debug; buildSettings={PRODUCT_NAME="$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER=com.example.HouseXrayUITests; GENERATE_INFOPLIST_FILE=YES; TEST_TARGET_NAME=HouseMemoryProof; SWIFT_VERSION=5.0; SWIFT_OBJC_BRIDGING_HEADER=""; CODE_SIGNING_ALLOWED=NO; TARGETED_DEVICE_FAMILY=1; LD_RUNPATH_SEARCH_PATHS="$(inherited) @executable_path/Frameworks @loader_path/Frameworks";};};
+"F94316B4909C0949A43AD8DB" = {isa=XCBuildConfiguration; name=Release; buildSettings={PRODUCT_NAME="$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER=com.example.HouseXrayUITests; GENERATE_INFOPLIST_FILE=YES; TEST_TARGET_NAME=HouseMemoryProof; SWIFT_VERSION=5.0; SWIFT_OBJC_BRIDGING_HEADER=""; CODE_SIGNING_ALLOWED=NO; TARGETED_DEVICE_FAMILY=1; LD_RUNPATH_SEARCH_PATHS="$(inherited) @executable_path/Frameworks @loader_path/Frameworks";};};
+"327B6FB42D58FC87A33FC2CA" = {isa=XCConfigurationList; buildConfigurations=(7817532CA20423FCD0E041EC,F94316B4909C0949A43AD8DB,); defaultConfigurationIsVisible=0; defaultConfigurationName=Release;};
+"DC900E3DD66EF50B6CE673E4" = {isa=PBXContainerItemProxy; containerPortal=244210E48437B6556980A702; proxyType=1; remoteGlobalIDString=C1E9827DB735CA9BAA54A540; remoteInfo=HouseMemoryProof;};
+"A2F2C3A2AE095368803DF423" = {isa=PBXTargetDependency; target=C1E9827DB735CA9BAA54A540; targetProxy=DC900E3DD66EF50B6CE673E4;};
+"0C515E7D8CF3CAD1F3DB6896" = {isa=PBXNativeTarget; buildConfigurationList=327B6FB42D58FC87A33FC2CA; buildPhases=(5E81B2AAA090DA3F4E00409A,); buildRules=(); dependencies=(A2F2C3A2AE095368803DF423,); name=HouseXrayUITests; productName=HouseXrayUITests; productReference=18D31C8CB43D2283DAC4970F; productType="com.apple.product-type.bundle.ui-testing";};
+
 		"8975CEC816012A38A1032675" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "SimulatedCapture.swift"; "sourceTree" = "<group>"; };
 		"84FD867BCF6198F76451DEEF" = { "isa" = "PBXBuildFile"; "fileRef" = "8975CEC816012A38A1032675"; };
 
@@ -315,7 +326,7 @@
 			"productRefGroup" = "B9E7F2871A3402983868AFC8";
 			"projectDirPath" = "";
 			"projectRoot" = "";
-			"targets" = (
+			"targets" = ("0C515E7D8CF3CAD1F3DB6896",
 				"C1E9827DB735CA9BAA54A540",
 			);
 		};
