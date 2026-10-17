@@ -66,7 +66,11 @@ struct Mesh: Codable, Equatable {
     }
 }
 struct Room:Codable,Identifiable,Equatable { var id=UUID();var name:String;var level:Int;var origin:V3;var size:V3;var isDesign:Bool=true }
-struct Stage:Codable,Identifiable,Equatable { var id=UUID();var name:String;var date=Date();var kind:EvidenceKind }
+enum ConstructionPhase:String,Codable,CaseIterable {case rough="Rough-in",finished="Finished",other="Other"}
+struct Stage:Codable,Identifiable,Equatable {
+    var id=UUID();var name:String;var date=Date();var kind:EvidenceKind;var phase:ConstructionPhase?=nil
+    var category:ConstructionPhase {phase ?? (name.lowercased().contains("finish") ? .finished:.rough)}
+}
 struct Feature:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var trade:Trade;var roomID:UUID;var stageID:UUID;var kind:EvidenceKind
     var mesh:Mesh;var route:[V3]=[];var sourceIDs:[UUID]=[];var notes="";var endpoint="";var reviewed=false

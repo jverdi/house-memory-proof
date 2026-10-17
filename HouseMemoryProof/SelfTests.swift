@@ -35,6 +35,17 @@ import ImageIO
                 source.referencePoses[index].matrix[3]+=0.1
                 do {_=try ReferenceRegistration.fit(source:source,anchor:anchor,house:h);return false}catch{return true}
             }
+            check("Display reduction stays bounded and preserves source triangles and UVs") {
+                let mesh=Mesh.box(center:V3(),size:V3(2,3,4)),uv=mesh.vertices.map{UV(u:$0.x,v:$0.y)}
+                let reduced=DisplayGeometry.reduce(mesh,uv:uv,budget:9)
+                guard reduced.0.valid,reduced.0.vertices.count<=9,reduced.0.triangles.count<=9,reduced.1?.count==reduced.0.vertices.count else{return false}
+                return zip(reduced.0.vertices,reduced.1!).allSatisfy{mesh.vertices.contains($0.0) && $0.1.u==$0.0.x && $0.1.v==$0.0.y} && mesh.vertices.count==8
+            }
+            check("Construction category survives arbitrary stage names") {
+                var h=house;h.stages[0].name="After inspection";h.stages[0].phase = .rough;h.stages[1].name="Ready to paint";h.stages[1].phase = .finished
+                let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(h))
+                return SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.rough))==[h.stages[0].id] && SceneBuilder.eligibleStages(decoded,options:SceneOptions(mode:.finished))==[h.stages[1].id]
+            }
             check("Canonical AR basis"){V3(ar:SIMD3(1,2,3))==V3(1,-3,2)}
             check("Identity rigid transform"){Rigid().valid && Rigid().apply(V3(2,3,4))==V3(2,3,4)}
             check("Reject scale in rigid transform"){var t=Rigid();t.values[0]=2;return !t.valid}

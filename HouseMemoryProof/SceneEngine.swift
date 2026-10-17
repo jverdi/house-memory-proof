@@ -33,9 +33,9 @@ enum SceneBuilder {
   }
   static func eligibleStages(_ h: House, options: SceneOptions) -> Set<UUID> {
     if let stage = options.stage { return [stage] }
-    let finished = Set(h.stages.filter { $0.name.lowercased().contains("finish") }.map { $0.id })
+    let finished = Set(h.stages.filter { $0.category == .finished }.map { $0.id })
     switch options.mode {
-    case .rough: return Set(h.stages.map { $0.id }).subtracting(finished)
+    case .rough: return Set(h.stages.filter{$0.category == .rough}.map{$0.id})
     case .finished: return finished
     case .ghost, .evidence: return Set(h.stages.map { $0.id })
     }
@@ -100,12 +100,15 @@ enum SceneBuilder {
     scene.rootNode.addChildNode(sun)
     // Unregistered sessions have independent frames; never silently overlay them.
     var textureCache: [String: UIImage] = [:]
-    for f in features(h, options: options) {
-      var mesh = f.mesh
+    let visibleFeatures=features(h,options:options)
+    let total=visibleFeatures.reduce(0){$0+DisplayGeometry.cost($1.mesh)}
+    for f in visibleFeatures {
+      let reduced=DisplayGeometry.reduce(f.mesh,uv:f.uv,budget:DisplayGeometry.budget(for:f.mesh,total:total,objects:visibleFeatures.count))
+      var mesh = reduced.0
       if let sid = f.segmentID, let t = h.segments.first(where: { $0.id == sid })?.registration {
         mesh.vertices = mesh.vertices.map { t.apply($0) }
       }
-      let n = SCNNode(geometry: geometry(mesh, uv: f.uv))
+      let n = SCNNode(geometry: geometry(mesh, uv: reduced.1))
       n.name = f.id.uuidString
       let m = SCNMaterial()
       m.lightingModel = .physicallyBased
@@ -118,13 +121,13 @@ enum SceneBuilder {
       }
       if let key = f.texture {
         let root = Repository.defaultRoot.appendingPathComponent("assets")
-        if textureCache[key] == nil,
+        if textureCache[key] == nil,textureCache.count<DisplayGeometry.textureBudget,
           let source = CGImageSourceCreateWithURL(root.appendingPathComponent(key) as CFURL, nil),
           let cg = CGImageSourceCreateThumbnailAtIndex(
             source, 0,
             [
               kCGImageSourceCreateThumbnailFromImageAlways: true,
-              kCGImageSourceThumbnailMaxPixelSize: 1024,
+              kCGImageSourceThumbnailMaxPixelSize: 768,
             ] as CFDictionary)
         {
           textureCache[key] = UIImage(cgImage: cg)
@@ -214,7 +217,7 @@ extension UIColor {
     revision = h.revision
     clearance = SpatialClearance(features: Exporter.canonicalFeatures(h, options: o))
     cameraCorridor = NavigationGeometry.positions(house:h,options:o)
-    navigationNotice = clearance.complete ? "" : "Walk collision budget exceeded. Choose one room or use Free fly."
+    navigationNotice = clearance.complete ? DisplayGeometry.notice(SceneBuilder.features(h,options:o)) : "Walk collision budget exceeded. Choose one room or use Free fly."
     let scene = SceneBuilder.scene(h, options: o)
     scene.rootNode.addChildNode(camera)
     view.scene = scene

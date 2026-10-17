@@ -15,6 +15,7 @@ struct ToolsPage: View {
     NavigationStack {
       Form {
         Section("Plans and spatial record") {
+          NavigationLink("Construction stages") { StagesPage(house:house) }
           NavigationLink("Service endpoint connections") { ConnectionsPage(house: house) }
           NavigationLink("Drawings & design references") { PlansPage(house: house) }
           NavigationLink("Saved measurements (approximate)") {
