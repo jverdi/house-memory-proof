@@ -20,6 +20,16 @@ extern "C" int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t 
  auto detector=cv::ORB::create(capacity,1.2f,8,31,0,2,cv::ORB::HARRIS_SCORE,31,16);
  std::vector<cv::KeyPoint> keys;cv::Mat desc;detector->detectAndCompute(image,cv::noArray(),keys,desc);
  if(keys.empty())return 0;
+ // ORB pyramid locations are quantized. Refine the same descriptor's corner
+ // on the source-resolution image before RGB/depth backprojection and PnP.
+ // Bound movement so an unstable edge cannot jump to a neighbouring feature.
+ std::vector<cv::Point2f> refined;refined.reserve(keys.size());
+ for(const auto& key:keys)refined.push_back(key.pt);
+ cv::cornerSubPix(image,refined,cv::Size(3,3),cv::Size(-1,-1),cv::TermCriteria(cv::TermCriteria::COUNT|cv::TermCriteria::EPS,20,.01));
+ for(size_t i=0;i<keys.size();i++){
+  const auto p=refined[i];
+  if(std::isfinite(p.x)&&std::isfinite(p.y)&&p.x>=1&&p.y>=1&&p.x<image.cols-1&&p.y<image.rows-1&&cv::norm(p-keys[i].pt)<=1.5)keys[i].pt=p;
+ }
  uint32_t n=std::min(capacity,uint32_t(keys.size()));
  for(uint32_t i=0;i<n;i++){xy[i*2]=keys[i].pt.x/image.cols;xy[i*2+1]=keys[i].pt.y/image.rows;std::memcpy(descriptors+i*32,desc.ptr(i),32);}
  return int32_t(n);

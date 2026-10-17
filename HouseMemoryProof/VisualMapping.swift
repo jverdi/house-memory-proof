@@ -24,7 +24,7 @@ struct VisualMap: Codable {
 enum VisualMapping {
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v2-multiview-query";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v3-subpixel-multiview";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))

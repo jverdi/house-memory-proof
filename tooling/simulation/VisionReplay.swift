@@ -77,8 +77,9 @@ final class DiskEvidence:EvidenceAssetReader {
       let features=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w),start=Date()
       let competing=maps.filter{$0.key != selected && ($0.value.roomID != map.roomID || $0.value.frameID != map.frameID)}.map{$0.value}
       let ambiguous=VisualMapping.competingMatch(features,width:q.width,height:q.height,intrinsics:q.intrinsics,maps:competing)
-      let pose=ambiguous ? nil:VisualMapping.query(features,width:q.width,height:q.height,intrinsics:q.intrinsics,map:map)
-      var result:[String:Any]=["image":q.image,"accepted":pose != nil,"ambiguous":ambiguous,"selectedRoomID":map.roomID.uuidString,"selectedSegmentID":selected.uuidString,"seconds":Date().timeIntervalSince(start)]
+      var diagnostics:[String]=[]
+      let pose=ambiguous ? nil:VisualMapping.query(features,width:q.width,height:q.height,intrinsics:q.intrinsics,map:map,diagnostic:{diagnostics.append($0)})
+      var result:[String:Any]=["image":q.image,"diagnostics":diagnostics,"queryFeatures":features.count,"accepted":pose != nil,"ambiguous":ambiguous,"selectedRoomID":map.roomID.uuidString,"selectedSegmentID":selected.uuidString,"seconds":Date().timeIntervalSince(start)]
       if let pose{result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms}
       output.append(result)
     }
