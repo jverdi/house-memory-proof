@@ -1211,6 +1211,14 @@ extension SelfTests {
             times.append((ProcessInfo.processInfo.systemUptime-time)*1000)
         }
         times.sort();let p95=times[Int(ceil(Double(times.count)*0.95))-1]
+        var imported=House.empty("Imported evidence");imported.rooms[0].name="Kitchen"
+        let known=DocumentaryPhoto(image:"known.jpg",note:"Valve label",roomID:imported.rooms[0].id,stageID:imported.stages[1].id)
+        let unknown=DocumentaryPhoto(image:"unknown.jpg",note:"Valve label",roomID:nil,stageID:nil)
+        imported.documentaryPhotos=[known,unknown]
+        let importedIndex=try EvidenceSearch.Index(house:imported),named=try importedIndex.find("kitchen finished valve"),all=try importedIndex.find("valve",limit:1)
+        guard named.documentaryPhotos.map({$0.id})==[known.id],named.photographCount==1,
+          all.photographCount==2,all.documentaryPhotos.count==1,all.documentaryPhotos[0].id==unknown.id,
+          all.observations.isEmpty else{throw HouseError.message("Documentary search lost labels or fabricated room/stage metadata.")}
         return ["test":"Fifty-thousand photograph metadata search","passed":p95<=300,"photographs":50000,"defaultPageSize":200,"indexBuildMilliseconds":build,"queryP95Milliseconds":p95,"queries":times.count,"imageFilesRead":0,"limitations":"Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone."]
     }
     nonisolated static func memorySample()->[String:UInt64] {

@@ -741,6 +741,7 @@ struct EvidencePage: View {
   @State private var search = ""
   @State private var selection: Observation?
   @State private var feature: Feature?
+  @State private var documentaryPhoto:DocumentaryPhoto?
   @State private var searchIndex:EvidenceSearch.Index?
   @State private var results=EvidenceSearch.Result()
   @State private var resultLimit=200
@@ -780,6 +781,20 @@ struct EvidencePage: View {
             }
           }
         }
+        if !house.documentaryPhotos.isEmpty {Section("Imported photographs") {
+          ForEach(results.documentaryPhotos) { p in
+            Button {documentaryPhoto=p} label:{
+              HStack {
+                PhotoThumbnail(asset:p.image,orientation:1).frame(width:72,height:64).clipped().clipShape(RoundedRectangle(cornerRadius:8))
+                VStack(alignment:.leading) {
+                  Text(p.note.isEmpty ? "Unposed photograph":p.note).lineLimit(2)
+                  Text(p.date.formatted()).font(.caption)
+                  Text("Documentary original · no spatial calibration").font(.caption2).foregroundStyle(.secondary)
+                }
+              }
+            }
+          }
+        }}
         Section("Systems and objects") {
           ForEach(results.features) { f in
             Button {
@@ -799,8 +814,8 @@ struct EvidencePage: View {
           }
         }
         if !searching {
-          Text("\(results.observationCount) \(results.observationCount==1 ? "photograph":"photographs") · \(results.featureCount) \(results.featureCount==1 ? "object":"objects")").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("evidence-result-count")
-          if results.observations.count<results.observationCount || results.features.count<results.featureCount {
+          Text("\(results.photographCount) \(results.photographCount==1 ? "photograph":"photographs") · \(results.featureCount) \(results.featureCount==1 ? "object":"objects")").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("evidence-result-count")
+          if results.observations.count<results.observationCount || results.features.count<results.featureCount || results.documentaryPhotos.count<results.documentaryCount {
             Button("Show more results") {resultLimit=min(50000,resultLimit+200)}
           }
         }
@@ -829,6 +844,7 @@ struct EvidencePage: View {
         .sheet(item: $selection) { PhotoDetail(observation: $0) }.sheet(item: $feature) {
           FeatureEditor(feature: $0)
         }
+        .sheet(item:$documentaryPhoto){DocumentaryPhotoDetail(photo:$0)}
     }
   }
 }

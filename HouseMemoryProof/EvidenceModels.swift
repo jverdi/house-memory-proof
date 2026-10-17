@@ -174,13 +174,17 @@ struct CaptureProcessingReport:Codable,Identifiable,Equatable {
 enum EvidenceSearch {
   struct Result {
     var observations:[Observation]=[];var features:[Feature]=[]
+    var documentaryPhotos:[DocumentaryPhoto]=[]
     var observationCount=0;var featureCount=0
+    var documentaryCount=0
+    var photographCount:Int {observationCount+documentaryCount}
   }
   struct Index {
     struct Photo {var value:Observation;var text:String}
     struct Object {var value:Feature;var text:String}
+    struct Documentary {var value:DocumentaryPhoto;var text:String}
     let id=UUID();var houseID:UUID;var revision:Int
-    private var photos:[Photo]=[],objects:[Object]=[]
+    private var photos:[Photo]=[],objects:[Object]=[],documentary:[Documentary]=[]
     init(house:House)throws {
       houseID=house.id;revision=house.revision
       let rooms=Dictionary(house.rooms.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
@@ -192,6 +196,10 @@ enum EvidenceSearch {
       for (index,f) in house.features.enumerated() {
         if index%256==0 {try Task.checkCancellation()}
         objects.append(Object(value:f,text:EvidenceSearch.normalized(f.name+" "+f.notes+" "+f.endpoint+" "+f.trade.rawValue+" "+f.kind.rawValue)+" "+(rooms[f.roomID] ?? "")+" "+(stages[f.stageID] ?? "")))
+      }
+      for (index,p) in house.documentaryPhotos.reversed().enumerated() {
+        if index%256==0 {try Task.checkCancellation()}
+        documentary.append(Documentary(value:p,text:EvidenceSearch.normalized(p.note)+" "+(p.roomID.flatMap{rooms[$0]} ?? "")+" "+(p.stageID.flatMap{stages[$0]} ?? "")))
       }
     }
     func find(_ query:String,limit:Int=200)throws->Result {
@@ -210,6 +218,13 @@ enum EvidenceSearch {
         if terms.allSatisfy({row.text.contains($0)}) {
           result.featureCount+=1
           if result.features.count<limit {result.features.append(row.value)}
+        }
+      }
+      for (index,row) in documentary.enumerated() {
+        if index%256==0 {try Task.checkCancellation()}
+        if terms.allSatisfy({row.text.contains($0)}) {
+          result.documentaryCount+=1
+          if result.documentaryPhotos.count<limit {result.documentaryPhotos.append(row.value)}
         }
       }
       return result
