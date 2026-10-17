@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: house-proof-${{ github.ref }}
+  group: house-proof-${{ github.ref }}-${{ startsWith(github.event.head_commit.message, '[release]') && 'delivery' || 'validation' }}
   cancel-in-progress: false
 
 jobs:
