@@ -1,0 +1,978 @@
+{
+  "productionQualified": false,
+  "method": "Projection of sealed candidate 3D/2D correspondences under evaluator-only true camera; independent SciPy robust fitting is diagnostic, not native acceptance. Residual statistics use <=2.5-pixel errors at the original candidate pose; fits use all retained correspondences.",
+  "cases": [
+    {
+      "fixture": "paired",
+      "image": "room-0-finished-0.jpg",
+      "correspondences": 217,
+      "diagnosticInliersAt2_5Pixels": 216,
+      "originalPositionErrorMetres": 0.0024066431120300857,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          -0.06697951358046339,
+          -0.07794955095026523
+        ],
+        "meanXY": [
+          -0.01112856379939185,
+          -0.10011148693855743
+        ],
+        "normP50P95": [
+          0.449262970102524,
+          0.97015531378479
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          -0.08619529960821382,
+          0.04148808904299983
+        ],
+        "meanXY": [
+          -0.004061011087275849,
+          0.0012777174552507375
+        ],
+        "normP50P95": [
+          0.38886473094898394,
+          0.9854600075031635
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.18445891115106094,
+          "position": [
+            -0.041858326999176486,
+            -0.00905933045952238,
+            0.1928302103123693
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.0022268470846586036,
+          "position": [
+            -0.08693810279192543,
+            0.08423946670649679,
+            0.03951603416247789
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0024727817486973917,
+          "position": [
+            -0.08702959210329358,
+            0.08421154610241714,
+            0.03901762463482473
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0026225417172079444,
+          "position": [
+            -0.08722241237430474,
+            0.0842750936817445,
+            0.03903617070306194
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "paired",
+      "image": "room-1-finished-0.jpg",
+      "correspondences": 220,
+      "diagnosticInliersAt2_5Pixels": 218,
+      "originalPositionErrorMetres": 0.003574126756582398,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          0.22151924335782525,
+          -0.08016944833391193
+        ],
+        "meanXY": [
+          0.17074443850233972,
+          -0.08053981512042499
+        ],
+        "normP50P95": [
+          0.3844738974322652,
+          0.9113210564626801
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          0.02386130586032209,
+          0.010658260944303777
+        ],
+        "meanXY": [
+          -0.0021833440591188763,
+          -0.0006847799540272459
+        ],
+        "normP50P95": [
+          0.2935952386508458,
+          0.9056706298584086
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.13287475171600224,
+          "position": [
+            -1.4437450992801075e-06,
+            -0.017338968480468644,
+            0.036424486150287344
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.004555379857124241,
+          "position": [
+            -0.08088180704403197,
+            0.08264495962819463,
+            0.0403285904057786
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.004383886966170686,
+          "position": [
+            -0.08109264787592471,
+            0.08261851158782038,
+            0.039704176622010805
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.004323496455432872,
+          "position": [
+            -0.08112478890269142,
+            0.08266818049150734,
+            0.039852250367455544
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "paired",
+      "image": "room-2-finished-1.jpg",
+      "correspondences": 133,
+      "diagnosticInliersAt2_5Pixels": 132,
+      "originalPositionErrorMetres": 0.004494981735254491,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          -0.026065305683125928,
+          -0.05834717338134965
+        ],
+        "meanXY": [
+          -0.0642117411511014,
+          -0.04972104759889136
+        ],
+        "normP50P95": [
+          0.3029068714957876,
+          0.8667754487235269
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          0.014605322815015143,
+          0.00220669105223692
+        ],
+        "meanXY": [
+          -0.005924837253985623,
+          0.002323376076782195
+        ],
+        "normP50P95": [
+          0.30645020951903734,
+          0.8013144472573767
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.06133480586198297,
+          "position": [
+            0.16018403759998623,
+            -0.1761139785237355,
+            -0.04715802579187108
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.004193341546476349,
+          "position": [
+            0.1300043351343954,
+            -0.12818740042237686,
+            -0.03305500795559154
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0038727892403719257,
+          "position": [
+            0.13036646546493016,
+            -0.12838990465343708,
+            -0.03205761918044769
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0036865967036634885,
+          "position": [
+            0.1302732809150313,
+            -0.12840479134476018,
+            -0.03183294536084241
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "paired",
+      "image": "room-3-finished-0.jpg",
+      "correspondences": 172,
+      "diagnosticInliersAt2_5Pixels": 171,
+      "originalPositionErrorMetres": 0.005325608187946827,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          0.047885967754751846,
+          0.07083742931553161
+        ],
+        "meanXY": [
+          -0.014461526575285828,
+          0.07817502018995408
+        ],
+        "normP50P95": [
+          0.3585796461123568,
+          0.7614174992502318
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          0.023554949397123437,
+          0.0007582907158223406
+        ],
+        "meanXY": [
+          3.202110302749006e-05,
+          0.0013784802222872288
+        ],
+        "normP50P95": [
+          0.294894420198015,
+          0.7547371218968701
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.2259668037741127,
+          "position": [
+            -0.11535262522949255,
+            0.1384068066887809,
+            -0.1773999258202191
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.0063892367077052524,
+          "position": [
+            -0.08394106340375126,
+            0.08811088921135768,
+            0.03458003678374381
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.006349199495237907,
+          "position": [
+            -0.08354641255041069,
+            0.08795968062005075,
+            0.03461919816752168
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.006544750883965328,
+          "position": [
+            -0.08356025737230409,
+            0.08784491493243221,
+            0.03432457995987546
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "staggered",
+      "image": "room-0-finished-0.jpg",
+      "correspondences": 275,
+      "diagnosticInliersAt2_5Pixels": 273,
+      "originalPositionErrorMetres": 0.0030263437737385692,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          -0.13039140314037923,
+          -0.12472644628789453
+        ],
+        "meanXY": [
+          -0.11369000143970866,
+          -0.12404797565694331
+        ],
+        "normP50P95": [
+          0.38369191228504856,
+          0.9187567731175843
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          -0.029090334709792387,
+          0.0021208097186331543
+        ],
+        "meanXY": [
+          -0.002770763573557605,
+          2.6120437073507677e-05
+        ],
+        "normP50P95": [
+          0.351162936655261,
+          0.8962931773800868
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.16360277162557468,
+          "position": [
+            -0.1856249336159943,
+            0.17722473454064608,
+            -0.04987922445030841
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.003408085161024013,
+          "position": [
+            -0.08706664201596435,
+            0.08652167721209227,
+            0.03801785379969722
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.003987746191994997,
+          "position": [
+            -0.08726393863564083,
+            0.08674669945921962,
+            0.0374501385660259
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0045928603908063255,
+          "position": [
+            -0.08762988928732061,
+            0.08703975844462225,
+            0.0370675111498044
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "staggered",
+      "image": "room-0-finished-1.jpg",
+      "correspondences": 196,
+      "diagnosticInliersAt2_5Pixels": 193,
+      "originalPositionErrorMetres": 0.005750231903959383,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          0.07070724376040971,
+          -0.10336505521206618
+        ],
+        "meanXY": [
+          0.008092490760332366,
+          -0.060554448492376525
+        ],
+        "normP50P95": [
+          0.44510483137274354,
+          0.9290971273366039
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          0.013930081914594439,
+          -0.04624367699204868
+        ],
+        "meanXY": [
+          0.0008592863011098612,
+          0.0015906266909762436
+        ],
+        "normP50P95": [
+          0.42946381171005615,
+          0.9621620220927672
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.12638562979052895,
+          "position": [
+            0.17625512898822276,
+            -0.22180179919505918,
+            0.03811879296299157
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.006983203829307715,
+          "position": [
+            0.13143235703260914,
+            -0.13181433690856956,
+            -0.026691025264906555
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.006067775055813239,
+          "position": [
+            0.13095065854138452,
+            -0.13145335147657303,
+            -0.02756790847030501
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.006995530566077047,
+          "position": [
+            0.1315101000662877,
+            -0.1320175785780576,
+            -0.027069970860551077
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "staggered",
+      "image": "room-1-finished-0.jpg",
+      "correspondences": 205,
+      "diagnosticInliersAt2_5Pixels": 201,
+      "originalPositionErrorMetres": 0.0015438917629011833,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          0.06702576442989994,
+          -0.07590326670515424
+        ],
+        "meanXY": [
+          0.06312203399418426,
+          -0.08276753859579081
+        ],
+        "normP50P95": [
+          0.4121053658338445,
+          0.8222069450694482
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          -0.004799267115203065,
+          0.0008401382596474605
+        ],
+        "meanXY": [
+          -0.0005634736747071177,
+          0.0009314857378876299
+        ],
+        "normP50P95": [
+          0.3966856902297695,
+          0.8013094922223496
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.10203697805534202,
+          "position": [
+            -0.16235415942260153,
+            0.12642743576561488,
+            0.09173622630273418
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.0023229969590288493,
+          "position": [
+            -0.0870354674022835,
+            0.08561401830469186,
+            0.040230011927773104
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0021277650403578718,
+          "position": [
+            -0.08670861257141466,
+            0.08534203262158087,
+            0.04091872719638872
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0027476207616190886,
+          "position": [
+            -0.08727787924775461,
+            0.08589963776198561,
+            0.04075672757075485
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "staggered",
+      "image": "room-1-finished-1.jpg",
+      "correspondences": 197,
+      "diagnosticInliersAt2_5Pixels": 195,
+      "originalPositionErrorMetres": 0.005412785983098338,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          -0.010726867949756524,
+          0.016782658069644185
+        ],
+        "meanXY": [
+          -0.022910241825222756,
+          0.0035650505001910185
+        ],
+        "normP50P95": [
+          0.4255889464398412,
+          0.9308480123770483
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          -0.04496872698442189,
+          0.005241391320282673
+        ],
+        "meanXY": [
+          0.0017195783277664317,
+          -0.0009660825668336843
+        ],
+        "normP50P95": [
+          0.3379844305619496,
+          0.8778924398357353
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.918093964392613,
+          "position": [
+            0.7187267405431559,
+            -0.46159777443726013,
+            0.5875090794413788
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.010296532639070308,
+          "position": [
+            0.13471795150628213,
+            -0.13121809816140628,
+            -0.024069644972128754
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.00863296712020215,
+          "position": [
+            0.13359193536000583,
+            -0.12980700713846471,
+            -0.02468134893856193
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.009683067385375617,
+          "position": [
+            0.13404149743003474,
+            -0.13051875523649548,
+            -0.02387310668656063
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "staggered",
+      "image": "room-2-finished-0.jpg",
+      "correspondences": 162,
+      "diagnosticInliersAt2_5Pixels": 158,
+      "originalPositionErrorMetres": 0.011356769381680369,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          -0.16729121664984348,
+          -0.0797308385011064
+        ],
+        "meanXY": [
+          -0.09503861443309913,
+          -0.01075782388588002
+        ],
+        "normP50P95": [
+          0.4611891529069619,
+          0.9361392127549605
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          -0.05818445737861566,
+          0.004062859474828429
+        ],
+        "meanXY": [
+          0.005418884941632911,
+          -0.0025541483283487276
+        ],
+        "normP50P95": [
+          0.43531661733036764,
+          0.9366357821687512
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.24785423554950964,
+          "position": [
+            -0.2399933403099624,
+            0.16784248963809334,
+            -0.13457334501833954
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.012386168874306068,
+          "position": [
+            -0.08214832840504338,
+            0.081241162393468,
+            0.051535116513360006
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.01238134782041141,
+          "position": [
+            -0.08253880436054116,
+            0.08201867121965477,
+            0.05182838833449389
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.012658998352915063,
+          "position": [
+            -0.08268169272633447,
+            0.08221161084796282,
+            0.05218854052392082
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "staggered",
+      "image": "room-2-finished-1.jpg",
+      "correspondences": 133,
+      "diagnosticInliersAt2_5Pixels": 130,
+      "originalPositionErrorMetres": 0.015687441325802937,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          -0.024204242841605605,
+          0.04573224135349108
+        ],
+        "meanXY": [
+          0.038585528543556354,
+          0.03745127393007441
+        ],
+        "normP50P95": [
+          0.4756269342206509,
+          0.9926495965115532
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          -0.02300546331628084,
+          0.006596697183823608
+        ],
+        "meanXY": [
+          0.0013401894327093199,
+          -0.004450991419274759
+        ],
+        "normP50P95": [
+          0.43159815353483094,
+          0.9852193725641296
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 1.4998934136534763,
+          "position": [
+            1.24190357897066,
+            -0.7232964720884614,
+            0.7774999863916219
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.03333783072675,
+          "position": [
+            0.14516114658335125,
+            -0.15232864719985068,
+            -0.017186963323397024
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.02495595506036266,
+          "position": [
+            0.1413164683289016,
+            -0.14597412242898156,
+            -0.021267530952477243
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.02772111232389939,
+          "position": [
+            0.14241524567527278,
+            -0.14814079107277456,
+            -0.019794330409913557
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "staggered",
+      "image": "room-3-finished-0.jpg",
+      "correspondences": 196,
+      "diagnosticInliersAt2_5Pixels": 194,
+      "originalPositionErrorMetres": 0.003608909958089873,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          -0.03318664289535889,
+          0.10698090205938371
+        ],
+        "meanXY": [
+          -0.10704261284676135,
+          0.10394231871177347
+        ],
+        "normP50P95": [
+          0.4820409631811323,
+          0.9988703039516117
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          0.06707390492219645,
+          -0.0005341953212649742
+        ],
+        "meanXY": [
+          -0.0005615845015774473,
+          -0.0011971328224484054
+        ],
+        "normP50P95": [
+          0.4660867007668369,
+          0.9404917398927968
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.235337478261758,
+          "position": [
+            -0.24303572885365535,
+            0.2207173782332567,
+            -0.06909956075626673
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.0037552482641158695,
+          "position": [
+            -0.08603145674569054,
+            0.08686024939705454,
+            0.037053325215048206
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0016960441256001456,
+          "position": [
+            -0.08476700809183074,
+            0.08593079243255483,
+            0.03869341475216629
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.0014007647339138254,
+          "position": [
+            -0.08460176282657224,
+            0.0858213711162456,
+            0.03901968786043055
+          ],
+          "success": true
+        }
+      ]
+    },
+    {
+      "fixture": "staggered",
+      "image": "room-3-finished-1.jpg",
+      "correspondences": 188,
+      "diagnosticInliersAt2_5Pixels": 186,
+      "originalPositionErrorMetres": 0.008175430755939513,
+      "truthPoseResidualPixels": {
+        "medianXY": [
+          -0.09103455044993325,
+          0.07803401653870168
+        ],
+        "meanXY": [
+          -0.04958253714727632,
+          0.06256957642435702
+        ],
+        "normP50P95": [
+          0.40297997371306327,
+          0.8122174409169284
+        ]
+      },
+      "estimatedPoseResidualPixels": {
+        "medianXY": [
+          -0.01887697567218538,
+          0.019736870798219286
+        ],
+        "meanXY": [
+          0.005056622367308461,
+          0.0009364611939998767
+        ],
+        "normP50P95": [
+          0.3898610916404045,
+          0.8048009000342286
+        ]
+      },
+      "independentScipyFits": [
+        {
+          "loss": "linear",
+          "scale": 1,
+          "positionErrorMetres": 0.020889979346573627,
+          "position": [
+            0.1156712483583729,
+            -0.12014604747100059,
+            -0.045835531507993174
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 1,
+          "positionErrorMetres": 0.009347582298280527,
+          "position": [
+            0.12239990895908388,
+            -0.12346485698505669,
+            -0.03700144575861627
+          ],
+          "success": true
+        },
+        {
+          "loss": "huber",
+          "scale": 0.5,
+          "positionErrorMetres": 0.009020891857005501,
+          "position": [
+            0.12271277143838175,
+            -0.12348298764143685,
+            -0.036790629355763216
+          ],
+          "success": true
+        },
+        {
+          "loss": "soft_l1",
+          "scale": 0.5,
+          "positionErrorMetres": 0.009055398014450284,
+          "position": [
+            0.12264316141336647,
+            -0.12352034131868797,
+            -0.03681014058141815
+          ],
+          "success": true
+        }
+      ]
+    }
+  ]
+}

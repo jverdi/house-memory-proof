@@ -1,0 +1,12 @@
+{
+  "workflowSource": "5129d268d244798523f5088aa0e9b9ca74fc9a6a",
+  "candidateBaseline": "ffa44947575049a8e3f13226f06133b5c7728094",
+  "run": 39065832987,
+  "artifactID": 12113800276,
+  "sha256": "f8c9c709696d1ac6b2626e2ca471446a7bb5739efcd54b73054f42d8ee957920",
+  "independentlyVerified": true,
+  "exactBaselineDecisionsAndErrors": true,
+  "acceptedForProduction": false,
+  "syntheticOnly": true,
+  "oracleBoundary": "Camera truth copied after candidate output was sealed. Candidate replay remained denied evaluator truth."
+}

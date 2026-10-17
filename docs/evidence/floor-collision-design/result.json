@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "cases": 1000,
+  "colliding": 376,
+  "separated": 624,
+  "seed": 819237,
+  "additionalChecks": [
+    "reversed winding and motion",
+    "translated origin"
+  ],
+  "reference": "SciPy HiGHS linear feasibility in barycentric coordinates and continuous time",
+  "scope": "Independent mathematical design check of Python SAT transcription; not execution of the native Swift implementation or device qualification."
+}
