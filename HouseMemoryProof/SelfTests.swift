@@ -338,6 +338,35 @@ import Darwin
             await check("Reject reflected transform"){var t=Rigid();t.values[0] = -1;return !t.valid}
             await check("Reference fit and held-out point"){let a=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,2)],b=a.map{V3(-$0.y+3,$0.x+4,$0.z+2)};guard let(t,e)=Rigid.register(source:Array(a.prefix(3)),target:Array(b.prefix(3))) else{return false};return e<1e-10 && (t.apply(a[3])-b[3]).length<1e-10}
             await check("Reject collinear controls"){Rigid.register(source:[V3(),V3(1),V3(2)],target:[V3(),V3(1),V3(2)])==nil}
+            await check("Drawing overlays and dependent annotations follow exact sheet revisions") {
+                var h=House.empty("Drawing provenance")
+                let controls=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,0)]
+                var drawing=Drawing(name:"Plan",asset:String(repeating:"a",count:64)+".pdf",metresPerPoint:0.01,roomID:h.rooms[0].id)
+                drawing.alignment=DrawingAlignment(page:0,metresPerPoint:0.01,sheetPoints:controls,housePoints:controls,transform:Rigid(),fitMaximum:0,checkMaximum:0,sourceRevision:1)
+                var overlay=Feature(name:"Sheet overlay",trade:.unknown,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.planned,mesh:Mesh(vertices:controls,triangles:[0,1,2]))
+                overlay.sourceDrawingID=drawing.id;overlay.sourceDrawingFingerprint=try DrawingEvidence.fingerprint(drawing)
+                h.drawings=[drawing];h.features=[overlay]
+                var annotation=Feature(name:"Design annotation",trade:.electrical,roomID:overlay.roomID,stageID:overlay.stageID,kind:.planned,mesh:Mesh(vertices:[V3()],triangles:[]))
+                annotation.annotationSources=DerivedEvidence.dependencies([overlay.id],house:h);h.features.append(annotation)
+                let dimension=Dimension(name:"Design distance",a:V3(),b:V3(1,0,0),roomID:overlay.roomID,source:"Design sheet",sourceRevision:h.revision,sourceGeometry:annotation.annotationSources)
+                guard DerivedEvidence.currentIDs(h)==Set([overlay.id,annotation.id]),DerivedEvidence.measurementIsCurrent(dimension,house:h) else{return false}
+                for change in 0..<7 {
+                    var altered=h
+                    switch change {
+                    case 0:altered.drawings[0].asset=String(repeating:"b",count:64)+".pdf"
+                    case 1:altered.drawings[0].page=1
+                    case 2:altered.drawings[0].metresPerPoint=0.02
+                    case 3:altered.drawings[0].alignment!.transform.values[3]=0.1
+                    case 4:altered.drawings[0].roomID=UUID()
+                    case 5:altered.drawings=[]
+                    default:altered.features[0].sourceDrawingFingerprint=nil
+                    }
+                    let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(altered))
+                    guard DerivedEvidence.currentIDs(restored).isEmpty,!DerivedEvidence.measurementIsCurrent(dimension,house:restored),restored.features[0].mesh==overlay.mesh else{return false}
+                }
+                h.drawings[0].name="Renamed plan";h.drawings[0].notes="Reviewed drawing";h.revision += 1
+                return DerivedEvidence.currentIDs(h)==Set([overlay.id,annotation.id])
+            }
             await check("Checked registration rejects distorted fit despite matching held-out point"){
                 let a=[V3(),V3(1,0,0),V3(0,1,0),V3(1,1,0)]
                 var b=a;b[1]=V3(2,0,0)

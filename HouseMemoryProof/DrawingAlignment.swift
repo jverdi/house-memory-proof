@@ -39,7 +39,7 @@ struct DrawingAlignmentPage: View {
           .disabled(points.count != 4 || room == nil || drawing.metresPerPoint == nil)
         Text(report).font(.footnote)
         Text(
-          "Scale must first be calibrated on this page. A matching four-point check does not establish that the rest of a design drawing matches construction. Changing the source scale invalidates the previous overlay."
+          "Scale must first be calibrated on this page. A matching four-point check does not establish that the rest of a design drawing matches construction. Changing the source sheet, page, scale or placement invalidates the previous overlay. Overlays saved by earlier builds need to be rebuilt once to record this provenance."
         )
         .font(.caption).foregroundStyle(.secondary)
       }.padding()
@@ -93,6 +93,7 @@ struct DrawingAlignmentPage: View {
       drawing.alignment = DrawingAlignment(
         page: page, metresPerPoint: scale, sheetPoints: source, housePoints: targets,
         transform: transform, fitMaximum: fit, checkMaximum: check, sourceRevision: house.revision)
+      feature.sourceDrawingFingerprint=try DrawingEvidence.fingerprint(drawing)
       let updated = drawing
       model.edit { h in
         if !h.stages.contains(where: { $0.id == stage.id }) { h.stages.append(stage) }

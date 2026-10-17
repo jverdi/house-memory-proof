@@ -102,6 +102,23 @@ enum PoseGraph {
   }
 }
 
+// Design overlays bind the exact source sheet and checked placement, independently
+// of the project revision and cosmetic names/notes. Old overlays without this
+// provenance remain preserved but must be rebuilt before they are displayed.
+enum DrawingEvidence {
+  struct Inputs:Codable {
+    var algorithm="drawing-overlay-v1"
+    var asset:String;var page:Int;var scale:Double;var room:UUID;var alignment:DrawingAlignment
+  }
+  static func fingerprint(_ drawing:Drawing)throws->String {
+    guard let scale=drawing.metresPerPoint,scale.isFinite,scale>0,let room=drawing.roomID,
+      let alignment=drawing.alignment,alignment.page==drawing.page,alignment.metresPerPoint==scale,
+      alignment.transform.valid else{throw HouseError.message("Drawing placement is missing or no longer matches its calibrated page.")}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    return SHA256.hash(data:try encoder.encode(Inputs(asset:drawing.asset,page:drawing.page,scale:scale,room:room,alignment:alignment))).map{String(format:"%02x",$0)}.joined()
+  }
+}
+
 // Derived geometry follows the exact capture/pose/reference inputs that produced it.
 enum DerivedEvidence {
   static func dependencies(_ sources:[UUID],house:House)->[AnnotationDependency] {
@@ -124,8 +141,15 @@ enum DerivedEvidence {
     for segment in house.segments where needed.contains(segment.id) {
       fingerprints[segment.id]=try? VisualMapping.fingerprint(house:house,segment:segment)
     }
+    let drawings=Dictionary(house.drawings.compactMap{drawing -> (UUID,String)? in
+      guard let fingerprint=try? DrawingEvidence.fingerprint(drawing) else{return nil}
+      return(drawing.id,fingerprint)
+    },uniquingKeysWith:{_,_ in "ambiguous"})
     let eligible=house.features.filter { feature in
       guard feature.artifactValid != false else{return false}
+      if let drawing=feature.sourceDrawingID {
+        guard let expected=feature.sourceDrawingFingerprint,drawings[drawing]==expected else{return false}
+      }
       guard let expected=feature.sourceFingerprint else{return true}
       guard let segment=feature.segmentID else{return false}
       return fingerprints[segment]==expected
