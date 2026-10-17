@@ -1,0 +1,14 @@
+{
+  "source": "9be428c5c52eb32fcf40ae83caa66a387ca844ce",
+  "run": 39068761616,
+  "attempt": 1,
+  "artifact": 12115095323,
+  "sha256": "f64090a9b4355004284c644fbc8feb178bf4679935f5b436c51076fbb75b2c0e",
+  "independentlyVerified": true,
+  "nativePassed": false,
+  "passedChecks": 100,
+  "totalChecks": 101,
+  "failure": "1080p30 movie encoder readiness exceeded unchanged 15-second timeout",
+  "semanticCSVNativePassed": true,
+  "fullWorkflowPending": true
+}

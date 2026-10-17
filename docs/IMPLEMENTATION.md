@@ -416,3 +416,8 @@ Workflow `62f9f2d7`, run 39067764313, completed all four unchanged diagnostics. 
 
 
 The first CSV workflow at `c6107d04` stopped during compilation because the test used a throwing directory read inside `&&` without marking the whole expression `try`. The exporter compiled; no native CSV result was produced. The test now performs the read in a guard and checks cleanup both before any row can fit and after partial output. The failed run 39068556237 remains recorded; the corrected source requires its own complete pass.
+
+
+### CSV native check passes; integrated movie timeout retained
+
+Corrected source `9be428c5`, run 39068761616 attempt 1, compiled and completed all 101 native checks in 225.7 seconds. **100 passed**, including semantic CSV frame/relationship/text export and both immediate/partial-output cleanup checks (0.040 seconds). The existing 1080p30 encode/decode/cache test failed its unchanged 15-second encoder-readiness timeout; the separate movie interruption/cancellation recovery test passed. Movie code is unchanged from the earlier successful runtime. This attempt is not a passing integration gate. The SHA-verified native checkpoint is retained under `docs/evidence/native-9be-attempt1/`; process/UI/independent-reader checks continue. A single unchanged-source retry is planned to distinguish repeatable failure from an intermittent encoder stall; neither timeout nor output criteria will be loosened.

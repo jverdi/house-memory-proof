@@ -1,0 +1,14 @@
+{
+  "source": "c6107d04b9318d70d3c25777c03d6ee987eb0aed",
+  "run": 39068556237,
+  "artifact": 12114212527,
+  "sha256": "7b91ca5d668f1a3576a9711e531568a22587adc7ce8783ccec058cac2ce9db02",
+  "independentlyVerified": true,
+  "passed": false,
+  "stage": "compile",
+  "errors": [
+    "/Users/runner/work/house-memory-proof/house-memory-proof/HouseMemoryProof/SelfTests.swift:629:38: error: operator can throw but expression is not marked with 'try'"
+  ],
+  "nativeChecksExecuted": false,
+  "fixSource": "9be428c5c52eb32fcf40ae83caa66a387ca844ce"
+}
