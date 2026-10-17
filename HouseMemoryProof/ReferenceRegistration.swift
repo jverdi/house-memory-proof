@@ -6,7 +6,7 @@ struct RegistrationLink:Codable,Equatable {
   var anchorSegment:UUID;var boardIDs:[UUID];var fingerprint:String
 }
 enum ReferenceRegistration {
-  struct Inputs:Codable {var anchor:UUID;var registration:Rigid?;var anchorPoses:[ReferencePose];var sourcePoses:[ReferencePose];var boards:[ReferenceBoard];var anchorCorners:String?;var sourceCorners:String?}
+  struct Inputs:Codable {var anchor:UUID;var registration:Rigid?;var anchorPoses:[ReferencePose];var sourcePoses:[ReferencePose];var boards:[ReferenceBoard];var anchorCorners:String?;var sourceCorners:String?;var codedAlgorithm:String?}
   struct CornerInput:Codable {var id:UUID;var camera:[Double];var intrinsics:[Double];var width:Int;var height:Int;var detections:[CodedDetection]}
   static func fingerprint(source:Segment,anchor:Segment,boards:[ReferenceBoard],house:House)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
@@ -19,7 +19,7 @@ enum ReferenceRegistration {
       }
       return SHA256.hash(data:try encoder.encode(inputs)).map{String(format:"%02x",$0)}.joined()
     }
-    let data=try encoder.encode(Inputs(anchor:anchor.id,registration:anchor.registration,anchorPoses:anchor.referencePoses,sourcePoses:source.referencePoses,boards:boards,anchorCorners:try corners(anchor),sourceCorners:try corners(source)))
+    let data=try encoder.encode(Inputs(anchor:anchor.id,registration:anchor.registration,anchorPoses:anchor.referencePoses,sourcePoses:source.referencePoses,boards:boards,anchorCorners:try corners(anchor),sourceCorners:try corners(source),codedAlgorithm:codes.isEmpty ? nil:"rigid-board-v2-integer-pixel-centres"))
     return SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
   }
   static func currentPoses(segment:Segment,house:House)->[ReferencePose] {
@@ -124,3 +124,4 @@ enum ReferenceLayout {
     return assess(poses.values.map{p in V3(p.matrix[3],-p.matrix[11],p.matrix[7])})
   }
 }
+

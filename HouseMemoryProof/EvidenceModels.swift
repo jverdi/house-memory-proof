@@ -12,6 +12,8 @@ struct ReferenceBoard: Codable, Identifiable, Equatable {
   var roomID:UUID?=nil
 }
 struct CodedDetection:Codable,Equatable {
+  // AprilTag edge-origin coordinates normalized by image dimensions; preserve
+  // this convention in archives and convert only when applying intrinsics.
   var boardID:UUID;var tagID:Int;var corners:[UV];var margin:Double
   var valid:Bool {(0..<587).contains(tagID) && corners.count==4 && corners.allSatisfy{$0.u.isFinite && $0.v.isFinite && (0...1).contains($0.u) && (0...1).contains($0.v)} && margin.isFinite && margin>=30}
 }
@@ -166,3 +168,4 @@ struct CaptureProcessingReport:Codable,Identifiable,Equatable {
   var complete:Bool {steps.allSatisfy{$0.passed}}
   var valid:Bool {sourceRevision>=0 && seconds.isFinite && seconds>=0 && steps.count<=12 && steps.allSatisfy{$0.name.count<=200 && $0.detail.count<=10000}}
 }
+

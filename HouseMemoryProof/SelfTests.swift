@@ -807,6 +807,16 @@ extension SelfTests {
             var matrix=Rigid().values;matrix[3]=x;matrix[7]=y
             return Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:x+1,image:"synthetic-codes.png",width:width,height:height,camera:matrix,intrinsics:[1000,0,640,0,1000,480,0,0,1],tracking:"synthetic reference camera",light:1000,sharpness:0.1)
         }
+        // A saved edge-origin detection of exact projected geometry must
+        // recover the same metric board after an archive round trip. Omitting
+        // the half-pixel conversion shifts the estimated board by >1 mm.
+        let calibrationView=observation(0.13,-0.07),calibrationBoard=house.references[0],calibrationPose=segment.referencePoses[0]
+        let calibrationCorners=CodedReferences.corners(board:calibrationBoard,pose:calibrationPose).compactMap{CameraProjection.project($0,through:calibrationView)?.0}.map{UV(u:$0.u+0.5/Double(width),v:$0.v+0.5/Double(height))}
+        let saved=CodedDetection(boardID:calibrationBoard.id,tagID:codes[0],corners:calibrationCorners,margin:100)
+        let decoded=try JSONDecoder().decode(CodedDetection.self,from:JSONEncoder().encode(saved))
+        guard decoded==saved,let calibrationMeasured=CodedReferences.measure([decoded],camera:calibrationView.camera,intrinsics:calibrationView.intrinsics,width:width,height:height,boards:[calibrationBoard]).first,
+          zip(calibrationMeasured.matrix,calibrationPose.matrix).allSatisfy({abs($0-$1)<0.00001}) else{throw HouseError.message("Archived marker pixels and camera intrinsics disagree on pixel centres.")}
+        diagnostics["archivedPixelCentreContractPassed"]=true
         func render(_ camera:Observation,moved:Bool=false,duplicate:Bool=false)->Data {
             var data=Data(repeating:245,count:width*height)
             let worldFromCamera=PoseRefinement.matrix(camera.camera)!
@@ -1046,3 +1056,4 @@ extension SelfTests {
         return report
     }
 }
+

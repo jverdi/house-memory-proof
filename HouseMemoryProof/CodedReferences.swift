@@ -5,6 +5,12 @@ import simd
 // Metric code geometry and camera/board estimates remain separate evidence.
 // Pixel fitting never promotes a board estimate to a physically surveyed reference.
 enum CodedReferences {
+  // Saved detections retain AprilTag's edge-origin coordinates (the first
+  // pixel centre is 0.5). Camera intrinsics/projection use integer centres.
+  // Convert at the geometry boundary so existing archives remain unchanged.
+  static func pixels(_ detection:CodedDetection,width:Int,height:Int)->[Double] {
+    detection.corners.flatMap{[$0.u*Double(width)-0.5,$0.v*Double(height)-0.5]}
+  }
   struct Board {var id:UUID;var code:UInt32;var corners:[V3];var pose:ReferencePose}
   struct Map {var boards:[Board];var known:[ReferenceBoard]}
   struct Result {var pose:Rigid?;var conflict:Bool;var quality:HXReferenceQuality?=nil}
@@ -51,7 +57,7 @@ enum CodedReferences {
     var result:[ReferencePose]=[]
     for detection in detections where detection.valid {
       guard let board=boards.first(where:{$0.id==detection.boardID && $0.tagID==detection.tagID && $0.valid}) else{continue}
-      let xy=detection.corners.flatMap{[$0.u*Double(width),$0.v*Double(height)]}
+      let xy=pixels(detection,width:width,height:height)
       var values=[Double](repeating:0,count:16),quality=HXTagPoseQuality()
       let accepted=xy.withUnsafeBufferPointer{pixels in values.withUnsafeMutableBufferPointer{matrix in
         hx_reference_measure_tag(pixels.baseAddress,board.width*0.8,intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),matrix.baseAddress,&quality)
@@ -92,7 +98,7 @@ enum CodedReferences {
         let detection=o.codedDetections?.first(where:{$0.boardID==board.id && $0.tagID==board.tagID}),detection.valid else{return nil}
       cameras += o.camera
       calibration += [o.intrinsics[0],o.intrinsics[4],o.intrinsics[2],o.intrinsics[5],Double(o.width),Double(o.height)]
-      pixels += detection.corners.flatMap{[$0.u*Double(o.width),$0.v*Double(o.height)]}
+      pixels += Self.pixels(detection,width:o.width,height:o.height)
     }
     var output=[Double](repeating:0,count:16),quality=HXBoardFitQuality()
     let accepted=cameras.withUnsafeBufferPointer{camera in calibration.withUnsafeBufferPointer{k in pixels.withUnsafeBufferPointer{xy in initial.matrix.withUnsafeBufferPointer{seed in output.withUnsafeMutableBufferPointer{pose in
@@ -127,7 +133,8 @@ enum CodedReferences {
         guard let detection=observation.codedDetections?.first(where:{$0.boardID==board.id && $0.tagID==board.tagID}),detection.valid else{continue}
         let projected=points.compactMap{CameraProjection.project($0,through:observation)?.0}
         guard projected.count==4 else{conflicted=true;break}
-        let errors=zip(projected,detection.corners).map{a,b in hypot((a.u-b.u)*Double(observation.width),(a.v-b.v)*Double(observation.height))}
+        let measured=pixels(detection,width:observation.width,height:observation.height)
+        let errors=projected.indices.map{i in hypot(projected[i].u*Double(observation.width)-measured[2*i],projected[i].v*Double(observation.height)-measured[2*i+1])}
         guard errors.allSatisfy({$0<=4}) else{conflicted=true;break}
         supported.append(V3(observation.camera[3],-observation.camera[11],observation.camera[7]))
       }
@@ -148,7 +155,7 @@ enum CodedReferences {
     for detection in detections {
       let board=byID[detection.boardID]!;ids.append(board.code)
       xyz += board.corners.flatMap{[$0.x,$0.y,$0.z]}
-      xy += detection.corners.flatMap{[$0.u*Double(width),$0.v*Double(height)]}
+      xy += pixels(detection,width:width,height:height)
     }
     var values=[Double](repeating:0,count:16),quality=HXReferenceQuality()
     let accepted=xyz.withUnsafeBufferPointer{points in xy.withUnsafeBufferPointer{pixels in ids.withUnsafeBufferPointer{codes in values.withUnsafeMutableBufferPointer{matrix in
@@ -158,3 +165,4 @@ enum CodedReferences {
     return accepted==1 && pose.valid ? Result(pose:pose,conflict:false,quality:quality):Result(pose:nil,conflict:true,quality:quality)
   }
 }
+
