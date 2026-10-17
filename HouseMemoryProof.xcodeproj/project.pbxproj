@@ -5,6 +5,11 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"4C3845A014A0651FD46EA0A3" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "SurfaceReconstruction.swift"; "sourceTree" = "<group>"; };
+		"0B378ECFCF47D0C864996815" = { "isa" = "PBXBuildFile"; "fileRef" = "4C3845A014A0651FD46EA0A3"; };
+
+"4D9645FFF90C886E970589C0" = {isa=PBXFileReference; lastKnownFileType=sourcecode.cpp.cpp; path="../packages/spatial-core/hx_surface.cpp"; sourceTree="<group>";};
+"1E4D3140BC77478DA7069B59" = {isa=PBXBuildFile; fileRef=4D9645FFF90C886E970589C0;};
 		"2F876042478D4A26634595F7" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "PhotoViewer.swift"; "sourceTree" = "<group>"; };
 		"D62EB08D289871A9D629AD40" = { "isa" = "PBXBuildFile"; "fileRef" = "2F876042478D4A26634595F7"; };
 
@@ -125,6 +130,7 @@
 			"buildActionMask" = 2147483647;
 			"files" = (
 				"534A5F435ADDB25DA9F43232",
+				"0B378ECFCF47D0C864996815", "1E4D3140BC77478DA7069B59",
 				"D62EB08D289871A9D629AD40",
 				"7DB00C058BCDD9BC32268EE9",
 				"D4EBA5DE1F05109EFFEE0C2D",
@@ -167,6 +173,7 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"A33603BF79F74B056172D43B",
+				"4C3845A014A0651FD46EA0A3", "4D9645FFF90C886E970589C0",
 				"2F876042478D4A26634595F7",
 				"1F59887AC8A0FFA3294D2FF6",
 				"299A79382A161823F564FA65",

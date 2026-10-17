@@ -72,6 +72,9 @@ import SQLite3
             }catch{results.append(["test":"Bundled IFC2x3 conversion and axes","passed":false,"error":error.localizedDescription])}
             do {
                 let fixture=try SimulatedCapture.make(repo:mainRepo);let feature=try await Reconstruction.fuse(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
+                let surface=try await SurfaceReconstruction.build(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
+                let surfaceError=surface.mesh.vertices.map{abs($0.y-2)}.max() ?? .infinity
+                results.append(["test":"Native signed-distance surface fusion","passed":surface.mesh.valid && surface.mesh.triangles.count>300 && surfaceError<0.003,"vertices":surface.mesh.vertices.count,"maxPlaneErrorMetres":surfaceError,"syntheticOnly":true])
                 let error=feature.mesh.vertices.map{abs($0.y-2)}.max() ?? .infinity
                 let textured=try TextureBuilder.build(house:fixture,segment:fixture.segments[0],repo:mainRepo)
                 var candidate=fixture;candidate.features=textured
