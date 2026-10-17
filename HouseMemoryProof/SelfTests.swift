@@ -196,7 +196,7 @@ import Darwin
                 for phase in ["asset-verified","metadata-verified"] {
                     let destination=folder.appendingPathComponent("snapshot-fault-"+phase)
                     do{_=try IncrementalSnapshots.write(house:h,repo:source,folder:destination,checkpoint:{if $0==phase {throw CancellationError()}});return false}catch is CancellationError{}
-                    guard try IncrementalSnapshots.catalog(folder:destination).isEmpty,source.integrity(h)==1 else{return false}
+                    guard try IncrementalSnapshots.catalog(folder:destination).isEmpty,try source.integrity(h)==1 else{return false}
                     let completed=try IncrementalSnapshots.write(house:h,repo:source,folder:destination)
                     guard try IncrementalSnapshots.catalog(folder:destination).count==1 else{return false}
                     let restored=try IncrementalSnapshots.restore(completed,repo:target,folder:destination)
@@ -204,7 +204,7 @@ import Darwin
                     let remote=IncrementalSnapshots.root(destination).appendingPathComponent("assets").appendingPathComponent(key)
                     try FileManager.default.removeItem(at:remote)
                     do{_=try IncrementalSnapshots.restore(completed,repo:target,folder:destination);return false}catch{}
-                    guard try target.all().map({$0.id})==[existing.id],source.integrity(h)==1 else{return false}
+                    guard try target.all().map({$0.id})==[existing.id],try source.integrity(h)==1 else{return false}
                 }
                 let blocked=folder.appendingPathComponent("snapshot-folder-is-file")
                 try Data("occupied destination".utf8).write(to:blocked)
