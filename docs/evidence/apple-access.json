@@ -1,0 +1,10 @@
+{
+  "apple_api_authentication": "passed",
+  "bundle_id": "com.jverdi.housememoryproof",
+  "bundle_registered": true,
+  "apple_team_id": "4RLZ6F3UA4",
+  "app_record_exists": false,
+  "signing_tested": false,
+  "testflight_uploaded": false,
+  "evidence_run": "https://github.com/jverdi/house-memory-proof/actions/runs/39001507096"
+}

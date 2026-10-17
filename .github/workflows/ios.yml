@@ -45,8 +45,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Sign and upload for internal TestFlight testing
         env:
-          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-          APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || '4RLZ6F3UA4' }}
+          APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID || 'com.jverdi.housememoryproof' }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
