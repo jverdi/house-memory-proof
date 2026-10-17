@@ -3,6 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
 bash tooling/prepare-ifc.sh
+bash tooling/prepare-simulation.sh
 xcodebuild -version | tee build/evidence/xcode-version.txt
 xcrun simctl list devices available --json > build/evidence/simulator-inventory.json
 device_id="$(python3 - <<'PY'
@@ -51,12 +52,15 @@ Path('build/evidence/simulator-result.json').write_text(json.dumps({
 PY
 
 app_data="$(xcrun simctl get_app_container "$device_id" com.example.HouseMemoryProof data)"
-for attempt in $(seq 1 90); do
+for attempt in $(seq 1 150); do
   if [ -f "$app_data/Library/Application Support/HouseXray/self-test.json" ]; then break; fi
   sleep 2
 done
 cp "$app_data/Library/Application Support/HouseXray/self-test.json" build/evidence/native-self-test.json
 cp "$app_data/Library/Application Support/HouseXray/test.hxray" build/evidence/test.hxray
+cp "$app_data/Library/Application Support/HouseXray/house-surface.glb" build/evidence/house-surface.glb
+cp "$app_data/Library/Application Support/HouseXray/points.glb" build/evidence/points.glb
+cp "$app_data/Library/Application Support/HouseXray/points.usdz" build/evidence/points.usdz
 cp "$app_data/Library/Application Support/HouseXray/textured.usdz" build/evidence/textured.usdz
 cp "$app_data/Library/Application Support/HouseXray/textured.glb" build/evidence/textured.glb
 cp "$app_data/Library/Application Support/HouseXray/test.glb" build/evidence/test.glb

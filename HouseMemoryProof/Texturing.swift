@@ -19,10 +19,12 @@ enum TextureBuilder {
         let measured=Double(Float(bitPattern:depth.uint32(i)));return measured.isFinite && measured>0 && abs(measured-z)<0.08
     }
     static func build(house:House,segment:Segment,repo:Repository) throws->[Feature] {
-        let observations=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary && $0.light>100}.sorted{$0.sharpness>$1.sharpness}
+        let raw=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary && $0.light>100}.sorted{$0.sharpness>$1.sharpness}
+        let usesSurface=house.features.contains{$0.segmentID==segment.id && $0.name=="Reconstructed depth surface" && $0.artifactValid != false}
+        let observations=usesSurface ? PoseRefinement.selected(raw,segment:segment,house:house).0:raw
         let candidates=Array(observations.prefix(16));let cameras=try candidates.map{Camera(observation:$0,depth:try $0.depth.map{try repo.read($0)})}
         guard !cameras.isEmpty else{throw HouseError.message("No posed depth photographs are available for visibility-tested textures.")}
-        let reconstructed=house.features.filter{$0.segmentID==segment.id && $0.name=="Reconstructed depth surface" && !$0.mesh.triangles.isEmpty}
+        let reconstructed=house.features.filter{$0.segmentID==segment.id && $0.name=="Reconstructed depth surface" && $0.artifactValid != false && !$0.mesh.triangles.isEmpty}
         let input=reconstructed.isEmpty ? house.features.filter{$0.segmentID==segment.id && $0.name=="Observed LiDAR surface" && !$0.mesh.triangles.isEmpty}:reconstructed
         guard !input.isEmpty else{throw HouseError.message("This session has no original LiDAR triangle surfaces to texture.")}
         var output:[Feature]=[]

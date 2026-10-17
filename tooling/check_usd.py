@@ -1,10 +1,13 @@
 from pxr import Usd,UsdGeom
 import json,zipfile,struct
-for name in ['test','textured']:
+for name in ['test','textured','points']:
  p='build/evidence/'+name+'.usdz';stage=Usd.Stage.Open(p)
  assert stage and UsdGeom.GetStageUpAxis(stage)=='Z' and UsdGeom.GetStageMetersPerUnit(stage)==1
  meshes=[UsdGeom.Mesh(x) for x in stage.Traverse() if x.IsA(UsdGeom.Mesh)]
- assert meshes
+ points=[UsdGeom.Points(x) for x in stage.Traverse() if x.IsA(UsdGeom.Points)]
+ assert meshes or points
+ for cloud in points:
+  assert len(cloud.GetPointsAttr().Get())>0 and len(cloud.GetWidthsAttr().Get())>0
  for mesh in meshes:
   points=mesh.GetPointsAttr().Get();indices=mesh.GetFaceVertexIndicesAttr().Get();counts=mesh.GetFaceVertexCountsAttr().Get()
   assert sum(counts)==len(indices) and all(0<=i<len(points) for i in indices)

@@ -29,6 +29,7 @@ extern "C" int32_t hx_surface_integrate(void*p,const float*depth,const uint8_t*c
   if(!std::isfinite(depth[i-1])||!std::isfinite(depth[i+1])||!std::isfinite(depth[i-w])||!std::isfinite(depth[i+w])||std::abs(z-depth[i-1])>0.08||std::abs(z-depth[i+1])>0.08||std::abs(z-depth[i-w])>0.08||std::abs(z-depth[i+w])>0.08)continue;
   for(double sample=z-s.band;sample<=z+s.band;sample+=s.voxel*0.7){
    Vec q=world((double(x)-cx)*sample/fx,(double(y)-cy)*sample/fy,sample,m);
+   if(!std::isfinite(q.x)||!std::isfinite(q.y)||!std::isfinite(q.z)||std::abs(q.x)>10000||std::abs(q.y)>10000||std::abs(q.z)>10000)continue;
    Key key={int(std::floor(q.x/s.voxel)),int(std::floor(q.y/s.voxel)),int(std::floor(q.z/s.voxel))};
    auto it=s.cells.find(key);if(it!=s.cells.end()&&it->second.views&&frame<=it->second.last)continue;
    Vec center={(key.x+0.5)*s.voxel,(key.y+0.5)*s.voxel,(key.z+0.5)*s.voxel};Vec c=camera(center,m);if(c.z<=0.15)continue;

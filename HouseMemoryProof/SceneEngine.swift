@@ -9,7 +9,7 @@ struct SceneOptions:Equatable {
 }
 enum SceneBuilder {
     static func visible(_ f:Feature,_ o:SceneOptions)->Bool {
-        guard !f.hidden,o.trades.contains(f.trade),o.room==nil || o.room==f.roomID else{return false}
+        guard !f.hidden,f.artifactValid != false,o.trades.contains(f.trade),o.room==nil || o.room==f.roomID else{return false}
         if f.trade == .ceiling && !o.ceilings{return false}
         if let stage=o.stage,f.stageID != stage{return false}
         switch o.mode {case .rough:return f.trade != .finish && f.trade != .ceiling
@@ -107,7 +107,7 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
     }
     func jump(_ room:Room){
         var p=room.origin+V3(room.size.x/2,room.size.y/2,1.6),direction=V3(0,1,0)
-        if let h=house,!h.isDemo,let observation=h.observations.last(where:{$0.roomID==room.id && SceneBuilder.eligibleStages(h,options:options).contains($0.stageID) && !$0.documentary}) {
+        if let h=house,let observation=h.observations.last(where:{$0.roomID==room.id && SceneBuilder.eligibleStages(h,options:options).contains($0.stageID) && !$0.documentary}) {
             let m=observation.camera;p=V3(m[3],-m[11],m[7]);direction=V3(-m[2],m[10],-m[6])
             if let t=h.segments.first(where:{$0.id==observation.segmentID})?.registration{p=t.apply(p);direction=t.apply(direction)-t.apply(V3())}
         }
@@ -125,7 +125,7 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
         if flying{camera.simdPosition=to;return}
         let direction=simd_normalize(delta),ahead=to+direction*0.23
         let hits=view.scene?.rootNode.hitTestWithSegment(from:SCNVector3(from),to:SCNVector3(ahead),options:[SCNHitTestOption.searchMode.rawValue:SCNHitTestSearchMode.closest.rawValue]) ?? []
-        if hits.isEmpty {if let h=house{if h.isDemo {guard NavigationGeometry.allowed(V3(ar:to),house:h) else{return}}else{guard NavigationGeometry.observed(V3(ar:to),house:h,options:options) else{return}}};camera.simdPosition=to}
+        if hits.isEmpty {if let h=house{if h.isDemo && h.observations.isEmpty {guard NavigationGeometry.allowed(V3(ar:to),house:h) else{return}}else{guard NavigationGeometry.observed(V3(ar:to),house:h,options:options) else{return}}};camera.simdPosition=to}
     }
 }
 struct WalkSurface:UIViewRepresentable {

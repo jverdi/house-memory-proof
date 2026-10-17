@@ -92,6 +92,7 @@ import ImageIO
         let orientation:Int
         switch (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.interfaceOrientation {case .landscapeRight:orientation=1;case .landscapeLeft:orientation=3;case .portraitUpsideDown:orientation=8;default:orientation=6}
         // One retained frame maximum; no unbounded ARFrame queue.
+        let observedReferences=frame.anchors.compactMap{a ->ReferencePose? in guard let image=a as? ARImageAnchor,image.isTracked,let name=image.referenceImage.name,let id=UUID(uuidString:name) else{return nil};let values=(0..<4).flatMap{r in (0..<4).map{c in Double(image.transform[c][r])}};return ReferencePose(boardID:id,matrix:values)}
         DispatchQueue.global(qos:.utility).async { [weak self] in
             do {
                 let ci=CIImage(cvPixelBuffer:frame.capturedImage),context=CIContext(options:[.cacheIntermediates:false])
@@ -110,7 +111,7 @@ import ImageIO
                 for row in 0..<4{for col in 0..<4{camera.append(Double(t[col][row]))}}
                 for row in 0..<3{for col in 0..<3{intrinsics.append(Double(k[col][row]))}}
                 let quality=Self.sharpness(image)
-                let obs=Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:frame.timestamp,image:imageKey,depth:depthKey,confidence:confidenceKey,depthWidth:dw,depthHeight:dh,width:image.width,height:image.height,camera:camera,intrinsics:intrinsics,tracking:String(describing:frame.camera.trackingState),light:Double(frame.lightEstimate?.ambientIntensity ?? 0),sharpness:quality,documentary:documentary,imageOrientation:orientation)
+                let obs=Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:frame.timestamp,image:imageKey,depth:depthKey,confidence:confidenceKey,depthWidth:dw,depthHeight:dh,width:image.width,height:image.height,camera:camera,intrinsics:intrinsics,tracking:String(describing:frame.camera.trackingState),light:Double(frame.lightEstimate?.ambientIntensity ?? 0),sharpness:quality,documentary:documentary,imageOrientation:orientation,referenceObservations:observedReferences)
                 Task {@MainActor in
                     guard let self else{return};self.pending-=1
                     guard self.generation==token,self.model?.selected==houseID else{return}
@@ -142,7 +143,7 @@ import ImageIO
             if reveal,let old=segment?.referencePoses.first(where:{$0.boardID==id}),old.matrix.count==16 {
                 var previous=matrix_identity_float4x4;for row in 0..<4{for col in 0..<4{previous[col][row]=Float(old.matrix[row*4+col])}}
                 markerTransform=anchor.transform*simd_inverse(previous);markerSeen=view.session.currentFrame?.timestamp ?? 0
-            }else if !reveal {currentReferencePoses[id]=ReferencePose(boardID:id,matrix:values)}
+            }else if !reveal,currentReferencePoses[id]==nil {currentReferencePoses[id]=ReferencePose(boardID:id,matrix:values)}
         }
     }
     private func collect(_ anchors:[ARAnchor]) {

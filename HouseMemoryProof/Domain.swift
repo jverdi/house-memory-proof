@@ -69,13 +69,13 @@ struct Stage:Codable,Identifiable,Equatable { var id=UUID();var name:String;var 
 struct Feature:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var trade:Trade;var roomID:UUID;var stageID:UUID;var kind:EvidenceKind
     var mesh:Mesh;var route:[V3]=[];var sourceIDs:[UUID]=[];var notes="";var endpoint="";var reviewed=false
-    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil
+    var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil
 }
 struct Observation:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var segmentID:UUID;var timestamp:Double;var date=Date()
     var image:String;var depth:String?;var confidence:String?;var depthWidth:Int=0;var depthHeight:Int=0
     var width:Int;var height:Int;var camera:[Double];var intrinsics:[Double]
-    var tracking:String;var light:Double;var sharpness:Double;var note="";var documentary=false;var imageOrientation:Int?=nil
+    var tracking:String;var light:Double;var sharpness:Double;var note="";var documentary=false;var imageOrientation:Int?=nil;var referenceObservations:[ReferencePose]?=nil
     // Native camera transform is row-major, ARKit right/up/back. No pretend calibration.
 }
 struct DocumentaryPhoto:Codable,Identifiable,Equatable {var id=UUID();var image:String;var date=Date();var note="";var roomID:UUID?;var stageID:UUID?}
@@ -112,7 +112,7 @@ struct House:Codable,Identifiable,Equatable {
         let segmentIDs=Set(segments.map{$0.id})
         for f in features {if let sid=f.segmentID,!segmentIDs.contains(sid){throw HouseError.message("Feature references an absent capture session.")};if let uv=f.uv {guard uv.count==f.mesh.vertices.count,uv.allSatisfy({$0.u.isFinite && $0.v.isFinite}) else{throw HouseError.message("Invalid texture coordinates.")}}}
         for s in segments {guard roomIDs.contains(s.roomID),stageIDs.contains(s.stageID) else{throw HouseError.message("Capture session references an absent space or stage.")};if let t=s.registration, !t.valid {throw HouseError.message("Invalid segment registration.")}}
-        for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentIDs.contains(o.segmentID),o.camera.count==16,Rigid(values:o.camera).valid,o.intrinsics.count==9,o.intrinsics[0]>0,o.intrinsics[4]>0,o.timestamp.isFinite,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.height>0 else{throw HouseError.message("Invalid observation metadata.")}}
+        for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentIDs.contains(o.segmentID),o.camera.count==16,Rigid(values:o.camera).valid,o.intrinsics.count==9,o.intrinsics[0]>0,o.intrinsics[4]>0,o.timestamp.isFinite,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.width<=20000,o.height>0,o.height<=20000,o.depthWidth>=0,o.depthWidth<=8192,o.depthHeight>=0,o.depthHeight<=8192 else{throw HouseError.message("Invalid observation metadata.")}}
         let featureIDs=Set(features.map{$0.id});for c in connections{guard featureIDs.contains(c.fromFeature),featureIDs.contains(c.toFeature),c.fromFeature != c.toFeature,[0,1].contains(c.fromEnd),[0,1].contains(c.toEnd) else{throw HouseError.message("Invalid service endpoint link.")}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}

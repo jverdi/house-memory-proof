@@ -51,6 +51,16 @@ import SQLite3
             check("Tour cache separates layers and projects"){let plan=TourDirector.plan(house);let a=try MovieExporter.cacheKey(house:house,plan:plan,options:SceneOptions());let b=try MovieExporter.cacheKey(house:house,plan:plan,options:SceneOptions(mode:.finished));var other=house;other.id=UUID();let c=try MovieExporter.cacheKey(house:other,plan:plan,options:SceneOptions());return a != b && a != c}
             check("Walk collision and explicit doorway"){NavigationGeometry.allowed(V3(3,2,1.6),house:house) && !NavigationGeometry.allowed(V3(3,-0.1,1.6),house:house) && NavigationGeometry.allowed(V3(6.1,2.2,1.6),house:house) && !NavigationGeometry.allowed(V3(6.1,1,1.6),house:house)}
             check("SceneKit offscreen render"){let scene=SceneBuilder.scene(house,options:SceneOptions());let camera=SceneBuilder.camera(at:V3(13,-12,12));camera.look(at:SCNVector3(4,1,-2));scene.rootNode.addChildNode(camera);let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene;renderer.pointOfView=camera;let image=renderer.snapshot(atTime:0,with:CGSize(width:480,height:320),antialiasingMode:.none);try image.pngData()?.write(to:mainRepo.root.appendingPathComponent("test-render.png"));return image.cgImage.map{CaptureController.sharpness($0)>0.002} ?? false}
+            check("Two-reference drift correction and inconsistent-board rejection"){
+                var h=House.empty("Reference checks");let a=ReferenceBoard(name:"A",image:"a.png",pdf:"a.pdf",width:0.18),b=ReferenceBoard(name:"B",image:"b.png",pdf:"b.pdf",width:0.18);h.references=[a,b]
+                var fixedA=Rigid().values,fixedB=Rigid().values;fixedA[3] = -0.5;fixedB[3]=0.5
+                var s=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);s.referencePoses=[ReferencePose(boardID:a.id,matrix:fixedA),ReferencePose(boardID:b.id,matrix:fixedB)]
+                var movedA=fixedA,movedB=fixedB,camera=Rigid().values;movedA[3]+=0.1;movedB[3]+=0.1;camera[3]=0.1
+                var o=Observation(roomID:s.roomID,stageID:s.stageID,segmentID:s.id,timestamp:0,image:"a.jpg",width:64,height:64,camera:camera,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1,referenceObservations:[ReferencePose(boardID:a.id,matrix:movedA),ReferencePose(boardID:b.id,matrix:movedB)])
+                guard let corrected=PoseRefinement.refine(o,segment:s,house:h),abs(corrected.observation.camera[3])<1e-9,o.camera[3]==0.1 else{return false}
+                movedB[3]+=0.2;o.referenceObservations=[ReferencePose(boardID:a.id,matrix:movedA),ReferencePose(boardID:b.id,matrix:movedB)]
+                return PoseRefinement.refine(o,segment:s,house:h)==nil
+            }
             check("Projection and occlusion rejection"){
                 var depth=Data();for _ in 0..<64*64{depth.float(1)}
                 let o=Observation(roomID:house.rooms[0].id,stageID:house.stages[0].id,segmentID:UUID(),timestamp:0,image:"fixture.jpg",width:64,height:64,camera:Rigid().values,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"normal",light:1000,sharpness:0.1)
@@ -75,6 +85,9 @@ import SQLite3
                 let surface=try await SurfaceReconstruction.build(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
                 let surfaceError=surface.mesh.vertices.map{abs($0.y-2)}.max() ?? .infinity
                 results.append(["test":"Native signed-distance surface fusion","passed":surface.mesh.valid && surface.mesh.triangles.count>300 && surfaceError<0.003,"vertices":surface.mesh.vertices.count,"maxPlaneErrorMetres":surfaceError,"syntheticOnly":true])
+                var pointHouse=fixture;pointHouse.features=[feature]
+                let pointGLB=try Exporter.glb(pointHouse,options:SceneOptions()),pointUSD=try Exporter.usdz(pointHouse,options:SceneOptions())
+                for (from,name) in [(pointGLB,"points.glb"),(pointUSD,"points.usdz")]{let target=mainRepo.root.appendingPathComponent(name);try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:from,to:target)}
                 let error=feature.mesh.vertices.map{abs($0.y-2)}.max() ?? .infinity
                 let textured=try TextureBuilder.build(house:fixture,segment:fixture.segments[0],repo:mainRepo)
                 var candidate=fixture;candidate.features=textured
@@ -82,6 +95,16 @@ import SQLite3
                 let usd=try Exporter.usdz(candidate,options:SceneOptions());try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("textured.usdz"));try FileManager.default.copyItem(at:usd,to:mainRepo.root.appendingPathComponent("textured.usdz"))
                 results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":feature.mesh.vertices.count>100 && error<0.003 && textured.contains{$0.texture != nil},"points":feature.mesh.vertices.count,"maxPlaneErrorMetres":error,"syntheticOnly":true])
             }catch{results.append(["test":"Simulated camera to fusion and photo texture pipeline","passed":false,"error":error.localizedDescription])}
+            do {
+                guard let bundle=Bundle.main.url(forResource:"IFC",withExtension:nil) else{throw HouseError.message("Simulation bundle missing.")}
+                let simulated=try Exporter.restore(bundle.appendingPathComponent("synthetic-house.hxray"),repo:mainRepo)
+                let entries=try StreamingArchive.index(bundle.appendingPathComponent("synthetic-house.hxray"))
+                results.append(["test":"Paired three-room camera archive without oracle geometry","passed":simulated.rooms.count==3 && simulated.stages.count==2 && simulated.observations.count==144 && simulated.features.isEmpty && entries["oracle.json"]==nil,"syntheticOnly":true])
+                let first=simulated.segments[0];let surface=try await SurfaceReconstruction.build(house:simulated,segment:first,repo:mainRepo){_ in}
+                var candidate=simulated;candidate.features=[surface]
+                let url=try Exporter.glb(candidate,options:SceneOptions(room:first.roomID));let target=mainRepo.root.appendingPathComponent("house-surface.glb");try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:url,to:target)
+                results.append(["test":"Noisy simulated house capture to native surface","passed":surface.mesh.valid && surface.mesh.triangles.count>300,"vertices":surface.mesh.vertices.count,"precisionQualified":false])
+            }catch{results.append(["test":"Paired simulated house integration","passed":false,"error":error.localizedDescription])}
             if ProcessInfo.processInfo.arguments.contains("--video-test") {
                 do {let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:5,width:640,height:360){_ in};try? FileManager.default.removeItem(at:mainRepo.root.appendingPathComponent("test-tour.mp4"));try FileManager.default.copyItem(at:movie,to:mainRepo.root.appendingPathComponent("test-tour.mp4"));results.append(["test":"Native MP4 encode, assembly and duration","passed":true])}catch{results.append(["test":"Native MP4 encode, assembly and duration","passed":false,"error":error.localizedDescription])}
             }

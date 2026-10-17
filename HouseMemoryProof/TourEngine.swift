@@ -12,7 +12,7 @@ enum TourDirector {
         for r in h.rooms where options.room==nil || options.room==r.id {
             var scope=options;scope.room=r.id
             let stages=SceneBuilder.eligibleStages(h,options:scope),unregistered=SceneBuilder.activeUnregisteredSegment(h,options:scope)
-            if h.isDemo {
+            if h.isDemo && h.observations.isEmpty {
                 shots.append(TourShot(roomID:r.id,position:r.origin+V3(r.size.x/2,r.size.y/2,1.6),yaw:0,pitch:0.08,caption:r.name+" · SYNTHETIC DEMONSTRATION",duration:5))
             }else if let obs=h.observations.last(where:{$0.roomID==r.id && !$0.documentary && stages.contains($0.stageID) && (unregistered==nil || $0.segmentID==unregistered)}) {
                 let m=obs.camera;var position=V3(m[3],-m[11],m[7]);var forward=V3(-m[2],m[10],-m[6])

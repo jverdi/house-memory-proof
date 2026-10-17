@@ -2,7 +2,8 @@ import Foundation
 
 @MainActor enum SurfaceReconstruction {
     static func build(house:House,segment:Segment,repo:Repository,progress:@escaping(Double)->Void) async throws->Feature {
-        let observations=Array(house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary}.prefix(300))
+        let raw=Array(house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary}.prefix(300))
+        let (observations,referenceSupported)=PoseRefinement.selected(raw,segment:segment,house:house)
         guard !observations.isEmpty,let core=hx_surface_create(0.02,400000) else{throw HouseError.message("No depth observations or insufficient surface-fusion resources.")};defer{hx_surface_destroy(core)}
         for (frame,o) in observations.enumerated(){
             try Task.checkCancellation();guard ProcessInfo.processInfo.thermalState != .critical else{throw HouseError.message("Surface fusion paused because the phone is too warm. Originals remain intact; retry after cooling.")}
@@ -18,6 +19,6 @@ import Foundation
         var vertices=[HXVertex](repeating:HXVertex(x:0,y:0,z:0),count:count)
         let copied=vertices.withUnsafeMutableBufferPointer{hx_surface_mesh(core,$0.baseAddress,UInt32(count),3)};guard copied==count else{throw HouseError.message("Surface candidate was incomplete.")}
         progress(1)
-        return Feature(name:"Reconstructed depth surface",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:vertices.map{V3($0.x,$0.y,$0.z)},triangles:Array(0..<Int32(count))),sourceIDs:observations.map{$0.id},notes:"Sparse 2 cm signed-distance fusion, 6 cm truncation and ≥3 distinct views. Depth discontinuities are excluded. Uses unoptimized camera priors; thin services, occlusions and precision remain unqualified.",segmentID:segment.id)
+        return Feature(name:"Reconstructed depth surface",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:vertices.map{V3($0.x,$0.y,$0.z)},triangles:Array(0..<Int32(count))),sourceIDs:observations.map{$0.id},notes:"Sparse 2 cm signed-distance fusion, 6 cm truncation and ≥3 distinct views. Depth discontinuities are excluded. \(referenceSupported ? "Two-reference consensus camera constraints were used; unreferenced frames were excluded.":"Uses unoptimized camera priors.") Thin services, occlusions and precision remain unqualified.",segmentID:segment.id)
     }
 }

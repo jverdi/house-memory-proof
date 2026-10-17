@@ -2,7 +2,8 @@ import Foundation
 
 @MainActor enum Reconstruction {
     static func fuse(house:House,segment:Segment,repo:Repository,progress:@escaping(Double)->Void) async throws->Feature {
-        let observations=Array(house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary}.prefix(300))
+        let raw=Array(house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary}.prefix(300))
+        let (observations,referenceSupported)=PoseRefinement.selected(raw,segment:segment,house:house)
         guard !observations.isEmpty else{throw HouseError.message("This segment has no saved depth observations.")}
         guard let core=hx_create(0.02,100000) else{throw HouseError.message("Could not allocate bounded depth fusion.")};defer{hx_destroy(core)}
         for (frame,obs) in observations.enumerated() {
@@ -27,6 +28,6 @@ import Foundation
         var output=[HXPoint](repeating:HXPoint(x:0,y:0,z:0,spread:0,views:0),count:count)
         _=output.withUnsafeMutableBufferPointer{hx_copy(core,$0.baseAddress,UInt32($0.count),3)}
         let points=output.map{V3($0.x,$0.y,$0.z)}
-        return Feature(name:"Fused depth · 2 cm cells",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:points,triangles:[]),sourceIDs:observations.map{$0.id},notes:"\(count) cells supported by ≥3 captured views. ARKit pose priors are not optimized. Sample spread is not measurement accuracy. Thin services need photographs and manual tracing.",segmentID:segment.id)
+        return Feature(name:"Fused depth · 2 cm cells",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:points,triangles:[]),sourceIDs:observations.map{$0.id},notes:"\(count) cells supported by ≥3 captured views. \(referenceSupported ? "Two-reference consensus constraints were used.":"ARKit pose priors are not optimized.") Sample spread is not measurement accuracy. Thin services need photographs and manual tracing.",segmentID:segment.id)
     }
 }
