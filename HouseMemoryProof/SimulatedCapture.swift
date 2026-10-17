@@ -10,7 +10,7 @@ enum SimulatedCapture {
         h.rooms[0].name="Virtual construction wall";h.rooms[0].origin=V3(-1.5,0,0);h.rooms[0].size=V3(3,3,2.8)
         h.stages[0].kind = .synthetic;h.stages[1].kind = .synthetic
         let s=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments=[s]
-        h.features=[Feature(name:"Observed LiDAR surface",trade:.unknown,roomID:s.roomID,stageID:s.stageID,kind:.synthetic,mesh:.box(center:V3(0,2,1.4),size:V3(3,0.01,2.6)),notes:"Synthetic target; never a real observation.",segmentID:s.id)]
+        h.features=[Feature(name:"Observed LiDAR surface",trade:.unknown,roomID:s.roomID,stageID:s.stageID,kind:.synthetic,mesh:.box(center:V3(0,2,1.4),size:V3(2.4,0.01,2.0)),notes:"Synthetic target; never a real observation.",segmentID:s.id)]
         let w=192,height=144,fx=130.0,fy=130.0
         for frame in 0..<9 {
             let x=Double(frame-4)*0.08
@@ -27,7 +27,7 @@ enum SimulatedCapture {
             let data=Data(pixels);guard let provider=CGDataProvider(data:data as CFData),let cg=CGImage(width:w,height:height,bitsPerComponent:8,bitsPerPixel:32,bytesPerRow:w*4,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGBitmapInfo(rawValue:CGImageAlphaInfo.last.rawValue),provider:provider,decode:nil,shouldInterpolate:false,intent:.defaultIntent),let jpeg=UIImage(cgImage:cg).jpegData(compressionQuality:0.98) else{throw HouseError.message("Synthetic camera renderer failed.")}
             let image=try repo.put(jpeg,ext:"jpg"),d=try repo.put(depth,ext:"depth32"),confidence=try repo.put(Data(repeating:2,count:w*height),ext:"confidence8")
             var camera=Rigid().values;camera[3]=x;camera[7]=1.4
-            h.observations.append(Observation(roomID:s.roomID,stageID:s.stageID,segmentID:s.id,timestamp:Double(frame),image:image,depth:d,confidence:confidence,depthWidth:w,depthHeight:height,width:w,height:height,camera:camera,intrinsics:[fx,0,96,0,fy,72,0,0,1],tracking:"synthetic normal",light:1000,sharpness:CaptureController.sharpness(cg),note:"Synthetic camera \(frame); known plane at Y=2 m. Not field evidence."))
+            h.observations.append(Observation(roomID:s.roomID,stageID:s.stageID,segmentID:s.id,timestamp:Double(frame),image:image,depth:d,confidence:confidence,depthWidth:w,depthHeight:height,width:w,height:height,camera:camera,intrinsics:[fx,0,96,0,fy,72,0,0,1],tracking:"synthetic normal",light:1000,sharpness:CaptureController.sharpness(cg),note:"Synthetic camera \(frame); known plane at Y=2 m. Not field evidence.",imageOrientation:1))
         }
         return h
     }
