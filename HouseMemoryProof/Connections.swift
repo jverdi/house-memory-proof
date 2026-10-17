@@ -1,15 +1,5 @@
 import SwiftUI
 
-struct ServiceConnection: Codable, Identifiable, Equatable {
-  var id = UUID()
-  var fromFeature: UUID
-  var fromEnd: Int
-  var toFeature: UUID
-  var toEnd: Int
-  var confirmed = false
-  var notes = ""
-  var date = Date()
-}
 struct ConnectionsPage: View {
   @EnvironmentObject var model: AppModel
   var house: House

@@ -2,7 +2,9 @@ import Foundation
 import CryptoKit
 import ImageIO
 import simd
-import SwiftUI
+import CoreGraphics
+
+protocol EvidenceAssetReader {func read(_ key:String)throws->Data}
 
 struct VisualMapReference: Codable, Identifiable, Equatable {
   var id=UUID();var segmentID:UUID;var roomID:UUID;var stageID:UUID
@@ -44,7 +46,7 @@ enum VisualMapping {
     }
     guard ok else{throw HouseError.message("Visual map image allocation failed.")};return (gray,w,h)
   }
-  static func build(house:House,segment:Segment,repo:Repository)throws->VisualMap {
+  static func build(house:House,segment:Segment,repo:any EvidenceAssetReader)throws->VisualMap {
     let all=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary && $0.sharpness>=0.02}
     let (selected,_)=PoseRefinement.selected(all,segment:segment,house:house)
     guard selected.count>=2 else{throw HouseError.message("Capture at least two overlapping, sharp depth views of this stage first.")}
@@ -116,25 +118,4 @@ enum VisualMapping {
     var result=candidates.max(by:{$0.0.inliers<$1.0.inliers})!.0
     result.sources=candidates.flatMap{$0.0.sources};return result
   }
-}
-
-struct VisualMapsPage:View {
-  @EnvironmentObject var model:AppModel
-  var house:House
-  @State private var selected:UUID?
-  var body:some View{Form{
-    Text("Build an experimental visual reference from sharp, overlapping depth photographs. Later views must match two separated captured viewpoints. Blank planar walls are deliberately rejected. This does not enable a precision profile.").font(.footnote)
-    Picker("Capture segment",selection:$selected){Text("Choose").tag(UUID?.none);ForEach(house.segments){s in Text("\(house.rooms.first(where:{$0.id==s.roomID})?.name ?? "Room") · \(house.stages.first(where:{$0.id==s.stageID})?.name ?? "Stage") · \(s.started.formatted())").tag(Optional(s.id))}}
-    Button("Build visual reference"){
-      guard let repo=model.repository,let s=house.segments.first(where:{$0.id==selected}) else{return}
-      model.perform("Building local visual reference"){
-        let map=try await Task.detached(priority:.userInitiated){try VisualMapping.build(house:house,segment:s,repo:repo)}.value
-        guard let current=model.house,current.id==house.id,let segment=current.segments.first(where:{$0.id==s.id}),try VisualMapping.fingerprint(house:current,segment:segment)==map.fingerprint else{throw HouseError.message("Capture inputs changed. Rebuild the reference from the latest originals.")}
-        let key=try repo.put(JSONEncoder().encode(map),ext:"vmap")
-        model.edit{$0.visualMaps.removeAll{$0.segmentID==s.id};$0.visualMaps.append(VisualMapReference(segmentID:s.id,roomID:s.roomID,stageID:s.stageID,asset:key,fingerprint:map.fingerprint))}
-        return nil
-      }
-    }.disabled(selected==nil || model.busy)
-    Section("Saved references"){ForEach(house.visualMaps){ref in VStack(alignment:.leading){Text(house.rooms.first(where:{$0.id==ref.roomID})?.name ?? "Room");Text(ref.date.formatted()).font(.caption);Text("Experimental. Coordinate edits require rebuilding.").font(.caption)}}}
-  }.navigationTitle("Visual references")}
 }

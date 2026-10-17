@@ -1,9 +1,5 @@
 import Foundation
 
-struct UV: Codable, Equatable {
-  var u: Double
-  var v: Double
-}
 enum TextureBuilder {
   struct Camera {
     var observation: Observation

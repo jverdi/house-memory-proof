@@ -2,20 +2,6 @@ import ARKit
 import CryptoKit
 import SwiftUI
 
-struct ReferenceBoard: Codable, Identifiable, Equatable {
-  var id = UUID()
-  var name: String
-  var image: String
-  var pdf: String
-  var width: Double = 0.18
-  var location = ""
-  var valid = true
-}
-struct ReferencePose: Codable, Equatable {
-  var boardID: UUID
-  var matrix: [Double]
-  var observed = Date()
-}
 @MainActor enum BoardGenerator {
   static func make(name: String, repo: Repository) throws -> ReferenceBoard {
     let id = UUID()

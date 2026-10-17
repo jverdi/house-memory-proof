@@ -1,0 +1,49 @@
+name: Evaluate native visual localization
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/vision-evaluation.yml
+      - tooling/opencv/build-host.sh
+      - tooling/simulation/VisionReplay.swift
+      - tooling/simulation/replay_fixture.py
+      - tooling/simulation/vision_fixture.py
+      - tooling/simulation/house.py
+      - packages/visual-core/**
+      - HouseMemoryProof/VisualMapping.swift
+      - HouseMemoryProof/EvidenceModels.swift
+      - HouseMemoryProof/Domain.swift
+      - HouseMemoryProof/PoseRefinement.swift
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: visual-evaluation
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-${{ hashFiles('tooling/opencv/build-host.sh') }}
+      - name: Build shared production core as isolated command-line candidate
+        run: bash tooling/opencv/build-host.sh
+      - name: Generate independent query views and enforce oracle exclusion
+        run: |
+          python3 -m venv build/vision-env
+          build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+          build/vision-env/bin/python tooling/simulation/vision_fixture.py build/vision-fixture
+          build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-fixture --output build/vision-evaluation/replay.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-localization-evidence
+          path: build/vision-evaluation/
+          retention-days: 30

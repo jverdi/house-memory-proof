@@ -1,44 +1,6 @@
 import SwiftUI
 import PDFKit
 
-struct DrawingAlignment: Codable, Equatable {
-    var page: Int
-    var metresPerPoint: Double
-    var sheetPoints: [V3]
-    var housePoints: [V3]
-    var transform: Rigid
-    var fitMaximum: Double
-    var checkMaximum: Double
-    var sourceRevision: Int
-    var date = Date()
-}
-
-enum CheckedRegistration {
-    static func fit(source: [V3], target: [V3], tolerance: Double = 0.025) throws -> (Rigid, Double, Double) {
-        guard source.count >= 4, source.count == target.count,
-              source.allSatisfy({ $0.finite }), target.allSatisfy({ $0.finite }),
-              tolerance.isFinite, tolerance > 0,
-              let (transform, _) = Rigid.register(source: Array(source.prefix(3)), target: Array(target.prefix(3)))
-        else { throw HouseError.message("Supply three non-collinear fitting pairs and at least one independent check pair.") }
-        let errors = zip(source, target).map { (transform.apply($0.0) - $0.1).length }
-        let fit = errors.prefix(3).max() ?? .infinity
-        let check = errors.dropFirst(3).max() ?? .infinity
-        guard fit <= tolerance, check <= tolerance else {
-            throw HouseError.message("Alignment rejected: fitting error \((fit * 1000).formatted()) mm; independent check \((check * 1000).formatted()) mm. Both must be within \((tolerance * 1000).formatted()) mm.")
-        }
-        return (transform, fit, check)
-    }
-    static func coordinates(_ text: String) throws -> [V3] {
-        try text.split(separator: "\n").map { line in
-            let tokens = line.split(whereSeparator: { $0 == "," || $0 == " " || $0 == "\t" })
-            let values = tokens.compactMap { Double($0) }
-            guard tokens.count == 3, values.count == 3, values.allSatisfy({ $0.isFinite && abs($0) < 100000 })
-            else { throw HouseError.message("Each line must contain exactly three finite coordinates: x,y,z in metres.") }
-            return V3(values[0], values[1], values[2])
-        }
-    }
-}
-
 struct DrawingAlignmentPage: View {
     @EnvironmentObject var model: AppModel
     @Binding var drawing: Drawing

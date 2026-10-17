@@ -5,6 +5,12 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"51BFC28227CE7CD3D62C797B" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "VisualMapsPage.swift"; "sourceTree" = "<group>"; };
+		"B4682D9D41E2534774DF717E" = { "isa" = "PBXBuildFile"; "fileRef" = "51BFC28227CE7CD3D62C797B"; };
+
+		"6DA473F9AD9382E022546AE5" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "EvidenceModels.swift"; "sourceTree" = "<group>"; };
+		"1F068429EED77742F7F2ADBE" = { "isa" = "PBXBuildFile"; "fileRef" = "6DA473F9AD9382E022546AE5"; };
+
 "HXOPENCVFRAMEWORKFILE001"={isa=PBXFileReference;lastKnownFileType=wrapper.xcframework;path="build/opencv/opencv2.xcframework";sourceTree=SOURCE_ROOT;};
 "HXOPENCVFRAMEWORKBUILD01"={isa=PBXBuildFile;fileRef=HXOPENCVFRAMEWORKFILE001;};
 "9A8CFF079FCF535073158D92" = {isa=PBXFileReference; lastKnownFileType=sourcecode.cpp.cpp; path="../packages/visual-core/hx_vision_test.cpp"; sourceTree="<group>";};
@@ -153,7 +159,9 @@
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
-				"534A5F435ADDB25DA9F43232", "299A55BB4CA90F5AF0C2C0E8", "06CFF24A2BB4C7819F397F8D",
+				"534A5F435ADDB25DA9F43232",
+				"B4682D9D41E2534774DF717E",
+				"1F068429EED77742F7F2ADBE", "299A55BB4CA90F5AF0C2C0E8", "06CFF24A2BB4C7819F397F8D",
 				"A9FD196BA93493FC9390CDDB",
 				"2B026B402A4388EAC031733E",
 				"EA153299C66054F1D34ECB56",
@@ -202,7 +210,9 @@
 		"FC233BDA2344D97687F5A251" = {
 			"isa" = "PBXGroup";
 			"children" = (
-				"A33603BF79F74B056172D43B", "HXOPENCVFRAMEWORKFILE001", "9A8CFF079FCF535073158D92", "1EFD96950014CF02BB6EF525",
+				"A33603BF79F74B056172D43B",
+				"51BFC28227CE7CD3D62C797B",
+				"6DA473F9AD9382E022546AE5", "HXOPENCVFRAMEWORKFILE001", "9A8CFF079FCF535073158D92", "1EFD96950014CF02BB6EF525",
 				"BB8E85B2896F2C7B8300E558",
 				"E7D18531129348ABA638F292",
 				"357EB1E1123B6A09EADA4AAB",

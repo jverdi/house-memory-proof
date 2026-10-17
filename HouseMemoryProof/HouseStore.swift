@@ -3,7 +3,7 @@ import Foundation
 import SQLite3
 import SwiftUI
 
-final class Repository {
+final class Repository: EvidenceAssetReader {
   let root: URL
   private(set) var recoveryWarnings: [String] = []
   private var db: OpaquePointer?
