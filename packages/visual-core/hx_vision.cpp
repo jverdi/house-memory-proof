@@ -69,13 +69,16 @@ extern "C" int32_t hx_vision_pose(const double* xyz,const double* xy,uint32_t n,
  cv::Mat K=(cv::Mat_<double>(3,3)<<fx,0,cx,0,fy,cy,0,0,1),r,t,inliers;
  cv::theRNG().state=0x4858524159504e50ULL;
  if(!cv::solvePnPRansac(world,pixels,K,cv::noArray(),r,t,false,400,2.5,0.999,inliers,cv::SOLVEPNP_EPNP))return reject(1);
+ quality->inliers=uint32_t(inliers.rows);quality->fraction=double(inliers.rows)/n;
  if(inliers.rows<30||double(inliers.rows)/n<.6)return reject(2);
  std::vector<cv::Point3d> selected;std::vector<cv::Point2d> observations;std::set<int> cells;
  double minX=w,minY=h,maxX=0,maxY=0;
  for(int row=0;row<inliers.rows;row++){int i=inliers.at<int>(row);selected.push_back(world[i]);observations.push_back(pixels[i]);cells.insert(std::min(3,int(pixels[i].x*4/w))+4*std::min(2,int(pixels[i].y*3/h)));minX=std::min(minX,pixels[i].x);maxX=std::max(maxX,pixels[i].x);minY=std::min(minY,pixels[i].y);maxY=std::max(maxY,pixels[i].y);}
- if(cells.size()<6||maxX-minX<w*.3||maxY-minY<h*.3)return reject(3);
+ quality->image_cells=uint32_t(cells.size());quality->span_x=(maxX-minX)/w;quality->span_y=(maxY-minY)/h;
  cv::Mat points(selected.size(),3,CV_64F);for(size_t i=0;i<selected.size();i++){points.at<double>(i,0)=selected[i].x;points.at<double>(i,1)=selected[i].y;points.at<double>(i,2)=selected[i].z;}
  cv::PCA pca(points,cv::Mat(),cv::PCA::DATA_AS_ROW);
+ quality->spread_largest=pca.eigenvalues.at<double>(0);quality->spread_middle=pca.eigenvalues.at<double>(1);quality->spread_smallest=pca.eigenvalues.at<double>(2);
+ if(cells.size()<6||maxX-minX<w*.3||maxY-minY<h*.3)return reject(3);
  // Reject near-planar/linear ambiguity instead of inventing a tight pose bound.
  if(pca.eigenvalues.at<double>(0)<.09||pca.eigenvalues.at<double>(1)<.0225||pca.eigenvalues.at<double>(2)<.0016)return reject(4);
  cv::solvePnPRefineLM(selected,observations,K,cv::noArray(),r,t);
@@ -92,5 +95,5 @@ extern "C" int32_t hx_vision_pose(const double* xyz,const double* xy,uint32_t n,
  cv::Mat inverse=R.t(),position=-inverse*t;
  for(int row=0;row<4;row++)for(int col=0;col<4;col++)output[row*4+col]=row==col?1:0;
  for(int row=0;row<3;row++){for(int col=0;col<3;col++)output[row*4+col]=inverse.at<double>(row,col)*(col==0?1:-1);output[row*4+3]=position.at<double>(row)+(row==0?origin.x:row==1?origin.y:origin.z);}
- *quality={uint32_t(selected.size()),double(selected.size())/n,rms,p95,condition,0};return 1;
+ quality->rms_pixels=rms;quality->p95_pixels=p95;quality->condition=condition;quality->rejection=0;return 1;
 } catch(...){return -2;}

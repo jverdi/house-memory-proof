@@ -1,6 +1,8 @@
 import Foundation
 import simd
 
+struct OptimizedLandmark:Codable,Equatable {var point:V3;var controls:[PhotoControl]}
+
 struct PoseGraphSolution: Codable, Equatable {
   var fingerprint:String
   var cameras:[String:[Double]]
@@ -11,6 +13,7 @@ struct PoseGraphSolution: Codable, Equatable {
   var bundleCheckRMS:Double?=nil
   var bundleFitRMS:Double?=nil
   var bundlePointCount:Int?=nil
+  var landmarks:[OptimizedLandmark]?=nil
   var date=Date()
 }
 enum PoseGraph {

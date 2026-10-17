@@ -52,6 +52,7 @@ enum BundleRefinement {
     for i in observations.indices {solved[observations[i].id.uuidString]=Array(outputCameras[i*16..<(i+1)*16])}
     var solution=PoseGraphSolution(fingerprint:try PoseGraph.fingerprint(house:house,segment:segment),cameras:solved,edges:segment.poseSolution?.edges ?? 0,maximumEdgeResidual:segment.poseSolution?.maximumEdgeResidual ?? 0,excludedFrameCount:max(0,raw.count-observations.count),anchorObservationID:observations.first?.id)
     solution.bundleCheckRMS=quality.final_check_rms;solution.bundleFitRMS=quality.fit_rms;solution.bundlePointCount=pointCount
+    solution.landmarks=(0..<pointCount).map{OptimizedLandmark(point:V3(outputPoints[$0*3],-outputPoints[$0*3+2],outputPoints[$0*3+1]),controls:tracks[$0].controls)}
     var updated=house;guard let index=updated.segments.firstIndex(where:{$0.id==segment.id}) else{throw HouseError.message("Capture session is missing.")};updated.segments[index].poseSolution=solution
     feature.name="Optimized photograph details"
     feature.mesh=Mesh(vertices:(0..<pointCount).map{V3(outputPoints[$0*3],-outputPoints[$0*3+2],outputPoints[$0*3+1])},triangles:[])

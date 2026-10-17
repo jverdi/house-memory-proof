@@ -199,7 +199,13 @@ import Darwin
                 guard result.solution.anchorObservationID==anchorID,let before=graph.cameras[anchorID.uuidString],let after=result.solution.cameras[anchorID.uuidString],zip(before,after).allSatisfy({abs($0-$1)<1e-10}) else{return false}
                 capture.segments[0].poseSolution=result.solution;capture.features=[result.feature]
                 let decoded=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(capture));try decoded.validate()
-                return decoded.observations==original && decoded.segments[0].poseSolution==result.solution && (result.solution.bundleCheckRMS ?? 100)<2 && DerivedEvidence.currentIDs(decoded).contains(result.feature.id)
+                guard decoded.observations==original,decoded.segments[0].poseSolution==result.solution,(result.solution.bundleCheckRMS ?? 100)<2,DerivedEvidence.currentIDs(decoded).contains(result.feature.id),result.solution.landmarks?.count==result.solution.bundlePointCount else{return false}
+                let map=try VisualMapping.build(house:decoded,segment:decoded.segments[0],repo:repo),optimized=Set(result.solution.landmarks!.map{$0.point})
+                guard map.points.contains(where:{optimized.contains($0)}) else{return false}
+                var corrupted=decoded;corrupted.segments[0].poseSolution?.landmarks?[0].controls[0].observationID=UUID()
+                do{try corrupted.validate();return false}catch{}
+                var shifted=decoded;shifted.segments[0].poseSolution?.landmarks?[0].point.x+=0.01
+                return try VisualMapping.fingerprint(house:shifted,segment:shifted.segments[0]) != VisualMapping.fingerprint(house:decoded,segment:decoded.segments[0])
             }
             await check("RGB-only multi-view triangulation retains independent point provenance") {
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!

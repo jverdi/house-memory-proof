@@ -23,9 +23,10 @@ struct VisualMap: Codable {
 }
 enum VisualMapping {
   static let featureLimit=2000
+  struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v9-distributed-bundle-fit";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v10-optimized-landmarks";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -59,6 +60,14 @@ enum VisualMapping {
     let selected=PoseRefinement.selected(all,segment:segment,house:house).0.filter{$0.sharpness>=0.02}
     guard selected.count>=2 else{throw HouseError.message("Capture at least two overlapping, sharp depth views of this stage first.")}
     var map=VisualMap(segmentID:segment.id,roomID:segment.roomID,stageID:segment.stageID,frameID:segment.registration==nil ? segment.id:nil,fingerprint:try fingerprint(house:house,segment:segment),points:[],descriptors:Data(),views:[])
+    var optimized:[UUID:[PixelIdentity:V3]]=[:],conflicts:[UUID:Set<PixelIdentity>]=[:]
+    if let solution=segment.poseSolution,solution.fingerprint == (try? PoseGraph.fingerprint(house:house,segment:segment)),let landmarks=solution.landmarks {
+      for landmark in landmarks {for control in landmark.controls {
+        let key=PixelIdentity(control.u,control.v)
+        if let prior=optimized[control.observationID]?[key],prior != landmark.point {conflicts[control.observationID,default:[]].insert(key)}
+        optimized[control.observationID,default:[:]][key]=landmark.point
+      }}
+    }
     let retainedViews=keyframes(selected,limit:min(120,maximumViews))
     for o in retainedViews {
       try Task.checkCancellation()
@@ -81,7 +90,13 @@ enum VisualMapping {
         let tx=u*Double(w)-Double(x),ty=v*Double(h)-Double(y)
         let d=samples[4]*(1-tx)*(1-ty)+samples[5]*tx*(1-ty)+samples[7]*(1-tx)*ty+samples[8]*tx*ty,cx=(u*Double(o.width)-o.intrinsics[2])*d/o.intrinsics[0],cy = -(v*Double(o.height)-o.intrinsics[5])*d/o.intrinsics[4],cz = -d,m=o.camera
         let ar=V3(m[0]*cx+m[1]*cy+m[2]*cz+m[3],m[4]*cx+m[5]*cy+m[6]*cz+m[7],m[8]*cx+m[9]*cy+m[10]*cz+m[11])
-        var point=V3(ar.x,-ar.z,ar.y);if let t=segment.registration{point=t.apply(point)}
+        var point=V3(ar.x,-ar.z,ar.y)
+        // Reuse the jointly fitted landmark only at its exact feature identity,
+        // with independent image provenance and agreement with continuous depth.
+        // Descriptor matching and all query eligibility gates remain unchanged.
+        let key=PixelIdentity(u,v)
+        if conflicts[o.id]?.contains(key) != true,let landmark=optimized[o.id]?[key],(landmark-point).length<=0.025 {point=landmark}
+        if let t=segment.registration{point=t.apply(point)}
         map.points.append(point);map.descriptors.append(features.descriptors.subdata(in:i*32..<(i+1)*32))
       }
       let m=o.camera;var position=V3(m[3],-m[11],m[7]);if let t=segment.registration{position=t.apply(position)}
@@ -201,7 +216,7 @@ enum VisualMapping {
     let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
       hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(points.count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
     }}}
-    diagnostic?("Pooled source group: \(sources.count) sources, \(points.count) repeated features, rejection \(quality.rejection)")
+    diagnostic?("Pooled source group: \(sources.count) sources, \(points.count) repeated features, rejection \(quality.rejection), cells \(quality.image_cells), span \(quality.span_x)/\(quality.span_y), spectrum \(quality.spread_largest)/\(quality.spread_middle)/\(quality.spread_smallest)")
     guard accepted==1,Rigid(values:matrix).valid else{return nil}
     return Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:sources.map{$0.id})
   }
@@ -236,7 +251,7 @@ enum VisualMapping {
       let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
         hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
       }}}
-      diagnostic?("view \(view.observationID): matches \(count), pose \(accepted), rejection \(quality.rejection), inliers \(quality.inliers)")
+      diagnostic?("view \(view.observationID): matches \(count), pose \(accepted), rejection \(quality.rejection), inliers \(quality.inliers), cells \(quality.image_cells), span \(quality.span_x)/\(quality.span_y), spectrum \(quality.spread_largest)/\(quality.spread_middle)/\(quality.spread_smallest)")
       if accepted==1,Rigid(values:matrix).valid{candidates.append(Candidate(pose:Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:[view.observationID]),position:view.position,matches:matches))}
     }
     guard candidates.count>=2 else{
