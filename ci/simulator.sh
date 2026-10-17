@@ -26,9 +26,9 @@ revision="$(git rev-parse --short=10 HEAD)"
 build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
 xcodebuild build \
   -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
-  -configuration Debug -destination "generic/platform=iOS Simulator" \
+  -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData \
-  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \
   CURRENT_PROJECT_VERSION="$build_number" PROOF_SOURCE_REVISION="$revision" \
   2>&1 | tee build/evidence/simulator-build.log
 # Fresh hosted runners usually have no booted simulator. Handle an existing one too.
