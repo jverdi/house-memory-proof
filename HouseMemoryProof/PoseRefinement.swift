@@ -82,7 +82,9 @@ enum PoseRefinement {
   static func selected(_ observations: [Observation], segment: Segment, house: House) -> (
     [Observation], Bool
   ) {
-    if let optimized=PoseGraph.selected(observations,segment:segment,house:house){return (optimized,true)}
+    if let optimized = PoseGraph.selected(observations, segment: segment, house: house) {
+      return (optimized, true)
+    }
     let refined = observations.compactMap {
       refine($0, segment: segment, house: house)?.observation
     }

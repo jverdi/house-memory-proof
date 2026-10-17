@@ -113,7 +113,9 @@ enum TourDirector {
     }
     return (p, atan2(-f.x, f.y), asin(max(-1, min(1, f.normalized.z))))
   }
-  static func clearPath(_ a: V3, _ b: V3, house: House, options: SceneOptions, clearance: SpatialClearance)
+  static func clearPath(
+    _ a: V3, _ b: V3, house: House, options: SceneOptions, clearance: SpatialClearance
+  )
     -> Bool
   {
     let distance = (b - a).length

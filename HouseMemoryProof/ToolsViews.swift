@@ -34,7 +34,7 @@ struct ToolsPage: View {
           }
           NavigationLink("Printable references") { ReferencesPage(house: house) }
           NavigationLink("Visual references") { VisualMapsPage(house: house) }
-        NavigationLink("Register capture segments") { RegistrationPage(house: house) }
+          NavigationLink("Register capture segments") { RegistrationPage(house: house) }
           NavigationLink("Capture coverage") { CoveragePage(house: house) }
           NavigationLink("Reconstruct saved depth") { ReconstructionPage(house: house) }
         }
@@ -502,22 +502,32 @@ struct ReconstructionPage: View {
             }
           }.disabled(model.busy)
           Button("Refine local camera poses") {
-            guard let repo=model.repository else{return}
-            let revision=house.revision
+            guard let repo = model.repository else { return }
+            let revision = house.revision
             model.perform("Matching depth features and refining camera poses") {
-              let solution=try await LocalWorker.run {try PoseGraph.build(house:house,segment:s,repo:repo)}
-              guard model.house?.id==house.id,model.house?.revision==revision else{throw HouseError.message("Capture changed; camera solution not published.")}
+              let solution = try await LocalWorker.run {
+                try PoseGraph.build(house: house, segment: s, repo: repo)
+              }
+              guard model.house?.id == house.id, model.house?.revision == revision else {
+                throw HouseError.message("Capture changed; camera solution not published.")
+              }
               model.edit { h in
-                guard let index=h.segments.firstIndex(where:{$0.id==s.id}) else{return}
-                h.segments[index].poseSolution=solution
-                h.visualMaps.removeAll{$0.segmentID==s.id}
-                for i in h.features.indices where h.features[i].segmentID==s.id && !h.features[i].sourceIDs.isEmpty {h.features[i].artifactValid=false;h.features[i].hidden=true}
+                guard let index = h.segments.firstIndex(where: { $0.id == s.id }) else { return }
+                h.segments[index].poseSolution = solution
+                h.visualMaps.removeAll { $0.segmentID == s.id }
+                for i in h.features.indices
+                where h.features[i].segmentID == s.id && !h.features[i].sourceIDs.isEmpty {
+                  h.features[i].artifactValid = false
+                  h.features[i].hidden = true
+                }
               }
               return nil
             }
           }.disabled(model.busy)
-          if let solution=s.poseSolution {
-            Text("Local graph: \(solution.cameras.count) camera views, \(solution.edges) matched connections. Rebuild surfaces and visual references after refinement. Residuals do not establish accuracy.").font(.caption)
+          if let solution = s.poseSolution {
+            Text(
+              "Local graph: \(solution.cameras.count) camera views, \(solution.edges) matched connections. Rebuild surfaces and visual references after refinement. Residuals do not establish accuracy."
+            ).font(.caption)
           }
           Button("Reconstruct triangle surface") {
             guard let repo = model.repository else { return }
@@ -596,12 +606,18 @@ struct AboutPage: View {
         Text(
           "SQLite is public domain. SwiftUI, ARKit, SceneKit, Metal, Vision, WebKit and AVFoundation are system frameworks. The application and fusion core are project source."
         )
-        Text("Native visual matching: OpenCV 4.13.0, Apache License 2.0. Built from official pinned source.")
+        Text(
+          "Native visual matching: OpenCV 4.13.0, Apache License 2.0. Built from official pinned source."
+        )
         Text(visionLicense).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
         Text(license).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
       }.padding()
     }.navigationTitle("About").task {
-      if let url=Bundle.main.url(forResource:"IFC",withExtension:nil)?.appendingPathComponent("OPENCV-LICENSE.txt"),let text=try? String(contentsOf:url,encoding:.utf8){visionLicense=text}
+      if let url = Bundle.main.url(forResource: "IFC", withExtension: nil)?.appendingPathComponent(
+        "OPENCV-LICENSE.txt"), let text = try? String(contentsOf: url, encoding: .utf8)
+      {
+        visionLicense = text
+      }
       if let url = Bundle.main.url(forResource: "IFC", withExtension: nil)?.appendingPathComponent(
         "LICENSE.md"), let text = try? String(contentsOf: url, encoding: .utf8)
       {

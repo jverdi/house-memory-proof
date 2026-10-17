@@ -12,7 +12,8 @@ Acceptance remains the runbook's gates. Implemented features below are not equiv
 - [x] Implement drawings/IFC/PLY imports, model/video outputs and streaming archives.
 - [x] Pass integrated source 94b6decb2e: 30 native tests, XCUITest, portable cases, independent GLB/USD/ZIP readers.
 - [x] Validate IFC4, connections, drawing controls, tours, clearance and capture-journal recovery: source a12d1249e8, 47 native tests plus integrated UI/export workflow.
-- [ ] Validate newly integrated OpenCV visual references and isolated image replay.
+- [x] Validate native OpenCV image fixture and bounded local pose graph: source 188f337048, 54 native tests plus integrated workflow.
+- [ ] Validate isolated host replay, additional geometry sweep, new photo point tool and cross-room rejection.
 - [ ] Complete robust optimization/localization, protected house-scale simulation and remaining software gates.
 - [ ] Complete owner-device resource and physical precision qualification.
 - [ ] Upload one final accepted build and verify Apple availability.

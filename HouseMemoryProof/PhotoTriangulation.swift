@@ -14,7 +14,7 @@ enum PhotoTriangulation {
     }
     for i in 0..<3 {for j in 0..<i {guard simd_distance(origins[i],origins[j])>=0.10 else{throw HouseError.message("Choose photographs taken from positions at least 10 cm apart.")}}}
     guard simd_dot(directions[0],directions[1])<cos(5*Double.pi/180) else{throw HouseError.message("The first two views need more angular separation. Choose wider translated viewpoints.")}
-    var normal=simd_double3x3(repeating:0),right=SIMD3<Double>(repeating:0)
+    var normal=simd_double3x3(diagonal:SIMD3<Double>(repeating:0)),right=SIMD3<Double>(repeating:0)
     for i in 0..<2 {
       let d=directions[i];let projector=matrix_identity_double3x3-simd_double3x3(columns:(d*d.x,d*d.y,d*d.z))
       normal += projector;right += projector*origins[i]
