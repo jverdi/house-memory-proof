@@ -31,7 +31,7 @@ enum TextureBuilder {
   }
   static func build(house: House, segment: Segment, repo: Repository) throws -> [Feature] {
     let raw = house.observations.filter {
-      $0.segmentID == segment.id && $0.depth != nil && !$0.documentary && $0.light > 100
+      $0.segmentID == segment.id && $0.depth != nil && !$0.documentary
     }.sorted { $0.sharpness > $1.sharpness }
     let usesSurface = house.features.contains {
       $0.segmentID == segment.id && $0.name == "Reconstructed depth surface"
@@ -39,7 +39,7 @@ enum TextureBuilder {
     }
     let observations =
       usesSurface ? PoseRefinement.selected(raw, segment: segment, house: house).0 : raw
-    let candidates = Array(observations.prefix(16))
+    let candidates = Array(observations.filter{$0.light>100}.prefix(16))
     let cameras = try candidates.map {
       Camera(observation: $0, depth: try $0.depth.map { try repo.read($0) })
     }

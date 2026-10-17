@@ -79,6 +79,10 @@ enum PoseRefinement {
     observation.camera = array(corrected)
     return Result(observation: observation, boards: candidates.map { $0.0 }, maxDisagreement: worst)
   }
+  static func selectedForHouse(_ house:House)->[Observation] {
+    let grouped=Dictionary(grouping:house.observations.filter{!$0.documentary},by:{$0.segmentID})
+    return house.segments.flatMap{selected(grouped[$0.id] ?? [],segment:$0,house:house).0}
+  }
   static func selected(_ observations: [Observation], segment: Segment, house: House) -> (
     [Observation], Bool
   ) {

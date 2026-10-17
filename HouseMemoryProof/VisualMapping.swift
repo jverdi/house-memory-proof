@@ -48,8 +48,8 @@ enum VisualMapping {
     guard ok else{throw HouseError.message("Visual map image allocation failed.")};return (gray,w,h)
   }
   static func build(house:House,segment:Segment,repo:any EvidenceAssetReader)throws->VisualMap {
-    let all=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary && $0.sharpness>=0.02}
-    let (selected,_)=PoseRefinement.selected(all,segment:segment,house:house)
+    let all=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary}
+    let selected=PoseRefinement.selected(all,segment:segment,house:house).0.filter{$0.sharpness>=0.02}
     guard selected.count>=2 else{throw HouseError.message("Capture at least two overlapping, sharp depth views of this stage first.")}
     var map=VisualMap(segmentID:segment.id,roomID:segment.roomID,stageID:segment.stageID,frameID:segment.registration==nil ? segment.id:nil,fingerprint:try fingerprint(house:house,segment:segment),points:[],descriptors:Data(),views:[])
     let count=min(12,selected.count)

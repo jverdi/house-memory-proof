@@ -168,6 +168,7 @@ extension UIColor {
   @Published var flying = false
   @Published var orbit = false
   private var clearance = SpatialClearance(features: [])
+  private var cameraCorridor: [V3] = []
   @Published var navigationNotice = ""
   var house: House?
   var options = SceneOptions()
@@ -214,6 +215,7 @@ extension UIColor {
     options = o
     revision = h.revision
     clearance = SpatialClearance(features: Exporter.canonicalFeatures(h, options: o))
+    cameraCorridor = NavigationGeometry.positions(house:h,options:o)
     navigationNotice = clearance.complete ? "" : "Walk collision budget exceeded. Choose one room or use Free fly."
     let scene = SceneBuilder.scene(h, options: o)
     scene.rootNode.addChildNode(camera)
@@ -245,7 +247,7 @@ extension UIColor {
     var p = room.origin + V3(room.size.x / 2, room.size.y / 2, 1.6)
     var direction = V3(0.55, 1, -0.08)
     if let h = house,
-      let observation = h.observations.last(where: {
+      let observation = PoseRefinement.selectedForHouse(h).last(where: {
         $0.roomID == room.id
           && SceneBuilder.eligibleStages(h, options: options).contains($0.stageID)
           && (SceneBuilder.activeUnregisteredSegment(h, options: options) == nil
@@ -347,7 +349,7 @@ extension UIColor {
         if h.isDemo && h.observations.isEmpty {
           guard NavigationGeometry.allowed(V3(ar: to), house: h) else { return }
         } else {
-          guard NavigationGeometry.observed(V3(ar: to), house: h, options: options) else { return }
+          guard NavigationGeometry.observed(V3(ar: to), positions: cameraCorridor) else { return }
         }
       }
       camera.simdPosition = to
@@ -392,21 +394,18 @@ struct Joystick: View {
 }
 
 enum NavigationGeometry {
-  static func observed(_ p: V3, house: House, options: SceneOptions) -> Bool {
-    let stages = SceneBuilder.eligibleStages(house, options: options)
-    let active = SceneBuilder.activeUnregisteredSegment(house, options: options)
-    return house.observations.contains { o in
-      guard !o.documentary, stages.contains(o.stageID),
-        options.room == nil || options.room == o.roomID, active == nil || active == o.segmentID
-      else { return false }
-      let m = o.camera
-      var q = V3(m[3], -m[11], m[7])
-      if let t = house.segments.first(where: { $0.id == o.segmentID })?.registration {
-        q = t.apply(q)
-      }
-      return abs(p.z - q.z) < 0.4 && hypot(p.x - q.x, p.y - q.y) < 0.65
+  static func positions(house:House,options:SceneOptions)->[V3] {
+    let stages=SceneBuilder.eligibleStages(house,options:options)
+    let active=SceneBuilder.activeUnregisteredSegment(house,options:options)
+    return PoseRefinement.selectedForHouse(house).compactMap { o in
+      guard stages.contains(o.stageID),options.room==nil || options.room==o.roomID,active==nil || active==o.segmentID else{return nil}
+      return TourDirector.pose(o,house:house).0
     }
   }
+  static func observed(_ p:V3,positions:[V3])->Bool {
+    positions.contains{abs(p.z-$0.z)<0.4 && hypot(p.x-$0.x,p.y-$0.y)<0.65}
+  }
+  static func observed(_ p:V3,house:House,options:SceneOptions)->Bool {observed(p,positions:positions(house:house,options:options))}
   static func allowed(_ p: V3, house: House) -> Bool {
     let rooms = house.rooms.filter { abs(($0.origin.z + 1.6) - p.z) < 0.5 }
     for r in rooms {

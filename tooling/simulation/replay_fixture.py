@@ -18,19 +18,19 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
  denied=root/'oracle.json';denied.write_text(json.dumps(oracle))
  # System libraries / executables are readable. Only candidate data and the frozen
  # executable are admitted from the workspace. The evaluator's oracle is outside.
- profile='(version 1)\n(deny default)\n(allow process*)\n(allow sysctl-read)\n(allow mach-lookup)\n(allow file-read-metadata)\n'
+ profile='(version 1)\n(deny default)\n(allow process*)\n(allow sysctl-read)\n(allow mach-lookup)\n(allow file-read-metadata)\n(allow file-read-data (literal "/"))\n'
  for directory in ['/System','/usr','/bin','/Library',str(candidate)]:profile+='(allow file-read* file-map-executable (subpath '+json.dumps(directory)+'))\n'
  profile+='(allow file-read* file-map-executable (literal '+json.dumps(str(exe))+'))\n'
  profile+='(allow file-write* (subpath '+json.dumps(str(candidate/'temp'))+'))\n(allow file-write* (literal "/dev/null"))\n'
  policy=root/'candidate.sb';policy.write_text(profile)
  sandbox=['/usr/bin/sandbox-exec','-f',str(policy)]
- positive=subprocess.run(sandbox+['/bin/cat',str(candidate/'house.json')],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
- negative=subprocess.run(sandbox+['/bin/cat',str(denied)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+ positive=subprocess.run(sandbox+['/bin/cat',str(candidate/'house.json')],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,cwd=candidate)
+ negative=subprocess.run(sandbox+['/bin/cat',str(denied)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,cwd=candidate)
  if positive.returncode!=0:
-  diagnostics=subprocess.run(['/usr/bin/log','show','--last','1m','--style','compact','--predicate','process == "cat" OR eventMessage CONTAINS "Sandbox:"'],capture_output=True,text=True,timeout=20)
+  diagnostics=subprocess.run(['/usr/bin/log','show','--last','1m','--style','compact','--predicate','process == "cat" OR eventMessage CONTAINS "Sandbox: cat(" OR eventMessage CONTAINS "Sandbox: vision-replay("'],capture_output=True,text=True,timeout=20)
   a.output.parent.mkdir(parents=True,exist_ok=True);a.output.with_suffix('.sandbox.log').write_text(diagnostics.stdout[-30000:]+diagnostics.stderr[-3000:])
  assert positive.returncode==0 and negative.returncode!=0, f'Oracle exclusion controls failed: permitted={positive.returncode} ({positive.stderr.decode()[-1000:]}), denied={negative.returncode} ({negative.stderr.decode()[-1000:]})'
- result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')]+(['--refine'] if a.refine else []),capture_output=True,text=True,timeout=180)
+ result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')]+(['--refine'] if a.refine else []),capture_output=True,text=True,timeout=180,cwd=candidate)
  if result.returncode:raise RuntimeError(result.stderr[-5000:])
  report=json.loads(result.stdout);by_name={x['image']:x for x in report['queries']};positive_accepted=0;false_accepts=0;worst=0.
  for q in oracle['queries']:

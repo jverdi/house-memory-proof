@@ -20,7 +20,7 @@ enum PoseGraph {
       guard let pose=solution.cameras[observation.id.uuidString],Rigid(values:pose).valid else{return nil}
       var o=observation;o.camera=pose;return o
     }
-    return corrected.count>=3 ? corrected:nil
+    return corrected
   }
   static func build(house:House,segment:Segment,repo:any EvidenceAssetReader)throws->PoseGraphSolution {
     var raw=segment;raw.poseSolution=nil

@@ -31,6 +31,7 @@ enum TourDirector {
   static func plan(_ h: House, duration: Double = 20, options: SceneOptions = SceneOptions())
     -> TourPlan
   {
+    let observations=PoseRefinement.selectedForHouse(h)
     var shots: [TourShot] = []
     var excluded: [String] = []
     for r in h.rooms where options.room == nil || options.room == r.id {
@@ -43,14 +44,15 @@ enum TourDirector {
           TourShot(
             roomID: r.id, position: r.origin + V3(r.size.x / 2, r.size.y / 2, 1.6), yaw: 0,
             pitch: 0.08, caption: r.name + " · SYNTHETIC DEMONSTRATION", duration: 5))
-      } else if let obs = h.observations.last(where: {
+      } else if let obs = observations.last(where: {
         $0.roomID == r.id && !$0.documentary && stages.contains($0.stageID)
           && (unregistered == nil || $0.segmentID == unregistered)
       }) {
-        let samples = h.observations.filter {
+        let samples = observations.filter {
           $0.roomID == r.id && $0.segmentID == obs.segmentID && !$0.documentary
         }.sorted { $0.timestamp < $1.timestamp }
         let clearance = SpatialClearance(features: Exporter.canonicalFeatures(h, options: scope))
+        let positions=NavigationGeometry.positions(house:h,options:scope)
         var moves: [TourShot] = []
         if samples.count >= 2 {
           for i in 1..<samples.count {
@@ -59,7 +61,7 @@ enum TourDirector {
             guard b.timestamp > a.timestamp, b.timestamp - a.timestamp < 5 else { continue }
             let start = pose(a, house: h)
             let end = pose(b, house: h)
-            guard clearPath(start.0, end.0, house: h, options: scope, clearance: clearance) else {
+            guard clearPath(start.0, end.0, house: h, options: scope, clearance: clearance, positions:positions) else {
               continue
             }
             moves.append(
@@ -114,15 +116,16 @@ enum TourDirector {
     return (p, atan2(-f.x, f.y), asin(max(-1, min(1, f.normalized.z))))
   }
   static func clearPath(
-    _ a: V3, _ b: V3, house: House, options: SceneOptions, clearance: SpatialClearance
+    _ a: V3, _ b: V3, house: House, options: SceneOptions, clearance: SpatialClearance, positions: [V3]? = nil
   )
     -> Bool
   {
     let distance = (b - a).length
     guard distance >= 0.08, distance <= 1, abs(a.z - b.z) < 0.25 else { return false }
+    let corridor=positions ?? NavigationGeometry.positions(house:house,options:options)
     for i in 0...10 {
       guard
-        NavigationGeometry.observed(a + (b - a) * (Double(i) / 10), house: house, options: options)
+        NavigationGeometry.observed(a + (b - a) * (Double(i) / 10), positions:corridor)
       else { return false }
     }
     return clearance.isClear(from: a, to: b, radius: 0.15)
