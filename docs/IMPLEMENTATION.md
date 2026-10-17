@@ -6,7 +6,7 @@ Updated during the October 17, 2026 implementation session. This document record
 
 - Prior delivery proof: build 2.1 was installed by the owner.
 - Current implementation: experimental, native integration in progress.
-- Intermediate TestFlight uploads: disabled.
+- One owner-requested current-state TestFlight snapshot is authorized: build 161.1 from 2fae54ff2d, workflow 39078429529. Upload/Apple processing remain pending until verified below. Subsequent development commits do not upload.
 - Production readiness: **not established**.
 - Field precision profile: **disabled**. No synthetic metric enables one.
 - No promise that only field calibration remains: substantial software acceptance work remains below.
@@ -472,3 +472,24 @@ Runtime `be375307`, run 39073833450, passes all four stress shards and the uncha
 The summary artifact SHA-256 `1868f462de781d03ca406de7f21b22739908ee7f66ba12c8817505d4af7f94f3` was independently verified in run 39075810178. Aggregate results and artifact references are retained in `docs/evidence/baseline-be375-stress-summary.json`. Detailed camera/identifier reports were not committed after automatic approval review blocked their public publication; aggregate-only retention is used for this checkpoint.
 
 This completes validation of the camera-order repair against the existing native, interface, reader, rendered, coded and analytic stress suites. It does not satisfy finished-stage natural localization, the full protected-house/sensor/topology suite, owner-device workloads or physical precision. The controlled SIFT/RootSIFT comparison is rejected for availability. Production stays on AKAZE, precision stays disabled, and no intermediate TestFlight upload occurred.
+
+### Owner-requested current-state TestFlight and continued qualification
+
+The owner authorized one current-state TestFlight build, followed by continued implementation directly on main. Commit 2fae54ff2d changes only the one-shot release condition; its runtime matches the previously verified be375307 source. Build 161.1 independently passes 102/102 native checks in 204.872 seconds. The native checkpoint ZIP digest was independently verified (artifact 12118206913, SHA-256 feb644eea93cf136d0001e5e43386ba472ddf371b9efb4e0eee7684cb411cea9). UI/export, signing, upload and Apple readiness must finish before delivery is claimed. The accepted-release tag and automatic renewal remain unchanged.
+
+### Observed finished-stage map qualification
+
+The previous paired fixtures queried a rough-in map after its construction texture was covered. The runbook also requires observed finished maps. A separate fixture mode now supplies genuine finished-stage source photographs, preserves different held query viewpoints and keeps the original paired failures unchanged. Source 54d89ef6 compiles the unchanged localization runtime and runs both development layouts at 384 and 768 native pixels. All 80 targeted negative queries reject. Both 768-pixel cases accept 19/20 nominal queries (95%) with 5.676 and 5.407 mm worst accepted error, passing the unchanged development gates. At 384 pixels, one layout passes and the other accepts all 20 queries but fails at 31.301 mm p95 / 36.667 mm worst. This is not a full-house or phone qualification and does not waive the retained low-resolution or cross-stage failures. Independently SHA-verified aggregate evidence is in docs/evidence/finished-maps-54d8-summary.json.
+
+### IFC, drawing revisions, archive integrity and search hardening
+
+- IFC conversion now enforces total vertex/index budgets at both JavaScript and Swift boundaries and checks final geometry counts before publishing. Native cases add rotated nested placement, out-of-envelope coordinate refusal/reuse, malformed geometry and total-budget boundaries.
+- Drawing overlays bind the source asset, page, scale, room and checked alignment. Input changes hide the overlay and invalidate dependent annotations/measurements while preserving geometry. Earlier overlays lacking that provenance require rebuilding once. Cosmetic names/notes do not invalidate alignment.
+- ZIP/ZIP64 restores now validate the central directory, local-header agreement, offsets and entry counts. Corrupt-directory and sparse-file offsets beyond 4 GiB are tested separately from a complete large-payload transfer.
+- Evidence search includes room/stage metadata, uses a cancellable off-main index and pages results in groups of 200. A 50,000-photo metadata benchmark and a room-plus-system UI workflow are added; physical-phone performance is still required.
+
+These changes are committed but await the integrated native run. No simulator or field acceptance is inferred from source inspection.
+
+### Contradictory foreground/depth evidence
+
+Source 09f4ce87 stops a unique optimized photograph landmark from falling back onto a disagreeing depth surface. A foreground detail with background depth now removes that correspondence. Conflicting optimized feature identities also abstain. The existing 25 mm consistency bound is unchanged; visual/pose fingerprints advance to v14. The regression modifies an actually retained image-track landmark and verifies fewer map correspondences with immutable camera originals. Full native, four-house, finished-map and 70-case analytic replays are required for this source. This is not a complete thin-service reconstruction qualification.

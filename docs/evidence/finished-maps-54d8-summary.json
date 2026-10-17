@@ -1,0 +1,78 @@
+{
+  "sourceRevision": "54d89ef68fe8d5da84b260b3c5c5fef59219ec98",
+  "candidateSHA256": "baa72b857e2859ecb8e77007a170d86cd1cabe667a02f92bb1455fe23c9fcc1a",
+  "workflowRun": 39078932733,
+  "artifactID": 12118241975,
+  "artifactSHA256": "aa5cea1a686dae625b45ee526a915ea0bfa0131b4122ea947cda76e14668ec72",
+  "artifactDigestIndependentlyVerified": true,
+  "cases": [
+    {
+      "layout": "development-a",
+      "imageWidth": 384,
+      "passed": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.009039452486137972,
+      "worstAcceptedPositionErrorMetres": 0.011597509008981028,
+      "oracleReadDenied": true,
+      "mapCount": 4,
+      "optimizedCameraCount": 24,
+      "maximumOptimizedCameraPositionErrorMetres": 0.004841341096779399
+    },
+    {
+      "layout": "development-a",
+      "imageWidth": 768,
+      "passed": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 19,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.005675547125305585,
+      "worstAcceptedPositionErrorMetres": 0.005675547125305585,
+      "oracleReadDenied": true,
+      "mapCount": 4,
+      "optimizedCameraCount": 24,
+      "maximumOptimizedCameraPositionErrorMetres": 0.003625998663870436
+    },
+    {
+      "layout": "development-b",
+      "imageWidth": 384,
+      "passed": false,
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.03130063365245813,
+      "worstAcceptedPositionErrorMetres": 0.036667350434082896,
+      "oracleReadDenied": true,
+      "mapCount": 4,
+      "optimizedCameraCount": 24,
+      "maximumOptimizedCameraPositionErrorMetres": 0.008506454488777342
+    },
+    {
+      "layout": "development-b",
+      "imageWidth": 768,
+      "passed": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 19,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.005407035372978835,
+      "worstAcceptedPositionErrorMetres": 0.005407035372978835,
+      "oracleReadDenied": true,
+      "mapCount": 4,
+      "optimizedCameraCount": 24,
+      "maximumOptimizedCameraPositionErrorMetres": 0.0029886979504265827
+    }
+  ],
+  "productionQualified": false,
+  "limitations": [
+    "Each case is a four-room, two-level layout with partial corner capture, not complete-house coverage.",
+    "Finished source images and query images are independently rendered at each raster size; no image is upscaled.",
+    "The failed 384-pixel case remains required and retained.",
+    "Rough-to-finished matching without a finished source map remains unresolved.",
+    "No calibrated phone sensor model, full-house registration, navigation or physical qualification."
+  ]
+}
