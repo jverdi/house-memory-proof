@@ -68,8 +68,12 @@ app_root="$app_data/Documents/HouseXray"
 if [ -f "$app_data/Library/Application Support/HouseXray/house.sqlite" ]; then app_root="$app_data/Library/Application Support/HouseXray"; fi
 for attempt in $(seq 1 150); do
   if [ -f "$app_root/self-test.json" ]; then break; fi
+  if [ "$((attempt % 15))" -eq 0 ] && [ -f "$app_root/self-test-progress.json" ]; then
+    cat "$app_root/self-test-progress.json"
+  fi
   sleep 2
 done
+if [ -f "$app_root/self-test-progress.json" ]; then cp "$app_root/self-test-progress.json" build/evidence/native-progress.json; fi
 cp "$app_root/self-test.json" build/evidence/native-self-test.json
 cp "$app_root/test.hxray" build/evidence/test.hxray
 cp "$app_root/house-surface.glb" build/evidence/house-surface.glb

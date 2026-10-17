@@ -15,13 +15,19 @@ import Darwin
         let wasBusy=model.busy;model.busy=true
         defer{model.busy=wasBusy}
         let runStarted=ProcessInfo.processInfo.systemUptime
-        func check(_ name:String,_ body:()throws->Bool) async {
+        func mark(_ name:String,_ state:String="running") {
             model.status=name
+            let progress:[String:Any]=["test":name,"state":state,"completedChecks":results.count,"elapsedSeconds":ProcessInfo.processInfo.systemUptime-runStarted,"memory":memorySample()]
+            if let data=try? JSONSerialization.data(withJSONObject:progress,options:[.sortedKeys]) {try? DurableFiles.write(data,to:mainRepo.root.appendingPathComponent("self-test-progress.json"))}
+        }
+        func check(_ name:String,_ body:()throws->Bool) async {
+            mark(name)
             // Let the progress panel paint between bounded native checks.
             try? await Task.sleep(nanoseconds:20_000_000)
             let started=ProcessInfo.processInfo.systemUptime
             do{try Task.checkCancellation();let ok=try body();results.append(["test":name,"passed":ok,"seconds":ProcessInfo.processInfo.systemUptime-started])}
             catch{results.append(["test":name,"passed":false,"error":error.localizedDescription,"seconds":ProcessInfo.processInfo.systemUptime-started])}
+            mark(name,"completed")
         }
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
@@ -513,10 +519,11 @@ import Darwin
                 results.append(["test":"Noisy simulated house capture to native surface","passed":surface.mesh.valid && surface.mesh.triangles.count>300,"vertices":surface.mesh.vertices.count,"precisionQualified":false])
             }catch{results.append(["test":"Paired simulated house integration","passed":false,"error":error.localizedDescription])}
             if includeMovie || ProcessInfo.processInfo.arguments.contains("--video-test") {
-                model.status="Checking 100-space scene capacity…"
+                mark("100-space scene capacity")
                 do{results.append(try await largeSceneReport(root:mainRepo.root))}
                 catch{results.append(["test":"100-space two-stage capacity and native streamed render","passed":false,"error":error.localizedDescription])}
                 do {
+                    mark("1080p30 movie encode and cache reuse")
                     let started=ProcessInfo.processInfo.systemUptime
                     let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:10,width:1920,height:1080){model.progress=$0}
                     let directory=repo.root.appendingPathComponent("tours"),all=FileManager.default.enumerator(at:directory,includingPropertiesForKeys:[.contentModificationDateKey])!
@@ -537,6 +544,7 @@ import Darwin
         let platform="physical iPhone"
         #endif
         let report:[String:Any]=["deviceModel":UIDevice.current.model,"systemVersion":UIDevice.current.systemVersion,"physicalMemoryBytes":ProcessInfo.processInfo.physicalMemory,"processMemory":memorySample(),"elapsedSeconds":ProcessInfo.processInfo.systemUptime-runStarted,"sourceRevision":Bundle.main.object(forInfoDictionaryKey:"ProofSourceRevision") as? String ?? "local","build":Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "local","platform":platform,"date":ISO8601DateFormatter().string(from:Date()),"tests":results,"passed":results.allSatisfy{($0["passed"] as? Bool)==true},"fieldAccuracyValidated":false,"precisionProfileEnabled":false]
+        mark("Native diagnostics","completed")
         do{let bytes=try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]);try bytes.write(to:mainRepo.root.appendingPathComponent("self-test.json"),options:.atomic)}catch{model.error=error.localizedDescription}
         try? FileManager.default.removeItem(at:folder)
     }
