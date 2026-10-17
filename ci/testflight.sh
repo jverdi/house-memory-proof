@@ -2,6 +2,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
+python3 ci/apple_access.py
+python3 - <<'PY'
+import json
+r = json.load(open("build/evidence/apple-access.json"))
+if not r["app_record_exists"]:
+    raise SystemExit("The matching App Store Connect app record is missing.")
+PY
 python3 - <<'PY'
 import os, re
 required = ['APPLE_TEAM_ID', 'APP_BUNDLE_ID', 'ASC_KEY_ID', 'ASC_ISSUER_ID', 'ASC_PRIVATE_KEY_P8']
