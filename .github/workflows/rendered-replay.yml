@@ -38,6 +38,10 @@ jobs:
           path: build/opencv-host
           key: opencv-4.13.0-macos14-arm64-v1-sdk
           restore-keys: opencv-4.13.0-macos14-arm64-v1-
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
       - run: bash tooling/opencv/build-host.sh
       - name: Evaluate unchanged reference-target rendering
         run: python3 tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/render-input/rendered-fixture --output build/vision-evaluation/rendered.json --refine

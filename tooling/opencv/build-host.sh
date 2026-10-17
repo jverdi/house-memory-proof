@@ -22,11 +22,13 @@ clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 \
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 \
   -F build/opencv-host -c packages/visual-core/hx_vision_test.cpp -o build/vision-core-test.o
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-host -c packages/visual-core/hx_graph.cpp -o build/graph-core.o
+bash tooling/solver/build.sh host
+clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -I build/ceres/host/include -c packages/visual-core/hx_bundle.cpp -o build/bundle-core.o
 swiftc -O -swift-version 5 -parse-as-library -target arm64-apple-macos14.0 \
   -import-objc-header packages/visual-core/hx_replay.h \
   HouseMemoryProof/Domain.swift HouseMemoryProof/EvidenceModels.swift \
-  HouseMemoryProof/PoseRefinement.swift HouseMemoryProof/VisualMapping.swift HouseMemoryProof/PoseGraph.swift HouseMemoryProof/ReferenceRegistration.swift \
-  tooling/simulation/VisionReplay.swift build/vision-core.o build/vision-core-test.o build/graph-core.o \
+  HouseMemoryProof/PoseRefinement.swift HouseMemoryProof/VisualMapping.swift HouseMemoryProof/PoseGraph.swift HouseMemoryProof/ReferenceRegistration.swift HouseMemoryProof/PhotoReconstruction.swift HouseMemoryProof/BundleRefinement.swift \
+  tooling/simulation/VisionReplay.swift build/vision-core.o build/vision-core-test.o build/graph-core.o build/bundle-core.o build/ceres/host/lib/libceres.a \
   -F build/opencv-host -framework opencv2 -framework Accelerate -framework OpenCL \
   -framework Foundation -framework CoreGraphics -framework ImageIO -lc++ -lz \
   -o build/vision-replay

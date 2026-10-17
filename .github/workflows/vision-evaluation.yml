@@ -17,6 +17,8 @@ on:
       - HouseMemoryProof/PoseRefinement.swift
       - HouseMemoryProof/PoseGraph.swift
       - HouseMemoryProof/ReferenceRegistration.swift
+      - HouseMemoryProof/BundleRefinement.swift
+      - HouseMemoryProof/PhotoReconstruction.swift
   workflow_dispatch:
 permissions:
   contents: read
@@ -37,6 +39,10 @@ jobs:
           path: build/opencv-host
           key: opencv-4.13.0-macos14-arm64-v1-sdk
           restore-keys: opencv-4.13.0-macos14-arm64-v1-
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
       - name: Build shared production core as isolated command-line candidate
         run: bash tooling/opencv/build-host.sh
       - name: Preserve compiled SDK even if candidate qualification fails
@@ -51,6 +57,8 @@ jobs:
           build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
           build/vision-env/bin/python tooling/simulation/vision_fixture.py build/vision-fixture
           build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-fixture --output build/vision-evaluation/replay.json
+      - name: Evaluate joint optimization against independent query views
+        run: build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture build/vision-fixture --output build/vision-evaluation/bundle-replay.json --refine --bundle
       - name: Exercise additional development room geometries
         run: build/vision-env/bin/python tooling/simulation/vision_matrix.py --executable build/vision-replay --output build/vision-evaluation/diversity
       - uses: actions/upload-artifact@v4

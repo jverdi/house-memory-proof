@@ -20,12 +20,13 @@ final class DiskEvidence:EvidenceAssetReader {
       guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed.")}
       guard status==1 else{throw HouseError.message("Native vision diagnostics failed.")};return
     }
-    guard [3,4].contains(CommandLine.arguments.count) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
+    guard (3...5).contains(CommandLine.arguments.count),CommandLine.arguments.dropFirst(3).allSatisfy({["--refine","--bundle"].contains($0)}) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
     let root=URL(fileURLWithPath:CommandLine.arguments[1]),queriesURL=URL(fileURLWithPath:CommandLine.arguments[2])
     var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
     guard let segment=house.segments.first else{throw HouseError.message("No mapping segment.")}
     var activeSegment=segment
     if CommandLine.arguments.contains("--refine") {activeSegment.poseSolution=try PoseGraph.build(house:house,segment:segment,repo:DiskEvidence(root));house.segments[0]=activeSegment}
+    if CommandLine.arguments.contains("--bundle") {let result=try BundleRefinement.build(house:house,segment:activeSegment,repo:DiskEvidence(root));activeSegment.poseSolution=result.solution;house.segments[0]=activeSegment}
     let map=try VisualMapping.build(house:house,segment:activeSegment,repo:DiskEvidence(root))
     let queries=try JSONDecoder().decode(ReplayQueries.self,from:Data(contentsOf:queriesURL))
     var output:[[String:Any]]=[]
@@ -39,6 +40,6 @@ final class DiskEvidence:EvidenceAssetReader {
       if let pose{result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms;result["sourceIDs"]=pose.sources.map{$0.uuidString}}
       output.append(result)
     }
-    print(String(data:try JSONSerialization.data(withJSONObject:["candidateFingerprint":map.fingerprint,"mapFeatures":map.points.count,"mapViews":map.views.count,"queries":output,"optimizedCameras":activeSegment.poseSolution?.cameras ?? [:]],options:[.sortedKeys]),encoding:.utf8)!)
+    print(String(data:try JSONSerialization.data(withJSONObject:["candidateFingerprint":map.fingerprint,"mapFeatures":map.points.count,"mapViews":map.views.count,"queries":output,"optimizedCameras":activeSegment.poseSolution?.cameras ?? [:],"bundleCheckRMS":activeSegment.poseSolution?.bundleCheckRMS as Any? ?? NSNull(),"bundlePointCount":activeSegment.poseSolution?.bundlePointCount as Any? ?? NSNull()],options:[.sortedKeys]),encoding:.utf8)!)
   }
 }
