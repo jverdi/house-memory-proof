@@ -13,10 +13,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: sift-control
-            artifact: 12116397670
-            sha256: 9ae437bb71a2aae4799492b4e24a724baa7e1f9aa250a2613331077b7c5be662
-            kind: fixtures
+          - label: native-full
+            artifact: 12117025728
+            sha256: 5774ae88771d02cb87fcbaf107dbe29f6b53840410a2c7b7270efd13234f7bf1
+            kind: native
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -61,7 +61,7 @@ jobs:
               log=archive.read('ui-tests.log').decode('utf-8')
               out['uiPassed']={}
               for name in ['testLandscapeControlsAndRotation','testPersonalHouseWorkflow','testPhotoPointWorkflow']:
-                  pattern=r"Test Case '-\[HouseXrayUITests\.Smoke "+name+r"\]' passed \(([0-9.]+) seconds\)"
+                  pattern=r"Test Case '-\[HouseXrayUITests\.HouseXraySmoke "+name+r"\]' passed \(([0-9.]+) seconds\)"
                   match=re.search(pattern,log)
                   out['uiPassed'][name]=dict(passed=bool(match),seconds=float(match.group(1)) if match else None)
           elif out['kind']=='stress':
