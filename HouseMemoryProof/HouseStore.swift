@@ -14,7 +14,8 @@ final class Repository: EvidenceAssetReader {
   private(set) var recoveryWarnings: [String] = []
   private var db: OpaquePointer?
   private let lock = NSRecursiveLock()
-  init(root: URL? = nil) throws {
+  static let storeVersion=2
+  init(root: URL? = nil,migrationCheckpoint:(()throws->Void)?=nil) throws {
     self.root = root ?? Self.defaultRoot
     try FileManager.default.createDirectory(
       at: self.root.appendingPathComponent("assets"), withIntermediateDirectories: true)
@@ -22,13 +23,56 @@ final class Repository: EvidenceAssetReader {
       sqlite3_open_v2(
         self.root.appendingPathComponent("house.sqlite").path, &db,
         SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK
-    else { throw HouseError.message("Could not open local project database.") }
+    else {sqlite3_close(db);db=nil;throw HouseError.message("Could not open local project database.") }
     sqlite3_busy_timeout(db, 3000)
-    try execute(
-      "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL, json BLOB NOT NULL); CREATE TABLE IF NOT EXISTS history(id TEXT, revision INTEGER, json BLOB, PRIMARY KEY(id,revision)); CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, state TEXT, json BLOB); CREATE TABLE IF NOT EXISTS capture_records(project_id TEXT NOT NULL, id TEXT NOT NULL, json BLOB NOT NULL, PRIMARY KEY(project_id,id));"
-    )
+    do {
+      let version=try scalar("PRAGMA user_version")
+      guard version<=Self.storeVersion else{throw HouseError.message("This project store was created by a newer House Xray build. Update the app to open it; the store has not been changed.")}
+      try execute("PRAGMA synchronous=FULL;")
+      if version<Self.storeVersion {
+        if try scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='projects'")>0{try snapshotBeforeMigration(version:version)}
+        try execute("BEGIN IMMEDIATE")
+        do {
+          try execute("CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL, json BLOB NOT NULL); CREATE TABLE IF NOT EXISTS history(id TEXT, revision INTEGER, json BLOB, PRIMARY KEY(id,revision)); CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, state TEXT, json BLOB); CREATE TABLE IF NOT EXISTS capture_records(project_id TEXT NOT NULL, id TEXT NOT NULL, json BLOB NOT NULL, PRIMARY KEY(project_id,id)); PRAGMA user_version=2;")
+          try migrationCheckpoint?()
+          try execute("COMMIT")
+        }catch{try? execute("ROLLBACK");throw error}
+      }
+      try execute("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")
+    }catch{sqlite3_close(db);db=nil;throw error}
   }
   deinit { sqlite3_close(db) }
+  private func scalar(_ sql:String)throws->Int {
+    let query=try statement(sql);defer{sqlite3_finalize(query)}
+    guard sqlite3_step(query)==SQLITE_ROW else{throw HouseError.message("Could not inspect the local store version.")}
+    return Int(sqlite3_column_int64(query,0))
+  }
+  private func snapshotBeforeMigration(version:Int)throws {
+    let directory=root.appendingPathComponent("metadata-snapshots",isDirectory:true)
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let name="before-v\(version)-\(UUID().uuidString)",partial=directory.appendingPathComponent(name+".partial"),final=directory.appendingPathComponent(name+".sqlite")
+    let required=Int64(try scalar("PRAGMA page_count"))*Int64(try scalar("PRAGMA page_size"))
+    guard freeBytes()>required+100_000_000 else{throw HouseError.message("Free space is required for a verified metadata snapshot before this app update can open the store. Existing evidence remains intact.")}
+    var target:OpaquePointer?
+    guard sqlite3_open_v2(partial.path,&target,SQLITE_OPEN_CREATE|SQLITE_OPEN_READWRITE,nil)==SQLITE_OK else{sqlite3_close(target);throw HouseError.message("Could not create the pre-update metadata snapshot.")}
+    defer{sqlite3_close(target);try? FileManager.default.removeItem(at:partial)}
+    guard let backup=sqlite3_backup_init(target,"main",db,"main") else{throw HouseError.message("Could not start the pre-update metadata snapshot.")}
+    var status=SQLITE_OK;let deadline=Date().addingTimeInterval(30)
+    repeat {
+      status=sqlite3_backup_step(backup,256)
+      if status==SQLITE_BUSY || status==SQLITE_LOCKED{Thread.sleep(forTimeInterval:0.02)}
+    }while [SQLITE_OK,SQLITE_BUSY,SQLITE_LOCKED].contains(status) && Date()<deadline
+    let finished=sqlite3_backup_finish(backup)
+    guard status==SQLITE_DONE,finished==SQLITE_OK else{throw HouseError.message("The pre-update snapshot could not finish. Retry after closing other House Xray windows.")}
+    var check:OpaquePointer?
+    guard sqlite3_prepare_v2(target,"PRAGMA quick_check",-1,&check,nil)==SQLITE_OK else{throw HouseError.message("Could not verify the pre-update snapshot.")}
+    defer{sqlite3_finalize(check)}
+    guard sqlite3_step(check)==SQLITE_ROW,let value=sqlite3_column_text(check,0),String(cString:value)=="ok" else{throw HouseError.message("The pre-update snapshot failed its integrity check. The original store was not migrated.")}
+    let handle=try FileHandle(forWritingTo:partial);try handle.synchronize();try handle.close()
+    let digest=try StreamingArchive.digest(partial)
+    try FileManager.default.moveItem(at:partial,to:final)
+    try DurableFiles.write(try JSONSerialization.data(withJSONObject:["fromVersion":version,"targetVersion":Self.storeVersion,"database":final.lastPathComponent,"sha256":digest.sha,"originalAssetsCopied":false],options:[.sortedKeys]),to:final.appendingPathExtension("json"))
+  }
   private func execute(_ sql: String) throws {
     if sqlite3_exec(db, sql, nil, nil, nil) != SQLITE_OK {
       throw HouseError.message("Local database write failed. Existing evidence is preserved.")
@@ -261,6 +305,37 @@ final class Repository: EvidenceAssetReader {
       .volumeAvailableCapacityForImportantUsage) ?? 0
   }
 }
+
+#if DEBUG
+// Used only by isolated diagnostics; never downgrades an owner project store.
+enum StoreMigrationDiagnostics {
+  static func legacyFixture(at root:URL)throws->UUID {
+    var repository:Repository?=try Repository(root:root)
+    let house=try SimulatedCapture.make(repo:repository!)
+    try repository!.save(house);repository=nil
+    try setVersion(at:root,version:1,dropCaptureTable:true)
+    return house.id
+  }
+  static func setVersion(at root:URL,version:Int,dropCaptureTable:Bool=false)throws {
+    var database:OpaquePointer?
+    guard sqlite3_open_v2(root.appendingPathComponent("house.sqlite").path,&database,SQLITE_OPEN_READWRITE,nil)==SQLITE_OK else{sqlite3_close(database);throw HouseError.message("Migration fixture could not open.")}
+    defer{sqlite3_close(database)}
+    let sql=(dropCaptureTable ? "DROP TABLE capture_records;":"")+"PRAGMA user_version=\(version)"
+    guard sqlite3_exec(database,sql,nil,nil,nil)==SQLITE_OK else{throw HouseError.message("Migration fixture setup failed.")}
+  }
+  static func state(at root:URL)throws->(Int,Int) {
+    var database:OpaquePointer?
+    guard sqlite3_open_v2(root.appendingPathComponent("house.sqlite").path,&database,SQLITE_OPEN_READONLY,nil)==SQLITE_OK else{sqlite3_close(database);throw HouseError.message("Migration fixture inspection failed.")}
+    defer{sqlite3_close(database)}
+    func value(_ sql:String)throws->Int {
+      var query:OpaquePointer?;defer{sqlite3_finalize(query)}
+      guard sqlite3_prepare_v2(database,sql,-1,&query,nil)==SQLITE_OK,sqlite3_step(query)==SQLITE_ROW else{throw HouseError.message("Migration fixture query failed.")}
+      return Int(sqlite3_column_int(query,0))
+    }
+    return (try value("PRAGMA user_version"),try value("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='capture_records'"))
+  }
+}
+#endif
 
 @MainActor final class AppModel: ObservableObject {
   @Published var houses: [House] = []

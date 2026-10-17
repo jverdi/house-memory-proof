@@ -93,7 +93,7 @@ print('All native self-tests passed:',len(r['tests']))
 PYTEST
 
 # Kill at the journal/SQLite boundary, then verify recovery in a new process.
-for fault_mode in journal capture-row; do
+for fault_mode in journal capture-row migration; do
 xcrun simctl terminate "$device_id" com.example.HouseMemoryProof 2>/dev/null || true
 rm -f "$app_root/fault-ready.json" "$app_root/process-recovery.json"
 xcrun simctl launch "$device_id" com.example.HouseMemoryProof "--$fault_mode-fault"
@@ -102,7 +102,9 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 xcrun simctl terminate "$device_id" com.example.HouseMemoryProof 2>/dev/null || true
-xcrun simctl launch "$device_id" com.example.HouseMemoryProof --journal-recovery-check
+recovery_mode=journal
+if [ "$fault_mode" = migration ]; then recovery_mode=migration; fi
+xcrun simctl launch "$device_id" com.example.HouseMemoryProof "--$recovery_mode-recovery-check"
 for attempt in $(seq 1 30); do
   if [ -f "$app_root/process-recovery.json" ]; then break; fi
   sleep 1

@@ -269,6 +269,26 @@ import Darwin
             }
             check("Fixture has three independent rooms and paired stages"){try house.validate();return house.rooms.count==3 && house.stages.count==2 && house.features.allSatisfy{$0.kind == .synthetic}}
             check("Finish switch preserves stable geometry"){let rough=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.rough))},finish=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.finished,ceilings:true))};return !rough.isEmpty && !finish.isEmpty && rough.allSatisfy{$0.trade != .finish} && finish.contains{$0.trade == .ceiling}}
+            #if DEBUG
+            check("Store migration rollback, verified snapshot and future-version refusal") {
+                let root=folder.appendingPathComponent("migration-check"),id=try StoreMigrationDiagnostics.legacyFixture(at:root)
+                do{_=try Repository(root:root,migrationCheckpoint:{throw HouseError.message("Injected migration interruption")});return false}catch{}
+                let interrupted=try StoreMigrationDiagnostics.state(at:root)
+                guard interrupted.0==1,interrupted.1==0 else{return false}
+                let snapshots=try FileManager.default.contentsOfDirectory(at:root.appendingPathComponent("metadata-snapshots"),includingPropertiesForKeys:nil).filter{$0.pathExtension=="sqlite"}
+                guard snapshots.count==1 else{return false}
+                let manifest=try JSONSerialization.jsonObject(with:Data(contentsOf:snapshots[0].appendingPathExtension("json"))) as! [String:Any]
+                guard try StreamingArchive.digest(snapshots[0]).sha==(manifest["sha256"] as? String) else{return false}
+                var migrated:Repository?=try Repository(root:root)
+                guard let restored=try migrated!.all().first(where:{$0.id==id}),try migrated!.integrity(restored)>0 else{return false}
+                let complete=try StoreMigrationDiagnostics.state(at:root)
+                guard complete.0==Repository.storeVersion,complete.1==1 else{return false}
+                migrated=nil
+                try StoreMigrationDiagnostics.setVersion(at:root,version:999)
+                do{_=try Repository(root:root);return false}catch{}
+                return try StoreMigrationDiagnostics.state(at:root).0==999
+            }
+            #endif
             check("Additive schema migration preserves original identity"){let data=try JSONEncoder().encode(house);var json=try JSONSerialization.jsonObject(with:data) as! [String:Any];json.removeValue(forKey:"references");let old=try JSONSerialization.data(withJSONObject:json);let decoded=try JSONDecoder().decode(House.self,from:old);return decoded.id==house.id && decoded.references.isEmpty && decoded.features==house.features}
             check("Stage composition isolates unfinished and finished session frames"){
                 var h=House.empty("Stages");let a=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id),b=Segment(roomID:h.rooms[0].id,stageID:h.stages[1].id);h.segments=[a,b]

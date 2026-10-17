@@ -7,6 +7,25 @@ import Darwin
     WindowGroup {
       RootView().environmentObject(model).preferredColorScheme(.dark).tint(Color.mint).task {
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--migration-fault"),let repo=model.repository {
+          do {
+            let root=repo.root.appendingPathComponent("migration-process-fixture-"+UUID().uuidString)
+            let id=try StoreMigrationDiagnostics.legacyFixture(at:root)
+            _=try Repository(root:root,migrationCheckpoint:{
+              try DurableFiles.write(try JSONSerialization.data(withJSONObject:["project":id.uuidString,"fixture":root.lastPathComponent,"fault":"SIGKILL inside schema transaction before COMMIT"]),to:repo.root.appendingPathComponent("fault-ready.json"))
+              raise(SIGKILL)
+            })
+          }catch{model.error=error.localizedDescription}
+        }
+        if ProcessInfo.processInfo.arguments.contains("--migration-recovery-check"),let repo=model.repository {
+          do {
+            let expected=try JSONSerialization.jsonObject(with:Data(contentsOf:repo.root.appendingPathComponent("fault-ready.json"))) as! [String:String]
+            let root=repo.root.appendingPathComponent(expected["fixture"]!),before=try StoreMigrationDiagnostics.state(at:root)
+            let recovered=try Repository(root:root),house=try recovered.all().first{$0.id.uuidString==expected["project"]}
+            let assets=try house.map{try recovered.integrity($0)} ?? 0,after=try StoreMigrationDiagnostics.state(at:root)
+            try DurableFiles.write(try JSONSerialization.data(withJSONObject:["passed":before.0==1 && before.1==0 && after.0==Repository.storeVersion && after.1==1 && assets>0,"verifiedAssets":assets,"fault":expected["fault"]!,"powerLossQualified":false]),to:repo.root.appendingPathComponent("process-recovery.json"))
+          }catch{model.error=error.localizedDescription}
+        }
         if (ProcessInfo.processInfo.arguments.contains("--journal-fault") || ProcessInfo.processInfo.arguments.contains("--capture-row-fault")),let repo=model.repository {
           do {
             var h=try SimulatedCapture.make(repo:repo);let observation=h.observations[0];h.observations=[];h.name="Process recovery fixture"
