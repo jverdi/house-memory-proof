@@ -124,11 +124,12 @@ struct ToolsPage: View {
             } catch { model.error = error.localizedDescription }
           }
           Button("Run synthetic self-tests") {
-            Task {
+            model.perform("Running isolated synthetic diagnostics") {
               await SelfTests.run(model: model)
-              diagnostics = "Self-test report saved. Use Export diagnostics to inspect it."
+              diagnostics = "Self-test report saved. Use Export diagnostics to inspect the pass/fail results."
+              return nil
             }
-          }
+          }.disabled(model.busy)
           Button("Export diagnostics") {
             guard let repo = model.repository else { return }
             let url = repo.root.appendingPathComponent("self-test.json")

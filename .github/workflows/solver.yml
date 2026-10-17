@@ -21,8 +21,14 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: build/ceres
-          key: ceres-2.2.0-eigen3.4-arm64-v1
+          key: ceres-2.2.0-eigen3.4-arm64-v3
+          restore-keys: ceres-host-bootstrap-v1
       - run: bash tooling/solver/build.sh host
+      - uses: actions/cache/save@v4
+        if: always() && hashFiles('build/ceres/host/lib/libceres.a') != ''
+        with:
+          path: build/ceres
+          key: ceres-host-bootstrap-v1
       - name: Compile and run exact solver diagnostics
         run: |
           mkdir -p build/solver-evidence

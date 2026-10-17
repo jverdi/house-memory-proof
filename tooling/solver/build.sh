@@ -28,7 +28,10 @@ if [ ! -f "$root/eigen/share/eigen3/cmake/Eigen3Config.cmake" ]; then
 fi
 build_slice() {
   slice="$1"
-  if [ -f "$root/$slice/lib/libceres.a" ]; then return; fi
+  if [ -f "$root/$slice/lib/libceres.a" ]; then
+    cp -R build/ceres-source/internal/ceres/miniglog/glog "$root/$slice/include/"
+    return
+  fi
   extra=()
   if [ "$slice" = host ]; then extra=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0); else extra=(-DCMAKE_SYSTEM_NAME=iOS -DIOS_DEPLOYMENT_TARGET=26.0 -DIOS_PLATFORM="$slice" -DCMAKE_OSX_SYSROOT="$slice" -DCMAKE_OSX_DEPLOYMENT_TARGET=26.0 -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY); fi
   bounded 120 cmake -S build/ceres-source -B "build/ceres-build-$slice" -DCMAKE_BUILD_TYPE=Release \
@@ -42,6 +45,7 @@ build_slice() {
   bounded 900 cmake --build "build/ceres-build-$slice" --parallel 3
   bounded 120 cmake --install "build/ceres-build-$slice"
   cp -R "$root/eigen/include/eigen3/Eigen" "$root/$slice/include/"
+  cp -R build/ceres-source/internal/ceres/miniglog/glog "$root/$slice/include/"
 }
 if [ "$mode" = ios ]; then
   build_slice iphoneos
