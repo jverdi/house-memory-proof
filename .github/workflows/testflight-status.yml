@@ -1,0 +1,34 @@
+name: Inspect TestFlight readiness
+on:
+  push:
+    branches: [main]
+    paths: [ci/testflight_status.py, .github/workflows/testflight-status.yml]
+  workflow_dispatch:
+  workflow_run:
+    workflows: [Build and deliver House Proof]
+    types: [completed]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Inspect Apple processing and internal testing state
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
+          APP_BUNDLE_ID: com.jverdi.housememoryproof
+          WAIT_SECONDS: ${{ github.event_name == 'workflow_run' && '600' || '0' }}
+        run: python3 ci/testflight_status.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: testflight-readiness
+          path: build/evidence/testflight-status.json
+          retention-days: 14
