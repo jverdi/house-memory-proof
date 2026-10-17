@@ -1,4 +1,4 @@
-name: Verify retained qualification evidence
+name: Verify aggregate qualification evidence
 on:
   push:
     branches: [main]
@@ -13,54 +13,64 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: baseline
-            artifact: 12116302335
-            sha256: 8934d362b832230a33795a1dd280d88e4720123c31545c22d86a412f27bb126a
-          - label: host
-            artifact: 12115932460
-            sha256: 40b0704b843e38648f917a4cc7dc5cc7566b7b26bd61ca159913450ab31aa23e
-          - label: rendered
-            artifact: 12116660894
-            sha256: 9cbbc2cc2893be701e4169084bae1efe674b22f494bcc9a1e3f0779ea6948175
-          - label: native-checkpoint
-            artifact: 12115888013
-            sha256: 694bd08c0236f7976f8a4180afec0d175b36aa1eaa0aa2aecc60daa4c6a6357e
-          - label: rootsift
-            artifact: 12116178518
-            sha256: c39de573c28accfa95a1d491ca9f4bac1d4ab8f20231baa599c823f1901af3f5
+          - label: sift-control
+            artifact: 12116397670
+            sha256: 9ae437bb71a2aae4799492b4e24a724baa7e1f9aa250a2613331077b7c5be662
+            kind: fixtures
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Independently verify artifact bytes and expose text reports
+      - name: Verify archive digest and extract only aggregate metrics
         env:
           GH_TOKEN: ${{ github.token }}
           ARTIFACT_ID: ${{ matrix.artifact }}
           EXPECTED_SHA256: ${{ matrix.sha256 }}
-          EVIDENCE_LABEL: ${{ matrix.label }}
+          EVIDENCE_KIND: ${{ matrix.kind }}
         run: |
           python3 - <<'PY'
-          import hashlib,io,json,os,pathlib,subprocess,zipfile
-          artifact=os.environ['ARTIFACT_ID']
-          assert artifact.isdecimal()
+          import hashlib,io,json,os,re,subprocess,zipfile
+          artifact=os.environ['ARTIFACT_ID'];assert artifact.isdecimal()
           raw=subprocess.run(['gh','api','repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts/'+artifact+'/zip'],capture_output=True,check=True,timeout=90).stdout
-          digest=hashlib.sha256(raw).hexdigest()
-          assert digest==os.environ['EXPECTED_SHA256'], 'Artifact digest mismatch'
+          digest=hashlib.sha256(raw).hexdigest();assert digest==os.environ['EXPECTED_SHA256'], 'Artifact digest mismatch'
           archive=zipfile.ZipFile(io.BytesIO(raw))
-          # Public repository; only synthetic CI fixtures, never owner captures.
-          # Provenance: house_layout_fixture.py uses seeded RNG/isDemo=True;
-          # vision-evaluation.yml generates all host inputs; simulator.sh launches --demo.
-          allowed={"baseline":["candidate-sha256.txt","core-diagnostics.json","paired.json","rough-a.json","rough-b.json","source-revision.txt","staggered.json"],"host":["bundle-replay.json","coded-regions.json","core-diagnostics.json","long-session.json","replay.json","house-layout-683431.json","house-layout-905771.json","house-paired.json","house-staggered.json"],"rendered":["core-diagnostics.json","fixture-provenance.json","rendered.json"],"native-checkpoint":["native-self-test.json","native-progress.json","coded-reference-diagnostics.json"],"rootsift":["candidate-contract.json","candidate-sha256.txt","candidate.diff","core-diagnostics.json","paired.json","rough-a.json","rough-b.json","source-revision.txt","staggered.json"]}
-          files=[]
-          for entry in archive.infolist():
-              name=pathlib.PurePosixPath(entry.filename)
-              assert not name.is_absolute() and '..' not in name.parts
-              if str(name) not in allowed[os.environ['EVIDENCE_LABEL']]:continue
-              # Only reports and adapter diffs; never application/log archives.
-              assert entry.file_size<=2000000, 'Unexpected report size'
-              data=archive.read(entry);value=data.decode('utf-8')
-              if name.suffix=='.json':json.loads(value)
-              files.append(dict(path=str(name),sha256=hashlib.sha256(data).hexdigest(),bytes=len(data)))
-              for offset in range(0,len(value),8000):
-                  print('EVIDENCE_CHUNK '+json.dumps(dict(label=os.environ['EVIDENCE_LABEL'],path=str(name),offset=offset,text=value[offset:offset+8000])),flush=True)
-          print('EVIDENCE_MANIFEST '+json.dumps(dict(label=os.environ['EVIDENCE_LABEL'],artifact=int(artifact),artifactSHA256=digest,files=files)),flush=True)
+          def read(name):
+              info=archive.getinfo(name);assert info.file_size<=4000000
+              return json.loads(archive.read(info))
+          def select(data,keys):
+              return {key:data[key] for key in keys if key in data}
+          metric_keys=['passed','positiveAccepted','positiveQueries','falseAccepts','negativeQueries','worstAcceptedPositionErrorMetres','p95Metres','availability','oracleReadDenied']
+          out=dict(artifact=int(artifact),artifactSHA256=digest,artifactDigestVerified=True,kind=os.environ['EVIDENCE_KIND'],productionQualified=False)
+          if out['kind']=='fixtures':
+              out['fixtures']={}
+              for name in ['rough-a','rough-b','paired','staggered']:
+                  data=read(name+'.json');value=select(data,metric_keys);value['scenarioMetrics']={}
+                  for scenario in ['nominal selected room','finished stage with retained reference surfaces']:
+                      if scenario in data.get('scenarioMetrics',{}):
+                          value['scenarioMetrics'][scenario]=select(data['scenarioMetrics'][scenario],['attempts','accepted','availability','p95Metres','worstMetres','passed'])
+                  out['fixtures'][name]=value
+          elif out['kind']=='native':
+              native=read('native-self-test.json')
+              out.update(nativePassed=native['passed'],nativeTotal=len(native['tests']),nativePassedCount=sum(t['passed'] for t in native['tests']),nativeElapsedSeconds=native['elapsedSeconds'])
+              out['processRecovery']={mode:read('process-recovery-'+mode+'.json')['passed'] for mode in ['journal','capture-row','migration']}
+              portable=read('portable-tests.json');out['portable']=dict(passed=portable['passed'],cases=len(portable['cases']))
+              out['independentReaders']={}
+              for name in ['test','textured','points','house-surface']:
+                  data=read(name+'-gltf-validation.json');out['independentReaders'][name+'-gltf']=dict(errors=data['issues']['numErrors'],warnings=data['issues']['numWarnings'])
+              for name in ['test-usd','textured-usd','points-usd','archive','mesh-interchange','offline-viewer','semantic-csv']:
+                  out['independentReaders'][name]=dict(passed=read(name+'-validation.json')['passed'])
+              log=archive.read('ui-tests.log').decode('utf-8')
+              out['uiPassed']={}
+              for name in ['testLandscapeControlsAndRotation','testPersonalHouseWorkflow','testPhotoPointWorkflow']:
+                  pattern=r"Test Case '-\[HouseXrayUITests\.Smoke "+name+r"\]' passed \(([0-9.]+) seconds\)"
+                  match=re.search(pattern,log)
+                  out['uiPassed'][name]=dict(passed=bool(match),seconds=float(match.group(1)) if match else None)
+          elif out['kind']=='stress':
+              data=read('summary.json')
+              keys=['cases','positiveQueries','positiveAccepted','availability','unrelatedNegativeQueries','repeatedRoomAndFloorChallenges','criticalChallenges','executedUnrelatedQueries','criticalFalseAccepts','oracleControlFailures','p50Metres','p95Metres','worstMetres','spatialTargetsPassed','passed']
+              out.update(select(data,keys))
+              out['development']=select(data['development'],keys);out['protected']=select(data['protected'],keys)
+          else:raise ValueError('Unknown evidence kind')
+          # Only explicit aggregate fields leave the job: no matrices, observations,
+          # image names, feature IDs, case seeds, or raw report bodies.
+          print('AGGREGATE_EVIDENCE '+json.dumps(out,allow_nan=False),flush=True)
           PY
