@@ -15,14 +15,18 @@ final class DiskEvidence:EvidenceAssetReader {
     if CommandLine.arguments.contains("--self-test") {
       var maximum=0.0;var falseAccepts:UInt32=0
       let status=hx_vision_selftest(&maximum,&falseAccepts)
-      print(String(data:try JSONSerialization.data(withJSONObject:["passed":status==1,"status":status,"maxPositionErrorMetres":maximum,"randomCorrespondenceFalseAccepts":falseAccepts,"positiveCases":200,"negativeCases":300,"imageQualification":false],options:[.sortedKeys]),encoding:.utf8)!)
+      var graphError=0.0;let graphStatus=hx_graph_selftest(&graphError)
+      print(String(data:try JSONSerialization.data(withJSONObject:["passed":status==1 && graphStatus==1,"status":status,"graphStatus":graphStatus,"graphMaxPositionErrorMetres":graphError,"maxPositionErrorMetres":maximum,"randomCorrespondenceFalseAccepts":falseAccepts,"positiveCases":200,"negativeCases":300,"imageQualification":false],options:[.sortedKeys]),encoding:.utf8)!)
+      guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed.")}
       guard status==1 else{throw HouseError.message("Native vision diagnostics failed.")};return
     }
-    guard CommandLine.arguments.count==3 else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
+    guard [3,4].contains(CommandLine.arguments.count) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
     let root=URL(fileURLWithPath:CommandLine.arguments[1]),queriesURL=URL(fileURLWithPath:CommandLine.arguments[2])
-    let house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
+    var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
     guard let segment=house.segments.first else{throw HouseError.message("No mapping segment.")}
-    let map=try VisualMapping.build(house:house,segment:segment,repo:DiskEvidence(root))
+    var activeSegment=segment
+    if CommandLine.arguments.contains("--refine") {activeSegment.poseSolution=try PoseGraph.build(house:house,segment:segment,repo:DiskEvidence(root));house.segments[0]=activeSegment}
+    let map=try VisualMapping.build(house:house,segment:activeSegment,repo:DiskEvidence(root))
     let queries=try JSONDecoder().decode(ReplayQueries.self,from:Data(contentsOf:queriesURL))
     var output:[[String:Any]]=[]
     for q in queries.queries {
@@ -34,6 +38,6 @@ final class DiskEvidence:EvidenceAssetReader {
       if let pose{result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms;result["sourceIDs"]=pose.sources.map{$0.uuidString}}
       output.append(result)
     }
-    print(String(data:try JSONSerialization.data(withJSONObject:["candidateFingerprint":map.fingerprint,"mapFeatures":map.points.count,"mapViews":map.views.count,"queries":output],options:[.sortedKeys]),encoding:.utf8)!)
+    print(String(data:try JSONSerialization.data(withJSONObject:["candidateFingerprint":map.fingerprint,"mapFeatures":map.points.count,"mapViews":map.views.count,"queries":output,"optimizedCameras":activeSegment.poseSolution?.cameras ?? [:]],options:[.sortedKeys]),encoding:.utf8)!)
   }
 }

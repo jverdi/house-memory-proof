@@ -6,12 +6,12 @@ import numpy as np
 from PIL import Image
 from house import generate,room,render,v,identity
 
-def make(dest, seed=73192):
+def make(dest, seed=73192, drift=0.0):
  rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True)
  h=generate(seed,dest/'base',rooms=1,frames=6,width=64,noise=.001,drift=.001)
  shapes,finish,dimensions=room(np.random.default_rng(seed));items=shapes+finish
  segment=h['segments'][1];rid=h['rooms'][0]['id'];h['segments']=[segment];h['observations']=[]
- h['name']='Synthetic textured-corner visual map';assets={};width=384;height=288
+ h['name']='Synthetic textured-corner visual map';assets={};mapping_truth={};width=384;height=288
  def put(data,ext):
   key=hashlib.sha256(data).hexdigest()+'.'+ext;assets['assets/'+key]=data;return key
  def image_capture(shift,angle,texture,elevation=0):
@@ -22,7 +22,8 @@ def make(dest, seed=73192):
  for index,shift in enumerate([-.3,-.2,-.1,.1,.2,.3]):
   image,depth,valid,m,k=image_capture(shift,0,seed)
   depth=np.where(valid,depth+rng.normal(0,.001,depth.shape),0).astype('<f4');confidence=np.where(valid,2,0).astype('uint8')
-  prior=m.copy();prior[:3,3]+=rng.normal(0,.001,3)
+  prior=m.copy();prior[:3,3]+=rng.normal(0,.001,3);prior[0,3]+=drift*index/5
+  mapping_truth[identity(seed,f'visual-{index}')]=m.flatten().tolist()
   h['observations'].append(dict(id=identity(seed,f'visual-{index}'),roomID=rid,stageID=segment['stageID'],segmentID=segment['id'],timestamp=float(index),date=813974400.+index,image=put(image,'jpg'),depth=put(depth.tobytes(),'depth32'),confidence=put(confidence.tobytes(),'confidence8'),depthWidth=width,depthHeight=height,width=width,height=height,camera=prior.flatten().tolist(),intrinsics=k,tracking='synthetic perturbed prior',light=1000,sharpness=.1,note='Synthetic textured corner; not a validated phone sensor.',documentary=False,imageOrientation=1))
  entries={'house.json':json.dumps(h,separators=(',',':')).encode(),**assets}
  entries['manifest.json']=json.dumps({'format':'HouseXray','version':1,'sha256':{k:hashlib.sha256(d).hexdigest() for k,d in entries.items()}}).encode()
@@ -33,7 +34,7 @@ def make(dest, seed=73192):
   image,_,_,pose,k=image_capture(shift,math.radians(angle),texture,[0,.08,-.06,0][index])
   name=f'vision-query-{index}.jpg';(dest/name).write_bytes(image)
   queries.append(dict(image=name,width=width,height=height,intrinsics=k,expectedCamera=(canonical@pose).flatten().tolist(),shouldMatch=texture==seed))
- (dest/'vision-queries.json').write_text(json.dumps({'syntheticOnly':True,'fieldQualified':False,'queries':queries},indent=2))
+ (dest/'vision-queries.json').write_text(json.dumps({'syntheticOnly':True,'fieldQualified':False,'queries':queries,'mappingCameras':mapping_truth,'injectedTranslationDriftMetres':drift},indent=2))
  print(json.dumps({'mapViews':6,'heldQueryViews':3,'unrelatedTextureQueries':1,'oracleExcludedFromMapArchive':True}))
 if __name__=='__main__':
  import argparse
