@@ -1,0 +1,32 @@
+name: Build native vision dependency
+on:
+  push:
+    branches: [main]
+    paths: [tooling/opencv/**, .github/workflows/opencv.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-vision-sdk
+  cancel-in-progress: false
+jobs:
+  sdk:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv
+          key: opencv-4.13.0-ios26-arm64-v1-${{ hashFiles('tooling/opencv/build.sh') }}
+      - name: Build official source for device and simulator
+        run: bash tooling/opencv/build.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-vision-sdk-evidence
+          path: build/opencv-evidence/
+          retention-days: 30
