@@ -49,7 +49,7 @@ enum SceneBuilder {
 }
 extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&255)/255,green:CGFloat((rgb>>8)&255)/255,blue:CGFloat(rgb&255)/255,alpha:1)}}
 
-@MainActor final class WalkController:ObservableObject {
+@MainActor final class WalkController:NSObject,ObservableObject {
     let view=SCNView(frame:.zero,options:[SCNView.Option.preferredRenderingAPI.rawValue:SCNRenderingAPI.metal.rawValue])
     @Published var selection:UUID?
     @Published var points:[V3]=[]
@@ -61,7 +61,7 @@ extension UIColor {convenience init(rgb:UInt32){self.init(red:CGFloat((rgb>>16)&
     var yaw:Float=0;var pitch:Float=0;private var timer:CADisplayLink?
     private var lastTime:CFTimeInterval=0;private var panStart=CGPoint.zero
     var camera=SceneBuilder.camera(at:V3(3,2,1.6))
-    init(){view.backgroundColor = .black;view.antialiasingMode = .multisampling4X;view.preferredFramesPerSecond=30;view.isPlaying=true
+    override init(){super.init();view.backgroundColor = .black;view.antialiasingMode = .multisampling4X;view.preferredFramesPerSecond=30;view.isPlaying=true
         view.addGestureRecognizer(UIPanGestureRecognizer(target:self,action:#selector(pan(_:))))
         view.addGestureRecognizer(UITapGestureRecognizer(target:self,action:#selector(tap(_:))))
     }

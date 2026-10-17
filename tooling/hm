@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""Portable development CLI. No runtime network or field-accuracy claims."""
+import argparse,json,subprocess,sys,tempfile,random,math,statistics,hashlib
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+def build():
+ out=ROOT/'build'/'hx-reconstruct';out.parent.mkdir(exist_ok=True)
+ subprocess.run(['c++','-std=c++17','-O2',str(ROOT/'packages/spatial-core/hx_core.cpp'),str(ROOT/'packages/spatial-core/cli.cpp'),'-o',str(out)],check=True)
+ return out
+def simulate(seed,path):
+ # Three visible planes, deliberately unobserved rear region. Independent noise
+ # per camera; correlated bias is a separately labelled adversarial scenario.
+ rng=random.Random(seed);points=[(x*.06+.01,y*.06+.01,1.01) for x in range(20) for y in range(20)]
+ observations=[]
+ for frame in range(8):
+  for p in points:
+   if rng.random()<.06:continue
+   q=[v+rng.gauss(0,.001) for v in p]
+   observations.append(' '.join(map(str,q+[1,frame])))
+ path.mkdir(parents=True,exist_ok=True)
+ (path/'observations.xyz').write_text('\n'.join(observations)+'\n')
+ # Evaluator-only truth is never provided to the executable.
+ (path/'truth.json').write_text(json.dumps({'points':points,'seed':seed,'scope':'analytic depth fusion, known noisy pose priors; not localization or sensor simulation'}))
+def evaluate(candidate,truth):
+ pts=[list(map(float,l.split())) for l in candidate.read_text().splitlines()]
+ gt=json.loads(truth.read_text())['points']
+ errors=[min(math.dist(p[:3],g) for g in gt) for p in pts]
+ completeness=sum(any(math.dist(p[:3],g)<.01 for p in pts) for g in gt)/len(gt)
+ return {'count':len(pts),'completeness':completeness,'p95_m':sorted(errors)[int(.95*(len(errors)-1))] if errors else None,'max_m':max(errors) if errors else None}
+def test():
+ exe=build();subprocess.run(['c++','-std=c++17','-O2',str(ROOT/'packages/spatial-core/hx_core.cpp'),str(ROOT/'packages/spatial-core/test.cpp'),'-o',str(exe)+'-test'],check=True);subprocess.run([str(exe)+'-test'],check=True)
+ results=[]
+ with tempfile.TemporaryDirectory() as tmp:
+  for seed in range(50):
+   p=Path(tmp)/str(seed);simulate(seed,p)
+   with (p/'observations.xyz').open('rb') as src,(p/'candidate.xyz').open('wb') as out:subprocess.run([str(exe)],stdin=src,stdout=out,check=True)
+   result=evaluate(p/'candidate.xyz',p/'truth.json');result['seed']=seed;results.append(result)
+ report={'suite':'portable C++ analytic fusion','not_tested':['ARKit','image matching','pose optimization','localization','field precision','Blender sensor simulation'],'cases':results,'passed':all(r['p95_m']<.003 and r['completeness']>.98 for r in results)}
+ target=ROOT/'build/evidence/portable-tests.json';target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(report,indent=2));print(json.dumps({'passed':report['passed'],'cases':len(results),'max_p95_m':max(r['p95_m'] for r in results),'report':str(target)}));return 0 if report['passed'] else 1
+p=argparse.ArgumentParser();sub=p.add_subparsers(dest='cmd',required=True)
+sub.add_parser('doctor');sub.add_parser('test')
+s=sub.add_parser('simulate');s.add_argument('--seed',type=int,default=42);s.add_argument('--output',type=Path,required=True)
+r=sub.add_parser('reconstruct');r.add_argument('--bundle',type=Path,required=True);r.add_argument('--output',type=Path,required=True)
+e=sub.add_parser('evaluate');e.add_argument('--candidate',type=Path,required=True);e.add_argument('--truth',type=Path,required=True)
+a=p.parse_args()
+if a.cmd=='doctor':print(json.dumps({'root':str(ROOT),'compiler':subprocess.check_output(['c++','--version']).decode().splitlines()[0],'runtime_backend_required':False}))
+elif a.cmd=='test':sys.exit(test())
+elif a.cmd=='simulate':simulate(a.seed,a.output)
+elif a.cmd=='reconstruct':
+ exe=build()
+ with a.bundle.open('rb') as src,a.output.open('wb') as out:subprocess.run([str(exe)],stdin=src,stdout=out,check=True)
+elif a.cmd=='evaluate':print(json.dumps(evaluate(a.candidate,a.truth)))

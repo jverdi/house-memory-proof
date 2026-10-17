@@ -14,3 +14,11 @@ for f in sorted(Path('HouseMemoryProof').glob('*.swift')):
  s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B",\n\t\t\t\t"'+rid+'",')
 s=s.replace('"IPHONEOS_DEPLOYMENT_TARGET" = "18.0"','"IPHONEOS_DEPLOYMENT_TARGET" = "26.0"')
 p.write_text(s)
+
+s=p.read_text()
+if 'HXCORECPP0000000000000001' not in s:
+ s=s.replace('\t"objects" = {','\t"objects" = {\n"HXCORECPP0000000000000001" = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "../packages/spatial-core/hx_core.cpp"; sourceTree = "<group>"; };\n"HXCOREBUILD00000000000001" = {isa = PBXBuildFile; fileRef = HXCORECPP0000000000000001; };')
+ s=s.replace('"534A5F435ADDB25DA9F43232",','"534A5F435ADDB25DA9F43232", "HXCOREBUILD00000000000001",')
+ s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "HXCORECPP0000000000000001",')
+ s=s.replace('"SWIFT_VERSION" = "5.0";', '"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++";')
+p.write_text(s)

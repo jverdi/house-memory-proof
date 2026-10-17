@@ -5,6 +5,11 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+"HXCORECPP0000000000000001" = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "../packages/spatial-core/hx_core.cpp"; sourceTree = "<group>"; };
+"HXCOREBUILD00000000000001" = {isa = PBXBuildFile; fileRef = HXCORECPP0000000000000001; };
+		"457556C9DE35485C0570A257" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "Reconstruction.swift"; "sourceTree" = "<group>"; };
+		"0D5313A68842A767BBC319AB" = { "isa" = "PBXBuildFile"; "fileRef" = "457556C9DE35485C0570A257"; };
+
 		"F32527ACB931236609C95997" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "SelfTests.swift"; "sourceTree" = "<group>"; };
 		"EEE1B47025BF139FF876C0F0" = { "isa" = "PBXBuildFile"; "fileRef" = "F32527ACB931236609C95997"; };
 
@@ -79,7 +84,8 @@
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
-				"534A5F435ADDB25DA9F43232",
+				"534A5F435ADDB25DA9F43232", "HXCOREBUILD00000000000001",
+				"0D5313A68842A767BBC319AB",
 				"EEE1B47025BF139FF876C0F0",
 				"0C08BFCEF0E23850C5E34CB0",
 				"AD47F9431CBE8FD06E18C647",
@@ -111,7 +117,8 @@
 		"FC233BDA2344D97687F5A251" = {
 			"isa" = "PBXGroup";
 			"children" = (
-				"A33603BF79F74B056172D43B",
+				"A33603BF79F74B056172D43B", "HXCORECPP0000000000000001",
+				"457556C9DE35485C0570A257",
 				"F32527ACB931236609C95997",
 				"1415F251FED0C1EABC91901B",
 				"E2EBCCF90AEED7C2E3C536F4",
@@ -150,7 +157,7 @@
 				"CLANG_ENABLE_MODULES" = "YES";
 				"SDKROOT" = "iphoneos";
 				"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
-				"SWIFT_VERSION" = "5.0";
+				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++";
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
@@ -188,7 +195,7 @@
 				"CLANG_ENABLE_MODULES" = "YES";
 				"SDKROOT" = "iphoneos";
 				"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
-				"SWIFT_VERSION" = "5.0";
+				"SWIFT_VERSION" = "5.0"; "SWIFT_OBJC_BRIDGING_HEADER" = "HouseMemoryProof/SpatialBridge.h"; "CLANG_CXX_LANGUAGE_STANDARD" = "c++17"; "CLANG_CXX_LIBRARY" = "libc++";
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
