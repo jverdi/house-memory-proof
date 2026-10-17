@@ -63,10 +63,11 @@ enum Exporter {
                 if let index=textureIDs[key]{materials[materials.count-1]["pbrMetallicRoughness"]=["baseColorFactor":[1,1,1,1],"baseColorTexture":["index":index],"metallicFactor":0,"roughnessFactor":0.8]}
             }
             meshes.append(["primitives":[["attributes":attributes,"indices":ii,"material":materials.count-1,"mode":f.mesh.triangles.isEmpty ? 0:4]]])
-            nodes.append(["name":f.name,"mesh":meshes.count-1,"extras":["id":f.id.uuidString,"room":f.roomID.uuidString,"stage":f.stageID.uuidString,"evidence":f.kind.rawValue,"trade":f.trade.rawValue,"notes":f.notes]])
+            nodes.append(["name":f.name,"mesh":meshes.count-1,"extras":["id":f.id.uuidString,"room":f.roomID.uuidString,"stage":f.stageID.uuidString,"evidence":f.kind.rawValue,"trade":f.trade.rawValue,"notes":f.notes,"endpoint":f.endpoint,"reviewed":f.reviewed,"sourceObservations":f.sourceIDs.map{$0.uuidString}]])
         }
         guard !meshes.isEmpty else{throw HouseError.message("No geometry in the selected layers.")}
         var json:[String:Any]=["asset":["version":"2.0","generator":"House Xray","extras":["units":"metres","sourceRevision":h.revision,"accuracy":"Uncalibrated"]],"scene":0,"scenes":[["nodes":Array(nodes.indices)]],"nodes":nodes,"meshes":meshes,"materials":materials,"images":images,"textures":textures,"buffers":[["byteLength":bin.count]],"bufferViews":views,"accessors":accessors]
+        json["extras"]=["connections":try JSONSerialization.jsonObject(with:JSONEncoder().encode(h.connections)),"measurements":try JSONSerialization.jsonObject(with:JSONEncoder().encode(h.dimensions))]
         if images.isEmpty {json.removeValue(forKey:"images");json.removeValue(forKey:"textures")}
         var j=try JSONSerialization.data(withJSONObject:json,options:[.sortedKeys]);while j.count%4 != 0{j.append(0x20)};while bin.count%4 != 0{bin.append(0)}
         var output=Data();output.le(UInt32(0x46546c67));output.le(UInt32(2));output.le(UInt32(12+8+j.count+8+bin.count));output.le(UInt32(j.count));output.le(UInt32(0x4e4f534a));output.append(j);output.le(UInt32(bin.count));output.le(UInt32(0x004e4942));output.append(bin)
@@ -131,7 +132,7 @@ enum Exporter {
         let url=destination("House-Xray.usdz");try StoredZip.write(entries,to:url,aligned:true);return url
     }
     static func archive(_ h:House,repo:Repository)throws->URL {
-        try h.validate();let metadata=try JSONEncoder().encode(h)
+        try h.validate();let metadata=try JSONEncoder().encode(h);guard metadata.count<=100_000_000 else{throw HouseError.message("Project metadata exceeds the tested 100 MB restore budget. Split large captures into separate projects before continuing.")}
         let staging=FileManager.default.temporaryDirectory.appendingPathComponent("archive-"+UUID().uuidString,isDirectory:true)
         try FileManager.default.createDirectory(at:staging,withIntermediateDirectories:true);defer{try? FileManager.default.removeItem(at:staging)}
         let json=staging.appendingPathComponent("house.json");try metadata.write(to:json)

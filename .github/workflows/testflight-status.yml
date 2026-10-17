@@ -11,7 +11,7 @@ permissions:
   contents: read
 jobs:
   inspect:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.head_commit.message, '[release]'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -24,6 +24,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
           APP_BUNDLE_ID: com.jverdi.housememoryproof
+          TARGET_BUILD: ${{ github.event_name == 'workflow_run' && format('{0}.{1}', github.event.workflow_run.run_number, github.event.workflow_run.run_attempt) || '' }}
           WAIT_SECONDS: ${{ github.event_name == 'workflow_run' && '600' || '0' }}
         run: python3 ci/testflight_status.py
       - uses: actions/upload-artifact@v4

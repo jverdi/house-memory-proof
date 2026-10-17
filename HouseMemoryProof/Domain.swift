@@ -93,6 +93,7 @@ struct Bookmark:Codable,Identifiable,Equatable { var id=UUID();var name:String;v
 struct House:Codable,Identifiable,Equatable {
     var schema=1;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
+    var connections:[ServiceConnection]=[]
     var documentaryPhotos:[DocumentaryPhoto]=[]
     var references:[ReferenceBoard]=[];var isDemo=false;var notes="";var closureNotes=""
     var assets:Set<String> {
@@ -112,6 +113,7 @@ struct House:Codable,Identifiable,Equatable {
         for f in features {if let sid=f.segmentID,!segmentIDs.contains(sid){throw HouseError.message("Feature references an absent capture session.")};if let uv=f.uv {guard uv.count==f.mesh.vertices.count,uv.allSatisfy({$0.u.isFinite && $0.v.isFinite}) else{throw HouseError.message("Invalid texture coordinates.")}}}
         for s in segments {guard roomIDs.contains(s.roomID),stageIDs.contains(s.stageID) else{throw HouseError.message("Capture session references an absent space or stage.")};if let t=s.registration, !t.valid {throw HouseError.message("Invalid segment registration.")}}
         for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentIDs.contains(o.segmentID),o.camera.count==16,Rigid(values:o.camera).valid,o.intrinsics.count==9,o.intrinsics[0]>0,o.intrinsics[4]>0,o.timestamp.isFinite,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.height>0 else{throw HouseError.message("Invalid observation metadata.")}}
+        let featureIDs=Set(features.map{$0.id});for c in connections{guard featureIDs.contains(c.fromFeature),featureIDs.contains(c.toFeature),c.fromFeature != c.toFeature,[0,1].contains(c.fromEnd),[0,1].contains(c.toEnd) else{throw HouseError.message("Invalid service endpoint link.")}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}
         for a in assets {guard a.count<100,!a.contains("/"),!a.contains("\\"),!a.contains("..") else{throw HouseError.message("Unsafe asset reference.")}}
@@ -182,6 +184,7 @@ extension House {
         dimensions=try c.decodeIfPresent([Dimension].self,forKey:.dimensions) ?? []
         drawings=try c.decodeIfPresent([Drawing].self,forKey:.drawings) ?? []
         bookmarks=try c.decodeIfPresent([Bookmark].self,forKey:.bookmarks) ?? []
+        connections=try c.decodeIfPresent([ServiceConnection].self,forKey:.connections) ?? []
         documentaryPhotos=try c.decodeIfPresent([DocumentaryPhoto].self,forKey:.documentaryPhotos) ?? []
         references=try c.decodeIfPresent([ReferenceBoard].self,forKey:.references) ?? []
         isDemo=try c.decodeIfPresent(Bool.self,forKey:.isDemo) ?? false
