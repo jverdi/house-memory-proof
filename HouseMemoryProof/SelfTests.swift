@@ -771,6 +771,27 @@ import Darwin
                   && !local.isWalkClear(from:a,to:V3(1.5,0,1.6))
                   && !local.isWalkClear(from:a,to:V3(Double.nan,0,1.6))
             }
+            await check("Step navigation shares floor and wall collision, clamps input, snaps look and clears continuous movement") {
+                var h=House.empty("Step controls");h.isDemo=true
+                h.rooms[0].origin=V3();h.rooms[0].size=V3(6,6,3)
+                let room=h.rooms[0].id,stage=h.stages[0].id
+                h.features=[Feature(name:"Floor",trade:.floor,roomID:room,stageID:stage,kind:.synthetic,mesh:.box(center:V3(3,3,-0.1),size:V3(6,6,0.2))),
+                  Feature(name:"Blocking wall",trade:.structure,roomID:room,stageID:stage,kind:.synthetic,mesh:.box(center:V3(3,3.5,1.5),size:V3(6,0.1,3)))]
+                let controller=WalkController();defer{controller.stop()}
+                controller.load(h,SceneOptions());controller.camera.simdPosition=V3(3,3,1.6).render;controller.yaw=0;controller.pitch=0
+                controller.move=SIMD2(1,1);controller.vertical=1;controller.stepMove(SIMD2(0,10))
+                let first=V3(ar:controller.camera.simdPosition)
+                guard (first-V3(3,3.2,1.6)).length<1e-5,controller.move == .zero,controller.vertical==0 else{return false}
+                controller.stepMove(SIMD2(0,1))
+                guard (V3(ar:controller.camera.simdPosition)-first).length<1e-5 else{return false}
+                controller.stepLook(yaw:Float.pi/12,pitch:Float.pi/12)
+                guard abs(controller.yaw-Float.pi/12)<1e-6,abs(controller.pitch-Float.pi/12)<1e-6 else{return false}
+                controller.flying=true;controller.stepMove(SIMD2(0,1))
+                guard (V3(ar:controller.camera.simdPosition)-first).length>0.19 else{return false}
+                let before=controller.camera.simdPosition;controller.stepMove(SIMD2(Float.nan,0))
+                controller.move=SIMD2(1,1);controller.vertical=1;controller.stop()
+                return controller.camera.simdPosition==before && controller.move == .zero && controller.vertical==0
+            }
             await check("Observed floor walking preserves capture height, climbs checked steps and refuses holes or low headroom") {
                 func floor(_ centre:V3,_ size:V3)->Feature {Feature(name:"Observed floor fixture",trade:.floor,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:centre,size:size))}
                 let ground=floor(V3(0,0,-0.1),V3(4,3,0.2)),low=V3(0,0,1.1),target=V3(0.5,0,1.1)

@@ -115,6 +115,27 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertFalse(app.staticTexts["Outlet circuit"].firstMatch.exists)
     screenshot("12-evidence-room-and-system-search")
   }
+  @MainActor func testStepNavigationControlsInBothOrientations() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
+    defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
+    app.buttons["Layers"].tap()
+    let toggle=app.switches["Step and snap-turn buttons"]
+    XCTAssertTrue(toggle.waitForExistence(timeout:5));if toggle.value as? String != "1" {toggle.tap()}
+    app.buttons["Done"].tap()
+    let names=["Step left","Step forward","Step backward","Step right","Turn left 15 degrees","Look up 15 degrees","Look down 15 degrees","Turn right 15 degrees"]
+    for orientation in [UIDeviceOrientation.portrait,.landscapeLeft] {
+      XCUIDevice.shared.orientation=orientation
+      for name in names {
+        let button=app.buttons[name];XCTAssertTrue(button.waitForExistence(timeout:5));XCTAssertTrue(button.isHittable)
+        XCTAssertGreaterThanOrEqual(button.frame.width,44);XCTAssertGreaterThanOrEqual(button.frame.height,44)
+        XCTAssertTrue(app.frame.contains(button.frame));button.tap()
+      }
+    }
+    screenshot("13-landscape-step-navigation")
+    app.buttons["Layers"].tap();app.switches["Step and snap-turn buttons"].tap();app.buttons["Done"].tap()
+  }
   func screenshot(_ name: String) {
     let a = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
     a.name = name

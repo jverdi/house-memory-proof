@@ -450,7 +450,24 @@ extension UIColor {
     let forward = SIMD3<Float>(-sin(yaw), 0, -cos(yaw))
     let right = SIMD3<Float>(cos(yaw), 0, -sin(yaw))
     let delta = (forward * move.y + right * move.x + SIMD3(0, vertical, 0)) * dt * 1.3
-    guard simd_length(delta) > 0 else { return }
+    attemptMove(delta)
+  }
+  func stepMove(_ input: SIMD2<Float>) {
+    move = .zero;vertical = 0
+    guard input.x.isFinite,input.y.isFinite else{return}
+    let bounded=input / max(1,simd_length(input))
+    let forward=SIMD3<Float>(-sin(yaw),0,-cos(yaw)),right=SIMD3<Float>(cos(yaw),0,-sin(yaw))
+    attemptMove((forward * bounded.y + right * bounded.x) * 0.2)
+  }
+  func stepLook(yaw deltaYaw:Float=0,pitch deltaPitch:Float=0) {
+    guard !orbit,deltaYaw.isFinite,deltaPitch.isFinite else{return}
+    move = .zero;vertical = 0
+    yaw += max(-Float.pi/4,min(Float.pi/4,deltaYaw))
+    pitch=max(-1.35,min(1.35,pitch+max(-Float.pi/4,min(Float.pi/4,deltaPitch))))
+    camera.eulerAngles=SCNVector3(pitch,yaw,0)
+  }
+  private func attemptMove(_ delta:SIMD3<Float>) {
+    guard !orbit,!preparingScene,house != nil,delta.x.isFinite,delta.y.isFinite,delta.z.isFinite,simd_length(delta)>0 else{return}
     let from = camera.simdPosition
     var to = from + delta
     if flying {
@@ -507,6 +524,32 @@ struct Joystick: View {
         }
       ).accessibilityLabel("Move joystick").accessibilityHint(
         "Drag to walk. Drag the scene to look.")
+      .onDisappear {offset = .zero;action(.zero)}
+  }
+}
+struct StepMovementControls:View {
+  @ObservedObject var controller:WalkController
+  private func control(_ title:String,_ icon:String,_ action:@escaping ()->Void)->some View {
+    Button(action:action) {Image(systemName:icon).frame(width:44,height:44).background(.white.opacity(0.12),in:RoundedRectangle(cornerRadius:8))}
+      .buttonStyle(.plain).accessibilityLabel(title)
+  }
+  var body:some View {
+    VStack(spacing:4) {
+      HStack(spacing:4) {
+        control("Step left","arrow.left") {controller.stepMove(SIMD2(-1,0))}
+        control("Step forward","arrow.up") {controller.stepMove(SIMD2(0,1))}
+        control("Step backward","arrow.down") {controller.stepMove(SIMD2(0,-1))}
+        control("Step right","arrow.right") {controller.stepMove(SIMD2(1,0))}
+      }
+      HStack(spacing:4) {
+        control("Turn left 15 degrees","arrow.uturn.left") {controller.stepLook(yaw:Float.pi/12)}
+        control("Look up 15 degrees","chevron.up") {controller.stepLook(pitch:Float.pi/12)}
+        control("Look down 15 degrees","chevron.down") {controller.stepLook(pitch:-Float.pi/12)}
+        control("Turn right 15 degrees","arrow.uturn.right") {controller.stepLook(yaw:-Float.pi/12)}
+      }
+    }.padding(4).background(.black.opacity(0.6),in:RoundedRectangle(cornerRadius:12))
+      .accessibilityElement(children:.contain).accessibilityLabel("Step navigation")
+      .disabled(controller.orbit)
   }
 }
 

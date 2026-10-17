@@ -280,6 +280,8 @@ struct RoomEditor: View {
 struct ExploreView: View {
   @Environment(\.scenePhase) private var phase
   @Environment(\.verticalSizeClass) private var verticalSizeClass
+  @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+  @AppStorage("button-walk-controls") private var buttonWalkControls=false
   @EnvironmentObject var model: AppModel
   var house: House
   @StateObject private var controller = WalkController()
@@ -388,7 +390,8 @@ struct ExploreView: View {
             }.padding(10).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
           }
           HStack(alignment: .bottom) {
-            Joystick { controller.move = $0 }
+            if buttonWalkControls || voiceOver {StepMovementControls(controller:controller)}
+            else {Joystick { controller.move = $0 }}
             Spacer()
             VStack {
               Menu {
@@ -448,6 +451,10 @@ struct ExploreView: View {
         .sheet(isPresented: $layers) {
           NavigationStack {
             Form {
+              Section("Navigation") {
+                Toggle("Step and snap-turn buttons",isOn:$buttonWalkControls)
+                Text("Move 20 cm per tap and turn 15 degrees without animation. These controls are always available with VoiceOver. Walking still checks floors and obstacles.").font(.footnote)
+              }
               Section("Construction") {
                 Toggle("Show ceilings", isOn: $options.ceilings)
                 Picker("Scope", selection: $options.room) {
