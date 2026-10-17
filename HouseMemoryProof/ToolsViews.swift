@@ -555,6 +555,7 @@ struct ReconstructionPage: View {
             }
           }.disabled(model.busy)
           if let solution = s.poseSolution {
+            if let excluded=solution.excludedFrameCount,excluded>0 {Text("\(excluded) photographs remain outside the connected camera solution; their originals are preserved.").font(.caption)}
             Text(
               "Local graph: \(solution.cameras.count) camera views, \(solution.edges) matched connections. Rebuild surfaces and visual references after refinement. Residuals do not establish accuracy."
             ).font(.caption)

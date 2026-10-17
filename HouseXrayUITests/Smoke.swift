@@ -67,6 +67,13 @@ final class HouseXraySmoke: XCTestCase {
     let save=app.buttons["Check and save point"];reveal(save);XCTAssertTrue(save.isEnabled);save.tap()
     let saved=app.staticTexts["Saved Photo-located point with three source photographs."]
     XCTAssertTrue(saved.waitForExistence(timeout:10));screenshot("08-photo-point-saved")
+    app.tabBars.buttons["Explore"].tap();app.buttons["Wall"].tap()
+    for point in [CGVector(dx:0.25,dy:0.29),CGVector(dx:0.65,dy:0.29),CGVector(dx:0.25,dy:0.42)] {app.coordinate(withNormalizedOffset:point).tap()}
+    let define=app.buttons["Define wall or ceiling volume"]
+    XCTAssertTrue(define.waitForExistence(timeout:5));define.tap()
+    let boundarySave=app.buttons["Save reveal boundary"]
+    XCTAssertTrue(boundarySave.waitForExistence(timeout:5));screenshot("09-boundary-definition");boundarySave.tap()
+    XCTAssertTrue(app.buttons["Layers"].waitForExistence(timeout:5))
     app.terminate()
   }
   func screenshot(_ name: String) {
