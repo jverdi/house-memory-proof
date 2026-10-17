@@ -1,0 +1,55 @@
+name: Build and deliver House Proof
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: house-proof-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  simulator:
+    name: Compile and launch on iPhone simulator
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile, launch, and capture evidence
+        run: bash ci/simulator.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulator-evidence-${{ github.run_number }}-${{ github.run_attempt }}
+          path: build/evidence/
+          if-no-files-found: error
+          retention-days: 14
+
+  testflight:
+    name: Archive and upload to Apple
+    needs: simulator
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.ENABLE_TESTFLIGHT_UPLOAD == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sign and upload for internal TestFlight testing
+        env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
+        run: bash ci/testflight.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upload-evidence-${{ github.run_number }}-${{ github.run_attempt }}
+          path: build/evidence/
+          if-no-files-found: warn
+          retention-days: 14
