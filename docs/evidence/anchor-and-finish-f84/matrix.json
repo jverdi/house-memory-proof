@@ -1,0 +1,88 @@
+{
+  "developmentOnly": true,
+  "protectedHoldout": false,
+  "productionQualified": false,
+  "cases": [
+    {
+      "seed": 19043,
+      "report": "build/vision-evaluation/diversity/19043/replay.json",
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "falseAccepts": 0,
+      "negativeQueries": 1,
+      "worstAcceptedPositionErrorMetres": 0.006106628759116595,
+      "oracleReadDenied": true,
+      "candidateBinarySHA256": "3f92efd5a44e0169492c963d0ac6f31ae8f339df68081e7d2ccb58083aee836a",
+      "optimizedCameraCount": 6,
+      "maximumOptimizedCameraPositionErrorMetres": 0.004139641627498346,
+      "injectedTranslationDriftMetres": 0.03
+    },
+    {
+      "seed": 47891,
+      "report": "build/vision-evaluation/diversity/47891/replay.json",
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "falseAccepts": 0,
+      "negativeQueries": 1,
+      "worstAcceptedPositionErrorMetres": 0.008010732436231956,
+      "oracleReadDenied": true,
+      "candidateBinarySHA256": "3f92efd5a44e0169492c963d0ac6f31ae8f339df68081e7d2ccb58083aee836a",
+      "optimizedCameraCount": 6,
+      "maximumOptimizedCameraPositionErrorMetres": 0.004216992889135951,
+      "injectedTranslationDriftMetres": 0.03
+    },
+    {
+      "seed": 83117,
+      "report": "build/vision-evaluation/diversity/83117/replay.json",
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "falseAccepts": 0,
+      "negativeQueries": 1,
+      "worstAcceptedPositionErrorMetres": 0.0056333795978833175,
+      "oracleReadDenied": true,
+      "candidateBinarySHA256": "3f92efd5a44e0169492c963d0ac6f31ae8f339df68081e7d2ccb58083aee836a",
+      "optimizedCameraCount": 6,
+      "maximumOptimizedCameraPositionErrorMetres": 0.0031028158965374303,
+      "injectedTranslationDriftMetres": 0.03
+    },
+    {
+      "seed": 109313,
+      "report": "build/vision-evaluation/diversity/109313/replay.json",
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "falseAccepts": 0,
+      "negativeQueries": 1,
+      "worstAcceptedPositionErrorMetres": 0.0047236182658703055,
+      "oracleReadDenied": true,
+      "candidateBinarySHA256": "3f92efd5a44e0169492c963d0ac6f31ae8f339df68081e7d2ccb58083aee836a",
+      "optimizedCameraCount": 6,
+      "maximumOptimizedCameraPositionErrorMetres": 0.0036818061978200313,
+      "injectedTranslationDriftMetres": 0.03
+    },
+    {
+      "seed": 142697,
+      "report": "build/vision-evaluation/diversity/142697/replay.json",
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "falseAccepts": 0,
+      "negativeQueries": 1,
+      "worstAcceptedPositionErrorMetres": 0.008043909633864612,
+      "oracleReadDenied": true,
+      "candidateBinarySHA256": "3f92efd5a44e0169492c963d0ac6f31ae8f339df68081e7d2ccb58083aee836a",
+      "optimizedCameraCount": 6,
+      "maximumOptimizedCameraPositionErrorMetres": 0.0019242587077923738,
+      "injectedTranslationDriftMetres": 0.03
+    }
+  ],
+  "allDiagnosticCasesPassed": true,
+  "limitations": [
+    "Five analytic textured corners only",
+    "No full-house ambiguity suite",
+    "No sensor or physical calibration"
+  ]
+}
