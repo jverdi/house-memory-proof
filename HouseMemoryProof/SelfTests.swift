@@ -187,6 +187,30 @@ import Darwin
                 try Data("corrupt".utf8).write(to:assets[0],options:.atomic)
                 do{_=try IncrementalSnapshots.restore(first,repo:restoredRepo,folder:folder);return false}catch{return true}
             }
+            await check("Snapshot interruption never publishes incomplete revisions and missing arrivals preserve local projects") {
+                let source=try Repository(root:folder.appendingPathComponent("snapshot-fault-source")),target=try Repository(root:folder.appendingPathComponent("snapshot-fault-target"))
+                var h=House.empty("Snapshot interruption");let existing=House.empty("Existing local project")
+                let key=try source.put(Data("immutable original".utf8),ext:"jpg")
+                h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)]
+                try source.save(h);try target.save(existing)
+                for phase in ["asset-verified","metadata-verified"] {
+                    let destination=folder.appendingPathComponent("snapshot-fault-"+phase)
+                    do{_=try IncrementalSnapshots.write(house:h,repo:source,folder:destination,checkpoint:{if $0==phase {throw CancellationError()}});return false}catch is CancellationError{}
+                    guard try IncrementalSnapshots.catalog(folder:destination).isEmpty,source.integrity(h)==1 else{return false}
+                    let completed=try IncrementalSnapshots.write(house:h,repo:source,folder:destination)
+                    guard try IncrementalSnapshots.catalog(folder:destination).count==1 else{return false}
+                    let restored=try IncrementalSnapshots.restore(completed,repo:target,folder:destination)
+                    guard restored.id != h.id,restored.documentaryPhotos==h.documentaryPhotos else{return false}
+                    let remote=IncrementalSnapshots.root(destination).appendingPathComponent("assets").appendingPathComponent(key)
+                    try FileManager.default.removeItem(at:remote)
+                    do{_=try IncrementalSnapshots.restore(completed,repo:target,folder:destination);return false}catch{}
+                    guard try target.all().map({$0.id})==[existing.id],source.integrity(h)==1 else{return false}
+                }
+                let blocked=folder.appendingPathComponent("snapshot-folder-is-file")
+                try Data("occupied destination".utf8).write(to:blocked)
+                do{_=try IncrementalSnapshots.write(house:h,repo:source,folder:blocked);return false}catch{}
+                return try source.integrity(h)==1 && target.all().map({$0.id})==[existing.id]
+            }
             await check("Boundary coverage counts unseen and occluded nominal patches") {
                 var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
                 // Narrow-FOV planar depth diagnostic; RGB pixels are not consumed by coverage.

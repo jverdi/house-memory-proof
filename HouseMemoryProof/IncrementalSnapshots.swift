@@ -18,7 +18,7 @@ enum IncrementalSnapshots {
     }
     if let coordinationError {throw coordinationError};if let operationError {throw operationError}
   }
-  static func write(house:House,repo:Repository,folder:URL)throws->SnapshotRevision {
+  static func write(house:House,repo:Repository,folder:URL,checkpoint:((String)throws->Void)?=nil)throws->SnapshotRevision {
     try house.validate();let base=root(folder)
     for name in ["assets","metadata","revisions"] {try FileManager.default.createDirectory(at:base.appendingPathComponent(name),withIntermediateDirectories:true)}
     for key in house.assets.sorted() {
@@ -28,6 +28,7 @@ enum IncrementalSnapshots {
       if FileManager.default.fileExists(atPath:destination.path) {
         guard try StreamingArchive.digest(destination).sha==expected else{throw HouseError.message("An existing snapshot asset is incomplete or corrupt. Local originals are intact; choose another snapshot folder.")}
       } else {try publish(source:source,destination:destination,expected:expected)}
+      try checkpoint?("asset-verified")
     }
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys];let data=try encoder.encode(house)
     guard data.count<=100_000_000 else{throw HouseError.message("Snapshot metadata exceeds its restore budget.")}
@@ -35,6 +36,7 @@ enum IncrementalSnapshots {
     let temporary=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:temporary)}
     if !FileManager.default.fileExists(atPath:destination.path) {try data.write(to:temporary,options:.atomic);try publish(source:temporary,destination:destination,expected:String(key.prefix(64)))}
     else {guard try StreamingArchive.digest(destination).sha==String(key.prefix(64)) else{throw HouseError.message("Existing snapshot metadata is incomplete or corrupt.")}}
+    try checkpoint?("metadata-verified")
     let revision=SnapshotRevision(projectID:house.id,name:house.name,revision:house.revision,metadata:key,assets:house.assets.sorted())
     try encoder.encode(revision).write(to:temporary,options:.atomic)
     // The small revision record is the commit point; assets/metadata precede it.
@@ -47,7 +49,7 @@ enum IncrementalSnapshots {
     let files=try FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:[.fileSizeKey]).filter{$0.pathExtension=="json"}
     guard files.count<=10000 else{throw HouseError.message("Snapshot catalog exceeds its entry budget.")}
     return files.compactMap {url in
-      guard let size=try? url.resourceValues(forKeys:[.fileSizeKey]).fileSize,size<=10_000_000,let data=try? Data(contentsOf:url),let record=try? JSONDecoder().decode(SnapshotRevision.self,from:data),record.format=="HouseXraySnapshot",record.version==1,record.id.uuidString==url.deletingPathExtension().lastPathComponent,safe(record.metadata) else{return nil}
+      guard let size=try? url.resourceValues(forKeys:[.fileSizeKey]).fileSize,size<=10_000_000,let data=try? read(url,limit:10_000_000),let record=try? JSONDecoder().decode(SnapshotRevision.self,from:data),record.format=="HouseXraySnapshot",record.version==1,record.id.uuidString==url.deletingPathExtension().lastPathComponent,safe(record.metadata) else{return nil}
       return record
     }.sorted{$0.date>$1.date}
   }
