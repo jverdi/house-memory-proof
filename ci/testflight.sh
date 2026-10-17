@@ -4,6 +4,8 @@ cd "$(dirname "$0")/.."
 mkdir -p build/evidence
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
+bash tooling/opencv/build.sh
+cp build/opencv/LICENSE HouseMemoryProof/IFC/OPENCV-LICENSE.txt
 python3 ci/apple_access.py
 python3 - <<'PY'
 import json

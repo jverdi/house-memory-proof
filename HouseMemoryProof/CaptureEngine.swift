@@ -34,6 +34,11 @@ import Vision
   private var loadedWorldMap = false
   private var markerSeen: TimeInterval = 0
   private var markerTransform: simd_float4x4?
+  private var visualTransform: simd_float4x4?
+  private var visualSeen: TimeInterval = 0
+  private var lastVisualQuery: TimeInterval = 0
+  private var visualBusy = false
+  private var visualReferences: [(VisualMap, Rigid)] = []
   private var currentReferencePoses: [UUID: ReferencePose] = [:]
   init(model: AppModel) {
     self.model = model
@@ -81,6 +86,7 @@ import Vision
       currentReferencePoses = [:]
       markerTransform = nil
       markerSeen = 0
+      visualTransform = nil; visualSeen = 0; lastVisualQuery = 0; visualBusy = false; visualReferences = []
       loadedWorldMap = false
       referenceConflict = false
       if hasDepth { config.frameSemantics.insert(.sceneDepth) }
@@ -99,11 +105,27 @@ import Vision
         }
       }
       if reveal {
-        guard let prior, config.initialWorldMap != nil || !prior.referencePoses.isEmpty else {
+        guard let prior else {
           message = "This session has no saved AR map. Open source photographs instead."
           return
         }
         segment = prior
+        for reference in h.visualMaps.filter({ $0.roomID == prior.roomID }).sorted(by: { $0.date > $1.date }).prefix(4) {
+          guard let source = h.segments.first(where: { $0.id == reference.segmentID }),
+            let fingerprint = try? VisualMapping.fingerprint(house: h, segment: source), fingerprint == reference.fingerprint,
+            let data = try? repo.read(reference.asset), data.count < 20000000,
+            let map = try? JSONDecoder().decode(VisualMap.self, from: data), map.valid, map.segmentID == source.id, map.roomID == prior.roomID, map.fingerprint == fingerprint
+          else { continue }
+          if map.frameID == prior.id { visualReferences.append((map, Rigid())) }
+          else if map.frameID == nil, let registration = prior.registration, let matrix = PoseRefinement.matrix(registration.values) {
+            visualReferences.append((map, Rigid(values: PoseRefinement.array(simd_inverse(matrix)))))
+          }
+          if visualReferences.count >= 2 { break }
+        }
+        guard config.initialWorldMap != nil || !prior.referencePoses.isEmpty || !visualReferences.isEmpty else {
+          message = "No usable saved alignment. Build a visual reference or use source photographs."
+          return
+        }
         var scoped = h
         scoped.features = h.features.filter { $0.segmentID == prior.id }
         scoped.segments = scoped.segments.map {
@@ -154,12 +176,17 @@ import Vision
       normal = false
     }
     if reveal {
+      if normal, !visualBusy, !visualReferences.isEmpty, frame.timestamp - lastVisualQuery > 1.5 { requestVisualLocalization(frame) }
       let markerFresh = frame.timestamp - markerSeen < 2 && markerTransform != nil
-      let eligible =
-        normal && !referenceConflict
-        && (markerFresh
-          || (loadedWorldMap && markerTransform == nil && frame.worldMappingStatus == .mapped))
+      let visualFresh = frame.timestamp - visualSeen < 2 && visualTransform != nil
+      var disagreement = false
+      if markerFresh, visualFresh, let a = markerTransform, let b = visualTransform {
+        disagreement = simd_distance(a.columns.3, b.columns.3) > 0.05
+      }
+      let eligible = normal && !referenceConflict && !disagreement
+        && (markerFresh || visualFresh || (loadedWorldMap && markerTransform == nil && visualTransform == nil && frame.worldMappingStatus == .mapped))
       if markerFresh, let transform = markerTransform { overlayRoot.simdTransform = transform }
+      else if visualFresh, let transform = visualTransform { overlayRoot.simdTransform = transform }
       revealedNodes.forEach { $0.isHidden = !eligible }
       message =
         eligible
@@ -201,6 +228,43 @@ import Vision
           self.message = error?.localizedDescription ?? "Detail capture unavailable."
         }
       }
+    }
+  }
+  private func requestVisualLocalization(_ frame: ARFrame) {
+    let buffer = frame.capturedImage
+    guard CVPixelBufferGetPlaneCount(buffer) >= 1 else { return }
+    let width = CVPixelBufferGetWidthOfPlane(buffer, 0), height = CVPixelBufferGetHeightOfPlane(buffer, 0), stride = CVPixelBufferGetBytesPerRowOfPlane(buffer, 0)
+    guard width <= 4096, height <= 4096, stride * height <= 20000000 else { return }
+    CVPixelBufferLockBaseAddress(buffer, .readOnly)
+    guard let base = CVPixelBufferGetBaseAddressOfPlane(buffer, 0) else { CVPixelBufferUnlockBaseAddress(buffer, .readOnly); return }
+    let gray = Data(bytes: base, count: stride * height)
+    CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+    let k = frame.camera.intrinsics
+    let calibration = (0..<3).flatMap { row in (0..<3).map { col in Double(k[col][row]) } }
+    let liveCamera = frame.camera.transform, timestamp = frame.timestamp, token = generation, references = visualReferences
+    visualBusy = true; lastVisualQuery = timestamp
+    Task {
+      let estimates = await Task.detached(priority: .userInitiated) { () -> [Rigid] in
+        guard let features = try? VisualMapping.detect(gray: gray, width: width, height: height, stride: stride) else { return [] }
+        return references.compactMap { reference in
+          guard let result = VisualMapping.query(features, width: width, height: height, intrinsics: calibration, map: reference.0),
+            let pose = PoseRefinement.matrix(result.transform.values), let prior = PoseRefinement.matrix(reference.1.values) else { return nil }
+          return Rigid(values: PoseRefinement.array(prior * pose))
+        }
+      }.value
+      guard self.generation == token else { return }
+      defer { self.visualBusy = false }
+      guard self.running, self.reveal, let first = estimates.first else { return }
+      // Multiple accepted references must agree in the same saved frame.
+      for estimate in estimates.dropFirst() {
+        guard VisualMapping.agree(first, estimate) else { self.visualTransform = nil; return }
+      }
+      let liveValues = (0..<4).flatMap { row in (0..<4).map { col in Double(liveCamera[col][row]) } }
+      guard let alignment = VisualMapping.overlay(liveCamera: Rigid(values: liveValues), savedCanonicalCamera: first) else { return }
+      var transform = matrix_identity_float4x4
+      for row in 0..<4 { for col in 0..<4 { transform[col][row] = Float(alignment.values[row*4+col]) } }
+      self.visualTransform = transform
+      self.visualSeen = timestamp
     }
   }
   private func retain(_ frame: ARFrame, documentary: Bool) {

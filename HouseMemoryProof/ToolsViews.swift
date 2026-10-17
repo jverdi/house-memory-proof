@@ -33,7 +33,8 @@ struct ToolsPage: View {
             }.navigationTitle("Measurements")
           }
           NavigationLink("Printable references") { ReferencesPage(house: house) }
-          NavigationLink("Register capture segments") { RegistrationPage(house: house) }
+          NavigationLink("Visual references") { VisualMapsPage(house: house) }
+        NavigationLink("Register capture segments") { RegistrationPage(house: house) }
           NavigationLink("Capture coverage") { CoveragePage(house: house) }
           NavigationLink("Reconstruct saved depth") { ReconstructionPage(house: house) }
         }
@@ -561,6 +562,7 @@ struct ReconstructionPage: View {
 
 struct AboutPage: View {
   @State private var license = "Loading bundled license…"
+  @State private var visionLicense = ""
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
@@ -573,9 +575,12 @@ struct AboutPage: View {
         Text(
           "SQLite is public domain. SwiftUI, ARKit, SceneKit, Metal, Vision, WebKit and AVFoundation are system frameworks. The application and fusion core are project source."
         )
+        Text("Native visual matching: OpenCV 4.13.0, Apache License 2.0. Built from official pinned source.")
+        Text(visionLicense).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
         Text(license).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
       }.padding()
     }.navigationTitle("About").task {
+      if let url=Bundle.main.url(forResource:"IFC",withExtension:nil)?.appendingPathComponent("OPENCV-LICENSE.txt"),let text=try? String(contentsOf:url,encoding:.utf8){visionLicense=text}
       if let url = Bundle.main.url(forResource: "IFC", withExtension: nil)?.appendingPathComponent(
         "LICENSE.md"), let text = try? String(contentsOf: url, encoding: .utf8)
       {

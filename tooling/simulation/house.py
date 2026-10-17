@@ -25,9 +25,9 @@ def room(rng):
   for y in np.arange(-d/2,d/2,.406):items.append(box((side*w/2,y,height/2-1.4),(.14,.038,height),(180,135,88),'structure'))
  for x in np.arange(-w/2,w/2,.406):items.append(box((x,0,height-1.4),(.05,d,.2),(180,135,88),'structure'))
  items += [box((0,d/2-.04,-.25),(w*.8,.018,.018),(240,178,40),'electrical'),box((-.5,d/2-.05,.2),(.018,.018,1.2),(170,125,245),'lowVoltage'),box((w/2-.08,0,.2),(.05,d*.7,.05),(65,160,220),'plumbing'),box((0,0,height-1.65),(w*.7,.25,.25),(80,190,170),'hvac')]
- finish=[box((0,side*d/2,height/2-1.4),(w,.025,height),(205,210,210),'finish') for side in [-1,1]]+[box((side*w/2,0,height/2-1.4),(.025,d,height),(205,210,210),'finish') for side in [-1,1]]+[box((0,0,height-1.53),(w,d,.025),(220,220,225),'ceiling')]
+ finish=[box((0,side*(d/2-.09),height/2-1.4),(w,.025,height),(205,210,210),'finish') for side in [-1,1]]+[box((side*(w/2-.09),0,height/2-1.4),(.025,d,height),(205,210,210),'finish') for side in [-1,1]]+[box((0,0,height-1.53),(w,d,.025),(220,220,225),'ceiling')]
  return items,finish,[w,d,height]
-def render(items,position,yaw,width,height):
+def render(items,position,yaw,width,height,texture_seed=None):
  fx=width*.72;fy=fx;cx=width/2;cy=height/2
  yy,xx=np.mgrid[:height,:width];right=np.array([math.cos(yaw),-math.sin(yaw),0]);forward=np.array([math.sin(yaw),math.cos(yaw),0]);up=np.array([0,0,1])
  rays=(xx[...,None]-cx)/fx*right-(yy[...,None]-cy)/fy*up+forward
@@ -42,6 +42,11 @@ def render(items,position,yaw,width,height):
  finite=np.isfinite(nearest);safe=np.where(finite,nearest,0)
  surface=position+rays*safe[...,None]
  pattern=((np.floor(surface[...,0]*21)+np.floor(surface[...,1]*17)+np.floor(surface[...,2]*23))%2)*.18+.82
+ if texture_seed is not None:
+  cell=np.floor(surface*25).astype(np.int64)
+  value=((cell[...,0]*73856093)^(cell[...,1]*19349663)^(cell[...,2]*83492791)^texture_seed).astype(np.uint64)
+  value=(value^(value>>13))*np.uint64(1274126177);value=value^(value>>16)
+  pattern=.25+.75*(value%256)/255
  colors=(colors*pattern[...,None]).astype(np.uint8)
  rotation=np.stack([right,up,-forward],axis=1)
  adapter=np.array([[1,0,0],[0,0,1],[0,-1,0]])

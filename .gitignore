@@ -15,3 +15,9 @@ HouseMemoryProof/IFC/LICENSE.md
 HouseMemoryProof/IFC/test-block.ifc
 
 HouseMemoryProof/IFC/synthetic-house.hxray
+
+HouseMemoryProof/IFC/OPENCV-LICENSE.txt
+
+HouseMemoryProof/IFC/vision-map.hxray
+HouseMemoryProof/IFC/vision-queries.json
+HouseMemoryProof/IFC/vision-query-*.jpg

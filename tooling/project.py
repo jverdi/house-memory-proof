@@ -29,3 +29,19 @@ if 'IFCFOLDER0000000000000001' not in s:
  s=s.replace('"6D3E1FE7B9D4981A01FED2ED",','"6D3E1FE7B9D4981A01FED2ED", "IFCRESOURCE00000000000001",')
  s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "IFCFOLDER0000000000000001",')
 p.write_text(s)
+
+# Native visual feature / pose core and official platform-specific static SDK.
+s=p.read_text()
+for name in ['hx_vision.cpp','hx_vision_test.cpp']:
+ rid=hashlib.sha256(('vision-file:'+name).encode()).hexdigest()[:24].upper()
+ bid=hashlib.sha256(('vision-build:'+name).encode()).hexdigest()[:24].upper()
+ if rid not in s:
+  s=s.replace('\t"objects" = {','\t"objects" = {\n'+f'"{rid}" = {{isa=PBXFileReference; lastKnownFileType=sourcecode.cpp.cpp; path="../packages/visual-core/{name}"; sourceTree="<group>";}};\n"{bid}" = {{isa=PBXBuildFile; fileRef="{rid}";}};')
+  s=s.replace('"534A5F435ADDB25DA9F43232",','"534A5F435ADDB25DA9F43232", "'+bid+'",')
+  s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "'+rid+'",')
+if 'HXOPENCVFRAMEWORKFILE001' not in s:
+ s=s.replace('\t"objects" = {','\t"objects" = {\n"HXOPENCVFRAMEWORKFILE001"={isa=PBXFileReference;lastKnownFileType=wrapper.xcframework;path="build/opencv/opencv2.xcframework";sourceTree=SOURCE_ROOT;};\n"HXOPENCVFRAMEWORKBUILD01"={isa=PBXBuildFile;fileRef=HXOPENCVFRAMEWORKFILE001;};')
+ s=s.replace('"A33603BF79F74B056172D43B",','"A33603BF79F74B056172D43B", "HXOPENCVFRAMEWORKFILE001",')
+ s=s.replace('"isa" = "PBXFrameworksBuildPhase";\n\t\t\t"buildActionMask" = 2147483647;\n\t\t\t"files" = (','"isa" = "PBXFrameworksBuildPhase";\n\t\t\t"buildActionMask" = 2147483647;\n\t\t\t"files" = ("HXOPENCVFRAMEWORKBUILD01",')
+ s=s.replace('"CLANG_CXX_LIBRARY" = "libc++";', '"CLANG_CXX_LIBRARY" = "libc++"; "OTHER_LDFLAGS" = ("$(inherited)", "-framework", "Accelerate", "-lz");')
+p.write_text(s)

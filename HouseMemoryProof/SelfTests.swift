@@ -2,6 +2,7 @@ import Foundation
 import SceneKit
 import PDFKit
 import SQLite3
+import ImageIO
 
 @MainActor enum SelfTests {
     static func run(model:AppModel) async {
@@ -27,6 +28,42 @@ import SQLite3
                 let(t,f,c)=try CheckedRegistration.fit(source:a,target:b)
                 guard f<1e-10,c<1e-10,(t.apply(V3(1,2,0))-V3(5,6,3)).length<1e-10 else{return false}
                 do{_=try CheckedRegistration.coordinates("1,garbage,2,3");return false}catch{return true}
+            }
+            check("Visual pose converts canonical saved frame into live AR frame"){
+                var live=Rigid();live.values[3]=5;live.values[7]=6;live.values[11]=7
+                let saved=Rigid(values:[1,0,0,2, 0,0,-1,-4, 0,1,0,3, 0,0,0,1])
+                guard let overlay=VisualMapping.overlay(liveCamera:live,savedCanonicalCamera:saved) else{return false}
+                return (overlay.apply(V3(2,3,4))-V3(5,6,7)).length<1e-10 && !VisualMapping.agree(live,saved)
+            }
+            check("Visual grayscale retains raw top-to-bottom camera rows"){
+                var pixels=Data(repeating:0,count:128*128);for y in 0..<64{for x in 0..<128{pixels[y*128+x]=255}}
+                let cg=CGImage(width:128,height:128,bitsPerComponent:8,bitsPerPixel:8,bytesPerRow:128,space:CGColorSpaceCreateDeviceGray(),bitmapInfo:CGBitmapInfo(rawValue:0),provider:CGDataProvider(data:pixels as CFData)!,decode:nil,shouldInterpolate:false,intent:.defaultIntent)!
+                let encoded=NSMutableData();let destination=CGImageDestinationCreateWithData(encoded as CFMutableData,"public.png" as CFString,1,nil)!;CGImageDestinationAddImage(destination,cg,nil);CGImageDestinationFinalize(destination)
+                let(gray,w,h)=try VisualMapping.image(encoded as Data)
+                return w==128 && h==128 && gray[0]>240 && gray[127*128]<10
+            }
+            check("Rendered corner images localize held query viewpoints without pose input"){
+                let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
+                let capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
+                let map=try VisualMapping.build(house:capture,segment:capture.segments[0],repo:repo)
+                let evaluator=try JSONSerialization.jsonObject(with:Data(contentsOf:resources.appendingPathComponent("vision-queries.json"))) as! [String:Any]
+                var matched=0;var worst=0.0
+                for query in evaluator["queries"] as! [[String:Any]] {
+                    let(gray,w,h)=try VisualMapping.image(Data(contentsOf:resources.appendingPathComponent(query["image"] as! String)))
+                    let features=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
+                    let result=VisualMapping.query(features,width:query["width"] as! Int,height:query["height"] as! Int,intrinsics:query["intrinsics"] as! [Double],map:map)
+                    if query["shouldMatch"] as! Bool {
+                        if let result {let a=result.transform.values,b=query["expectedCamera"] as! [Double];let error=(V3(a[3],a[7],a[11])-V3(b[3],b[7],b[11])).length;worst=max(worst,error);matched+=1}
+                    }else if result != nil {throw HouseError.message("Unrelated texture was incorrectly localized.")}
+                }
+                guard matched>=2,worst<0.03 else{throw HouseError.message("Image localization: \(matched)/3 held views, worst accepted position error \(worst) m, \(map.points.count) map features.")}
+                return true
+            }
+            check("Native visual feature matching and robust PnP diagnostics"){
+                var error=0.0;var falseAccepts:UInt32=0
+                let status=hx_vision_selftest(&error,&falseAccepts)
+                guard status==1 else{throw HouseError.message("Vision diagnostic failed at gate \(status), max position error \(error), false accepts \(falseAccepts).")}
+                return error<=0.02 && falseAccepts==0
             }
             check("Fixture has three independent rooms and paired stages"){try house.validate();return house.rooms.count==3 && house.stages.count==2 && house.features.allSatisfy{$0.kind == .synthetic}}
             check("Finish switch preserves stable geometry"){let rough=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.rough))},finish=house.features.filter{SceneBuilder.visible($0,SceneOptions(mode:.finished,ceilings:true))};return !rough.isEmpty && !finish.isEmpty && rough.allSatisfy{$0.trade != .finish} && finish.contains{$0.trade == .ceiling}}

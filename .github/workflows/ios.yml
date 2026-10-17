@@ -25,12 +25,16 @@ jobs:
   simulator:
     name: Compile and launch on iPhone simulator
     runs-on: macos-26
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv
+          key: opencv-4.13.0-ios26-arm64-v1-${{ hashFiles('tooling/opencv/build.sh') }}
       - name: Compile, launch, and capture evidence
         run: bash ci/simulator.sh
       - name: Verify portable core and independent export readers
@@ -54,12 +58,16 @@ jobs:
     needs: simulator
     if: false # Release held during implementation; enable once for final candidate.
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv
+          key: opencv-4.13.0-ios26-arm64-v1-${{ hashFiles('tooling/opencv/build.sh') }}
       - name: Sign and upload for internal TestFlight testing
         env:
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || '4RLZ6F3UA4' }}

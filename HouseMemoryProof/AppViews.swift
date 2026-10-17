@@ -585,7 +585,7 @@ struct CapturePage: View {
                   "\(s.started.formatted()) · \(s.worldMap == nil ? "photos only":"saved AR map")"
                 ).font(.caption).foregroundStyle(.secondary)
               }
-            }.disabled(s.worldMap == nil && s.referencePoses.isEmpty)
+            }.disabled(s.worldMap == nil && s.referencePoses.isEmpty && !house.visualMaps.contains(where:{$0.roomID==s.roomID}))
           }
         }
       }.navigationTitle("Capture").onAppear {

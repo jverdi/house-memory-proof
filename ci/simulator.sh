@@ -4,6 +4,8 @@ cd "$(dirname "$0")/.."
 mkdir -p build/evidence
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
+bash tooling/opencv/build.sh
+cp build/opencv/LICENSE HouseMemoryProof/IFC/OPENCV-LICENSE.txt
 xcodebuild -version | tee build/evidence/xcode-version.txt
 xcrun simctl list devices available --json > build/evidence/simulator-inventory.json
 device_id="$(python3 - <<'PY'

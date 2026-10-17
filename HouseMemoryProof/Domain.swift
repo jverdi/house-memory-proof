@@ -94,11 +94,13 @@ struct Bookmark:Codable,Identifiable,Equatable { var id=UUID();var name:String;v
 struct House:Codable,Identifiable,Equatable {
     var schema=1;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
+    var visualMaps:[VisualMapReference]=[]
     var connections:[ServiceConnection]=[]
     var documentaryPhotos:[DocumentaryPhoto]=[]
     var references:[ReferenceBoard]=[];var isDemo=false;var notes="";var closureNotes=""
     var assets:Set<String> {
         var keys=observations.flatMap{[$0.image,$0.depth,$0.confidence].compactMap{$0}}
+        keys+=visualMaps.map{$0.asset}
         keys+=drawings.map{$0.asset};keys+=segments.compactMap{$0.worldMap};keys+=references.flatMap{[$0.image,$0.pdf]};keys+=features.compactMap{$0.texture};keys+=documentaryPhotos.map{$0.image}
         return Set(keys)
     }
@@ -118,6 +120,7 @@ struct House:Codable,Identifiable,Equatable {
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in bookmarks {guard b.position.finite,b.yaw.isFinite,b.pitch.isFinite,roomIDs.contains(b.roomID),(b.segmentID==nil || segmentIDs.contains(b.segmentID!)) else{throw HouseError.message("Invalid viewpoint frame.")}}
         for b in references {guard b.width.isFinite,b.width>0.03,b.width<2 else{throw HouseError.message("Reference width must be between 3 cm and 2 m.")}}
+        for map in visualMaps {guard segmentIDs.contains(map.segmentID),roomIDs.contains(map.roomID),stageIDs.contains(map.stageID) else{throw HouseError.message("Invalid visual reference provenance.")}}
         for d in drawings {if let a=d.alignment {guard a.transform.valid,a.metresPerPoint.isFinite,a.metresPerPoint>0,a.page>=0,a.sheetPoints.count>=4,a.sheetPoints.count==a.housePoints.count,a.sheetPoints.allSatisfy({$0.finite}),a.housePoints.allSatisfy({$0.finite}),a.fitMaximum.isFinite,a.checkMaximum.isFinite else{throw HouseError.message("Invalid drawing alignment.")}}}
         for a in assets {guard a.count<100,!a.contains("/"),!a.contains("\\"),!a.contains("..") else{throw HouseError.message("Unsafe asset reference.")}}
     }
@@ -187,6 +190,7 @@ extension House {
         dimensions=try c.decodeIfPresent([Dimension].self,forKey:.dimensions) ?? []
         drawings=try c.decodeIfPresent([Drawing].self,forKey:.drawings) ?? []
         bookmarks=try c.decodeIfPresent([Bookmark].self,forKey:.bookmarks) ?? []
+        visualMaps=try c.decodeIfPresent([VisualMapReference].self,forKey:.visualMaps) ?? []
         connections=try c.decodeIfPresent([ServiceConnection].self,forKey:.connections) ?? []
         documentaryPhotos=try c.decodeIfPresent([DocumentaryPhoto].self,forKey:.documentaryPhotos) ?? []
         references=try c.decodeIfPresent([ReferenceBoard].self,forKey:.references) ?? []
