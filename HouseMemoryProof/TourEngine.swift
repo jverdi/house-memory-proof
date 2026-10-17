@@ -13,7 +13,9 @@ enum TourDirector {
             if h.isDemo {
                 shots.append(TourShot(roomID:r.id,position:r.origin+V3(r.size.x/2,r.size.y/2,1.6),yaw:0,pitch:0.08,caption:r.name+" · SYNTHETIC DEMONSTRATION",duration:5))
             }else if let obs=h.observations.last(where:{$0.roomID==r.id && !$0.documentary}) {
-                let m=obs.camera,position=V3(m[3],-m[11],m[7]),yaw=atan2(m[2],m[10])
+                let m=obs.camera;var position=V3(m[3],-m[11],m[7]);var forward=V3(-m[2],m[10],-m[6])
+                if let registration=h.segments.first(where:{$0.id==obs.segmentID})?.registration {forward=registration.apply(forward)-registration.apply(V3());position=registration.apply(position)}
+                let yaw=atan2(-forward.x,forward.y)
                 shots.append(TourShot(roomID:r.id,position:position,yaw:yaw,pitch:0,caption:r.name+" · approximate captured geometry",duration:5))
             }else {excluded.append(r.name+": no captured camera viewpoint")}
         }
@@ -22,13 +24,21 @@ enum TourDirector {
     }
 }
 @MainActor enum MovieExporter {
+    static func cacheKey(house:House,plan:TourPlan,options:SceneOptions) throws ->String {
+        let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+        var data=try encoder.encode(house);data.append(try encoder.encode(plan))
+        let selection=["renderer-v2",options.mode.rawValue,options.trades.map{$0.rawValue}.sorted().joined(separator:","),String(options.ceilings),options.room?.uuidString ?? "all",options.stage?.uuidString ?? "all"].joined(separator:"|")
+        data.append(Data(selection.utf8));return SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
+    }
     // Compatibility adapter: AVAssetWriter's pixel buffer adaptor remains available
     // in iOS 26. Its use is isolated here; no live screen recording is performed.
     static func render(_ house:House,repo:Repository,options:SceneOptions,duration:Double=20,width:Int=1920,height:Int=1080,progress:@escaping(Double)->Void) async throws ->URL {
         var plan=TourDirector.plan(house,duration:duration);plan.width=width;plan.height=height
         guard !plan.shots.isEmpty else{throw HouseError.message("A tour needs a captured viewpoint or the synthetic sample house.")}
         guard repo.freeBytes()>800_000_000 else{throw HouseError.message("Free at least 800 MB for movie segments and the final file.")}
-        let planData=try JSONEncoder().encode(plan),hash=SHA256.hash(data:planData).map{String(format:"%02x",$0)}.joined()
+        let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+        let planData=try encoder.encode(plan)
+        let hash=try cacheKey(house:house,plan:plan,options:options)
         let folder=repo.root.appendingPathComponent("tours/"+hash,isDirectory:true);try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
         try planData.write(to:folder.appendingPathComponent("tour.json"),options:.atomic)
         try repo.job(hash,state:"running",data:planData)

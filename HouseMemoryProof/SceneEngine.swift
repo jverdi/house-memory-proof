@@ -46,9 +46,7 @@ enum SceneBuilder {
         let sun=SCNNode();sun.light=SCNLight();sun.light?.type = .directional;sun.light?.intensity=1100;sun.eulerAngles=SCNVector3(-0.7,-0.5,0);scene.rootNode.addChildNode(sun)
         // Unregistered sessions have independent frames; never silently overlay them.
         var textureCache:[String:UIImage]=[:]
-        var latest:[UUID:UUID]=[:];for s in h.segments {latest[s.roomID]=s.id}
         for f in features(h,options:options) {
-            if let sid=f.segmentID,let seg=h.segments.first(where:{$0.id==sid}),seg.registration==nil,latest[f.roomID] != sid {continue}
             var mesh=f.mesh
             if let sid=f.segmentID,let t=h.segments.first(where:{$0.id==sid})?.registration {mesh.vertices=mesh.vertices.map{t.apply($0)}}
             let n=SCNNode(geometry:geometry(mesh,uv:f.uv));n.name=f.id.uuidString

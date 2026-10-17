@@ -5,6 +5,7 @@ import SwiftUI
 
 final class Repository {
     let root:URL
+    private(set) var recoveryWarnings:[String]=[]
     private var db:OpaquePointer?
     private let lock=NSRecursiveLock()
     init(root:URL?=nil) throws {
@@ -16,7 +17,22 @@ final class Repository {
     deinit {sqlite3_close(db)}
     private func execute(_ sql:String)throws {if sqlite3_exec(db,sql,nil,nil,nil) != SQLITE_OK {throw HouseError.message("Local database write failed. Existing evidence is preserved.")}}
     private func statement(_ sql:String)throws->OpaquePointer {var s:OpaquePointer?;guard sqlite3_prepare_v2(db,sql,-1,&s,nil)==SQLITE_OK,let s else{throw HouseError.message("Could not prepare database transaction.")};return s}
-    func all()throws->[House] {lock.lock();defer{lock.unlock()};let s=try statement("SELECT json FROM projects ORDER BY name");defer{sqlite3_finalize(s)};var result:[House]=[];while sqlite3_step(s)==SQLITE_ROW {let n=Int(sqlite3_column_bytes(s,0));if let p=sqlite3_column_blob(s,0){let h=try JSONDecoder().decode(House.self,from:Data(bytes:p,count:n));try h.validate();result.append(h)}};return result}
+    func all()throws->[House] {
+        lock.lock();defer{lock.unlock()};recoveryWarnings=[]
+        let s=try statement("SELECT id,json FROM projects ORDER BY name");defer{sqlite3_finalize(s)};var result:[House]=[]
+        while sqlite3_step(s)==SQLITE_ROW {
+            let n=Int(sqlite3_column_bytes(s,1));guard let p=sqlite3_column_blob(s,1) else{continue}
+            let data=Data(bytes:p,count:n)
+            do {let h=try JSONDecoder().decode(House.self,from:data);try h.validate();result.append(h)}
+            catch {
+                let id=sqlite3_column_text(s,0).map{String(cString:$0)} ?? "unknown"
+                let recovery=root.appendingPathComponent("recovery",isDirectory:true);try FileManager.default.createDirectory(at:recovery,withIntermediateDirectories:true)
+                let name=UUID(uuidString:id)?.uuidString ?? UUID().uuidString
+                try data.write(to:recovery.appendingPathComponent(name+".json"),options:.atomic)
+                recoveryWarnings.append("Project \(name.prefix(8)) could not be opened; its database row and recovery copy remain intact. \(error.localizedDescription)")
+            }
+        };return result
+    }
     func save(_ h:House)throws {
         lock.lock();defer{lock.unlock()};try h.validate();let bytes=try JSONEncoder().encode(h)
         try execute("BEGIN IMMEDIATE")
@@ -65,7 +81,7 @@ final class Repository {
     @Published var shareURL:URL?
     let repository:Repository?
     init(root:URL?=nil) {
-        do {let r=try Repository(root:root);let loaded=try r.all();repository=r;houses=loaded;selected=houses.first?.id}
+        do {let r=try Repository(root:root);repository=r;do {houses=try r.all();selected=houses.first?.id;if !r.recoveryWarnings.isEmpty{error=r.recoveryWarnings.joined(separator:"\n")}}catch{self.error=error.localizedDescription}}
         catch {repository=nil;self.error=error.localizedDescription}
     }
     var house:House? {houses.first{$0.id==selected}}

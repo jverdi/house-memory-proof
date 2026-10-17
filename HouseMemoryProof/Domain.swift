@@ -101,8 +101,11 @@ struct House:Codable,Identifiable,Equatable {
         guard roomIDs.count==rooms.count,stageIDs.count==stages.count,Set(features.map{$0.id}).count==features.count else{throw HouseError.message("Duplicate identities in project.")}
         for r in rooms {guard r.origin.finite,r.size.finite,r.size.x>0,r.size.y>0,r.size.z>0 else{throw HouseError.message("Invalid room dimensions.")}}
         for f in features {guard f.mesh.valid,roomIDs.contains(f.roomID),stageIDs.contains(f.stageID),f.route.allSatisfy({$0.finite}) else{throw HouseError.message("Invalid geometry or source relationships.")}}
-        for s in segments {if let t=s.registration, !t.valid {throw HouseError.message("Invalid segment registration.")}}
-        for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),o.camera.count==16,o.intrinsics.count==9,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.height>0 else{throw HouseError.message("Invalid observation metadata.")}}
+        guard Set(segments.map{$0.id}).count==segments.count,Set(observations.map{$0.id}).count==observations.count else{throw HouseError.message("Duplicate capture identities.")}
+        let segmentIDs=Set(segments.map{$0.id})
+        for f in features {if let sid=f.segmentID,!segmentIDs.contains(sid){throw HouseError.message("Feature references an absent capture session.")};if let uv=f.uv {guard uv.count==f.mesh.vertices.count,uv.allSatisfy({$0.u.isFinite && $0.v.isFinite}) else{throw HouseError.message("Invalid texture coordinates.")}}}
+        for s in segments {guard roomIDs.contains(s.roomID),stageIDs.contains(s.stageID) else{throw HouseError.message("Capture session references an absent space or stage.")};if let t=s.registration, !t.valid {throw HouseError.message("Invalid segment registration.")}}
+        for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentIDs.contains(o.segmentID),o.camera.count==16,o.intrinsics.count==9,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.height>0 else{throw HouseError.message("Invalid observation metadata.")}}
         for a in assets {guard a.count<100,!a.contains("/"),!a.contains("\\"),!a.contains("..") else{throw HouseError.message("Unsafe asset reference.")}}
     }
     static func empty(_ name:String)->House {
@@ -152,5 +155,44 @@ enum DemoFactory {
             for (name,trade,pts,radius,endpoint) in routes {let p=pts.map{$0+o};var f=Feature(name:name,trade:trade,roomID:room.id,stageID:rough.id,kind:.synthetic,mesh:.route(p,radius:radius),route:p);f.endpoint=endpoint;h.features.append(f)}
         }
         return h
+    }
+}
+
+extension House {
+    init(from decoder:Decoder) throws {
+        let c=try decoder.container(keyedBy:CodingKeys.self)
+        schema=try c.decode(Int.self,forKey:.schema)
+        id=try c.decode(UUID.self,forKey:.id)
+        name=try c.decode(String.self,forKey:.name)
+        created=try c.decode(Date.self,forKey:.created)
+        revision=try c.decode(Int.self,forKey:.revision)
+        rooms=try c.decodeIfPresent([Room].self,forKey:.rooms) ?? []
+        stages=try c.decodeIfPresent([Stage].self,forKey:.stages) ?? []
+        features=try c.decodeIfPresent([Feature].self,forKey:.features) ?? []
+        observations=try c.decodeIfPresent([Observation].self,forKey:.observations) ?? []
+        segments=try c.decodeIfPresent([Segment].self,forKey:.segments) ?? []
+        dimensions=try c.decodeIfPresent([Dimension].self,forKey:.dimensions) ?? []
+        drawings=try c.decodeIfPresent([Drawing].self,forKey:.drawings) ?? []
+        bookmarks=try c.decodeIfPresent([Bookmark].self,forKey:.bookmarks) ?? []
+        references=try c.decodeIfPresent([ReferenceBoard].self,forKey:.references) ?? []
+        isDemo=try c.decodeIfPresent(Bool.self,forKey:.isDemo) ?? false
+        notes=try c.decodeIfPresent(String.self,forKey:.notes) ?? ""
+        closureNotes=try c.decodeIfPresent(String.self,forKey:.closureNotes) ?? ""
+    }
+}
+
+extension Segment {
+    init(from decoder:Decoder) throws {
+        let c=try decoder.container(keyedBy:CodingKeys.self)
+        id=try c.decode(UUID.self,forKey:.id)
+        roomID=try c.decode(UUID.self,forKey:.roomID)
+        stageID=try c.decode(UUID.self,forKey:.stageID)
+        started=try c.decode(Date.self,forKey:.started)
+        worldMap=try c.decodeIfPresent(String?.self,forKey:.worldMap) ?? nil
+        registration=try c.decodeIfPresent(Rigid?.self,forKey:.registration) ?? nil
+        registrationResidual=try c.decodeIfPresent(Double?.self,forKey:.registrationResidual) ?? nil
+        interrupted=try c.decodeIfPresent(Bool.self,forKey:.interrupted) ?? false
+        approved=try c.decodeIfPresent(Bool.self,forKey:.approved) ?? false
+        referencePoses=try c.decodeIfPresent([ReferencePose].self,forKey:.referencePoses) ?? []
     }
 }
