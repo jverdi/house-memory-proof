@@ -29,7 +29,7 @@ struct BoundaryEditor:View {
         }
         if !error.isEmpty {Text(error).foregroundStyle(.red)}
         Button("Save reveal boundary") {
-          do {let b=try make();if model.edit({$0.boundaries.append(b)}) {dismiss()}}
+          do {let b=try make();if model.edit(projectID:house.id,{$0.boundaries.append(b)}) {dismiss()}}
           catch {self.error=error.localizedDescription}
         }
       }.navigationTitle("Wall or ceiling").toolbar {Button("Cancel"){dismiss()}}

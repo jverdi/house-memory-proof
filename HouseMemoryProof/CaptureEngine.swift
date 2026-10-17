@@ -143,14 +143,12 @@ import Vision
           scoped.features=try scoped.features.map{try RevealVolumes.clip($0,to:boundary)}
         }
         catch {message=error.localizedDescription;return}
-        scoped.segments = scoped.segments.map {
-          var s = $0
-          s.registration = nil
-          return s
-        }
+        var localSegment=prior;localSegment.registration=nil
+        scoped.segments=[localSegment]
         let scene = SceneBuilder.scene(scoped, options: SceneOptions(mode: .rough, ceilings: true))
         view.scene = scene
         overlayRoot.removeFromParentNode()
+        overlayRoot.simdTransform=matrix_identity_float4x4
         overlayRoot.childNodes.forEach { $0.removeFromParentNode() }
         revealedNodes = scene.rootNode.childNodes.filter { $0.geometry != nil }
         for n in revealedNodes {
