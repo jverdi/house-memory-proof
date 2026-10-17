@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "199e66287f1ec350b776ac0ce38e919da764ed82",
+  "workflowRun": 39038841042,
+  "job": 117414067561,
+  "artifact": 12103204264,
+  "artifactSHA256": "3c75775a3934c9dbcf9dd806359c54b31470c081d151fcf91c18ad93e4d7dc37",
+  "compiled": true,
+  "nativePassed": false,
+  "completedChecks": 79,
+  "progressAtElapsedSeconds": 57.113344333333316,
+  "lastCheck": "Integrated capture processing and interrupted publication",
+  "failure": "Native report did not arrive within the 300-second polling budget. No individual partial outcomes were retained by this older harness. No UI/recovery/export-reader gate ran.",
+  "diagnosis": "Inspection found per-triangle copy-on-write of growing mesh accumulators in classification transfer and texturing; repaired in subsequent source. Exact stage/process sample was not retained, so attribution awaits the next native run."
+}

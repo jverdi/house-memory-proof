@@ -19,6 +19,8 @@ import Darwin
             model.status=name
             let progress:[String:Any]=["test":name,"state":state,"completedChecks":results.count,"elapsedSeconds":ProcessInfo.processInfo.systemUptime-runStarted,"memory":memorySample()]
             if let data=try? JSONSerialization.data(withJSONObject:progress,options:[.sortedKeys]) {try? DurableFiles.write(data,to:mainRepo.root.appendingPathComponent("self-test-progress.json"))}
+            let partial:[String:Any] = ["completed":false,"sourceRevision":Bundle.main.object(forInfoDictionaryKey:"ProofSourceRevision") as? String ?? "local","tests":results]
+            if let data=try? JSONSerialization.data(withJSONObject:partial,options:[.sortedKeys]) {try? DurableFiles.write(data,to:mainRepo.root.appendingPathComponent("self-test-partial.json"))}
         }
         func check(_ name:String,_ body:()throws->Bool) async {
             mark(name)
@@ -615,10 +617,10 @@ import Darwin
                 mark("Integrated capture processing and interrupted publication")
                 try mainRepo.save(fixture)
                 var interrupted=false
-                do {_ = try await CaptureProcessing.build(house:fixture,segmentID:fixture.segments[0].id,repo:mainRepo,checkpoint:{stage in if stage=="surfaces-prepared" {throw CancellationError()}}){_,_ in}}
+                do {_ = try await CaptureProcessing.build(house:fixture,segmentID:fixture.segments[0].id,repo:mainRepo,checkpoint:{stage in if stage=="surfaces-prepared" {throw CancellationError()}}){label,_ in mark("Interrupted pipeline: "+label)}}
                 catch is CancellationError {interrupted=true}
                 let before=try mainRepo.all().first{$0.id==fixture.id}
-                let processed=try await CaptureProcessing.build(house:fixture,segmentID:fixture.segments[0].id,repo:mainRepo){_,_ in}
+                let processed=try await CaptureProcessing.build(house:fixture,segmentID:fixture.segments[0].id,repo:mainRepo){label,_ in mark("Integrated pipeline: "+label)}
                 let report=processed.processingReports.last!
                 let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(processed));try restored.validate()
                 results.append(["test":"Integrated capture processing retains originals and does not publish an interrupted candidate","passed":interrupted && before?.observations==fixture.observations && before?.features==fixture.features && processed.observations==fixture.observations && restored.processingReports==processed.processingReports && report.steps.count==6 && report.steps.contains{$0.name=="Triangle surfaces" && $0.passed} && report.steps.contains{$0.name=="Photo textures" && $0.passed},"steps":report.steps.map{["name":$0.name,"passed":$0.passed,"detail":$0.detail] as [String:Any]}])

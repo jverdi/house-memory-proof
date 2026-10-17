@@ -165,7 +165,10 @@ extension MeshSemantics {
     guard surface.mesh.valid else{throw HouseError.message("Invalid reconstructed surface.")}
     let sources=originals.filter{$0.segmentID==surface.segmentID && $0.resolvedGeometrySource == .capturedMesh}
     let index=try CapturedFaceLabels(sources)
-    var meshes:[String:Mesh]=[:],lookups:[String:[Int32:Int32]]=[:],trades:[String:Trade]=[:]
+    // Reference-owned accumulators avoid copying each growing mesh/dictionary
+    // out of another dictionary on every triangle (quadratic copy-on-write).
+    final class Part {var mesh=Mesh();var lookup:[Int32:Int32]=[:];var trade=Trade.unknown}
+    var parts:[String:Part]=[:]
     for face in stride(from:0,to:surface.mesh.triangles.count,by:3) {
       if face%3000==0 {try Task.checkCancellation()}
       let ids=Array(surface.mesh.triangles[face..<face+3]),p=ids.map{surface.mesh.vertices[Int($0)]}
@@ -173,16 +176,17 @@ extension MeshSemantics {
       let labels=p.map{index.label(at:$0,normal:normal)}
       let same=labels[0] != nil && labels.allSatisfy{$0?.0==labels[0]?.0 && $0?.1==labels[0]?.1}
       let label=same ? labels[0]!.0:"unknown",trade=same ? labels[0]!.1:Trade.unknown
-      var mesh=meshes[label] ?? Mesh(),lookup=lookups[label] ?? [:]
+      let part:Part
+      if let existing=parts[label] {part=existing}else{part=Part();part.trade=trade;parts[label]=part}
       for id in ids {
-        if lookup[id]==nil {lookup[id]=Int32(mesh.vertices.count);mesh.vertices.append(surface.mesh.vertices[Int(id)])}
-        mesh.triangles.append(lookup[id]!)
+        if part.lookup[id]==nil {part.lookup[id]=Int32(part.mesh.vertices.count);part.mesh.vertices.append(surface.mesh.vertices[Int(id)])}
+        part.mesh.triangles.append(part.lookup[id]!)
       }
-      meshes[label]=mesh;lookups[label]=lookup;trades[label]=trade
     }
-    return meshes.keys.sorted().map{label in
-      var result=surface;result.id=identity(anchor:surface.id,label:label);result.mesh=meshes[label]!
-      result.captureClassification=label;result.captureAnchorID=nil;result.trade=trades[label]!
+    return parts.keys.sorted().map{label in
+      let part=parts[label]!
+      var result=surface;result.id=identity(anchor:surface.id,label:label);result.mesh=part.mesh
+      result.captureClassification=label;result.captureAnchorID=nil;result.trade=part.trade
       result.name="Reconstructed \(label) surface";result.hidden=false
       result.notes += " Display classification transferred only within 3 cm of agreeing captured faces; unreviewed and not a service identification."
       return result

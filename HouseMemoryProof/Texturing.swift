@@ -48,7 +48,8 @@ enum TextureBuilder {
     var output: [Feature] = []
     for f in input {
       try Task.checkCancellation()
-      var patches: [Int: (Mesh, [UV])] = [:]
+      final class Patch {var mesh=Mesh();var uv:[UV]=[]}
+      var patches: [Int: Patch] = [:]
       var remainder = Mesh()
       for i in stride(from: 0, to: f.mesh.triangles.count, by: 3) {
         if i % 3000 == 0 { try Task.checkCancellation() }
@@ -65,12 +66,12 @@ enum TextureBuilder {
           }
         }
         if let winner {
-          var patch = patches[winner] ?? (Mesh(), [])
-          let base = Int32(patch.0.vertices.count)
-          patch.0.vertices += vertices
-          patch.0.triangles += [base, base + 1, base + 2]
-          patch.1 += coordinates
-          patches[winner] = patch
+          let patch:Patch
+          if let existing=patches[winner] {patch=existing}else{patch=Patch();patches[winner]=patch}
+          let base = Int32(patch.mesh.vertices.count)
+          patch.mesh.vertices += vertices
+          patch.mesh.triangles += [base, base + 1, base + 2]
+          patch.uv += coordinates
         } else {
           let base = Int32(remainder.vertices.count)
           remainder.vertices += vertices
@@ -83,8 +84,8 @@ enum TextureBuilder {
         copy.geometrySource = .photoTexture
         copy.hidden = false
         copy.name = "Photo-textured surface"
-        copy.mesh = patch.0
-        copy.uv = patch.1
+        copy.mesh = patch.mesh
+        copy.uv = patch.uv
         copy.texture = cameras[j].observation.image
         copy.sourceIDs = [cameras[j].observation.id]
         copy.notes =

@@ -74,6 +74,27 @@ for attempt in $(seq 1 150); do
   sleep 2
 done
 if [ -f "$app_root/self-test-progress.json" ]; then cp "$app_root/self-test-progress.json" build/evidence/native-progress.json; fi
+# Preserve already-produced evidence before an incomplete diagnostic fails the job.
+for retained in self-test-partial.json test.hxray house-surface.glb points.glb points.usdz textured.usdz textured.glb test.glb test.usdz test-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
+  if [ -f "$app_root/$retained" ]; then cp "$app_root/$retained" "build/evidence/$retained"; fi
+done
+if [ ! -f "$app_root/self-test.json" ]; then
+  python3 - <<'PYDIAGNOSTIC'
+import pathlib,re,subprocess
+text=pathlib.Path('build/evidence/launch.log').read_text()
+match=re.search(r'com\.example\.HouseMemoryProof:\s*(\d+)',text)
+if match:
+    try:
+        result=subprocess.run(['/usr/bin/sample',match[1],'3','1','-file','build/evidence/incomplete-native-sample.txt'],timeout=15,capture_output=True,text=True)
+        print('Incomplete diagnostic process sample:',result.returncode)
+    except subprocess.TimeoutExpired: print('Process sampling timed out after 15 seconds')
+reports=pathlib.Path.home()/'Library/Logs/DiagnosticReports'
+for report in sorted(reports.glob('HouseMemoryProof*.ips'))[-3:]:
+    data=report.read_bytes()
+    if len(data)<=2_000_000:(pathlib.Path('build/evidence')/report.name).write_bytes(data)
+raise SystemExit('Native diagnostics did not finish within the bounded run; partial evidence retained')
+PYDIAGNOSTIC
+fi
 cp "$app_root/self-test.json" build/evidence/native-self-test.json
 cp "$app_root/test.hxray" build/evidence/test.hxray
 cp "$app_root/house-surface.glb" build/evidence/house-surface.glb
