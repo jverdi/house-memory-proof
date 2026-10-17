@@ -66,16 +66,36 @@ struct SpatialDisplayIndex {
       let dx=max(0,max(tile.low.x-camera.x,camera.x-tile.high.x)),dy=max(0,max(tile.low.y-camera.y,camera.y-tile.high.y)),dz=max(0,max(tile.low.z-camera.z,camera.z-tile.high.z))
       return sqrt(dx*dx+dy*dy+dz*dz)
     }
-    let ordered=tiles.indices.map{($0,distance(tiles[$0]))}.sorted{a,b in a.1==b.1 ? a.0<b.0:a.1<b.1}.prefix(min(residents,budget/3))
-    let desired=ordered.map{entry->Int in let factor=entry.1<4 ? 1:entry.1<10 ? 4:16;return max(3,min(50000,tiles[entry.0].cost/factor))}
-    let extra=desired.reduce(0){$0+max(0,$1-3)},scale=min(1,Double(max(0,budget-ordered.count*3))/Double(max(1,extra)))
-    var textures=Set<String>()
-    return zip(ordered,desired).map { entry,wanted in
-      let tile=tiles[entry.0];var textured=false
-      if let key=features[tile.feature].texture {if textures.contains(key) || textures.count<DisplayGeometry.textureBudget {textures.insert(key);textured=true}}
-      return Allocation(tile:entry.0,budget:3+Int(Double(wanted-3)*scale),textured:textured)
+    struct Ranked {var tile:Int;var distance:Double;var requested:Int}
+    var ranked:[Ranked]=[]
+    for index in tiles.indices {
+      let separation=distance(tiles[index])
+      let factor:Int=separation<4 ? 1:(separation<10 ? 4:16)
+      let wanted=max(3,min(50000,tiles[index].cost/factor))
+      ranked.append(Ranked(tile:index,distance:separation,requested:wanted))
     }
+    ranked.sort {a,b in
+      if a.distance==b.distance {return a.tile<b.tile}
+      return a.distance<b.distance
+    }
+    let ordered=Array(ranked.prefix(min(residents,budget/3)))
+    var extra=0
+    for item in ordered {extra+=max(0,item.requested-3)}
+    let remaining=max(0,budget-ordered.count*3)
+    let scale=min(1.0,Double(remaining)/Double(max(1,extra)))
+    var textures=Set<String>(),result:[Allocation]=[]
+    for item in ordered {
+      let tile=tiles[item.tile]
+      var textured=false
+      if let key=features[tile.feature].texture {
+        if textures.contains(key) || textures.count<DisplayGeometry.textureBudget {textures.insert(key);textured=true}
+      }
+      let allocation=3+Int(Double(item.requested-3)*scale)
+      result.append(Allocation(tile:item.tile,budget:allocation,textured:textured))
+    }
+    return result
   }
+
   func materialize(_ allocation:Allocation)->(Feature,Mesh,[UV]?) {
     let tile=tiles[allocation.tile],feature=features[tile.feature],source=feature.mesh,points=source.triangles.isEmpty
     let capacity=max(1,allocation.budget/(points ? 1:3)),step=max(1,Int(ceil(Double(tile.primitives.count)/Double(capacity))))
