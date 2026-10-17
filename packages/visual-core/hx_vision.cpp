@@ -4,6 +4,7 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 #include <mutex>
@@ -18,11 +19,12 @@ extern "C" int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t 
  configure();cv::Mat source(h,w,CV_8U,const_cast<uint8_t*>(gray),stride),image;
  double scale=std::min(1.0,1280.0/std::max(w,h));cv::resize(source,image,cv::Size(),scale,scale,cv::INTER_AREA);
  auto detector=cv::ORB::create(capacity,1.2f,8,31,0,2,cv::ORB::HARRIS_SCORE,31,16);
- std::vector<cv::KeyPoint> keys;cv::Mat desc;detector->detectAndCompute(image,cv::noArray(),keys,desc);
+ std::vector<cv::KeyPoint> keys;cv::Mat desc;detector->detect(image,keys);
  if(keys.empty())return 0;
- // ORB pyramid locations are quantized. Refine the same descriptor's corner
+ // ORB pyramid locations are quantized. Refine the detected corner
  // on the source-resolution image before RGB/depth backprojection and PnP.
  // Bound movement so an unstable edge cannot jump to a neighbouring feature.
+ // Descriptors are then computed at the refined coordinates, not stale centres.
  std::vector<cv::Point2f> refined;refined.reserve(keys.size());
  for(const auto& key:keys)refined.push_back(key.pt);
  cv::cornerSubPix(image,refined,cv::Size(3,3),cv::Size(-1,-1),cv::TermCriteria(cv::TermCriteria::COUNT|cv::TermCriteria::EPS,20,.01));
@@ -30,8 +32,15 @@ extern "C" int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t 
   const auto p=refined[i];
   if(std::isfinite(p.x)&&std::isfinite(p.y)&&p.x>=1&&p.y>=1&&p.x<image.cols-1&&p.y<image.rows-1&&cv::norm(p-keys[i].pt)<=1.5)keys[i].pt=p;
  }
- uint32_t n=std::min(capacity,uint32_t(keys.size()));
- for(uint32_t i=0;i<n;i++){xy[i*2]=keys[i].pt.x/image.cols;xy[i*2+1]=keys[i].pt.y/image.rows;std::memcpy(descriptors+i*32,desc.ptr(i),32);}
+ detector->compute(image,keys,desc);
+ std::set<std::array<uint8_t,32>> unique;uint32_t n=0;
+ for(size_t i=0;i<keys.size()&&n<capacity;i++){
+  std::array<uint8_t,32> descriptor;std::memcpy(descriptor.data(),desc.ptr(i),32);
+  // Refinement can converge neighbouring detections onto the same patch.
+  // Identical descriptors are ambiguous evidence, not extra independent votes.
+  if(!unique.insert(descriptor).second)continue;
+  xy[n*2]=keys[i].pt.x/image.cols;xy[n*2+1]=keys[i].pt.y/image.rows;std::memcpy(descriptors+n*32,descriptor.data(),32);n++;
+ }
  return int32_t(n);
 } catch(...){return -2;}
 extern "C" int32_t hx_vision_match(const uint8_t* map,uint32_t mn,const uint8_t* query,uint32_t qn,uint32_t* pairs,uint32_t capacity) try {
