@@ -33,8 +33,9 @@ final class DiskEvidence:EvidenceAssetReader {
       guard !q.image.contains("/"),!q.image.contains("..") else{throw HouseError.message("Unsafe query image path.")}
       let(gray,w,h)=try VisualMapping.image(Data(contentsOf:queriesURL.deletingLastPathComponent().appendingPathComponent(q.image)))
       let features=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
-      let start=Date();let pose=VisualMapping.query(features,width:q.width,height:q.height,intrinsics:q.intrinsics,map:map)
-      var result:[String:Any]=["image":q.image,"accepted":pose != nil,"queryFeatures":features.count,"seconds":Date().timeIntervalSince(start)]
+      var diagnostics:[String]=[]
+      let start=Date();let pose=VisualMapping.query(features,width:q.width,height:q.height,intrinsics:q.intrinsics,map:map,diagnostic:{diagnostics.append($0)})
+      var result:[String:Any]=["image":q.image,"diagnostics":diagnostics,"accepted":pose != nil,"queryFeatures":features.count,"seconds":Date().timeIntervalSince(start)]
       if let pose{result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms;result["sourceIDs"]=pose.sources.map{$0.uuidString}}
       output.append(result)
     }

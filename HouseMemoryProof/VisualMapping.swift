@@ -101,7 +101,7 @@ enum VisualMapping {
   static func competingMatch(_ features:Features,width:Int,height:Int,intrinsics:[Double],maps:[VisualMap])->Bool {
     maps.contains {query(features,width:width,height:height,intrinsics:intrinsics,map:$0) != nil}
   }
-  static func query(_ features:Features,width:Int,height:Int,intrinsics:[Double],map:VisualMap)->Pose? {
+  static func query(_ features:Features,width:Int,height:Int,intrinsics:[Double],map:VisualMap,diagnostic:((String)->Void)?=nil)->Pose? {
     guard map.valid,features.count>=30,intrinsics.count==9 else{return nil}
     var candidates:[(Pose,V3)]=[]
     for view in map.views {
@@ -110,19 +110,20 @@ enum VisualMapping {
       let count=descriptors.withUnsafeBytes{m in features.descriptors.withUnsafeBytes{q in pairs.withUnsafeMutableBufferPointer{p in
         hx_vision_match(m.bindMemory(to:UInt8.self).baseAddress,UInt32(view.count),q.bindMemory(to:UInt8.self).baseAddress,UInt32(features.count),p.baseAddress,1200)
       }}}
-      guard count>=30 else{continue}
+      guard count>=30 else{diagnostic?("view \(view.observationID): insufficient matches \(count)");continue}
       var xyz:[Double]=[],xy:[Double]=[]
       for i in 0..<Int(count){let p=map.points[view.start+Int(pairs[i*2])],q=Int(pairs[i*2+1]);xyz += [p.x,p.y,p.z];xy += [Double(features.xy[q*2])*Double(width),Double(features.xy[q*2+1])*Double(height)]}
       var matrix=[Double](repeating:0,count:16),quality=HXPoseQuality()
       let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
         hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
       }}}
+      diagnostic?("view \(view.observationID): matches \(count), pose \(accepted), rejection \(quality.rejection), inliers \(quality.inliers)")
       if accepted==1,Rigid(values:matrix).valid{candidates.append((Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:[view.observationID]),view.position))}
     }
-    guard candidates.count>=2 else{return nil}
+    guard candidates.count>=2 else{diagnostic?("Fewer than two accepted source views");return nil}
     let origin=candidates[0].0.transform
-    guard candidates.contains(where:{($0.1-candidates[0].1).length>=0.15}) else{return nil}
-    guard candidates.dropFirst().allSatisfy({agree(origin,$0.0.transform)}) else{return nil}
+    guard candidates.contains(where:{($0.1-candidates[0].1).length>=0.15}) else{diagnostic?("Insufficient source-view baseline");return nil}
+    guard candidates.dropFirst().allSatisfy({agree(origin,$0.0.transform)}) else{diagnostic?("Accepted source views disagree");return nil}
     var result=candidates.max(by:{$0.0.inliers<$1.0.inliers})!.0
     result.sources=candidates.flatMap{$0.0.sources};return result
   }
