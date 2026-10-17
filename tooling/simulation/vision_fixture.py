@@ -6,8 +6,8 @@ import numpy as np
 from PIL import Image
 from house import generate,room,render,v,identity
 
-def make(dest):
- seed=73192;rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True)
+def make(dest, seed=73192):
+ rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True)
  h=generate(seed,dest/'base',rooms=1,frames=6,width=64,noise=.001,drift=.001)
  shapes,finish,dimensions=room(np.random.default_rng(seed));items=shapes+finish
  segment=h['segments'][1];rid=h['rooms'][0]['id'];h['segments']=[segment];h['observations']=[]
@@ -36,5 +36,6 @@ def make(dest):
  (dest/'vision-queries.json').write_text(json.dumps({'syntheticOnly':True,'fieldQualified':False,'queries':queries},indent=2))
  print(json.dumps({'mapViews':6,'heldQueryViews':3,'unrelatedTextureQueries':1,'oracleExcludedFromMapArchive':True}))
 if __name__=='__main__':
- import sys
- make(Path(sys.argv[1]))
+ import argparse
+ p=argparse.ArgumentParser();p.add_argument('destination',type=Path);p.add_argument('--seed',type=int,default=73192);a=p.parse_args()
+ make(a.destination,a.seed)
