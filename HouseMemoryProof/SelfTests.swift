@@ -827,6 +827,11 @@ extension SelfTests {
         let map=CodedReferences.build(house:restored,segment:restored.segments[0])
         diagnostics["supportedBoards"]=map.boards.count;checkpoint("source consistency")
         guard map.boards.count==6 else{throw HouseError.message("Translated source-corner evidence did not qualify the saved board geometry.")}
+        var missingCheckpoint=restored;missingCheckpoint.segments[0].referencePoses=[]
+        let rebuilt=CodedReferences.build(house:missingCheckpoint,segment:missingCheckpoint.segments[0])
+        guard rebuilt.boards.count==6,zip(rebuilt.boards,map.boards).allSatisfy({$0.id==$1.id && $0.corners==$1.corners}) else{throw HouseError.message("Committed source rows could not recover before the aggregate reference checkpoint.")}
+        var resizedPrint=restored;resizedPrint.references[0].width *= 1.5
+        guard !CodedReferences.build(house:resizedPrint,segment:resizedPrint.segments[0]).boards.contains(where:{$0.id==resizedPrint.references[0].id}) else{throw HouseError.message("A changed print scale reused an old metric pose despite conflicting translated views.")}
         var conflictedHouse=restored,changed=restored.observations[0];changed.id=UUID()
         let firstBoard=house.references[0].id
         let changedIndex=changed.codedDetections!.firstIndex{$0.boardID==firstBoard}!

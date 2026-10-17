@@ -15,6 +15,7 @@ import Vision
   @Published var hasDepth = ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth)
   @Published var processing = false
   @Published var coverageCells = 0
+  @Published var referenceGuidance = ""
   private var cellSet = Set<String>()
   private var model: AppModel?
   private var houseID: UUID?
@@ -110,6 +111,7 @@ import Vision
       meshes = [:]
       cellSet = []
       coverageCells = 0
+      referenceGuidance = ""
       lastFrameTime = 0
       stopping = false
       let config = ARWorldTrackingConfiguration()
@@ -368,6 +370,7 @@ import Vision
       return
     }
     pending += 1
+    let checkReferenceCoverage = !documentary && count%5==0 && project.references.contains{$0.valid && $0.tagID != nil}
     let token = generation
     let orientation: Int
     switch (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.interfaceOrientation {
@@ -451,10 +454,22 @@ import Vision
         try repo.journalCapture(projectID: houseID, observation: obs)
         try repo.stageCapture(obs,projectID:houseID,room:room,stage:stage,segment:segment,references:project.references)
         try repo.finishCaptureJournal(obs.id)
+        var referenceAdvice:String?
+        if checkReferenceCoverage {
+          var scope=project
+          if !scope.observations.contains(where:{$0.id==obs.id}) {scope.observations.append(obs)}
+          let map=CodedReferences.build(house:scope,segment:segment)
+          let seen=Set(scope.observations.filter{$0.segmentID==segment.id}.flatMap{$0.codedDetections ?? []}.map{$0.boardID}).count
+          let layout=ReferenceLayout.assess(map.boards.map{$0.corners.reduce(V3(),+)*0.25})
+          let advice=map.boards.count<4 ? "Move sideways and capture sharp oblique views of at least four fixed boards." : !layout.distributed ? "Stagger board heights and horizontal positions across different wall depths." : "Keep the supported boards fixed and visible after finishing. This is a capture check, not an accuracy claim."
+          referenceAdvice="\(map.boards.count) of \(seen) seen references supported by separated views. "+advice
+        }
+        let completedReferenceAdvice=referenceAdvice
         Task { @MainActor in
           guard let self else { return }
           self.pending -= 1
           guard self.generation == token else { return }
+          if let completedReferenceAdvice {self.referenceGuidance=completedReferenceAdvice}
           let referenceConflict=CodedReferences.accumulate(measured,current:&self.currentReferencePoses,conflicted:&self.conflictedCodedReferences)
           var saved = self.model?.acceptStagedCapture(obs,projectID:houseID) == true
           if saved,self.count % 5 == 0 {

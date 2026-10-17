@@ -1,0 +1,314 @@
+{
+  "sourceRevision": "78ed6bc2a191471f961b57de4f2ba2ab3168972b",
+  "upstreamAprilTagRevision": "94be783968e5091bcc9972c72c84fd63efce2935",
+  "sourceRetrieval": "Pinned GitHub connector blobs; every Git blob SHA verified against the pinned tree before compilation",
+  "compiler": "cc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+  "bridgeSHA256": "2cbe38c3905bce9449c18f367a5a6f71ef34c6906309ecd00343a6090035ae43",
+  "librarySHA256": "794331b3369c32912126250b731f88a7b37dc87c509849b12c6ef9e976305557",
+  "productionDetectorSelftestPassed": true,
+  "separateSixBoardRayRenders": [
+    {
+      "cameraX": -0.12,
+      "decoded": 6
+    },
+    {
+      "cameraX": 0.12,
+      "decoded": 6
+    }
+  ],
+  "rendererContractsPassed": 5,
+  "poseQualification": false,
+  "physicalDeviceQualified": false,
+  "sourceFiles": [
+    {
+      "path": "LICENSE.md",
+      "gitBlobSHA1": "dbbce27054fefb56539eaa785c5df4eaa6dfbd51",
+      "sha256": "9b6baf7627d6a4b0f1f79cf72253ddd8ad7ca55a52aa47331c45f2628c910c11"
+    },
+    {
+      "path": "apriltag.c",
+      "gitBlobSHA1": "0ee6d1296d643d53abceae37f16d8c8360cad117",
+      "sha256": "2384af6e0b83383cb4a873dc6e928de5a4eb81e62867c3f598381afdd81e0432"
+    },
+    {
+      "path": "apriltag.h",
+      "gitBlobSHA1": "164ad8618f10ab2cbe489b813c9eed64be6e96e0",
+      "sha256": "a5a70f64a057ea25bc1b9ad6913230cc6b9601cc5c8babb1092f950a3dc4d7ab"
+    },
+    {
+      "path": "apriltag_math.h",
+      "gitBlobSHA1": "60bf907367662369ba2bbf12909ff8af3b580006",
+      "sha256": "8057ed5d0b3911ac0752b4bf8d1469fc5a518c11c08bafeb2761456b22f97e72"
+    },
+    {
+      "path": "apriltag_pose.c",
+      "gitBlobSHA1": "6043cb857fbb28304b7e28419f62462f7f0bd05d",
+      "sha256": "70ebc4557615f5ffe8b908c3d2d4b53428026170934e963ed353dd238b7b4e7e"
+    },
+    {
+      "path": "apriltag_pose.h",
+      "gitBlobSHA1": "8120502f887bf6c6b55eaeeb15b6f808e29c7689",
+      "sha256": "22e217e7d02b606480560af8d1a5946bbf8a15ba141573bfd9a00346a65454bc"
+    },
+    {
+      "path": "apriltag_quad_thresh.c",
+      "gitBlobSHA1": "2b57774065d231abd5129acbc97e1a63e9e53d95",
+      "sha256": "48cdff15c9569ebbeff7092ff49125714611fdc6ef89d3a3f3864c7b6f01fc9e"
+    },
+    {
+      "path": "common/debug_print.h",
+      "gitBlobSHA1": "77e0d780e40fe674b6c9bf14601d9b4f8cf98f10",
+      "sha256": "c2de49aa31961bda5ba4622c0fc6ea09f1560292caccf73591ffdd25cbb61e55"
+    },
+    {
+      "path": "common/doubles.h",
+      "gitBlobSHA1": "fd5fc829cfb0e85d2d670634b1ea08d5345b3429",
+      "sha256": "5dd3f881da472111a5b50424a051361094953812ed51ac8e0b839f2474febedb"
+    },
+    {
+      "path": "common/doubles_floats_impl.h",
+      "gitBlobSHA1": "1817e083d6b049eb6c0f702ff007db962e0d1f47",
+      "sha256": "2f389c99a5cb9a73c0e0aa94a96c8891bc7c1c808f7db10c842acbf16087f093"
+    },
+    {
+      "path": "common/floats.h",
+      "gitBlobSHA1": "22f839fa9b682b6de53d150865d2822844c5d7cc",
+      "sha256": "2e780257f965bdc69805f1e86c84d593d3e66c837ae9c4b0f93426369d759b59"
+    },
+    {
+      "path": "common/g2d.c",
+      "gitBlobSHA1": "ebb85e55975fd91c6fd6cde7830efa5185580e98",
+      "sha256": "0bd10f2eb825b1b321d97fd89c6c2ac64726a2c2064b441800236a8334907309"
+    },
+    {
+      "path": "common/g2d.h",
+      "gitBlobSHA1": "21c21ac64d8988578f3c2d108a7a07d54e780954",
+      "sha256": "b8984323b42a62d8f7938195a8861516baed6e1213893d05383effee43def75e"
+    },
+    {
+      "path": "common/getopt.c",
+      "gitBlobSHA1": "21ec6fb1ed2a72343206716d87c283196511b50b",
+      "sha256": "a17a573d67fd6b24b7bd807170c953b91aac92721d656bebcb5cf2d9e532c3c0"
+    },
+    {
+      "path": "common/getopt.h",
+      "gitBlobSHA1": "1f0366283bf5edd4f01b4dfcd9254ec2cc2abd8e",
+      "sha256": "26d3efad23244822d08a8a6238d5b85977606ad2ddc5499a798f410fd4c791f4"
+    },
+    {
+      "path": "common/homography.c",
+      "gitBlobSHA1": "5a34f68f3af3005bbb16093f90e549e0fd92720a",
+      "sha256": "0ffa2fdef8e40ebc4e9dcb19b969c4fc7de966d0313d1530a275228a10862d6d"
+    },
+    {
+      "path": "common/homography.h",
+      "gitBlobSHA1": "c8cf2b7161ed1547ccc70b33785280e357422fe9",
+      "sha256": "5a3b5f272290e1c23ca1ad5872e55dbb67466f660610e214ecaae26689880dbb"
+    },
+    {
+      "path": "common/image_types.h",
+      "gitBlobSHA1": "58e5258de360eac15aba3ce780ccf904c8f94b4b",
+      "sha256": "6a3f1de5aa87d322aa311b36c8d98399e7038eb550dca46189ceb8696b96b375"
+    },
+    {
+      "path": "common/image_u8.c",
+      "gitBlobSHA1": "3064aff3ede97df63b322e53276e5b6a33ae6715",
+      "sha256": "b40a653df779cef8c836ca9acb48e15b014420a27e30a0d6e02517a5f74af7af"
+    },
+    {
+      "path": "common/image_u8.h",
+      "gitBlobSHA1": "a0e151f9161384da7baa8ea78a348f7da12dc8ca",
+      "sha256": "eca30af34c84e33a6a491c90d08282d2e6d16358c9f78a5fd5d137999b67ce49"
+    },
+    {
+      "path": "common/image_u8_parallel.c",
+      "gitBlobSHA1": "478571f1b2ab55f0558f9648a49eb9c9ce3853bc",
+      "sha256": "30f3c3f87c0d2b888d700860a1b40b1c57613767ab43fff977022fdeeee96120"
+    },
+    {
+      "path": "common/image_u8_parallel.h",
+      "gitBlobSHA1": "bd60e475fca3b6869a229034e10ff4442e74d68c",
+      "sha256": "03c56c63e8bebef6c8c379e6f81f8ac47a8e7f5f7753c0bfd4cc620d431332b2"
+    },
+    {
+      "path": "common/image_u8x3.c",
+      "gitBlobSHA1": "65556812a99410d4ea1e2039541f4e8e047c8f98",
+      "sha256": "95368c4115f4c95527d497494c5f71931c07fb504a7e32129376f3cb598c204f"
+    },
+    {
+      "path": "common/image_u8x3.h",
+      "gitBlobSHA1": "649779473c5d455f497182a7d170e32760b06f5e",
+      "sha256": "978f51544f8b02928d2cd1933688882c930e3e477a179b5843f7c36f381216b2"
+    },
+    {
+      "path": "common/image_u8x4.c",
+      "gitBlobSHA1": "352053744734e4bf129d6a6f9003e6e429f3481f",
+      "sha256": "e571e4689a87e360f1a87ca45999f6fc6033e83f1949b9caf51ab0ec0b311e7b"
+    },
+    {
+      "path": "common/image_u8x4.h",
+      "gitBlobSHA1": "89820a2a85ab80d261068549a03111985dbebc4b",
+      "sha256": "1300cd91525452bf27fbb4edd387fc654a567a41ce12d81d14326832c1016cef"
+    },
+    {
+      "path": "common/matd.c",
+      "gitBlobSHA1": "067e40ed7eb36624bcdc7773c5e8b8bd9a4c524b",
+      "sha256": "5a78c62383a89a11c9922c14fb3f5461598f6b096c82b03f2f2074ed123fb623"
+    },
+    {
+      "path": "common/matd.h",
+      "gitBlobSHA1": "6b7c5f63a08617e3f9c9de3ed830bac00f595a18",
+      "sha256": "d7a55f6b9f36b054c71675373be6d94e485dff68ef18280060fbf782f45b47df"
+    },
+    {
+      "path": "common/math_util.h",
+      "gitBlobSHA1": "aa08883608a8aca5cc7828134ecb4cd6e9f06a61",
+      "sha256": "df3090ec3c694f144889afa16fe4860e4579958d350d122ef46ccd3b8689c9a0"
+    },
+    {
+      "path": "common/pam.c",
+      "gitBlobSHA1": "de946bede243b9626b3db585cf7053a439bb6d4c",
+      "sha256": "dd6e8ef0faf84649f7ed474f916701eb0fabcb082ba877f0737f9931b17ace54"
+    },
+    {
+      "path": "common/pam.h",
+      "gitBlobSHA1": "5e03a1308f6376075184f9b6027777b70b4a54a2",
+      "sha256": "a7e09ec0596ac6ea71722d955676afb3091c7137db271dec4613da3272cd22fb"
+    },
+    {
+      "path": "common/pjpeg-idct.c",
+      "gitBlobSHA1": "099c68c7dd02f19128dcdf01e7ef3a72fc3a8a2e",
+      "sha256": "1fc1a912b2f21c993a3fde8a7991124ce0b278f8e1b0d11caff082e2269361d4"
+    },
+    {
+      "path": "common/pjpeg.c",
+      "gitBlobSHA1": "924ac04dd7602aea2eaad76076002785c7b32ba2",
+      "sha256": "ab264e32c91383ed78ef22195528d11f23ae879341597f74e6b72afe989799ac"
+    },
+    {
+      "path": "common/pjpeg.h",
+      "gitBlobSHA1": "c9ba9c8b7a070487acea14a12b416aa5366c16b0",
+      "sha256": "31c4d26d1542db57c75f04b51f9bbe9a8e8d12242500ec929da79ad2b92b78ba"
+    },
+    {
+      "path": "common/pnm.c",
+      "gitBlobSHA1": "fe77dde6d937447688b44ada4981563bf4c39782",
+      "sha256": "213fba8ccd77d6b99a8cc027d099d67827d7c41a582adcfa3a6cca933880b4e9"
+    },
+    {
+      "path": "common/pnm.h",
+      "gitBlobSHA1": "4d8f46e2c6ee11eb0351e870a1a0e0c761041bf2",
+      "sha256": "b88087f2b0e169def8d9b150b6ce198e4493f883c0e7e025ebf3485832f46d8a"
+    },
+    {
+      "path": "common/postscript_utils.h",
+      "gitBlobSHA1": "b561c5b4425fa90193ee3b7a3d39b21b07de286f",
+      "sha256": "c46a6db88eee0c894c426fcd77fc261306500f468a791827f51357c8e2c7ed81"
+    },
+    {
+      "path": "common/pthreads_cross.c",
+      "gitBlobSHA1": "04e556cf4ca2ddfaf36a4aef398abd64d8d63337",
+      "sha256": "6869578cbc2e740f82405fbc273181c9e4176be4ef9f1d21ae4cd557dffc8676"
+    },
+    {
+      "path": "common/pthreads_cross.h",
+      "gitBlobSHA1": "fc40c9ba6ba80a3ee3f5f717e527890fb5774b2c",
+      "sha256": "8e3235824a84e30f507b29c7fe3629870d2ee81888067e4a73473f84d1c45b2b"
+    },
+    {
+      "path": "common/string_util.c",
+      "gitBlobSHA1": "16a9ffb7b02e37df6f09231e67914422af89f2a4",
+      "sha256": "391b9d6df245bf59e04902d8bb5e21610c103c26550fd790363014b47c03d0d4"
+    },
+    {
+      "path": "common/string_util.h",
+      "gitBlobSHA1": "6b5835553617ba16fc987edee5d2bc19e2824766",
+      "sha256": "36cee4dafd556efdfb083a80c57560dc22af78e5a13590e233a81c331a30ceab"
+    },
+    {
+      "path": "common/svd22.c",
+      "gitBlobSHA1": "ba7486ddf4498565459a5da554c100975bd22f0e",
+      "sha256": "9f6648fa763d3bed3cea3d1d6b1b09b43178c1f86ea67f918659e9782dc859cb"
+    },
+    {
+      "path": "common/svd22.h",
+      "gitBlobSHA1": "5277f8b788d07d8707b2a10ce521a9dd331de29d",
+      "sha256": "3f7ba4d5d8d6750f9c5d1311b854b63b45c661824ab706e1533ad7b0c0a4874f"
+    },
+    {
+      "path": "common/time_util.c",
+      "gitBlobSHA1": "7a25f424068d798a8c65c69c6c17dd05b2e2b950",
+      "sha256": "e6c1d0da8be102709c55bdb3505bf79eda1a0d7315203f92fddbdc24daa7b256"
+    },
+    {
+      "path": "common/time_util.h",
+      "gitBlobSHA1": "d778a18f64bac94fb7b8fdbaa0c6f19d160cdf85",
+      "sha256": "2cacbee24012ac7549da0f68b033f6d1557cb4f12c6937c2e7ff5a707aa4b7f8"
+    },
+    {
+      "path": "common/timeprofile.h",
+      "gitBlobSHA1": "8016386ed214de371eae619f4e887aef01852408",
+      "sha256": "c6e55c259a8ea82f4a7a6bf2bb20845e97ee7609e4b3e3faeaa788ed9935d95e"
+    },
+    {
+      "path": "common/unionfind.c",
+      "gitBlobSHA1": "ae429910e6676695729126bf1ce4161a4c24244d",
+      "sha256": "3853a4604cb73475f499da26c7848930ddec59908586cf3837f70faec4b2f962"
+    },
+    {
+      "path": "common/unionfind.h",
+      "gitBlobSHA1": "fdfef9dc3041d8fb3b847a69ba4c2bd08dd40424",
+      "sha256": "a2773fe8f029c27ad578f5d373064554536b104e9aa30b7c702d54155cf150d6"
+    },
+    {
+      "path": "common/workerpool.c",
+      "gitBlobSHA1": "6b73541c09025ef907e2c3c598343955a14c3e7e",
+      "sha256": "18e422b248e3a201c1d42ddf726bb0062bdff43cf204af515b0c2c7029c530b9"
+    },
+    {
+      "path": "common/workerpool.h",
+      "gitBlobSHA1": "2c32ab1eb7f9fe1e803aef187d4af3aea9284238",
+      "sha256": "6aa3cf241fdc36b486b7ed63d3adb78b5ba00f3dcaed961ceee9bd9c0a9a7bec"
+    },
+    {
+      "path": "common/zarray.c",
+      "gitBlobSHA1": "fa1f8a25b6cad5661d70aa81b40b991126a9ac7c",
+      "sha256": "18796af6e4f723d3a34cda1e1549e7915f7fa968d4c57e644f52fa6e377305de"
+    },
+    {
+      "path": "common/zarray.h",
+      "gitBlobSHA1": "1c9da4a6a8849416da22e171ebb7c6ade73917ca",
+      "sha256": "448c85e63658b430cb69edeb3a11ce91da7dbe56a1053b08e577577aeba68ce4"
+    },
+    {
+      "path": "common/zhash.c",
+      "gitBlobSHA1": "b4a2ec0964efaba74e0cc73e38626ef05305a192",
+      "sha256": "4a169dd38e8cc169bc9907a12b443713e84af46921d6aad9629c4b2136e67db6"
+    },
+    {
+      "path": "common/zhash.h",
+      "gitBlobSHA1": "9993a66e4aed22d998d58e10a5d0db0193fcff95",
+      "sha256": "30cab547334d551f8a12438ca27d601a8b86417ee1561bb7e0c84091136ef679"
+    },
+    {
+      "path": "common/zmaxheap.c",
+      "gitBlobSHA1": "75de99502a70ec88b4dc51fda567c7e0c7bd852c",
+      "sha256": "c17b53926eab9ab14843aaf49ad3053a5c88d38c81a40244932fa3f5941d6606"
+    },
+    {
+      "path": "common/zmaxheap.h",
+      "gitBlobSHA1": "2f4a90d684171c4c7baf2e8f39dc3a59404467c1",
+      "sha256": "8e531135a6788cf0adbba897a50207b4ba42fba082a94e5c192c3e3713d731af"
+    },
+    {
+      "path": "tag36h11.c",
+      "gitBlobSHA1": "94acacaaa473d5b1bc530dee625eb7ea388f4928",
+      "sha256": "38ff6e308067eb32ccf624e9cc5e7a75b45ad82b3cf9f80980cb86ebaa88512b"
+    },
+    {
+      "path": "tag36h11.h",
+      "gitBlobSHA1": "620387822dfd1a43fac265dd3609ead848bdeb2e",
+      "sha256": "7afe8e0fdb8a719d82aaea081415a4f2262748bb1bc5f0f2a7d9f3bf6125750a"
+    }
+  ]
+}

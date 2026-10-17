@@ -381,7 +381,7 @@ enum TourDirector {
             UIBezierPath(roundedRect: rect.insetBy(dx: -10, dy: -5), cornerRadius: 8).fill()
             let paragraph=NSMutableParagraphStyle();paragraph.lineBreakMode = .byTruncatingTail
             (shot.caption as NSString).draw(in:CGRect(x:rect.minX,y:rect.minY,width:rect.width,height:titleHeight),withAttributes:[.font:titleFont,.foregroundColor:UIColor.white,.paragraphStyle:paragraph])
-            let provenance="House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
+            let provenance=(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
             (provenance as NSString).draw(in:CGRect(x:rect.minX,y:rect.minY+titleHeight+8,width:rect.width,height:sourceHeight),withAttributes:[.font:sourceFont,.foregroundColor:UIColor.white,.paragraphStyle:paragraph])
             UIGraphicsPopContext()
             ctx.restoreGState()

@@ -78,7 +78,20 @@ enum CodedReferences {
     let captures=house.observations.filter{$0.segmentID==segment.id && !$0.documentary && $0.codedDetections?.isEmpty==false}
     var boards:[Board]=[]
     for board in known {
-      guard let pose=segment.referencePoses.first(where:{$0.boardID==board.id && $0.method=="coded-corners"}) else{continue}
+      // Capture rows can commit before their aggregate segment checkpoint.
+      // Re-measure a bounded best source from durable pixels/camera metadata;
+      // a changed measured print width must not reuse the old metric pose.
+      let candidates=captures.filter{$0.codedDetections?.contains(where:{$0.boardID==board.id && $0.tagID==board.tagID})==true}.sorted {a,b in
+        let aq=a.referenceObservations?.first{$0.boardID==board.id && $0.method=="coded-corners"}?.imageFitRMS ?? .infinity
+        let bq=b.referenceObservations?.first{$0.boardID==board.id && $0.method=="coded-corners"}?.imageFitRMS ?? .infinity
+        return aq==bq ? (a.timestamp==b.timestamp ? a.id.uuidString<b.id.uuidString:a.timestamp<b.timestamp):aq<bq
+      }
+      var estimate:ReferencePose?
+      for source in candidates.prefix(8) {
+        let detection=source.codedDetections!.first{$0.boardID==board.id && $0.tagID==board.tagID}!
+        if let pose=measure([detection],camera:source.camera,intrinsics:source.intrinsics,width:source.width,height:source.height,boards:[board]).first {estimate=pose;break}
+      }
+      guard let pose=estimate else{continue}
       let points=corners(board:board,pose:pose);guard points.count==4 else{continue}
       var supported:[V3]=[],conflicted=false
       for observation in captures {
