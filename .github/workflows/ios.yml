@@ -60,9 +60,18 @@ jobs:
         id: compile
         timeout-minutes: 12
         run: bash ci/simulator.sh compile
-      - name: Run native diagnostics, recovery and UI workflows
-        timeout-minutes: 15
-        run: bash ci/simulator.sh exercise
+      - name: Run native image, reconstruction, storage and movie diagnostics
+        id: native
+        timeout-minutes: 10
+        run: bash ci/simulator.sh native
+      - name: Verify recovery across actual process termination
+        if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/simulator-result.json') != ''
+        timeout-minutes: 6
+        run: bash ci/simulator.sh recovery
+      - name: Exercise the iPhone interface workflows
+        if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/simulator-result.json') != ''
+        timeout-minutes: 12
+        run: bash ci/simulator.sh ui
       - name: Verify portable core and independent export readers
         if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/test.glb') != ''
         timeout-minutes: 10

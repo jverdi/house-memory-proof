@@ -3,7 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
 mode="${1:-all}"
-case "$mode" in all|prepare|compile|verify|exercise) ;; *) echo 'Expected all, prepare, compile, verify or exercise'; exit 2;; esac
+case "$mode" in all|prepare|compile|verify|exercise|native|recovery|ui) ;; *) echo 'Expected all, prepare, compile, verify, exercise, native, recovery or ui'; exit 2;; esac
+native_failed=0
 if [ "$mode" = all ] || [ "$mode" = prepare ]; then
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
@@ -33,7 +34,7 @@ PY
 )"
 revision="$(git rev-parse --short=10 HEAD)"
 build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
-if [ "$mode" != exercise ]; then
+if [ "$mode" != exercise ] && [ "$mode" != native ] && [ "$mode" != recovery ] && [ "$mode" != ui ]; then
 python3 ci/run_bounded.py 600 xcodebuild build \
   -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
@@ -43,6 +44,7 @@ python3 ci/run_bounded.py 600 xcodebuild build \
   2>&1 | tee build/evidence/simulator-build.log
 fi
 if [ "$mode" = compile ]; then exit 0; fi
+if [ "$mode" != recovery ] && [ "$mode" != ui ]; then
 # Fresh hosted runners usually have no booted simulator. Handle an existing one too.
 if ! xcrun simctl list devices booted | grep -Fq "$device_id"; then
   xcrun simctl boot "$device_id"
@@ -65,9 +67,11 @@ Path('build/evidence/simulator-result.json').write_text(json.dumps({
 }, indent=2) + '\n')
 PY
 
+fi
 app_data="$(xcrun simctl get_app_container "$device_id" com.example.HouseMemoryProof data)"
 app_root="$app_data/Documents/HouseXray"
 if [ -f "$app_data/Library/Application Support/HouseXray/house.sqlite" ]; then app_root="$app_data/Library/Application Support/HouseXray"; fi
+if [ "$mode" != recovery ] && [ "$mode" != ui ]; then
 for attempt in $(seq 1 150); do
   if [ -f "$app_root/self-test.json" ]; then break; fi
   if [ "$((attempt % 15))" -eq 0 ] && [ -f "$app_root/self-test-progress.json" ]; then
@@ -119,8 +123,11 @@ r=json.load(open('build/evidence/native-self-test.json'))
 assert r['passed'], r
 print('All native self-tests passed:',len(r['tests']))
 PYTEST
+fi
+if [ "$mode" = native ]; then exit "$native_failed"; fi
 
 # Kill at the journal/SQLite boundary, then verify recovery in a new process.
+if [ "$mode" != ui ]; then
 for fault_mode in journal capture-row migration; do
 xcrun simctl terminate "$device_id" com.example.HouseMemoryProof 2>/dev/null || true
 rm -f "$app_root/fault-ready.json" "$app_root/process-recovery.json"
@@ -140,6 +147,8 @@ done
 cp "$app_root/process-recovery.json" "build/evidence/process-recovery-$fault_mode.json"
 python3 -c "import json; r=json.load(open('build/evidence/process-recovery-$fault_mode.json')); assert r['passed'],r"
 done
+fi
+if [ "$mode" = recovery ]; then exit 0; fi
 
 python3 ci/run_bounded.py 600 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \

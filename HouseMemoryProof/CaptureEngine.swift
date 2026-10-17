@@ -30,6 +30,8 @@ import Vision
   private var captureLease:UUID?
   private var mapRequest:UUID?
   private var mapWatchdog:Task<Void,Never>?
+  private var detailRequest:UUID?
+  private var detailWatchdog:Task<Void,Never>?
   var reveal = false
   private var revealBoundary:RevealBoundary?
   private var revealedNodes: [SCNNode] = []
@@ -59,6 +61,7 @@ import Vision
   }
   deinit {
     mapWatchdog?.cancel()
+    detailWatchdog?.cancel()
     let owner=model,token=captureLease
     if let token {Task { @MainActor in owner?.endCapture(token) }}
   }
@@ -274,9 +277,22 @@ import Vision
   }
   func detail() {
     guard running, !reveal, pending == 0 else { return }
+    let request=UUID(),owner=generation
+    detailRequest=request;pending=1
+    message="Requesting a detail photograph…"
+    detailWatchdog=Task { [weak self] in
+      do{try await Task.sleep(nanoseconds:8_000_000_000)}catch{return}
+      guard let self,self.claimDetailRequest(request,owner:owner) else{return}
+      self.message="Detail camera request timed out. Saved photographs are intact; try again when capture is active."
+      if self.stopping && self.pending==0 {self.finishStop()}
+    }
     view.session.captureHighResolutionFrame { [weak self] frame, error in
       Task { @MainActor in
-        guard let self else { return }
+        guard let self,self.claimDetailRequest(request,owner:owner) else { return }
+        guard self.running,!self.stopping else {
+          if self.stopping && self.pending==0 {self.finishStop()}
+          return
+        }
         if let frame {
           self.retain(frame, documentary: true)
         } else {
@@ -284,6 +300,11 @@ import Vision
         }
       }
     }
+  }
+  private func claimDetailRequest(_ request:UUID,owner:UUID)->Bool {
+    guard generation==owner,detailRequest==request else{return false}
+    detailRequest=nil;detailWatchdog?.cancel();detailWatchdog=nil;pending-=1
+    return true
   }
   private func requestVisualLocalization(_ frame: ARFrame) {
     let buffer = frame.capturedImage
@@ -338,7 +359,7 @@ import Vision
     }
   }
   private func retain(_ frame: ARFrame, documentary: Bool) {
-    guard let segment, let houseID, let repo = model?.repository,
+    guard running,!stopping,pending==0,let segment, let houseID, let repo = model?.repository,
       let project=model?.houses.first(where:{$0.id==houseID}),
       let room=project.rooms.first(where:{$0.id==segment.roomID}),let stage=project.stages.first(where:{$0.id==segment.stageID}) else { return }
     guard repo.freeBytes() > 500_000_000 else {
@@ -633,6 +654,7 @@ import Vision
   }
   private func finishCaptureState() {
     mapWatchdog?.cancel();mapWatchdog=nil;mapRequest=nil
+    detailWatchdog?.cancel();detailWatchdog=nil;detailRequest=nil
     view.session.pause();processing=false;stopping=false
     if let captureLease {releaseCaptureLease(captureLease)}
   }
