@@ -1,5 +1,11 @@
 # Implementation ledger
 
+## Varied-house result at 14eabc7281 — finished accuracy remains open
+
+The new isolated replay built every expected map in all six cases. Rough-stage localization passed in four-, seven- and eleven-room layouts: **88/88** nominal queries accepted, per-layout p95 **3.973 / 5.513 / 4.952 mm**, and no false accepts. Finished-stage availability was **16/16, 27/28 and 40/44**, but p95 **15.094 / 15.632 / 22.486 mm** fails the unchanged 10 mm gate; the eleven-room worst error **29.161 mm** also exceeds 25 mm. All **352** wrong-room/floor challenges across both stages abstained. Source poses stayed within the existing 15 mm check, so this is a retained localization-accuracy failure. Original artifact hashes and aggregate results are in `docs/evidence/whole-house-14ea-summary.json`.
+
+A host-only diagnostic workflow now examines source maps, native grayscale/features and sealed development inputs inside the ephemeral CI working directory. Only aggregate error distributions are uploaded; source identities, poses, images, point arrays and oracle records are excluded. It changes no shipping estimator and retains all existing accuracy, availability and oracle-isolation gates. The full 50/20 house suite is not marked complete or passed while these development failures remain.
+
 ## Connected-house replay preparation and v16 native result
 
 Source `543dd5f742` passed **125/125 native checks** in 181.27 seconds. The repaired 50,000-photo search measured **43.804 ms p95** with its unchanged 300 ms gate and all 18 independent substring-reference queries. Capture buffer shape/format, EXIF/archive/journal recovery and ten malformed/unknown-confidence depth refusals passed. The 1080p30 movie fully decoded all 300 frames. The complete workflow then passed **5/5 UI**, **3/3 actual process-kill recoveries**, **50 portable cases** and **all 12 independent reader reports**. The full artifact was downloaded and independently SHA-256 verified. This is a complete simulator integration pass, not physical or full-product qualification.

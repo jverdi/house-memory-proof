@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T02:16:51.872922+00:00",
+  "updatedUTC": "2026-10-18T02:27:31.390868+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
@@ -31,11 +31,11 @@
     },
     {
       "area": "finished localization",
-      "remaining": "Resolve low-resolution accuracy and rough-to-finished availability failures; broader wrong-room/floor/wall-side qualification."
+      "remaining": "Finished accuracy also fails in the new four-, seven- and eleven-room layouts (15.094, 15.632 and 22.486 mm p95). Diagnose map/feature/query errors while preserving original 384-pixel and rough-to-finished failures."
     },
     {
       "area": "whole-house simulation",
-      "remaining": "New generator has 50 distinct connected development topologies and 21 passing local geometry/sensor/renderer contract tests. Candidate replay on varied houses, 20 protected topologies, broader sensor/coverage degradation and closed-loop navigation remain incomplete."
+      "remaining": "Connected topology/sensor/renderer contracts pass, and all three rough development houses pass native localization. Finished accuracy fails in all three. Full 50-development/20-protected candidate evaluation, sensor/coverage diversity and closed-loop navigation remain incomplete."
     },
     {
       "area": "registration and thin services",
@@ -55,7 +55,7 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Run the new one-, two- and three-floor development layouts through isolated native localization in both observed stages, then continue broader protected-house, sensor, coverage and retained finished-localization gates.",
+  "nextAction": "Inspect the sealed development source-map and query evidence without changing estimators or gates; continue native integration on 14eabc7281 and then repair the demonstrated finished-localization error.",
   "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts.",
   "currentValidation": {
     "run": 39088505305,
@@ -113,5 +113,25 @@
       "sha256": "ecfd9670946e5d96f32e63df40f3c87ac863c147247306c2ff9a361252060da1",
       "sha256IndependentlyVerified": true
     }
+  },
+  "wholeHouseDevelopment": {
+    "source": "14eabc7281e4c712350e8b367ca44252bd9bb612",
+    "run": 39089565494,
+    "houses": 3,
+    "rooms": [
+      4,
+      7,
+      11
+    ],
+    "stageCases": 6,
+    "roughPassed": 3,
+    "finishedPassed": 0,
+    "roughAccepted": 88,
+    "roughAttempts": 88,
+    "finishedAccepted": 83,
+    "finishedAttempts": 88,
+    "criticalFalseAccepts": 0,
+    "criticalAttempts": 352,
+    "protectedQualification": false
   }
 }

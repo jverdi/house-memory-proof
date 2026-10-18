@@ -1,0 +1,72 @@
+name: Diagnose finished-map source and query error
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/localization-depth-audit.yml
+      - experiments/localization-depth-audit/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: localization-depth-audit
+  cancel-in-progress: true
+jobs:
+  inspect:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Instrument the isolated host output without changing shipping estimators
+        run: |
+          mkdir -p build/depth-audit-reports
+          git rev-parse HEAD > build/depth-audit-reports/source.txt
+          python3 experiments/localization-depth-audit/prepare.py
+          git diff -- tooling/simulation/VisionReplay.swift tooling/simulation/replay_fixture.py > build/depth-audit-reports/instrumentation.diff
+          bash tooling/opencv/build-host.sh
+          shasum -a 256 build/vision-replay > build/depth-audit-reports/binary.txt
+      - name: Replay the two retained development failures with the unchanged gates
+        run: |
+          python3 -m venv build/audit-env
+          build/audit-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+          build/audit-env/bin/python -m unittest discover -s experiments/localization-depth-audit -p test_summarize.py
+          mkdir -p build/depth-audit-private
+          failed=0
+          for seed in 905771 683431; do
+            fixture="build/audit-input-${seed}"
+            if python3 ci/run_bounded.py 300 build/audit-env/bin/python tooling/simulation/house_layout_fixture.py "$fixture" --seed "$seed" --paired --staggered --finished-capture --width 384; then
+              python3 ci/run_bounded.py 660 build/audit-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "$fixture" --output "build/depth-audit-private/${seed}.json" --refine --bundle --house --audit || failed=1
+            else
+              failed=1
+            fi
+          done
+          exit "$failed"
+      - name: Produce aggregate diagnostics without publishing source evidence
+        if: always() && !cancelled()
+        run: |
+          for seed in 905771 683431; do
+            if [ -f "build/depth-audit-private/${seed}.json" ]; then
+              python3 ci/run_bounded.py 600 build/audit-env/bin/python experiments/localization-depth-audit/summarize.py "build/depth-audit-private/${seed}.json" "build/depth-audit-reports/${seed}-summary.json"
+            fi
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finished-map-depth-audit-aggregates
+          path: build/depth-audit-reports/
+          retention-days: 14
