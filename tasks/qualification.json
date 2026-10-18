@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
+  "currentImplementationCommit": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -55,11 +55,11 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Run the UI compilation repair and IFC source/frame/reopen candidate; retain baseline spatial failures and evaluate separately named appearance cases. No additional TestFlight upload.",
+  "nextAction": "Complete ec315c98d6 native/UI/readers and separate appearance replays, then evaluate the fifth bounded finished-384 repair without changing shipping code or gates.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "run": null,
-    "status": "pending UI selector repair, IFC source/frame/reopen and appearance variant candidate",
+    "run": 39100177707,
+    "status": "running IFC/source-frame/UI compilation repair candidate",
     "nativeExpected": 137,
     "nativePassed": null,
     "nativeFailed": null,
@@ -71,7 +71,8 @@
     "localSimulationContractsPassed": 49,
     "localCommandContractsPassed": 11,
     "interfaceProcessBudgetSeconds": 1200,
-    "physicalQualification": false
+    "physicalQualification": false,
+    "source": "ec315c98d625af528fcab2d36cf0b3b8683f3eee"
   },
   "previousIntegratedAttempt": {
     "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -426,5 +427,43 @@
     "nativeReplayExecuted": false,
     "rawEvidencePublished": false,
     "physicalQualification": false
+  },
+  "lowResolutionRepairBudget": {
+    "failureClass": "finished-384 localization accuracy",
+    "maximumIterations": 5,
+    "currentIteration": 5,
+    "currentVariant": "fixed-2x-cubic-akaze-analysis",
+    "currentRun": null,
+    "currentAdopted": false,
+    "currentExecuted": false,
+    "priorAttempts": [
+      {
+        "name": "pooled query",
+        "source": "0aed9fdf",
+        "adopted": false
+      },
+      {
+        "name": "geometric median",
+        "source": "acc8c1b1",
+        "adopted": false
+      },
+      {
+        "name": "strict PnP",
+        "source": "01cdc4a9",
+        "adopted": false
+      },
+      {
+        "name": "native AKAZE coordinates",
+        "source": "1e23e0c13a5ef1a4c841ef88e68f5de086ddbf62",
+        "adopted": false
+      }
+    ],
+    "maximumJobs": 2,
+    "maximumJobMinutes": 40,
+    "maximumParallelJobs": 1,
+    "acceptanceThresholdsChanged": false,
+    "operatingEnvelopeChanged": false,
+    "localAuditTestsPassed": 5,
+    "fallback": "Keep documentary/approximate operation and precision disabled; retain failed release gate and continue independent work"
   }
 }

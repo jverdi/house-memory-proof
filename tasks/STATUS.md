@@ -1,5 +1,13 @@
 # Implementation ledger
 
+## Fifth bounded finished-384 sampling experiment
+
+The IFC/source-frame/UI repair candidate **ec315c98d6** is under validation (native run **39100177707**, 137 native / nine UI expected). Its app code is unchanged by the separate experiment below.
+
+The fifth predeclared low-resolution localization repair tests one fixed 2× cubic AKAZE analysis resize, capped by the existing 1280-pixel budget. It follows the retained pooled-query, geometric-median, strict-PnP and native-resolution AKAZE-coordinate failures. Two original development layouts retain rough-384, finished-384 and finished-768 cases with every original gate. Maximum compute is two 40-minute jobs with one active at a time. Five local admission/publication tests pass. The shipping detector is untouched; no adoption is inferred before all declared cases and later shipping regressions pass. Raw data stays ephemeral; exact source/patch/binary and aggregate outcomes are retained. See `experiments/akaze-sampling-audit/README.md`.
+
+This is not a parameter sweep or a changed operating envelope. If it fails, preserve all five attempts, report remaining hypotheses, keep precision disabled and continue independent work. The failed localization release gate remains open.
+
 ## Native service/import checks passed; interface compilation repair and IFC source continuation
 
 Source **fb2f9201d6**, build **199.1**, passed **136/136 native checks** in **166.227 seconds**, **three process-kill recoveries**, **50 portable cases**, **27 command/reader contracts** and **22 independent reader reports**. Typed service details survive archive, semantic CSV and curve GLB; batch stale-refusal/undo, all ten PLY unit/axis combinations, schema-2 compatibility and GLB text-memory admission pass natively. Both artifacts were independently SHA-256 verified. **The UI target failed compilation (`XCUIElement.lastMatch`); zero of eight interface flows executed. This is not a complete integration pass.** The previous complete result remains 0e191bca22. Evidence: `docs/evidence/native-fb2f-summary.json`.

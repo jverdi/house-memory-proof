@@ -1,0 +1,57 @@
+name: Evaluate fixed AKAZE analysis sampling
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/akaze-sampling-audit.yml
+      - experiments/akaze-sampling-audit/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: akaze-sampling-audit
+  cancel-in-progress: true
+jobs:
+  replay:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        seed: [905771, 683431]
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Build isolated variant and record exact source
+        run: |
+          mkdir -p build/sampling-audit-reports
+          git rev-parse HEAD > build/sampling-audit-reports/source.txt
+          python3 -m unittest discover -s experiments/akaze-sampling-audit -p test_aggregate.py
+          python3 experiments/akaze-sampling-audit/prepare.py
+          git diff -- packages/visual-core/hx_vision.cpp > build/sampling-audit-reports/candidate.diff
+          bash tooling/opencv/build-host.sh
+          python3 -m venv build/sampling-audit-env
+          build/sampling-audit-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+      - name: Evaluate original rough and finished development cases
+        run: build/sampling-audit-env/bin/python experiments/akaze-sampling-audit/run.py --seed ${{ matrix.seed }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: akaze-sampling-aggregate-${{ matrix.seed }}
+          path: build/sampling-audit-reports/
+          retention-days: 14
