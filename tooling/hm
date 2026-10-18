@@ -48,6 +48,7 @@ def main():
  t=sub.add_parser('test');t.add_argument('--suite',choices=['portable','simulation','release','commands'],default='portable');t.add_argument('--output',type=Path)
  s=sub.add_parser('simulate');s.add_argument('--seed',type=int,default=42);s.add_argument('--output',type=Path,required=True)
  s.add_argument('--scenario',choices=['analytic-depth','connected-house'],default='analytic-depth');s.add_argument('--stage',choices=['rough','finished'],default='rough');s.add_argument('--profile',default='nominal');s.add_argument('--width',type=int,default=384)
+ s.add_argument('--scene-variant',choices=['baseline','windows-clutter'],default='baseline')
  r=sub.add_parser('reconstruct',help='Production native image/depth processing or portable XYZ fusion');r.add_argument('--bundle',type=Path,required=True);r.add_argument('--output',type=Path,required=True)
  r.add_argument('--simulator');r.add_argument('--bundle-id',default='com.example.HouseMemoryProof');r.add_argument('--kind',choices=['points','surface','complete']);r.add_argument('--segment');r.add_argument('--timeout',type=int,default=900)
  e=sub.add_parser('evaluate');e.add_argument('--candidate',type=Path,required=True);e.add_argument('--truth',type=Path);e.add_argument('--fixture',type=Path);e.add_argument('--output',type=Path)
@@ -63,8 +64,10 @@ def main():
   if a.cmd=='test':return test(a.output) if a.suite=='portable' else hm_commands.run_suite(a.suite,a.output)
   if a.cmd=='simulate':
    if a.output.exists():raise ValueError('Choose a new simulation directory; previous evidence is preserved')
-   if a.scenario=='analytic-depth':simulate(a.seed,a.output);return 0
-   return subprocess.run([sys.executable,str(ROOT/'tooling/simulation/whole_house_fixture.py'),str(a.output),'--seed',str(a.seed),'--stage',a.stage,'--profile',a.profile,'--width',str(a.width)],cwd=ROOT).returncode
+   if a.scenario=='analytic-depth':
+    if a.scene_variant!='baseline':raise ValueError('Scene variants require --scenario connected-house')
+    simulate(a.seed,a.output);return 0
+   return subprocess.run([sys.executable,str(ROOT/'tooling/simulation/whole_house_fixture.py'),str(a.output),'--seed',str(a.seed),'--stage',a.stage,'--profile',a.profile,'--width',str(a.width),'--scene-variant',a.scene_variant],cwd=ROOT).returncode
   if a.cmd=='reconstruct':
    if a.output.exists():raise ValueError('Choose a new reconstruction path; existing output is preserved')
    if a.simulator:

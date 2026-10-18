@@ -120,6 +120,30 @@ enum DrawingEvidence {
   }
 }
 
+// IFC coordinates describe the source design frame. Choosing a room does not
+// register that frame to a capture. The original is an explicit dependency,
+// independent of a PDF page's calibration or drawing-overlay transform.
+enum IFCSourceEvidence {
+  static func fingerprint(_ drawing:Drawing)throws->String {
+    guard drawing.asset.hasSuffix(".ifc") else{throw HouseError.message("The IFC source is missing.")}
+    return SHA256.hash(data:Data(("ifc-source-v1|web-ifc-0.0.72|metres-z-up|"+drawing.asset).utf8)).map{String(format:"%02x",$0)}.joined()
+  }
+  static func applying(_ features:[Feature],source:Drawing,stage:Stage,roomID:UUID,to house:House)throws->House {
+    guard !features.isEmpty,house.drawings.contains(source),house.rooms.contains(where:{$0.id==roomID}),house.stages.contains(stage),stage.kind == .planned,
+      features.allSatisfy({$0.kind == .planned && $0.roomID==roomID && $0.stageID==stage.id && $0.segmentID==nil && $0.sourceDrawingID==nil}),
+      Set(features.map{$0.id}).isDisjoint(with:Set(house.features.map{$0.id})) else{throw HouseError.message("The IFC source, room or stage changed. Reopen the saved original before importing geometry.")}
+    let fingerprint=try Self.fingerprint(source),segment=Segment(roomID:roomID,stageID:stage.id)
+    var updated=house
+    updated.segments.append(segment)
+    updated.features += features.map{value in
+      var feature=value;feature.segmentID=segment.id;feature.sourceDrawingID=source.id;feature.sourceDrawingFingerprint=fingerprint
+      feature.notes += " Separate source design frame; no house alignment inferred. Original IFC retained."
+      return feature
+    }
+    try updated.validate();return updated
+  }
+}
+
 // Derived geometry follows the exact capture/pose/reference inputs that produced it.
 enum DerivedEvidence {
   static func dependencies(_ sources:[UUID],house:House)->[AnnotationDependency] {
@@ -152,6 +176,8 @@ enum DerivedEvidence {
         guard let expected=feature.sourceDrawingFingerprint else{return false}
         if let declaration=feature.importedCoordinates {
           guard let original=house.drawings.first(where:{$0.id==drawing}),let actual=try? PointCloudImport.fingerprint(original,declaration:declaration),actual==expected else{return false}
+        } else if let original=house.drawings.first(where:{$0.id==drawing}),original.asset.hasSuffix(".ifc") {
+          guard feature.kind == .planned,feature.segmentID != nil,(try? IFCSourceEvidence.fingerprint(original))==expected else{return false}
         } else {guard drawings[drawing]==expected else{return false}}
       }
       guard let expected=feature.sourceFingerprint else{return true}

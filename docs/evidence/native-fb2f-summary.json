@@ -1,0 +1,256 @@
+{
+  "build": "199.1",
+  "date": "2026-10-18T05:12:55Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 166.226556791667,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1770356736,
+    "physicalFootprintBytes": 64446976,
+    "residentBytes": 448004096
+  },
+  "sourceRevision": "fb2f9201d6",
+  "systemVersion": "26.5",
+  "source": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
+  "run": 39099066937,
+  "nativeChecks": 136,
+  "nativePassed": 136,
+  "nativeFailures": [],
+  "artifact": {
+    "id": 12124954981,
+    "sha256": "a5ff4d3a5b48088b9e88a552e86bf2ed0b01248e5d52b645a013e73e9d8e3ca9",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": false,
+  "interfaceAndIndependentReaders": "UI target did not compile; all independent readers passed",
+  "newChecks": [
+    {
+      "passed": true,
+      "seconds": 0.03401416666702062,
+      "test": "Typed service evidence preserves unknowns, rejects invalid claims and survives search and archive restore"
+    },
+    {
+      "passed": true,
+      "seconds": 0.020683291666500736,
+      "test": "Batch classification commits one reversible revision and refuses stale selected objects atomically"
+    },
+    {
+      "passed": true,
+      "seconds": 0.07073016666663534,
+      "test": "Project reader upgrades legacy metadata without rewriting it and refuses unknown future schemas"
+    },
+    {
+      "passed": true,
+      "seconds": 0.0037952500001665612,
+      "test": "Model export admits unique texture bytes and rejects missing, corrupt or oversized selections"
+    },
+    {
+      "passed": true,
+      "seconds": 0.06206204166664975,
+      "test": "PLY import requires explicit units and axes, preserves the original and never assumes house alignment"
+    }
+  ],
+  "interfaceExpected": 8,
+  "interfaceExecuted": 0,
+  "interfaceFailure": "XCUIElement has no lastMatch member in the batch-classification test; replaced with an explicit matching query and its last hittable element.",
+  "fullArtifact": {
+    "id": 12125588232,
+    "sha256": "f4d48e9a5a02c4385a264d9616b17315741eda176dc994dc7a4cb61a1aa11c84",
+    "sha256IndependentlyVerified": true
+  },
+  "processRecovery": [
+    {
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "passed": true,
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3,
+      "powerLossQualified": false
+    },
+    {
+      "powerLossQualified": false,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "recoveredExactlyOnce": true,
+      "passed": true,
+      "verifiedAssets": 3
+    },
+    {
+      "powerLossQualified": false,
+      "passed": true,
+      "verifiedAssets": 19,
+      "fault": "SIGKILL inside schema transaction before COMMIT"
+    }
+  ],
+  "portableCasesPassed": 50,
+  "commandContracts": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 27,
+    "seconds": 5.300890999999865,
+    "exitCode": 0
+  },
+  "independentReaderReports": [
+    {
+      "file": "archive-validation.json",
+      "passed": true,
+      "reader": "Python zipfile"
+    },
+    {
+      "file": "chunked-snapshot-validation.json",
+      "passed": true,
+      "reader": "Python standard library"
+    },
+    {
+      "file": "general-glb-validation.json",
+      "passed": true,
+      "reader": "Khronos glTF Validator"
+    },
+    {
+      "file": "general-obj-validation.json",
+      "passed": true,
+      "reader": "trimesh 5.1.1"
+    },
+    {
+      "file": "general-ply-validation.json",
+      "passed": true,
+      "reader": "trimesh 5.1.1"
+    },
+    {
+      "file": "general-points-usd-validation.json",
+      "passed": true,
+      "reader": "OpenUSD 25.11"
+    },
+    {
+      "file": "general-semantic-validation.json",
+      "passed": true,
+      "reader": "Python standard-library csv"
+    },
+    {
+      "file": "general-test-usd-validation.json",
+      "passed": true,
+      "reader": "OpenUSD 25.11"
+    },
+    {
+      "file": "general-textured-usd-validation.json",
+      "passed": true,
+      "reader": "OpenUSD 25.11"
+    },
+    {
+      "file": "house-surface-gltf-validation.json",
+      "passed": true,
+      "reader": "2.0.0-dev.3.10"
+    },
+    {
+      "file": "mesh-interchange-validation.json",
+      "passed": true,
+      "reader": "trimesh 5.1.1"
+    },
+    {
+      "file": "offline-viewer-validation.json",
+      "passed": true,
+      "reader": null
+    },
+    {
+      "file": "photo-curve-gltf-validation.json",
+      "passed": true,
+      "reader": "Khronos glTF Validator plus independent fixed-frame line reader"
+    },
+    {
+      "file": "photo-curve-viewer-validation.json",
+      "passed": true,
+      "reader": null
+    },
+    {
+      "file": "points-gltf-validation.json",
+      "passed": true,
+      "reader": "2.0.0-dev.3.10"
+    },
+    {
+      "file": "points-usd-validation.json",
+      "passed": true,
+      "reader": "OpenUSD 25.11"
+    },
+    {
+      "file": "portable-package-validation.json",
+      "passed": true,
+      "reader": "Python standard library independent archive reader"
+    },
+    {
+      "file": "semantic-csv-validation.json",
+      "passed": true,
+      "reader": "Python standard-library csv"
+    },
+    {
+      "file": "test-gltf-validation.json",
+      "passed": true,
+      "reader": "2.0.0-dev.3.10"
+    },
+    {
+      "file": "test-usd-validation.json",
+      "passed": true,
+      "reader": "OpenUSD 25.11"
+    },
+    {
+      "file": "textured-gltf-validation.json",
+      "passed": true,
+      "reader": "2.0.0-dev.3.10"
+    },
+    {
+      "file": "textured-usd-validation.json",
+      "passed": true,
+      "reader": "OpenUSD 25.11"
+    }
+  ],
+  "nativeTourCLI": {
+    "passed": true,
+    "command": "production native tour via CLI",
+    "shots": 12,
+    "frames": 150,
+    "previews": 8,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "nativeReconstructionCLI": {
+    "passed": true,
+    "command": "production native reconstruction via CLI",
+    "sessions": 1,
+    "originalsVerified": 19,
+    "vertices": 10956,
+    "independentArchivePassed": true,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "typedCurveGLB": {
+    "passed": true,
+    "reader": "Khronos glTF Validator plus independent fixed-frame line reader",
+    "points": 3,
+    "sourceTracks": 3,
+    "mode": "LINE_STRIP",
+    "metricDiameterInvented": false,
+    "typedServiceDetailsPreserved": true,
+    "maximumCoordinateErrorMetres": 4.768371586472142e-08,
+    "physicalQualification": false,
+    "nodes": 11,
+    "meshes": 1,
+    "levels": 1,
+    "tourClips": 6,
+    "hierarchyAndAnimationPassed": true
+  },
+  "typedSemanticCSV": {
+    "passed": true,
+    "reader": "Python standard-library csv",
+    "records": 17,
+    "sha256": "f6278523808ed42bc800b85d95e2933a2e130a28aadfb371d92262ad0e35b2f0",
+    "separateFramesPreserved": true,
+    "registrationNotAppliedToSourceCoordinates": true,
+    "unicodeMultilineAndQuotedTextPreserved": true,
+    "formulaTextEscaped": true,
+    "sourceRelationshipsPreserved": true,
+    "typedServiceDetailsPreserved": true,
+    "physicalPrecisionQualified": false
+  },
+  "subsequentCandidate": "IFC source dependencies/separate frame, saved IFC conversion, appearance variation and early UI target compilation; 137 native and 9 UI expected, unverified"
+}

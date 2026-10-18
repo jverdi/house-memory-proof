@@ -1,6 +1,21 @@
 import XCTest
 
 final class HouseXraySmoke: XCTestCase {
+  @MainActor func testSavedIFCSourceWorkflow() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--ifc-demo"];app.launch()
+    defer{app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["Tools"].waitForExistence(timeout:20));app.tabBars.buttons["Tools"].tap()
+    app.buttons["Drawings & design references"].tap();app.staticTexts["Source.ifc"].tap()
+    let convert=app.buttons["Import this IFC design"];XCTAssertTrue(convert.waitForExistence(timeout:10));XCTAssertFalse(convert.isEnabled)
+    app.descendants(matching:.any)["ifc-source-room"].firstMatch.tap();app.buttons["Source room"].tap()
+    XCTAssertTrue(convert.isEnabled);convert.tap()
+    let result=app.staticTexts["ifc-source-result"];XCTAssertTrue(result.waitForExistence(timeout:75))
+    XCTAssertTrue(result.label.contains("separate source frame"));XCTAssertTrue(result.label.contains("House alignment remains unknown"))
+    XCTAssertTrue(result.isHittable);screenshot("21-saved-ifc-source-frame")
+    app.navigationBars["Source.ifc"].buttons["Save"].tap()
+    XCTAssertTrue(app.staticTexts["Source.ifc"].waitForExistence(timeout:10))
+  }
   @MainActor func testPointCloudDeclarationWorkflow() throws {
     continueAfterFailure=false
     let app=XCUIApplication();app.launchArguments=["--point-cloud-demo"];app.launch()
@@ -26,8 +41,10 @@ final class HouseXraySmoke: XCTestCase {
     defer{app.terminate()}
     XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:20));app.tabBars.buttons["Evidence"].tap()
     app.buttons["Classify objects"].tap()
-    app.descendants(matching:.any)["batch-system"].firstMatch.tap();app.buttons["Low voltage"].lastMatch.tap()
-    app.descendants(matching:.any)["batch-class"].firstMatch.tap();app.buttons["Low voltage"].lastMatch.tap()
+    app.descendants(matching:.any)["batch-system"].firstMatch.tap()
+    try XCTUnwrap(app.buttons.matching(identifier:"Low voltage").allElementsBoundByIndex.last(where:{$0.isHittable})).tap()
+    app.descendants(matching:.any)["batch-class"].firstMatch.tap()
+    try XCTUnwrap(app.buttons.matching(identifier:"Low voltage").allElementsBoundByIndex.last(where:{$0.isHittable})).tap()
     let filter=app.textFields["Filter objects"];filter.tap();filter.typeText("Speaker")
     app.swipeUp()
     let toggles=app.switches.matching(NSPredicate(format:"identifier BEGINSWITH %@","batch-object-"))

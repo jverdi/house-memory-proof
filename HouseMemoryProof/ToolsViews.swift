@@ -7,6 +7,7 @@ struct ToolsPage: View {
   var house: House
   @State private var importing = false
   @State private var pointCloudImport:PointCloudImport?
+  @State private var importReport=""
   @State private var mode: ViewMode = .rough
   @State private var ceilings = true
   @State private var duration = 20.0
@@ -122,6 +123,7 @@ struct ToolsPage: View {
             export("Verifying and archiving originals") { try Exporter.archive(house, repo: r) }
           }
           Button("Import archive, IFC or point cloud") { importing = true }
+          if !importReport.isEmpty {Text(importReport).font(.footnote)}
           Button("Restore previous local revision") { model.undo() }
           Text(
             "Save your archive to iCloud Drive or external storage using Files. Portable archives and optional incremental folder snapshots preserve separate revisions; they do not merge edits from different devices. Archives stream originals in bounded buffers using ZIP64; available device storage is the practical limit. Originals are never evicted."
@@ -200,6 +202,7 @@ struct ToolsPage: View {
   }
   func importFile(_ url: URL) {
     guard let repo = model.repository else { return }
+    importReport=""
     let access = url.startAccessingSecurityScopedResource()
     defer { if access { url.stopAccessingSecurityScopedResource() } }
     do {
@@ -207,20 +210,22 @@ struct ToolsPage: View {
         let data = try DurableFiles.read(url,limit:50_000_000)
         guard let room = house.rooms.first else { return }
         let key = try repo.put(data, ext: "ifc")
-        let stage = Stage(name: "Imported IFC design", kind: .planned)
-        model.edit {
-          $0.drawings.append(Drawing(name: url.lastPathComponent, asset: key))
-          $0.stages.append(stage)
-        }
+        let stage = Stage(name: "Imported IFC design", kind: .planned,phase:.other)
+        let drawing=Drawing(name:url.lastPathComponent,asset:key,notes:"Original IFC retained. Design coordinates remain in a separate source frame; house alignment is unknown.")
         let projectID = house.id
+        guard model.edit(projectID:projectID,{
+          $0.drawings.append(drawing)
+          $0.stages.append(stage)
+        }) else{return}
         model.perform("Converting IFC locally") {
           let importer = IFCImporter()
           let features = try await importer.load(data, roomID: room.id, stageID: stage.id)
           try Task.checkCancellation()
-          guard model.house?.id == projectID else {
+          guard let current=model.house,current.id == projectID else {
             throw HouseError.message("Project changed; import not published.")
           }
-          model.edit { $0.features.append(contentsOf: features) }
+          let updated=try IFCSourceEvidence.applying(features,source:drawing,stage:stage,roomID:room.id,to:current)
+          if model.commit(updated,select:false) {importReport="IFC design imported in its own source frame. Choose Imported IFC design in Explore → Layers to inspect it. House alignment remains unknown."}
           return nil
         }
       } else if url.pathExtension.lowercased() == "ply" {
@@ -297,6 +302,8 @@ struct DrawingPage: View {
   @State private var document: PDFDocument?
   @State private var selectedPage = 0
   @State private var pointCloudImport:PointCloudImport?
+  @State private var ifcRoom:UUID?
+  @State private var ifcReport=""
   var body: some View {
     NavigationStack {
       VStack {
@@ -338,7 +345,7 @@ struct DrawingPage: View {
           ContentUnavailableView(
             "Source preserved", systemImage: "doc",
             description: Text(
-              "This file is retained in the archive. Preview supports PDF and images. Use Tools → Import archive, IFC or point cloud to convert a bounded IFC model locally."
+              "This original file is retained in the archive. Preview supports PDF and images. Supported spatial files can be converted locally below."
             ))
           Button("Share original") {
             if let url = try? model.repository?.assetURL(drawing.asset) { model.shareURL = url }
@@ -353,6 +360,28 @@ struct DrawingPage: View {
                 return nil
               }
             }.disabled(model.busy)
+          }
+          if drawing.asset.hasSuffix(".ifc") {
+            Picker("Room association",selection:$ifcRoom) {
+              Text("Choose room").tag(Optional<UUID>.none)
+              ForEach(model.house?.rooms ?? []) {Text($0.name).tag(Optional($0.id))}
+            }.accessibilityIdentifier("ifc-source-room")
+            Button("Import this IFC design") {
+              guard let repo=model.repository,let house=model.house,let roomID=ifcRoom,let original=house.drawings.first(where:{$0.id==drawing.id}) else{return}
+              let stage=Stage(name:"Imported IFC design",kind:.planned,phase:.other)
+              guard model.edit(projectID:house.id,{$0.stages.append(stage)}) else{return}
+              ifcReport=""
+              model.perform("Converting saved IFC locally") {
+                let data=try await LocalWorker.run{try repo.read(original.asset,limit:50_000_000)}
+                let features=try await IFCImporter().load(data,roomID:roomID,stageID:stage.id)
+                try Task.checkCancellation()
+                guard let current=model.house,current.id==house.id else{throw HouseError.message("Project changed; import not published.")}
+                let updated=try IFCSourceEvidence.applying(features,source:original,stage:stage,roomID:roomID,to:current)
+                if model.commit(updated,select:false){ifcReport="Imported \(features.count) design objects in a separate source frame. House alignment remains unknown. Choose Imported IFC design in Explore → Layers."}
+                return nil
+              }
+            }.disabled(model.busy || ifcRoom==nil)
+            if !ifcReport.isEmpty {Text(ifcReport).font(.footnote).accessibilityIdentifier("ifc-source-result")}
           }
         }
         TextField("Source notes", text: $drawing.notes, axis: .vertical).padding()

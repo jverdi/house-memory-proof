@@ -1,0 +1,107 @@
+name: Window and clutter development replay
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/appearance-development.yml
+      - tooling/simulation/house_topology.py
+      - tooling/simulation/sensor_degradation.py
+      - tooling/simulation/whole_house_fixture.py
+      - tooling/simulation/check_whole_house_bundle.py
+      - tooling/simulation/test_house_topology.py
+      - tooling/simulation/test_sensor_degradation.py
+      - tooling/simulation/house.py
+      - tooling/simulation/replay_fixture.py
+      - tooling/simulation/test_render_contract.py
+      - tooling/simulation/pose_metrics.py
+      - tooling/simulation/test_pose_metrics.py
+      - tooling/simulation/whole_house_qualification.py
+      - tooling/simulation/test_whole_house_qualification.py
+      - tooling/simulation/summarize_whole_house.py
+      - tooling/simulation/test_whole_house_summary.py
+      - tooling/simulation/VisionReplay.swift
+      - tooling/opencv/build-host.sh
+      - tooling/solver/**
+      - packages/visual-core/**
+      - HouseMemoryProof/VisualMapping.swift
+      - HouseMemoryProof/BundleRefinement.swift
+      - HouseMemoryProof/PoseRefinement.swift
+      - HouseMemoryProof/PoseGraph.swift
+      - HouseMemoryProof/PhotoReconstruction.swift
+      - HouseMemoryProof/Domain.swift
+      - HouseMemoryProof/ServiceDetails.swift
+      - HouseMemoryProof/PointCloudImport.swift
+      - HouseMemoryProof/EvidenceModels.swift
+      - tooling/simulation/house_variations.py
+      - tooling/simulation/test_house_variations.py
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: appearance-development
+  cancel-in-progress: true
+jobs:
+  replay:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        seed: [85838, 77919]
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Compile the production map and query implementation
+        run: bash tooling/opencv/build-host.sh
+      - name: Check appearance, topology, sensor faults and renderer contracts
+        run: |
+          python3 -m venv build/whole-env
+          build/whole-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_house_topology.py
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_sensor_degradation.py
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_render_contract.py
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_pose_metrics.py
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_whole_house_qualification.py
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_whole_house_summary.py
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_house_variations.py
+          mkdir -p build/whole-house-evidence build/whole-house-private
+          git rev-parse HEAD > build/whole-house-evidence/source.txt
+          shasum -a 256 build/vision-replay > build/whole-house-evidence/binary.txt
+      - name: Score each observed stage with complete room and query denominators
+        run: |
+          failed=0
+          for stage in rough finished; do
+            fixture="build/whole-house-inputs/${stage}"
+            if python3 ci/run_bounded.py 600 build/whole-env/bin/python tooling/simulation/whole_house_fixture.py "$fixture" --seed ${{ matrix.seed }} --width 384 --stage "$stage" --scene-variant windows-clutter; then
+              build/whole-env/bin/python tooling/simulation/check_whole_house_bundle.py "$fixture" > "build/whole-house-private/${stage}-bundle-check.json" || failed=1
+              cp "$fixture/generator-summary.json" "build/whole-house-private/${stage}-generator.json"
+              python3 ci/run_bounded.py 660 build/whole-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "$fixture" --output "build/whole-house-private/${stage}-replay.json" --refine --bundle --house || failed=1
+            else
+              failed=1
+            fi
+          done
+          exit "$failed"
+      - name: Reduce private source records to aggregate evidence
+        if: always() && !cancelled()
+        run: python3 tooling/simulation/summarize_whole_house.py build/whole-house-private build/whole-house-evidence/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: appearance-development-aggregate-${{ matrix.seed }}
+          path: build/whole-house-evidence/
+          retention-days: 30

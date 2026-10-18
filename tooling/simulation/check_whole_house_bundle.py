@@ -17,7 +17,7 @@ def check(folder):
         manifest=json.loads(z.read('manifest.json'));house=json.loads(z.read('house.json'))
         assert set(manifest['sha256'])==set(names)-{'manifest.json'}
         for n,h in manifest['sha256'].items():assert hashlib.sha256(z.read(n)).hexdigest()==h
-        prohibited={'layout','topologySignature','expectedCamera','mappingCameras','seed','services','stairs','captureLedger','shouldMatch','oracleOnlyGeometry','truthIntrinsics','visibleSurfaceSamples'}
+        prohibited={'layout','topologySignature','expectedCamera','mappingCameras','seed','services','stairs','windows','clutter','materialFamily','sceneVariant','captureLedger','shouldMatch','oracleOnlyGeometry','truthIntrinsics','visibleSurfaceSamples'}
         def walk(value):
             if isinstance(value,dict):
                 assert not prohibited.intersection(value)

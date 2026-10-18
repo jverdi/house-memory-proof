@@ -48,6 +48,8 @@ def summarize(folder):
                 rooms=number(generated.get('rooms')),levels=number(generated.get('levels')),width=number(generated.get('width')),
                 inputArchiveCheckPassed=checked.get('passed') is True,oracleReadDenied=report.get('oracleReadDenied') is True,queryLabelsExcluded=report.get('queryLabelsExcluded') is True)
             for key in COUNTS+SCALARS:case[key]=number(report.get(key))
+            case['sceneVariant']=generated.get('sceneVariant') if generated.get('sceneVariant') in ['baseline','windows-clutter'] else 'unspecified'
+            case['sceneInventory']={key:number(generated.get(key)) for key in ['windows','clutterObjects','materialFamily']}
             case['mappingFailureCategories']=failure_categories(report.get('mappingFailures',{}))
             case['rotationErrorDegrees']=distribution(report.get('rotationErrorDegrees',{}))
             overlay=report.get('visibleSurfaceOverlay',{})

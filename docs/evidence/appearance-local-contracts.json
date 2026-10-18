@@ -1,0 +1,47 @@
+{
+  "localSimulationTestsPassed": 49,
+  "variationTestsPassed": 8,
+  "generatedDevelopmentLayoutsChecked": 50,
+  "materialFamilies": 3,
+  "baselineArchiveEntriesUnchanged": 98,
+  "baselineSource": "d7d0a4af8ee32399e2b800c48aa3be6b7e413382",
+  "nativeCandidateReplay": "pending",
+  "physicalQualification": false,
+  "rawEvidencePublished": false,
+  "captureArchiveChecks": [
+    {
+      "sceneVariant": "baseline",
+      "archiveCheck": {
+        "passed": true,
+        "sourcePhotographs": 32,
+        "rooms": 4,
+        "maps": 4,
+        "assets": 96,
+        "nominalQueries": 16,
+        "criticalQueries": 32,
+        "oracleFieldsExcluded": true,
+        "allOriginalHashesVerified": true,
+        "physicalQualification": false
+      },
+      "windows": 0,
+      "clutterObjects": 0
+    },
+    {
+      "sceneVariant": "windows-clutter",
+      "archiveCheck": {
+        "passed": true,
+        "sourcePhotographs": 32,
+        "rooms": 4,
+        "maps": 4,
+        "assets": 96,
+        "nominalQueries": 16,
+        "criticalQueries": 32,
+        "oracleFieldsExcluded": true,
+        "allOriginalHashesVerified": true,
+        "physicalQualification": false
+      },
+      "windows": 4,
+      "clutterObjects": 6
+    }
+  ]
+}

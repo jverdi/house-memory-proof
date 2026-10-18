@@ -37,7 +37,8 @@ PY
 revision="$(git rev-parse --short=10 HEAD)"
 build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
 if [ "$mode" != exercise ] && [ "$mode" != native ] && [ "$mode" != recovery ] && [ "$mode" != ui ]; then
-python3 ci/run_bounded.py 600 xcodebuild build \
+# Compile application and UI-test targets together before native runtime work.
+python3 ci/run_bounded.py 600 xcodebuild build-for-testing \
   -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData \
@@ -195,13 +196,14 @@ fi
 if [ "$mode" = recovery ]; then exit 0; fi
 
 set +e
-# Eight workflows include photo persistence, multi-view curve selection,
-# service edits/batches and explicit PLY declarations. The prior six-flow step
+# Nine workflows include photo persistence, multi-view curve selection,
+# service edits/batches, explicit PLY declarations and saved IFC conversion. The prior six-flow step
 # took 750 seconds including setup; cap the expanded process at 20 minutes.
 python3 ci/run_bounded.py 1200 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \
+  CURRENT_PROJECT_VERSION="$build_number" PROOF_SOURCE_REVISION="$revision" \
   2>&1 | tee build/evidence/ui-tests.log
 ui_failed=${PIPESTATUS[0]}
 set -e

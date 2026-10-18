@@ -14,6 +14,14 @@ import Darwin
         }
         #endif
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--ifc-demo"),let repo=model.repository {
+          do {
+            guard let path=Bundle.main.url(forResource:"IFC",withExtension:nil)?.appendingPathComponent("test-block.ifc") else{throw HouseError.message("IFC fixture missing.")}
+            var h=House.empty("IFC import fixture");h.isDemo=true;h.rooms[0].name="Source room"
+            h.drawings=[Drawing(name:"Source.ifc",asset:try repo.put(Data(contentsOf:path),ext:"ifc"),notes:"Synthetic IFC source; house alignment unknown")]
+            model.commit(h)
+          }catch{model.error=error.localizedDescription}
+        }
         if ProcessInfo.processInfo.arguments.contains("--point-cloud-demo"),let repo=model.repository {
           do {
             var h=House.empty("Point-cloud import fixture");h.isDemo=true;h.rooms[0].name="Source room"

@@ -14,13 +14,14 @@ import zipfile
 import numpy as np
 from house import identity,v,box,render
 from house_topology import generate,geometry,validate,topology_signature
+from house_variations import VARIANTS,vary,variant_geometry,validate_variant
 from sensor_degradation import Degrader,PROFILES
 
 
-def make(dest,seed,width=384,profile_name='nominal',map_stage='rough'):
+def make(dest,seed,width=384,profile_name='nominal',map_stage='rough',scene_variant='baseline'):
     if width not in [128,192,384,768] or profile_name not in PROFILES or map_stage not in ['rough','finished']:raise ValueError('Unsupported fixture profile')
     dest=Path(dest);dest.mkdir(parents=True,exist_ok=True);height=width*3//4
-    layout=generate(seed);pitch=layout['pitch'];profile=PROFILES[profile_name];assets={};observations=[];segments=[];rooms=[];queries=[];mapping={};now=813974400.
+    layout=vary(generate(seed),scene_variant);pitch=layout['pitch'];profile=PROFILES[profile_name];assets={};observations=[];segments=[];rooms=[];queries=[];mapping={};now=813974400.
     stages={name:identity(seed,'whole-stage-'+name) for name in ['rough','finished']};origins={};targets=[];capture_ledger=[]
     for i,room in enumerate(layout['rooms']):
         x,y=max(room['cells'],key=lambda cell:(sum(cell),cell));origin=np.array([(x+.5)*pitch,(y+.5)*pitch,room['elevation']+1.4]);origins[i]=origin
@@ -31,7 +32,7 @@ def make(dest,seed,width=384,profile_name='nominal',map_stage='rough'):
             g=box((origin[0]+along,(y+1)*pitch-.14,origin[2]+elevation),(.4,.012,.4),(235,235,235),'reference');g['id']=identity(seed,f'whole-target-{i}-front-{n}');targets.append(g)
         for n,(along,elevation) in enumerate([(1.2,-.45),(.55,.65),(.95,.15)]):
             g=box(((x+1)*pitch-.14,origin[1]+along,origin[2]+elevation),(.012,.4,.4),(235,235,235),'reference');g['id']=identity(seed,f'whole-target-{i}-side-{n}');targets.append(g)
-    geometries={stage:geometry(layout,stage)+targets for stage in stages}
+    geometries={stage:variant_geometry(layout,stage)+targets for stage in stages}
     def asset(data,ext):
         key=hashlib.sha256(data).hexdigest()+'.'+ext;assets['assets/'+key]=data;return key
     def photograph(room_index,stage,shift,yaw_offset=0,elevation=0,tilt=0,keep_targets=True):
@@ -102,12 +103,12 @@ def make(dest,seed,width=384,profile_name='nominal',map_stage='rough'):
     with zipfile.ZipFile(dest/'vision-map.hxray','w',compression=zipfile.ZIP_STORED) as z:
         for name,data in entries.items():z.writestr(name,data)
     oracle=dict(renderer='Connected varied house analytic AABB rendering',queries=queries,mappingCameras=mapping,injectedTranslationDriftMetres=profile.translation_drift_m_per_s*7/3,
-        expectedMapCount=len(segments),mapStage=map_stage,layout=layout,captureLedger=capture_ledger,profile=profile_name,topologySignature=topology_signature(layout),fieldQualified=False,
+        expectedMapCount=len(segments),mapStage=map_stage,layout=layout,captureLedger=capture_ledger,profile=profile_name,sceneVariant=scene_variant,topologySignature=topology_signature(layout),fieldQualified=False,
         limitations=['Selected corners and tilted upper-wall views, not complete house coverage','Analytic sensor faults are not empirically calibrated','Registration across rooms, closed-loop guidance and continuous stair paths are not scored by this localization replay'])
     (dest/'vision-queries.json').write_text(json.dumps(oracle,indent=2))
-    summary=dict(**validate(layout),topologySignature=topology_signature(layout),sourcePhotographs=len(observations),maps=len(segments),nominalQueries=sum(q['shouldMatch'] for q in queries),criticalQueries=sum(not q['shouldMatch'] for q in queries),width=width,profile=profile_name,mapStage=map_stage,oracleIsSeparate=True,physicalQualification=False)
+    summary=dict(**validate_variant(layout),sceneVariant=scene_variant,topologySignature=topology_signature(layout),sourcePhotographs=len(observations),maps=len(segments),nominalQueries=sum(q['shouldMatch'] for q in queries),criticalQueries=sum(not q['shouldMatch'] for q in queries),width=width,profile=profile_name,mapStage=map_stage,oracleIsSeparate=True,physicalQualification=False)
     (dest/'generator-summary.json').write_text(json.dumps(summary,indent=2)+'\n');return summary
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('output',type=Path);p.add_argument('--seed',type=int,required=True);p.add_argument('--width',type=int,default=384);p.add_argument('--profile',choices=PROFILES,default='nominal');p.add_argument('--stage',choices=['rough','finished'],default='rough');a=p.parse_args();print(json.dumps(make(a.output,a.seed,a.width,a.profile,a.stage)))
+    p=argparse.ArgumentParser();p.add_argument('output',type=Path);p.add_argument('--seed',type=int,required=True);p.add_argument('--width',type=int,default=384);p.add_argument('--profile',choices=PROFILES,default='nominal');p.add_argument('--stage',choices=['rough','finished'],default='rough');p.add_argument('--scene-variant',choices=VARIANTS,default='baseline');a=p.parse_args();print(json.dumps(make(a.output,a.seed,a.width,a.profile,a.stage,a.scene_variant)))

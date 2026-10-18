@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T05:00:24.732600+00:00",
+  "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
+  "currentImplementationCommit": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -27,7 +27,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "The 0e191bca22 integration passed 133 native checks, six UI flows, three process-kill recoveries and 22 readers. Validate the next 136-native/eight-UI service/import/reader-version candidate."
+      "remaining": "Validate the 137-native/nine-UI IFC source/frame/reopen and UI compile-repair candidate. fb2f9201d6 passed native/readers, but zero UI flows executed after a test-target compile error."
     },
     {
       "area": "finished localization",
@@ -35,7 +35,7 @@
     },
     {
       "area": "whole-house simulation",
-      "remaining": "Connected topology/sensor/renderer contracts pass, and all three rough development houses pass native localization. Finished accuracy fails in all three. Full 50-development/20-protected candidate evaluation, sensor/coverage diversity and closed-loop navigation remain incomplete."
+      "remaining": "Original finished localization failures remain. Window/clutter/material variants pass local generator/archive contracts; two native development replays are prepared. Full 50/20 evaluation, continuous paths, coverage diversity and closed-loop navigation remain incomplete."
     },
     {
       "area": "registration and thin services",
@@ -55,20 +55,21 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate typed service details, atomic batch classification/undo, explicit PLY coordinate declarations and schema-2 backward reading/forward refusal. Preserve all unresolved spatial and external gates; no additional TestFlight upload.",
+  "nextAction": "Run the UI compilation repair and IFC source/frame/reopen candidate; retain baseline spatial failures and evaluate separately named appearance cases. No additional TestFlight upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "run": null,
-    "status": "pending typed service, batch classification, declared PLY coordinates, project reader v2 and visible save-feedback candidate",
-    "nativeExpected": 136,
+    "status": "pending UI selector repair, IFC source/frame/reopen and appearance variant candidate",
+    "nativeExpected": 137,
     "nativePassed": null,
     "nativeFailed": null,
-    "interfaceExpected": 8,
+    "interfaceExpected": 9,
     "interfacePassed": null,
     "processKillPassed": null,
     "independentReadersExpected": 22,
     "independentReadersPassed": null,
-    "localCommandAndReaderContractsPassed": 27,
+    "localSimulationContractsPassed": 49,
+    "localCommandContractsPassed": 11,
     "interfaceProcessBudgetSeconds": 1200,
     "physicalQualification": false
   },
@@ -338,8 +339,10 @@
     "archiveAndCSVAndGLBPrepared": true,
     "batchClassificationWithAtomicStaleRefusal": true,
     "singleRevisionUndoPrepared": true,
-    "nativeValidationPending": true,
-    "interfaceValidationPending": true
+    "nativeValidationPending": false,
+    "interfaceValidationPending": true,
+    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
+    "independentCSVAndGLBPassed": true
   },
   "declaredPointCloudImport": {
     "prepared": true,
@@ -350,8 +353,9 @@
     "houseAlignmentInferred": false,
     "separateDocumentaryFrame": true,
     "sourceDeclarationFingerprint": true,
-    "nativeValidationPending": true,
-    "interfaceValidationPending": true
+    "nativeValidationPending": false,
+    "interfaceValidationPending": true,
+    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d"
   },
   "projectReaderVersion": {
     "current": 2,
@@ -364,31 +368,23 @@
     "futureSchemasRefused": true,
     "archiveContainerVersion": 1,
     "semanticCSVVersion": 1,
-    "nativeValidationPending": true,
-    "signedCrossVersionMatrixPassed": false
+    "nativeValidationPending": false,
+    "signedCrossVersionMatrixPassed": false,
+    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d"
   },
   "previousFailedIntegration": {
-    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
-    "run": 39096349828,
-    "nativeExpected": 131,
-    "nativeExecuted": 128,
-    "nativePassed": 127,
-    "nativeFailed": 1,
-    "nativeUnexecuted": 3,
-    "interfacePassed": 6,
+    "source": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
+    "run": 39099066937,
+    "nativePassed": 136,
+    "nativeFailed": 0,
     "processKillPassed": 3,
-    "independentReadersPassed": false,
-    "remainingFailure": "Existing IFC2x3 importer timed out; later IFC checks in that block were not executed",
-    "completeIntegratedPass": false,
-    "independentReaderReports": 19,
-    "independentReaderReportsExpected": 20,
-    "portableArchiveAndCommandAdaptersSkipped": true,
-    "fullArtifact": {
-      "id": 12124609303,
-      "sha256": "04e14654d79c79e4d5453f28bf736249d5bf18babe6b88e4fe24b3c0efbf0c9c",
-      "sha256IndependentlyVerified": true
-    },
-    "executedReaderReportsPassed": 19
+    "portableCasesPassed": 50,
+    "commandContractTestsPassed": 27,
+    "independentReaderReportsPassed": 22,
+    "interfaceExpected": 8,
+    "interfaceExecuted": 0,
+    "reason": "UI target compile error: unsupported XCUIElement.lastMatch",
+    "evidence": "docs/evidence/native-fb2f-summary.json"
   },
   "supersededIntegrationAttempt": {
     "source": "d7d0a4af8ee32399e2b800c48aa3be6b7e413382",
@@ -402,6 +398,33 @@
     "semanticUTF8AndWorstCaseJSONEscaping": true,
     "simultaneousEncodingCopiesIncluded": true,
     "metadataFreePLYOBJUnaffected": true,
-    "nativeValidationPending": true
+    "nativeValidationPending": false,
+    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d"
+  },
+  "IFCSourceDependency": {
+    "prepared": true,
+    "separateUnregisteredDesignFrame": true,
+    "originalDependencyFingerprint": true,
+    "stalePublicationRefused": true,
+    "reopenSavedSourceWithRoomChoice": true,
+    "olderImportsRelocated": false,
+    "nativeValidationPending": true,
+    "interfaceValidationPending": true,
+    "farOriginAndGeoreferenceQualified": false
+  },
+  "appearanceDevelopment": {
+    "variant": "windows-clutter",
+    "baselineArchiveEntriesUnchanged": 98,
+    "localContractsPassed": 49,
+    "variationContractsPassed": 8,
+    "generatedLayoutsChecked": 50,
+    "materialFamilies": 3,
+    "captureArchiveChecksPassed": 2,
+    "preparedNativeLayouts": 2,
+    "maximumJobMinutes": 40,
+    "maximumParallelJobs": 1,
+    "nativeReplayExecuted": false,
+    "rawEvidencePublished": false,
+    "physicalQualification": false
   }
 }

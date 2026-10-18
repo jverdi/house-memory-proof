@@ -1225,6 +1225,31 @@ import simd
                 guard !DerivedEvidence.currentIDs(changed).contains(changed.features[0].id) else{return false}
                 return try restored.features==imported.features && restored.segments==imported.segments && repo.read(key)==raw && target.integrity(restored)==1
             }
+            await check("IFC source dependency preserves a separate design frame and refuses stale publication") {
+                guard let path=Bundle.main.url(forResource:"IFC",withExtension:nil)?.appendingPathComponent("test-block.ifc") else{return false}
+                let raw=try Data(contentsOf:path),key=try repo.put(raw,ext:"ifc"),drawing=Drawing(name:"Source.ifc",asset:key)
+                var original=House.empty("IFC source frame");original.drawings=[drawing]
+                let stage=Stage(name:"Imported IFC design",kind:.planned,phase:.other),room=original.rooms[0].id
+                original.stages.append(stage)
+                let geometry=Feature(name:"Converted design",trade:.structure,roomID:room,stageID:stage.id,kind:.planned,mesh:Mesh.box(center:V3(10,20,30),size:V3(1,2,3)))
+                let imported=try IFCSourceEvidence.applying([geometry],source:drawing,stage:stage,roomID:room,to:original)
+                guard imported.features.count==1,imported.features[0].mesh==geometry.mesh,imported.features[0].sourceDrawingID==drawing.id,
+                  imported.segments.count==1,imported.segments[0].registration==nil,!imported.segments[0].approved,
+                  imported.features[0].segmentID==imported.segments[0].id,DerivedEvidence.currentIDs(imported).contains(geometry.id) else{return false}
+                for fault in 0..<4 {
+                    var changed=original
+                    if fault==0{changed.drawings[0].asset=try repo.put(Data("changed IFC source".utf8),ext:"ifc")}
+                    if fault==1{changed.stages.removeAll{$0.id==stage.id}}
+                    if fault==2{changed.rooms=[]}
+                    if fault==3{changed=imported}
+                    do{_=try IFCSourceEvidence.applying([geometry],source:drawing,stage:stage,roomID:room,to:changed);return false}catch{}
+                }
+                var changed=imported;changed.drawings[0].asset=try repo.put(Data("replacement source".utf8),ext:"ifc")
+                guard !DerivedEvidence.currentIDs(changed).contains(geometry.id) else{return false}
+                let archive=try Exporter.archive(imported,repo:repo),target=try Repository(root:folder.appendingPathComponent("ifc-source-restore"))
+                let restored=try Exporter.restore(archive,repo:target)
+                return try restored.features==imported.features && restored.segments==imported.segments && restored.drawings==original.drawings && target.read(key)==raw && target.integrity(restored)==1
+            }
             await check("PLY preserves fields and rejects malformed records without coordinate shifts") {
                 let header="ply\nformat ascii 1.0\nelement vertex 3\nproperty double x\nproperty double y\nproperty double z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n"
                 let body="0 0 0\n1 0 0\n0 2 0\n3 0 1 2\n"

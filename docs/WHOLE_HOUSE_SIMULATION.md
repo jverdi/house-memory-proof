@@ -14,8 +14,10 @@ Physical assembly and service IDs survive rough and finished stages. Finishes
 have 12.5 mm thickness on each side of framing. Source assemblies stay in place;
 added finish surfaces occlude cavity services. Electrical, plumbing and thin
 low-voltage routes remain separate even when they cross in the image. A planned
-renovation state cannot be emitted as observed geometry. Split levels, complex
-workmanship, windows, clutter and broader material families remain to be added.
+renovation state cannot be emitted as observed geometry. A separately named
+appearance variant adds open windows, clutter and three diffuse material
+families. Split levels, complex workmanship, insulation/renovation capture
+states, glazing and broader physical materials remain open.
 
 The separate sensor adapter applies reproducible depth noise, temporal
 correlation, scale/bias, edge mixing, thin-object dropout, exposure, compression,
@@ -78,3 +80,30 @@ automatic launch workflow yet: known development failures remain open, and a
 separate restricted job context is required before drawing protected plans. Its
 initial nominal corner/upper-wall captures do not cover the remaining material,
 sensor, continuous-path, full-coverage or navigation requirements.
+
+## Additional window and clutter cases
+
+`--scene-variant windows-clutter` uses the same topology with deterministic
+exterior openings, solid jambs/sills/headers, interior occluders and three diffuse
+material palettes. It never cuts through a service route or adds a connection at
+an image crossing. Clutter reserves door approaches and the full stair bay.
+Rough assemblies, service IDs and unknown graph links survive finishing. Windows
+are explicitly open: the analytic renderer does not claim transparent glass,
+refraction, calibrated sunlight or realistic material-dependent depth.
+
+The default baseline is retained. A generated four-room 128-pixel archive has
+all 98 entries byte-identical to source d7d0a4af8e. Eight independent variation
+contracts check 50 generated layouts, volume-conserving aperture subtraction,
+frame clearance, foreground occlusion and invalid-scene refusal. The complete
+local simulation suite passes 49 contracts. Both baseline and varied four-room
+archives independently pass original-hash, buffer and oracle-exclusion checks.
+These are generator/adaptor results, not production spatial scores.
+
+The new development workflow budgets two four-/seven-room cases at 384 pixels,
+both stages, at most two 40-minute jobs with one active at a time. It runs the
+unchanged production estimator and spatial gates. Inputs, geometry, query
+records and oracle remain ephemeral; only allowlisted aggregate metrics and
+inventory counts are published. The original baseline replay remains separate.
+Exact-source native replay of the new appearance cases is pending. These cases
+do not close continuous capture, full coverage, closed-loop navigation,
+cross-room registration, protected diversity or physical qualification.

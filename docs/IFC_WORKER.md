@@ -11,4 +11,26 @@ Primary references:
 - https://developer.apple.com/documentation/webkit/wkpreferences/inactiveschedulingpolicy-swift.enum/none
 - https://bugs.webkit.org/show_bug.cgi?id=283794 (WebKit maintainer explanation, comments 4–5)
 
-Exact-source native verification is pending. The original timeout is not waived and the IFC time/geometry admission limits are unchanged.
+Source 0e191bca22, build 197.1, passed the IFC2x3 cancellation/reuse path and every expected phase, IFC4 millimetre/nested/rotated placements, bounded coordinate refusal and recovery. Its complete integration passed 133 native checks, six UI flows and 22 independent readers. The original timeout remains recorded; IFC time/geometry admission limits are unchanged. See `docs/evidence/native-0e19-summary.json`.
+
+
+## Source dependency and placement continuation
+
+The next candidate associates every converted IFC object with its saved source
+Drawing, a converter/version/asset fingerprint and a separate unregistered
+planned segment. Room association does not establish house alignment. Import
+publication compares the source/stage snapshots and refuses changed or missing
+inputs and repeated feature identities. A source replacement invalidates derived
+geometry. The original is saved before conversion and remains after refusal;
+archive restoration preserves the source, local geometry and frame. A saved IFC
+can be reopened from its Drawing page after selecting a room association; the
+result states that house alignment is unknown and identifies its stage.
+
+This fixes the earlier Tools importer, which retained the IFC file but did not
+link its objects to that file and left their coordinates in the global house
+frame. A native source/frame/stale-publication/archive regression and a saved-source
+interface workflow are prepared (137 native checks and nine UI flows expected);
+exact-source validation is pending. Older already-imported objects are not
+silently relocated. Far-origin rebasing, explicit georeference records and
+broader malformed-GUID/unsupported-geometry qualification remain open; the
+existing large-coordinate refusal continues to preserve the original.
