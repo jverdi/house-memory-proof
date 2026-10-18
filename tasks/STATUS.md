@@ -1,8 +1,12 @@
-## Current validation checkpoint — d7f5b79e31 / 208.1
+# Current completed checkpoint — d7f5b79e31 / 208.1
 
-The combined source passes **163/163 native checks** in **127.101 seconds**, plus all **15 native-phase readers/commands**. The service CLI and independent reader verify six reviewed-route inspections, four endpoints, source points, explicit confirmed links and camera cuts over 300 frames. The full-decode movie test also verifies the JSON sidecar sharing inventory. All four additional IFC geometry cases and matched reveal/restoration checks pass. Native evidence is SHA-verified in `docs/evidence/native-d7f5-summary.json`.
+The combined source completed run **39138960576** successfully: **163/163 native checks**, **12/12 interface workflows**, **three process-kill recoveries**, **50 portable cases** and **all 32 validation reports**. All 15 native-phase readers/commands pass, including 36 command contracts and the reveal, service-tour and reconstruction CLI paths. Native execution took 127.101 seconds; the twelve UI flows took 1,004.189 seconds. Both native and full evidence archives are independently SHA-256 verified in `docs/evidence/native-d7f5-summary.json`.
 
-Process recovery, twelve interface flows and remaining export checks are continuing. The last complete integration remains dfec13ee61 / 205.1. Failed compilation at 74b8740b1d is retained in `docs/evidence/compile-74b874-summary.json`; the corrected fe985 native checkpoint and three recoveries are retained separately. No intermediate TestFlight upload occurred.
+This checkpoint completes the bounded matched-camera fade/reveal/restore implementation, reviewed service-route and endpoint inspections with explicit confirmed links/trade scope/omissions, four additional IFC placement/mapping/opening relationship cases, and sharing of the movie's metadata sidecar. The service UI screenshots were inspected: the empty selected trade is explicit, and endpoint, identity, source date and camera-cut labels are readable. These bounded cases do not establish full-house route coverage or physical precision.
+
+The failed 74b8740b1d compiler attempt and its fe985 repair remain recorded separately. The progress ledger now reflects this complete integration rather than stale earlier pending flags. Remaining work includes whole-house registration/geometry/navigation/coverage, broad drawing recognition, large-workload and signed cross-version acceptance, the retained finished-localization failures, real device/provider behavior, and independent physical calibration/validation. The five-attempt detector budget remains exhausted. No intermediate TestFlight upload occurred.
+
+## Earlier continuation checkpoints
 
 ## Reviewed service-tour continuation
 

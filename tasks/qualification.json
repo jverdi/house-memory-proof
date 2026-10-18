@@ -20,12 +20,12 @@
     "failed": 0,
     "artifact": 12140104811,
     "sha256": "9f60cd39ff0026a11c34f6182e9692939adc49c60987c98144476682f87f4bb5",
-    "completeIntegratedPass": false
+    "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
-      "area": "integrated candidate",
-      "remaining": "d7f5 passes 163 native checks and all 15 native-phase readers/commands. Twelve interface flows, process recovery and remaining export checks are continuing; dfec13 remains the last complete integration."
+      "area": "whole-house product qualification",
+      "remaining": "Bounded reveal, reviewed service-route, importer and metadata-sharing cases pass complete integration at d7f5. Full-house navigation/streaming, mixed-stage coverage, broad tour/route coverage, drawing recognition and large-workload qualification remain open."
     },
     {
       "area": "finished localization",
@@ -53,34 +53,42 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate the combined reveal, IFC, reviewed service-route and movie-sharing candidate (163 native/12 UI expected), retain exact-source evidence, and continue unresolved software/device qualification without changing precision gates or uploading another snapshot.",
+  "nextAction": "Continue independent full-house navigation/streaming, mixed-stage coverage, curved-envelope and cross-version acceptance. Preserve the original finished-localization failures and exhausted five-attempt budget. Owner-device/provider and measured field qualification remain required; no intermediate TestFlight upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
     "run": 39138960576,
-    "status": "163/163 native and all 15 native-phase checks passed; process recovery and 12 interface flows continuing",
+    "status": "Complete integration passed: 163 native, 12 UI, three process recoveries, 50 portable cases and all 32 validation reports",
     "nativeExpected": 163,
     "interfaceExpected": 12,
-    "integrationComplete": false,
+    "integrationComplete": true,
     "nativePassed": 163,
     "nativeFailed": 0,
-    "evidence": "docs/evidence/native-d7f5-summary.json"
+    "evidence": "docs/evidence/native-d7f5-summary.json",
+    "interfacePassed": 12,
+    "interfaceFailed": 0,
+    "workflowConclusion": "success"
   },
   "previousIntegratedAttempt": {
-    "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
-    "run": 39097334972,
-    "nativePassed": 133,
+    "source": "dfec13ee619a0d0735292948cc29115a1455615b",
+    "run": 39131633332,
+    "nativePassed": 159,
     "nativeFailed": 0,
-    "interfacePassed": 6,
-    "uiSeconds": 627.423,
+    "interfacePassed": 11,
+    "uiSeconds": 852.713,
     "processKillPassed": 3,
-    "independentReaderReportsPassed": 22,
     "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12125239332,
-      "sha256": "afa3be9b69e8bce29da708d756728060a456c5566776c1269ec052b01523d7a4",
+      "id": 12138497711,
+      "sha256": "f52791b6c6147b7ee850ed33532e41937f41f248d7b6dcfc69c2f4a10fbda889",
       "sha256IndependentlyVerified": true
-    }
+    },
+    "portableCasesPassed": 50,
+    "commandContractTestsPassed": 32,
+    "nativeTourCLIValidated": true,
+    "nativeReconstructionCLIValidated": true,
+    "validationReportsPassed": 30,
+    "nativePhaseChecksPassed": 12
   },
   "signingAudit": {
     "run": 39084977296,
@@ -104,25 +112,27 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "dfec13ee619a0d0735292948cc29115a1455615b",
-    "run": 39131633332,
-    "nativePassed": 159,
+    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+    "run": 39138960576,
+    "nativePassed": 163,
     "nativeFailed": 0,
-    "interfacePassed": 11,
-    "uiSeconds": 852.713,
+    "nativePhaseChecksPassed": 15,
+    "interfacePassed": 12,
+    "interfaceFailed": 0,
+    "uiSeconds": 1004.189,
     "processKillPassed": 3,
+    "validationReportsPassed": 32,
     "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12138497711,
-      "sha256": "f52791b6c6147b7ee850ed33532e41937f41f248d7b6dcfc69c2f4a10fbda889",
+      "id": 12141826272,
+      "sha256": "f30036a78518f57c08b3ed48c1f3645da6df5415fc1a48a17e646e91ba91c709",
       "sha256IndependentlyVerified": true
     },
     "portableCasesPassed": 50,
-    "commandContractTestsPassed": 32,
+    "commandContractTestsPassed": 36,
     "nativeTourCLIValidated": true,
-    "nativeReconstructionCLIValidated": true,
-    "validationReportsPassed": 30,
-    "nativePhaseChecksPassed": 12
+    "nativeServiceTourCLIValidated": true,
+    "nativeReconstructionCLIValidated": true
   },
   "wholeHouseDevelopment": {
     "source": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
@@ -215,7 +225,7 @@
       "semantic CSV"
     ],
     "liveDoctorPrepared": true,
-    "localContractTestsPassed": 23,
+    "localContractTestsPassed": 36,
     "nativeReconstructionCLIValidated": true
   },
   "releaseHealth": {
@@ -666,14 +676,14 @@
     "physicalQualification": false
   },
   "continuation20261018": {
-    "lastCompleteIntegration": "dfec13ee619a0d0735292948cc29115a1455615b",
-    "run": 39131633332,
-    "nativePassed": 159,
-    "interfacePassed": 11,
+    "lastCompleteIntegration": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+    "run": 39138960576,
+    "nativePassed": 163,
+    "interfacePassed": 12,
     "fullArtifactSHA256Verified": true,
-    "candidateNativeExpected": 162,
-    "candidateIntegrationPending": true,
-    "commandContractsPassed": 34,
+    "candidateNativeExpected": 163,
+    "candidateIntegrationPending": false,
+    "commandContractsPassed": 36,
     "additionalTestFlightUpload": false,
     "physicalQualification": false,
     "portableCasesPassed": 50,
@@ -700,6 +710,9 @@
     "run": 39138960576,
     "nativePassed": true,
     "independentReaderPassed": true,
-    "interfaceValidationPending": true
+    "interfaceValidationPending": false,
+    "interfacePassed": true,
+    "completeIntegratedPass": true,
+    "interfaceFlowSeconds": 50.902
   }
 }

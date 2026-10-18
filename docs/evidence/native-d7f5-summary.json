@@ -25,9 +25,9 @@
     "sha256": "9f60cd39ff0026a11c34f6182e9692939adc49c60987c98144476682f87f4bb5",
     "sha256IndependentlyVerified": true
   },
-  "integrationComplete": false,
+  "integrationComplete": true,
   "interfaceExpected": 12,
-  "interfaceStatus": "Running",
+  "interfaceStatus": "All 12 interface workflows passed",
   "additionalTestFlightUpload": false,
   "physicalQualification": false,
   "nativeReaderStatus": [
@@ -170,5 +170,110 @@
     "tests": 36,
     "seconds": 4.168173417000048,
     "exitCode": 0
+  },
+  "interfacePassed": 12,
+  "interfaceFailures": 0,
+  "interfaceElapsedSeconds": 1004.189,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "seconds": 85.452
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "seconds": 48.313
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "seconds": 61.24
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "seconds": 32.26
+    },
+    {
+      "name": "testMeasuredEnvelopeSaveAndRelaunch",
+      "seconds": 68.467
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "seconds": 89.255
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "seconds": 305.572
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "seconds": 55.255
+    },
+    {
+      "name": "testReviewedServiceTourPreviewAndTradeScope",
+      "seconds": 50.902
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "seconds": 39.705
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "seconds": 47.681
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "seconds": 120.086
+    }
+  ],
+  "fullArtifact": {
+    "id": 12141826272,
+    "sha256": "f30036a78518f57c08b3ed48c1f3645da6df5415fc1a48a17e646e91ba91c709",
+    "sha256IndependentlyVerified": true
+  },
+  "workflowConclusion": "success",
+  "portableChecks": 50,
+  "processKillPassed": 3,
+  "validationReportsPassed": 32,
+  "validationReports": {
+    "archive-validation.json": true,
+    "chunked-snapshot-validation.json": true,
+    "cli-command-validation.json": true,
+    "cli-reconstruction-validation.json": true,
+    "drawing-marks-validation.json": true,
+    "general-glb-validation.json": true,
+    "general-obj-validation.json": true,
+    "general-ply-validation.json": true,
+    "general-points-usd-validation.json": true,
+    "general-semantic-validation.json": true,
+    "general-test-usd-validation.json": true,
+    "general-textured-usd-validation.json": true,
+    "house-surface-gltf-validation.json": true,
+    "ifc-properties-validation.json": true,
+    "ifc-source-gltf-validation.json": true,
+    "ifc-source-validation.json": true,
+    "mesh-interchange-validation.json": true,
+    "offline-viewer-validation.json": true,
+    "photo-curve-gltf-validation.json": true,
+    "photo-curve-viewer-validation.json": true,
+    "points-gltf-validation.json": true,
+    "points-usd-validation.json": true,
+    "portable-package-validation.json": true,
+    "semantic-csv-validation.json": true,
+    "service-envelope-gltf-validation.json": true,
+    "service-envelope-validation.json": true,
+    "service-tour-validation.json": true,
+    "test-gltf-validation.json": true,
+    "test-usd-validation.json": true,
+    "textured-gltf-validation.json": true,
+    "textured-usd-validation.json": true,
+    "tour-reveal-validation.json": true
+  },
+  "interfaceVisualInspection": {
+    "screenshots": [
+      "28-service-tour-omission",
+      "29-service-tour-endpoints"
+    ],
+    "emptyTradeScopeExplicit": true,
+    "endpointAndIdentityLabelsReadable": true,
+    "confirmedLinksAndCameraCutsLabeled": true
   }
 }
