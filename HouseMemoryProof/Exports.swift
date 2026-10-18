@@ -172,6 +172,13 @@ enum Exporter {
       try Task.checkCancellation()
       estimate += Int64(feature.mesh.vertices.count)*(textGeometry ? 320:72)
         + Int64(max(feature.mesh.triangles.count,feature.mesh.vertices.count))*(textGeometry ? 32:12)+4096
+      if !textGeometry {
+        // JSON control-character escaping can expand one UTF-8 byte to six;
+        // include simultaneous encoder/container copies before admitting GLB.
+        let fields=[feature.name,feature.notes,feature.endpoint]+(feature.service?.textValues ?? [])
+        estimate += fields.reduce(Int64(0)){$0+Int64($1.utf8.count)}*24
+        estimate += Int64(feature.sourceIDs.count)*192+Int64(feature.annotationSources?.count ?? 0)*1024
+      }
       if feature.isPhotoCurve {estimate += Int64(feature.pointTracks?.reduce(0){$0+$1.controls.count} ?? 0)*1024}
       if let key=feature.texture {
         guard feature.uv?.count==feature.mesh.vertices.count else{throw HouseError.message("A textured surface has no complete texture coordinates. Rebuild it before exporting.")}

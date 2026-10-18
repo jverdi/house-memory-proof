@@ -2,6 +2,8 @@
 
 ## Curve/IFC integration passed; service/import compatibility candidate
 
+Follow-up admission audit: GLB now counts semantic UTF-8 text, worst-case JSON escaping and simultaneous encoding copies before allocating output. The existing native export-admission test adds a control-character label case and confirms geometry-only text exports remain admissible. Source d7d0a4af8e compiled for iOS and the host; its native run is superseded before the expanded interface pass to include this bound. Host replay code is unchanged. No native runtime or spatial pass is inferred for the superseded attempt.
+
 Source **0e191bca22**, build **197.1**, passed **133/133 native checks** in **156.535 seconds**, **six interface flows** (627.423 seconds; 750-second step), **three process-kill recoveries**, **50 portable cases** and **22 independent reader reports**. IFC2x3 completed every phase, and IFC4 units/nested placement/rotation plus bounded refusal/reuse passed. The visible photo-curve passed native source/foreground checks, LINE_STRIP coordinate/provenance checks and offline WebGL rendering with zero errors or network requests. Native tour/reconstruction CLI adapters passed again and preserved 19 originals. Both evidence archives were independently SHA-256 verified. Evidence: `docs/evidence/native-0e19-summary.json`. No upload occurred.
 
 Visual inspection confirmed the restored 2D marker and readable curve controls. The curve-save feedback was partly behind the floating tab bar; the next candidate moves feedback before the save control, identifies curve mode clearly, and requires visible feedback in its interface check.

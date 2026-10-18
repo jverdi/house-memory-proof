@@ -1185,6 +1185,11 @@ import simd
                 let assets=try Exporter.exportAssets([feature,feature],textGeometry:false,root:root)
                 guard assets.count==1,try Exporter.verifiedTexture(key,assets:assets)==bytes else{return false}
                 do{_=try Exporter.exportAssets([feature],textGeometry:false,root:root,budget:1);return false}catch{}
+                var labels=feature;labels.texture=nil;labels.uv=nil
+                labels.service=ServiceDetails(observedLabel:String(repeating:"\u{1}",count:4096))
+                guard labels.service!.valid else{return false}
+                do{_=try Exporter.exportAssets([labels],textGeometry:false,root:root,budget:65_536);return false}catch{}
+                _=try Exporter.exportAssets([labels],textGeometry:true,root:root,budget:65_536)
                 var missing=feature;missing.texture=String(repeating:"0",count:64)+".png"
                 do{_=try Exporter.exportAssets([missing],textGeometry:false,root:root);return false}catch{}
                 let original=try repo.assetURL(key);try Data([1,2,3]).write(to:original)

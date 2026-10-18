@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T04:54:39.923509+00:00",
+  "updatedUTC": "2026-10-18T05:00:24.732600+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -389,5 +389,19 @@
       "sha256IndependentlyVerified": true
     },
     "executedReaderReportsPassed": 19
+  },
+  "supersededIntegrationAttempt": {
+    "source": "d7d0a4af8ee32399e2b800c48aa3be6b7e413382",
+    "run": 39098759796,
+    "iOSCompilationPassed": true,
+    "nativeCompleted": false,
+    "reason": "Fold conservative GLB semantic-text/JSON-escaping allocation admission into the same candidate before its expanded interface run"
+  },
+  "modelExportAdmission": {
+    "geometryAndUniqueTextures": true,
+    "semanticUTF8AndWorstCaseJSONEscaping": true,
+    "simultaneousEncodingCopiesIncluded": true,
+    "metadataFreePLYOBJUnaffected": true,
+    "nativeValidationPending": true
   }
 }
