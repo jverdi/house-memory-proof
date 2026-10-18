@@ -142,6 +142,141 @@
   "physicalQualification": false,
   "completeIntegrationPassed": false,
   "readerPhasesSkippedAfterNativeFailure": true,
-  "interfacePending": true,
-  "repair": "Read the frozen genuine ZIP64 archive and the current re-export through StreamingArchive.index/read. Preserve all restore/reexport/future-schema assertions."
+  "interfacePending": false,
+  "repair": "Read the frozen genuine ZIP64 archive and the current re-export through StreamingArchive.index/read. Preserve all restore/reexport/future-schema assertions.",
+  "fullArtifact": {
+    "id": 12142874994,
+    "sha256": "ba49cc55424902ab6d1f07f08a092360d018ad86274dd95c0b895f34f5cafb95",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 13,
+  "interfacePassed": 13,
+  "interfaceFailures": 0,
+  "interfaceElapsedSeconds": 1064.635,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "result": "passed",
+      "seconds": 95.0
+    },
+    {
+      "name": "testClosureReviewKeepsMissingStageEvidenceExplicit",
+      "result": "passed",
+      "seconds": 27.216
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "result": "passed",
+      "seconds": 57.66
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "result": "passed",
+      "seconds": 78.15
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "result": "passed",
+      "seconds": 34.221
+    },
+    {
+      "name": "testMeasuredEnvelopeSaveAndRelaunch",
+      "result": "passed",
+      "seconds": 78.671
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "result": "passed",
+      "seconds": 45.567
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "result": "passed",
+      "seconds": 313.382
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "result": "passed",
+      "seconds": 59.062
+    },
+    {
+      "name": "testReviewedServiceTourPreviewAndTradeScope",
+      "result": "passed",
+      "seconds": 53.697
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "result": "passed",
+      "seconds": 41.876
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "result": "passed",
+      "seconds": 54.895
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "result": "passed",
+      "seconds": 125.235
+    }
+  ],
+  "interfaceStatus": "passed",
+  "processRecoveries": {
+    "process-recovery-capture-row.json": {
+      "recoveredExactlyOnce": true,
+      "powerLossQualified": false,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "verifiedAssets": 3,
+      "passed": true
+    },
+    "process-recovery-journal.json": {
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "recoveredExactlyOnce": true,
+      "powerLossQualified": false,
+      "passed": true,
+      "verifiedAssets": 3
+    },
+    "process-recovery-migration.json": {
+      "passed": true,
+      "fault": "SIGKILL inside schema transaction before COMMIT",
+      "powerLossQualified": false,
+      "verifiedAssets": 19
+    }
+  },
+  "portableChecks": 50,
+  "portablePassed": true,
+  "validationReports": {
+    "archive-validation.json": true,
+    "chunked-snapshot-validation.json": true,
+    "general-glb-validation.json": true,
+    "general-obj-validation.json": true,
+    "general-ply-validation.json": true,
+    "general-points-usd-validation.json": true,
+    "general-semantic-validation.json": true,
+    "general-test-usd-validation.json": true,
+    "general-textured-usd-validation.json": true,
+    "house-surface-gltf-validation.json": true,
+    "ifc-source-gltf-validation.json": true,
+    "mesh-interchange-validation.json": true,
+    "offline-viewer-validation.json": true,
+    "photo-curve-gltf-validation.json": true,
+    "photo-curve-viewer-validation.json": true,
+    "points-gltf-validation.json": true,
+    "points-usd-validation.json": true,
+    "semantic-csv-validation.json": true,
+    "service-envelope-gltf-validation.json": true,
+    "test-gltf-validation.json": true,
+    "test-usd-validation.json": true,
+    "textured-gltf-validation.json": true,
+    "textured-usd-validation.json": true
+  },
+  "validationReportsPassed": true,
+  "workflowConclusion": "failure",
+  "appleUploadSkipped": true,
+  "interfaceVisualInspection": {
+    "screenshot": "30-closure-review-missing-evidence",
+    "sourceArtifact": 12142874994,
+    "inspected": true,
+    "findings": "Dated inventory export, synthetic-evidence label and orange no-photographs message are visible and readable; missing evidence is not presented as closure verification."
+  }
 }

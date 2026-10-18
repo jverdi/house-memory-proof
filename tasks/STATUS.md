@@ -1,3 +1,11 @@
+## Current delivery candidate — c835925d412d / 215.1
+
+Run **39147161265** is validating the capture-stop durability repair and ZIP64 compatibility diagnostic, with **170 native checks and 13 UI flows** required before signing/upload. Debug compilation has passed. Apple upload and owner readiness are not yet verified. Superseded **214.1 / 13631e9f3b** is confirmed cancelled, including its unstarted Apple upload job.
+
+The complete **213.1** artifact is independently SHA-verified. It retains its one native diagnostic failure (169/170), while **13/13 UI flows in 1064.635 seconds**, three process recoveries, 50 portable cases and 23 available export reports pass. The new closure review flow passed in 27.216 seconds; its screenshot visibly distinguishes synthetic evidence and missing photographs. Native-phase readers were skipped after the native failure, so this remains a failed integration. Evidence: `docs/evidence/native-5b4-summary.json`.
+
+Earlier entries below retain the evidence and pending state as it stood at each checkpoint.
+
 ## Capture-stop durability repair and retained spatial evidence
 
 Review found a precise interruption window in the new workload report: `endAcquisition()` sampled and persisted before assigning the stop marker. A force-quit before finalization could therefore leave the disk report without the acquisition boundary. The repair persists the marker immediately; the existing native test now checks its presence in the exported **incomplete** report, before `finish()`. This does not alter original capture storage or accuracy gates. The owner snapshot target advances to this repaired continuation; 170 native checks and 13 interface flows remain required.

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T16:54:17.227217Z",
+  "updatedUTC": "2026-10-18T17:03:36.263123Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
@@ -56,16 +56,13 @@
   "nextAction": "Continue independent full-house navigation/streaming, mixed-stage coverage, curved-envelope and cross-version acceptance. Preserve the original finished-localization failures and exhausted five-attempt budget. Owner-device/provider and measured field qualification remain required; deliver the newly owner-requested current-state TestFlight snapshot, then continue implementation.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
-    "run": 39144715405,
+    "source": "c835925d412db66ec204825e1f2cec4093917394",
+    "run": 39147161265,
+    "build": "215.1",
     "nativeExpected": 170,
-    "nativePassed": 169,
-    "nativeFailed": 1,
     "interfaceExpected": 13,
-    "interfacePending": true,
     "integrationComplete": false,
-    "status": "Debug/Release compilation passed; 169/170 native checks pass; ZIP64 diagnostic reader repair prepared",
-    "evidence": "docs/evidence/native-5b4-summary.json"
+    "status": "Native compilation in progress after capture-stop durability repair"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -714,7 +711,7 @@
     "interfaceFlowSeconds": 50.902
   },
   "requestedSnapshot": {
-    "status": "capture_stop_marker_repair_prepared",
+    "status": "validating_capture_stop_repair",
     "implementationSource": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
     "validatedRun": 39138960576,
     "ownerRequest": "Also please trigger a new TestFlight",
@@ -757,13 +754,20 @@
       "workflowConclusion": "failure",
       "uploadSkipped": true
     },
-    "latestImplementationSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+    "latestImplementationSource": "c835925d412db66ec204825e1f2cec4093917394",
     "latestRepair": "Use production ZIP64 inspection in the compatibility diagnostic; no changed fixture or restore assertions",
     "zip64Attempt": {
       "source": "13631e9f3b48c42d9ae7c30224acda635d7feb69",
       "run": 39146400007,
       "build": "214.1",
-      "status": "validating; to be superseded by capture-stop durability repair",
+      "status": "cancelled before native diagnostics and Apple upload; replaced by capture-stop repair",
+      "appleUploadVerified": false,
+      "cancellationVerified": true
+    },
+    "latestAttempt": {
+      "source": "c835925d412db66ec204825e1f2cec4093917394",
+      "run": 39147161265,
+      "build": "215.1",
       "appleUploadVerified": false
     }
   },
@@ -850,10 +854,14 @@
     "staleObservedObjectsSeparated": true,
     "closureVerified": false,
     "nativeValidationPending": false,
-    "interfaceValidationPending": true,
+    "interfaceValidationPending": false,
     "expectedNativeChecks": 170,
     "expectedUIFlows": 13,
-    "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b"
+    "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+    "interfaceValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+    "interfacePassed": true,
+    "interfaceSeconds": 27.216,
+    "visualInspectionPassed": true
   },
   "ownerDeviceProtocol": "docs/DEVICE_ACCEPTANCE.md",
   "latestHostReplay": {
