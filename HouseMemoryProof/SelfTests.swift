@@ -1952,6 +1952,12 @@ import simd
                 let limited=SpatialClearance(features:features,limit:7)
                 return !limited.complete && limited.walkingDestination(from:start,toward:V3(0,0,1.3))==nil
             }
+            await check("Connected multiroom native walking preserves stairs, barriers, observed corridors and separate frames") {
+                let report=try NavigationBenchmark.run()
+                let bytes=try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys])
+                try bytes.write(to:mainRepo.root.appendingPathComponent("native-navigation-benchmark.json"))
+                return report["passed"] as? Bool==true
+            }
             await check("Tour path rejects observed wall and accepts supported camera corridor"){
                 var h=House.empty("Path test");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
                 for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}

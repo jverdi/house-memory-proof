@@ -1,3 +1,13 @@
+## Connected navigation acceptance candidate
+
+The next independent native check traverses a public analytic nine-space/two-level fixture through six rooms and sixteen stair treads, forward and back, using the shipping walking controller. It retains 284 requested/result positions over 56.8 metres and exercises closed doors, a removed tread, low headroom, an unobserved doorway, an unregistered repeated room, unobserved stacked levels and hidden-layer collision. An independent Python reader recomputes route/floor bounds and retains all refusal cases. Four mutation/reader contracts pass; all **48 command contracts** pass locally. Expected **171 native / 18 reader phases / 13 UI flows**; native execution is pending. This does not qualify reconstructed-house topology, localization, display performance or physical safety.
+
+## TestFlight candidate 216.1 — native phase passed
+
+Source **f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a**, run **39149363050**, passes Debug and unsigned Release compilation, separate bounded simulator startup, **170/170 native checks in 180.924 seconds**, all **17 native reader/command phases**, 44 command contracts and three process recoveries. The interface phase is running. Apple upload and owner readiness are not yet verified. The native checkpoint is SHA-verified in `docs/evidence/native-f2a3-summary.json`.
+
+Build **215.1** is now complete and remains failed: in addition to its enclosing native-step timeout, batch selection failed to reach its expected switch value after a recorded tap. **12/13 UI flows in 1284.918 seconds**, all 34 export validation reports, three recoveries and 50 portable cases passed. The full artifact is independently SHA-verified and both failures are retained in `docs/evidence/native-c835-summary.json`. Upload was skipped.
+
 ## Native repairs verified; cold-start workflow accounting repair
 
 Source **c835925d412d / 215.1** passes **170/170 native checks in 283.758 seconds**, all **17 independent reader/command phases**, and **44 command contracts**. The authentic 161.1-source ZIP64 archive preserves all 217 features, three rooms and the original asset; current re-export/reimport and unsupported-future-schema refusal pass. Capture-stop persistence and its independent reader also pass. Native checkpoint SHA-256 is verified (`docs/evidence/native-c835-summary.json`).

@@ -1,0 +1,337 @@
+{
+  "build": "216.1",
+  "date": "2026-10-18T17:38:34Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 180.9242574166667,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1671577600,
+    "physicalFootprintBytes": 134177408,
+    "residentBytes": 624066560
+  },
+  "sourceRevision": "f2a3d40cac",
+  "systemVersion": "26.5",
+  "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+  "run": 39149363050,
+  "nativeChecks": 170,
+  "nativePassed": 170,
+  "nativeFailures": [],
+  "nativeArtifact": {
+    "id": 12145405843,
+    "sha256": "dd09f811874a2d304e9b9481f7c84c3075474265c7e5bb26f9f9fa81fba27814",
+    "sha256IndependentlyVerified": true
+  },
+  "nativeReaderStatus": [
+    {
+      "check": "drawing-benchmark-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "capture-runtime-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-coordinate-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-source-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "drawing-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "envelope-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "archive-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "command-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reveal-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-result",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "service-tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "service-tour-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-result",
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "integrationComplete": false,
+  "physicalQualification": false,
+  "interfaceExpected": 13,
+  "interfaceStatus": "pending",
+  "appleUploadVerified": false,
+  "boundarySource": {
+    "analyticOnly": true,
+    "finalSupportedPatches": 16,
+    "finalViews": 9,
+    "initialSupportedPatches": 0,
+    "initialViews": 1,
+    "legacyBoundaryPolicyPreserved": true,
+    "oracleIsolatedQualification": false,
+    "passed": true,
+    "physicalQualification": false,
+    "sourceRecordsPublished": false,
+    "staleInputRefusals": 7,
+    "totalPatches": 16
+  },
+  "authenticArchiveCompatibility": {
+    "archiveSHA256": "7d0e5428b7f4649a94325ed5097df617b9e06156d7967929b93fab2ed55ec5c5",
+    "currentWriterReimportPassed": true,
+    "featuresPreserved": 217,
+    "futureSchemaRefusedWithoutActivation": true,
+    "metadataAndGeometryExact": true,
+    "originalAssetsVerified": 1,
+    "originalBytesUnchanged": true,
+    "passed": true,
+    "physicalQualification": false,
+    "producerBuild": "161.1",
+    "producerSource": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
+    "restoredSchema": 5,
+    "roomsPreserved": 3,
+    "runtime": "iOS simulator",
+    "signedApplicationExecution": false,
+    "sourceSchema": 1
+  },
+  "captureRuntimeReader": {
+    "passed": true,
+    "reader": "Independent Python capture workload reader",
+    "sessions": [
+      {
+        "sourceRevision": "f2a3d40cac",
+        "build": "216.1",
+        "platform": "iPhone simulator",
+        "mode": "capture",
+        "finalized": true,
+        "stopReason": "self-test",
+        "observedSeconds": 0.008737999999993917,
+        "acquisitionEndSeconds": 0.00510862500004805,
+        "activeIntervals": [
+          {
+            "startSeconds": 0.0006670833333828341,
+            "endSeconds": 0.00510862500004805,
+            "seconds": 0.004441541666665216,
+            "cameraCallbackHz": 450.29409833312076,
+            "renderCallbackHz": 225.14704916656038,
+            "savedImagesPerSecond": 225.14704916656038
+          }
+        ],
+        "largestSampleGapSeconds": 0.004441541666665216,
+        "deliveredCameraFrames": 2,
+        "normalTrackingFrames": 1,
+        "savedImages": 1,
+        "saveFailures": 1,
+        "maximumPendingSaves": 1,
+        "maximumSaveSeconds": 0.5,
+        "memoryWarnings": 0,
+        "sampledPhysicalFootprintPeakBytes": 43603904,
+        "sampledThermalStates": [
+          "nominal"
+        ],
+        "batteryChange": null,
+        "volumeFreeBytesChange": 0
+      }
+    ],
+    "physicalQualification": false,
+    "precisionEnabled": false,
+    "presentedFrameRateMeasured": false,
+    "limitations": "Sampled resource evidence only; counters are callback rates. External disk activity, charging and sampling gaps need review. Incomplete sessions and missing battery/memory remain explicit. Neither duration nor successful decoding grants device acceptance."
+  },
+  "drawingBenchmarkReader": {
+    "passed": true,
+    "reader": "Independent analytic drawing suggestion scorer",
+    "profileHash": "9f858468f850556e2d7799d6389e839e53bf6c16ef58e5af5d3c92e85893dc36",
+    "cases": 11,
+    "classSizeCounts": [
+      {
+        "category": "rectangular-outline",
+        "size": "large",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 8,
+        "recall": 1.0,
+        "precision": 0.5
+      },
+      {
+        "category": "rectangular-outline",
+        "size": "small",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 17,
+        "recall": 1.0,
+        "precision": 0.32
+      },
+      {
+        "category": "room-name-text",
+        "size": "18px",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "room-name-text",
+        "size": "36px",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "service-label-text",
+        "size": "18px",
+        "truth": 4,
+        "matched": 4,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "service-label-text",
+        "size": "36px",
+        "truth": 4,
+        "matched": 4,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      }
+    ],
+    "methodSizeMetrics": [
+      {
+        "method": "OCR",
+        "size": "18px",
+        "truth": 12,
+        "matched": 12,
+        "falsePositive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "method": "OCR",
+        "size": "36px",
+        "truth": 12,
+        "matched": 12,
+        "falsePositive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "method": "rectangle",
+        "size": "large",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 8,
+        "precision": 0.5,
+        "recall": 1.0
+      },
+      {
+        "method": "rectangle",
+        "size": "small",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 17,
+        "precision": 0.32,
+        "recall": 1.0
+      }
+    ],
+    "negativeCaseProposals": 2,
+    "accuracyQualified": false,
+    "physicalQualification": false,
+    "protectedBenchmark": false,
+    "limitations": "Counts scored on eleven analytic development rasters only. OCR semantic subtype precision is unavailable; text/rectangle precision and recall are reported separately by size. No thresholds, model or operating envelope changed."
+  },
+  "envelopeReader": {
+    "passed": true,
+    "reader": "Independent Python service-envelope archive GLB and CSV readers",
+    "sections": 2,
+    "connectedCircularEnvelopes": 1,
+    "sourceCenterlinesPreserved": true,
+    "declaredDimensionsVerified": true,
+    "sourceDependenciesPreserved": true,
+    "maximumExportCoordinateErrorMetres": 1.1813446221253798e-07,
+    "csvDateResolutionSeconds": 1,
+    "measurementInstantPreserved": true,
+    "toleranceIsSizeOnly": true,
+    "sourceRecordsPublished": false,
+    "physicalQualification": false
+  },
+  "serviceTourReader": {
+    "passed": true,
+    "reader": "Independent Python service-tour reader",
+    "frames": 300,
+    "inspections": 6,
+    "endpoints": 4,
+    "sourceRoutesVerified": true,
+    "explicitConnectionsOnly": true,
+    "cameraCutsVerified": true,
+    "physicalQualification": false
+  },
+  "commandContracts": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 44,
+    "seconds": 1.800817625000036,
+    "exitCode": 0
+  },
+  "debugAndReleaseCompiled": true,
+  "separateSimulatorStartupPassed": true,
+  "nativePhaseConclusion": "success"
+}

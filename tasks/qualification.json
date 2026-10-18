@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T17:22:59.327707Z",
+  "updatedUTC": "2026-10-18T17:48:55.415414Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
@@ -716,7 +716,7 @@
     "interfaceFlowSeconds": 50.902
   },
   "requestedSnapshot": {
-    "status": "simulator_startup_step_repair_prepared",
+    "status": "native_passed_interface_in_progress",
     "implementationSource": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
     "validatedRun": 39138960576,
     "ownerRequest": "Also please trigger a new TestFlight",
@@ -759,8 +759,8 @@
       "workflowConclusion": "failure",
       "uploadSkipped": true
     },
-    "latestImplementationSource": "c835925d412db66ec204825e1f2cec4093917394",
-    "latestRepair": "Use production ZIP64 inspection in the compatibility diagnostic; no changed fixture or restore assertions",
+    "latestImplementationSource": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+    "latestRepair": "Separate bounded simulator startup from the native diagnostic phase; app source unchanged from c835925d412d.",
     "zip64Attempt": {
       "source": "13631e9f3b48c42d9ae7c30224acda635d7feb69",
       "run": 39146400007,
@@ -770,6 +770,18 @@
       "cancellationVerified": true
     },
     "latestAttempt": {
+      "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+      "run": 39149363050,
+      "build": "216.1",
+      "nativePassed": 170,
+      "nativeReaderChecksPassed": 17,
+      "nativePhaseConclusion": "success",
+      "nativeArtifact": 12145405843,
+      "nativeArtifactSHA256": "dd09f811874a2d304e9b9481f7c84c3075474265c7e5bb26f9f9fa81fba27814",
+      "appleUploadVerified": false,
+      "interfaceStatus": "in_progress"
+    },
+    "previousAttempt": {
       "source": "c835925d412db66ec204825e1f2cec4093917394",
       "run": 39147161265,
       "build": "215.1",
@@ -779,7 +791,14 @@
       "nativePhaseConclusion": "failure",
       "failure": "Ten-minute outer step timeout including cold simulator startup",
       "nativeArtifact": 12144561128,
-      "nativeArtifactSHA256": "f9395d7c908bd95f87b4bae1c1ca2528b4f90d29762907e967f67c2f3f8d3629"
+      "nativeArtifactSHA256": "f9395d7c908bd95f87b4bae1c1ca2528b4f90d29762907e967f67c2f3f8d3629",
+      "interfacePassed": 12,
+      "interfaceFailed": 1,
+      "interfaceSeconds": 1284.918,
+      "fullArtifact": 12145640638,
+      "fullArtifactSHA256": "8413c073426a5d4f911c49707d6ee361b138337abc9e78cc928581b4d01853b6",
+      "workflowConclusion": "failure",
+      "uploadSkipped": true
     }
   },
   "pendingContinuation": {
@@ -897,6 +916,29 @@
     "newStartupStepMinutes": 6,
     "separatesStartupFromNativePhase": true,
     "localControlFlowTestsPassed": 3,
-    "nativeValidationPending": true
+    "nativeValidationPending": false,
+    "validatedSource": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+    "nativePhasePassed": true,
+    "nativeSeconds": 180.9242574166667
+  },
+  "navigationBenchmarkCandidate": {
+    "prepared": true,
+    "profile": "analytic-connected-walk-v1",
+    "analyticRooms": 9,
+    "levels": 2,
+    "routeSpaces": 7,
+    "doorways": 4,
+    "stairTreads": 16,
+    "attemptedControllerSteps": 284,
+    "roundTripMetres": 56.8,
+    "refusalCases": 7,
+    "expectedNativeChecks": 171,
+    "expectedReaderPhases": 18,
+    "expectedUIFlows": 13,
+    "localCommandContractsPassed": 48,
+    "nativeValidationPending": true,
+    "independentTraceReaderPending": true,
+    "reconstructedTopologyQualified": false,
+    "physicalQualification": false
   }
 }

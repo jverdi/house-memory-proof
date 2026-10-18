@@ -91,6 +91,8 @@ jobs:
             build/evidence/capture-runtime-validation.json
             build/evidence/native-drawing-benchmark.json
             build/evidence/drawing-benchmark-validation.json
+            build/evidence/native-navigation-benchmark.json
+            build/evidence/navigation-benchmark-validation.json
             build/evidence/service-tour-validation.json
             build/evidence/command-tests.json
             build/evidence/cli-command-validation.json
