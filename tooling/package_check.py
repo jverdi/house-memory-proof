@@ -138,15 +138,55 @@ def semantic_check(house):
         require(numeric(observation.get('timestamp')), 'Invalid capture timestamp')
         require(all(type(observation.get(k)) is int and 0 < observation[k] <= 20000 for k in ('width','height')), 'Invalid photograph dimensions')
         require(observation.get('image') is not None, 'Missing source photograph')
+    for feature in tables['features'].values():
+        def controls_check(controls,minimum,maximum,require_source_ids=False):
+            require(isinstance(controls,list) and minimum<=len(controls)<=maximum,'Invalid photograph control count')
+            ids=[identity(c.get('observationID')) for c in controls]
+            require(len(set(ids))==len(ids),'Repeated photograph control')
+            sources={identity(i) for i in feature.get('sourceIDs',[])} if require_source_ids else set()
+            for control,identifier in zip(controls,ids):
+                require(identifier in tables['observations'],'Photograph control references an absent original')
+                observation=tables['observations'][identifier]
+                require(identity(observation['segmentID'])==identity(feature.get('segmentID')),'Photograph control belongs to another session')
+                require(all(numeric(control.get(k)) and 0<=control[k]<=1 for k in ['u','v']),'Invalid photograph control coordinate')
+                if require_source_ids:require(identifier in sources,'Photograph control omitted from source identities')
+        if feature.get('photoControls') is not None:controls_check(feature['photoControls'],3,3)
+        if feature.get('pointTracks') is not None:
+            tracks=feature['pointTracks']
+            require(isinstance(tracks,list) and len(tracks)==len(feature['mesh']['vertices']),'Photograph tracks do not match point geometry')
+            for track in tracks:controls_check(track.get('controls'),3,12,True)
     for connection in house.get('connections', []):
         reference(connection, 'fromFeature', 'features'); reference(connection, 'toFeature', 'features')
         require(identity(connection['fromFeature']) != identity(connection['toFeature']), 'Self-connected service route')
         require(all(type(connection.get(k)) is int and connection[k] in (0,1) for k in ('fromEnd','toEnd')), 'Invalid service endpoint')
+    annotation_ids=set();annotation_points=0
     for record in house.get('documentaryPhotos', []):
         require(record.get('image') is not None, 'Missing documentary image')
+        reference(record,'roomID','rooms',True);reference(record,'stageID','stages',True)
+        marks=[] if record.get('annotations') is None else record['annotations']
+        require(isinstance(marks,list) and len(marks)<=1000,'Invalid image annotation count')
+        for mark in marks:
+            require(isinstance(mark,dict),'Invalid image annotation record')
+            identifier=identity(mark.get('id'))
+            require(identifier not in annotation_ids,'Repeated image annotation identity')
+            annotation_ids.add(identifier)
+            points=mark.get('points');kind=mark.get('kind')
+            require(isinstance(points,list) and len(points)<=512,'Invalid image annotation points')
+            require(all(isinstance(p,dict) and all(numeric(p.get(k)) and 0<=p[k]<=1 for k in ['u','v']) for p in points),'Invalid image coordinate')
+            require(isinstance(mark.get('label'),str) and len(mark['label'].encode('utf-8'))<=4096 and type(mark.get('reviewed')) is bool,'Invalid image annotation label or review state')
+            pairs=[(p['u'],p['v']) for p in points]
+            if kind=='point':valid=len(points)==1
+            elif kind=='box':valid=len(points)==2 and abs(points[0]['u']-points[1]['u'])>1e-6 and abs(points[0]['v']-points[1]['v'])>1e-6
+            elif kind=='polygon':
+                valid=len(points)>=3 and len(set(pairs))==len(points) and abs(sum(a[0]*b[1]-b[0]*a[1] for a,b in zip(pairs,pairs[1:]+pairs[:1])))>1e-8
+            elif kind=='curve':valid=len(points)>=2 and all(a!=b for a,b in zip(pairs,pairs[1:]))
+            else:valid=False
+            require(valid,'Invalid image annotation geometry')
+            annotation_points+=len(points)
+            require(len(annotation_ids)<=50000 and annotation_points<=1_000_000,'Image annotation budget exceeded')
     return dict(rooms=len(tables['rooms']), stages=len(tables['stages']), sessions=len(tables['segments']),
                 features=len(tables['features']), observations=len(tables['observations']),
-                documentaryPhotos=len(tables['documentaryPhotos']), vertices=vertices, triangles=triangles,
+                documentaryPhotos=len(tables['documentaryPhotos']), imageAnnotations=len(annotation_ids), vertices=vertices, triangles=triangles,
                 serviceConnections=len(house.get('connections', [])))
 
 

@@ -542,8 +542,24 @@ enum Exporter {
       + h.observations.map {
         "<article><h2>\($0.date.formatted())</h2><img src=\"assets/\($0.image)\"><p>Observation \($0.id)</p></article>"
       }.joined()
-    let unposed = h.documentaryPhotos.map {
-      "<article><h2>Unposed documentary photograph</h2><img src=\"assets/\($0.image)\"><p>Photo \($0.id) · no spatial calibration</p></article>"
+    let unposed = h.documentaryPhotos.map {photo in
+      let marks=photo.annotations ?? []
+      let shapes=marks.map {mark -> String in
+        let p=mark.points.map{($0.u*1000,$0.v*1000)}
+        guard let first=p.first else{return ""}
+        let geometry:String
+        switch mark.kind {
+        case .point:geometry="<circle cx=\"\(first.0)\" cy=\"\(first.1)\" r=\"6\"/>"
+        case .box:
+          let b=p[1];geometry="<rect x=\"\(min(first.0,b.0))\" y=\"\(min(first.1,b.1))\" width=\"\(abs(first.0-b.0))\" height=\"\(abs(first.1-b.1))\"/>"
+        case .polygon,.curve:
+          let tag=mark.kind == .polygon ? "polygon":"polyline"
+          geometry="<\(tag) points=\"\(p.map{"\($0.0),\($0.1)"}.joined(separator:" "))\"/>"
+        }
+        return "<g><title>\(escapeEvidenceHTML(mark.label))</title>\(geometry)</g>"
+      }.joined()
+      let labels=marks.map{"<li>\(escapeEvidenceHTML($0.label)) · \($0.kind.rawValue) · \($0.reviewed ? "reviewed":"unreviewed")</li>"}.joined()
+      return "<article><h2>Unposed documentary photograph</h2><div style=\"position:relative;display:inline-block;max-width:100%\"><img style=\"display:block;image-orientation:from-image\" src=\"assets/\(photo.image)\"><svg aria-label=\"2D image annotations\" style=\"position:absolute;inset:0;width:100%;height:100%;pointer-events:none\" viewBox=\"0 0 1000 1000\" preserveAspectRatio=\"none\" fill=\"none\" stroke=\"#80ffd3\" stroke-width=\"3\">\(shapes)</svg></div><p>Photo \(photo.id) · no spatial calibration or inferred depth</p><p>\(escapeEvidenceHTML(photo.note))</p><ul>\(labels)</ul></article>"
     }.joined()
     let index = staging.appendingPathComponent("index.html")
     let indexData=Data((html+unposed).utf8)
@@ -557,6 +573,11 @@ enum Exporter {
   }
   static func restore(_ url: URL, repo: Repository) throws -> House {
     try StreamingArchive.restore(url, repo: repo)
+  }
+  private static func escapeEvidenceHTML(_ value:String)->String {
+    value.replacingOccurrences(of:"&",with:"&amp;").replacingOccurrences(of:"<",with:"&lt;")
+      .replacingOccurrences(of:">",with:"&gt;").replacingOccurrences(of:"\"",with:"&quot;")
+      .replacingOccurrences(of:"'",with:"&#39;")
   }
   // A streamed semantic summary. Detailed mesh/photo-track data stays in JSON/archive.
   static func semanticCSV(_ h:House, maximumBytes:Int=128_000_000)throws->URL {

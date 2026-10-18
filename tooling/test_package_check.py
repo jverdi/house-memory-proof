@@ -60,6 +60,51 @@ class PortablePackageContracts(unittest.TestCase):
             archive(self.path,self.house,self.parts,mutate)
             with self.assertRaises(InvalidPackage):check_package(self.path)
 
+    def test_point_provenance_requires_existing_same_session_originals(self):
+        source=self.house['observations'][0]
+        self.house['observations']=[dict(source,id=str(uuid.uuid4())) for _ in range(3)]
+        controls=[dict(observationID=o['id'],u=.5,v=.4) for o in self.house['observations']]
+        feature=self.house['features'][0];feature['sourceIDs']=[c['observationID'] for c in controls]
+        feature['pointTracks']=[dict(controls=copy.deepcopy(controls)) for _ in feature['mesh']['vertices']]
+        feature['photoControls']=copy.deepcopy(controls)
+        archive(self.path,self.house,self.parts);self.assertTrue(check_package(self.path)['passed'])
+        for mode in ['missing','different-session','unlisted','bad-coordinate','missing-track','duplicate']:
+            house=copy.deepcopy(self.house);item=house['features'][0]
+            if mode=='missing':
+                identifier=str(uuid.uuid4());item['sourceIDs'].append(identifier);item['pointTracks'][0]['controls'][0]['observationID']=identifier
+            elif mode=='different-session':
+                other=dict(house['segments'][0],id=str(uuid.uuid4()));house['segments'].append(other);house['observations'][0]['segmentID']=other['id']
+            elif mode=='unlisted':item['sourceIDs']=[]
+            elif mode=='bad-coordinate':item['photoControls'][0]['u']=1.1
+            elif mode=='missing-track':item['pointTracks'].pop()
+            else:item['pointTracks'][0]['controls'][1]=item['pointTracks'][0]['controls'][0]
+            archive(self.path,house,self.parts)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
+
+    def test_single_photo_annotations_keep_2d_coordinates_and_refuse_malformed_marks(self):
+        points=[dict(u=.1,v=.2),dict(u=.8,v=.7),dict(u=.3,v=.9)]
+        marks=[dict(id=str(uuid.uuid4()),kind=kind,points=points[:count],label='Visible only',reviewed=False)
+               for kind,count in [('point',1),('box',2),('polygon',3),('curve',3)]]
+        photo=dict(id=str(uuid.uuid4()),image=self.house['observations'][0]['image'],annotations=marks)
+        self.house['documentaryPhotos']=[photo]
+        archive(self.path,self.house,self.parts)
+        self.assertEqual(check_package(self.path)['semanticCounts']['imageAnnotations'],4)
+        for mode in ['bounds','count','duplicate','unknown','zero-box','repeated-curve','collinear','room','label']:
+            house=copy.deepcopy(self.house);photo=house['documentaryPhotos'][0];marks=photo['annotations']
+            if mode=='bounds':marks[0]['points'][0]['u']=-.1
+            elif mode=='count':marks[2]['points'].pop()
+            elif mode=='duplicate':marks.append(marks[0])
+            elif mode=='unknown':marks[0]['kind']='3d-point'
+            elif mode=='zero-box':marks[1]['points'][1]=marks[1]['points'][0]
+            elif mode=='repeated-curve':marks[3]['points'][1]=marks[3]['points'][0]
+            elif mode=='collinear':marks[2]['points']=[dict(u=x,v=x) for x in [.1,.2,.3]]
+            elif mode=='room':photo['roomID']=str(uuid.uuid4())
+            else:marks[0]['label']='x'*4097
+            archive(self.path,house,self.parts)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
+        self.house['documentaryPhotos'][0].pop('annotations')
+        archive(self.path,self.house,self.parts);self.assertTrue(check_package(self.path)['passed'])
+
     def test_rehashed_metadata_cannot_hide_semantic_corruption(self):
         faults = [lambda h:h['observations'][0].__setitem__('segmentID',str(uuid.uuid4())),
                   lambda h:h['features'][0]['mesh'].__setitem__('triangles',[0,1,10]),

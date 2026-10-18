@@ -120,7 +120,30 @@ struct Observation:Codable,Identifiable,Equatable {
     var assets:Set<String> {Set([image,depth,confidence,captureMetadata?.exifAsset].compactMap{$0})}
     // Native camera transform is row-major, ARKit right/up/back. No pretend calibration.
 }
-struct DocumentaryPhoto:Codable,Identifiable,Equatable {var id=UUID();var image:String;var date=Date();var note="";var roomID:UUID?;var stageID:UUID?}
+// Coordinates refer to the EXIF-oriented image, top-left origin, normalized
+// to [0,1]. These marks have no camera pose, metric scale or 3D anchor.
+enum ImageAnnotationKind:String,Codable,CaseIterable {case point,box,polygon,curve}
+struct ImageAnnotation:Codable,Identifiable,Equatable {
+    var id=UUID();var kind:ImageAnnotationKind;var points:[UV];var label="";var reviewed=false
+    var valid:Bool {
+        guard label.utf8.count<=4096,points.count<=512,points.allSatisfy({$0.u.isFinite && $0.v.isFinite && (0...1).contains($0.u) && (0...1).contains($0.v)}) else{return false}
+        switch kind {
+        case .point:return points.count==1
+        case .box:return points.count==2 && abs(points[0].u-points[1].u)>1e-6 && abs(points[0].v-points[1].v)>1e-6
+        case .polygon:
+            guard points.count>=3,distinctPoints==points.count else{return false}
+            var area=0.0
+            for i in points.indices {let next=points[(i+1)%points.count];area+=points[i].u*next.v-next.u*points[i].v}
+            return abs(area)>1e-8
+        case .curve:return points.count>=2 && zip(points,points.dropFirst()).allSatisfy({$0.0 != $0.1})
+        }
+    }
+    private var distinctPoints:Int {Set(points.map{[$0.u,$0.v]}).count}
+}
+struct DocumentaryPhoto:Codable,Identifiable,Equatable {
+    var id=UUID();var image:String;var date=Date();var note="";var roomID:UUID?;var stageID:UUID?
+    var annotations:[ImageAnnotation]?=nil
+}
 struct Segment:Codable,Identifiable,Equatable {
     var id=UUID();var roomID:UUID;var stageID:UUID;var started=Date();var worldMap:String?;var registration:Rigid?;var registrationResidual:Double?;var registrationLink:RegistrationLink?=nil;var interrupted=false;var approved=false;var referencePoses:[ReferencePose]=[];var poseSolution:PoseGraphSolution?=nil
 }
@@ -154,6 +177,14 @@ struct House:Codable,Identifiable,Equatable {
         guard processingReports.count<=1000,processingReports.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid capture processing report.")}
         guard fieldChecks.count<=10000,Set(fieldChecks.map{$0.id}).count==fieldChecks.count,fieldChecks.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid field evidence records.")}
         let roomIDs=Set(rooms.map{$0.id}),stageIDs=Set(stages.map{$0.id})
+        guard documentaryPhotos.count<=50000,Set(documentaryPhotos.map{$0.id}).count==documentaryPhotos.count else{throw HouseError.message("Invalid documentary photograph inventory.")}
+        var markIDs=Set<UUID>(),markCount=0,markPoints=0
+        for photo in documentaryPhotos {
+            guard photo.roomID.map({roomIDs.contains($0)}) ?? true,photo.stageID.map({stageIDs.contains($0)}) ?? true else{throw HouseError.message("Documentary photograph references a missing room or stage.")}
+            let marks=photo.annotations ?? [];markCount+=marks.count
+            guard marks.count<=1000,markCount<=50000 else{throw HouseError.message("Too many photograph annotations.")}
+            for mark in marks {markPoints+=mark.points.count;guard mark.valid,markIDs.insert(mark.id).inserted,markPoints<=1_000_000 else{throw HouseError.message("Invalid or repeated two-dimensional photograph annotation.")}}
+        }
         guard roomIDs.count==rooms.count,stageIDs.count==stages.count,Set(features.map{$0.id}).count==features.count else{throw HouseError.message("Duplicate identities in project.")}
         for r in rooms {guard r.origin.finite,r.size.finite,r.size.x>0,r.size.y>0,r.size.z>0 else{throw HouseError.message("Invalid room dimensions.")}}
         for f in features {guard f.mesh.valid,roomIDs.contains(f.roomID),stageIDs.contains(f.stageID),f.route.allSatisfy({$0.finite}) else{throw HouseError.message("Invalid geometry or source relationships.")}}
@@ -173,7 +204,16 @@ struct House:Codable,Identifiable,Equatable {
         for o in observations {guard roomIDs.contains(o.roomID),stageIDs.contains(o.stageID),segmentByID[o.segmentID]?.roomID==o.roomID,segmentByID[o.segmentID]?.stageID==o.stageID,o.sharpness.isFinite,o.light.isFinite,o.camera.count==16,Rigid(values:o.camera).valid,o.intrinsics.count==9,o.intrinsics[0]>0,o.intrinsics[4]>0,o.timestamp.isFinite,o.camera.allSatisfy({$0.isFinite}),o.intrinsics.allSatisfy({$0.isFinite}),o.width>0,o.width<=20000,o.height>0,o.height<=20000,o.depthWidth>=0,o.depthWidth<=8192,o.depthHeight>=0,o.depthHeight<=8192 else{throw HouseError.message("Invalid observation metadata.")}}
         let featureIDs=Set(features.map{$0.id});for c in connections{guard featureIDs.contains(c.fromFeature),featureIDs.contains(c.toFeature),c.fromFeature != c.toFeature,[0,1].contains(c.fromEnd),[0,1].contains(c.toEnd) else{throw HouseError.message("Invalid service endpoint link.")}}
         for f in features {if let controls=f.photoControls {guard controls.count==3,Set(controls.map{$0.observationID}).count==3,controls.allSatisfy({c in c.u.isFinite && c.v.isFinite && (0...1).contains(c.u) && (0...1).contains(c.v) && observations.contains(where:{$0.id==c.observationID && $0.segmentID==f.segmentID})}) else{throw HouseError.message("Invalid image triangulation provenance.")}}}
-        for f in features {if let tracks=f.pointTracks {guard tracks.count==f.mesh.vertices.count,tracks.allSatisfy({track in track.controls.count>=3 && track.controls.count<=12 && Set(track.controls.map{$0.observationID}).count==track.controls.count && track.controls.allSatisfy{c in c.u.isFinite && c.v.isFinite && (0...1).contains(c.u) && (0...1).contains(c.v) && f.sourceIDs.contains(c.observationID)}}) else{throw HouseError.message("Invalid photograph point provenance.")}}}
+        let observationByID=Dictionary(uniqueKeysWithValues:observations.map{($0.id,$0)})
+        for f in features {if let tracks=f.pointTracks {
+            let sourceIDs=Set(f.sourceIDs)
+            guard tracks.count==f.mesh.vertices.count,tracks.allSatisfy({track in
+                track.controls.count>=3 && track.controls.count<=12 && Set(track.controls.map{$0.observationID}).count==track.controls.count && track.controls.allSatisfy{c in
+                    c.u.isFinite && c.v.isFinite && (0...1).contains(c.u) && (0...1).contains(c.v) && sourceIDs.contains(c.observationID)
+                      && observationByID[c.observationID] != nil && observationByID[c.observationID]?.segmentID==f.segmentID
+                }
+            }) else{throw HouseError.message("Invalid photograph point provenance: every control must identify an original photograph in the feature's capture session.")}
+        }}
         for f in features {if let sources=f.annotationSources {guard !sources.isEmpty,sources.count<=64,Set(sources.map{$0.featureID}).count==sources.count,sources.allSatisfy({$0.featureID != f.id && $0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid annotation source relationships.")}}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)),d.sourceGeometry==nil || (!d.sourceGeometry!.isEmpty && d.sourceGeometry!.count<=64 && d.sourceGeometry!.allSatisfy{$0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid measurement reference.")}}
         for b in bookmarks {guard b.position.finite,b.yaw.isFinite,b.pitch.isFinite,roomIDs.contains(b.roomID),(b.segmentID==nil || segmentIDs.contains(b.segmentID!)) else{throw HouseError.message("Invalid viewpoint frame.")}}

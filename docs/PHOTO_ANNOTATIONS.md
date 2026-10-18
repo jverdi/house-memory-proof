@@ -1,0 +1,11 @@
+# Single-photo annotations
+
+Documentary photo details support points, boxes, polygons and curves. Import a photograph, open it from Evidence or Documentary photos, choose a shape, pinch to zoom and tap its visible points. Add the annotation, then Save the photograph. Boxes use opposite corners; polygons close their final edge; curves join only the selected visible points. Editing geometry clears its review state. Review is a human metadata flag, not a physical accuracy claim.
+
+Coordinates are normalized to the EXIF-oriented image, with a top-left origin. No camera pose, depth, metric scale, surface attachment or connection is invented. The enclosing photograph retains its original asset hash, UUID, date and optional room/stage association. The original bytes are never rewritten. Annotation labels and notes appear in the offline archive index with escaped text and a 2D SVG overlay; complete editable marks remain in house.json.
+
+Undo point removes a draft tap. Undo annotation edit reverses up to 25 in-editor additions, updates, deletions or review changes. Saving uses the project revision store and refuses to overwrite a photograph changed since the editor opened. Save remains disabled while a draft has not been added or cleared. Existing archives without annotations decode unchanged.
+
+Admission rejects out-of-image/nonfinite coordinates, duplicate mark identities, invalid shape counts, zero-area boxes/polygons, consecutive duplicate curve points, missing room/stage references and oversized metadata. Limits are 512 points per mark, 1,000 marks per photograph, 50,000 marks and one million mark points per project, and 4,096 UTF-8 bytes per label. These bounds do not establish phone capacity qualification.
+
+Native archive/original-preservation, malformed-mark and legacy decoding checks plus a save/undo/relaunch interface flow are prepared. Exact-source CI is required before reporting these paths verified. Thin-service 3D curve reconstruction, uncertainty and independent field validation remain separate open work.

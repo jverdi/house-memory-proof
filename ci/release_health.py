@@ -79,8 +79,10 @@ def summarize(snapshot,policy,now=None):
 def collect_live(now=None):
     now=now or dt.datetime.now(dt.timezone.utc)
     snapshot=dict(checkedUTC=now.isoformat(),apple={},github={})
+    apple_network=False;github_network=False
     try:
         token=make_token();bundle=os.environ.get('APP_BUNDLE_ID','com.jverdi.housememoryproof')
+        apple_network=True
         apps=request(token,'/v1/apps?'+urllib.parse.urlencode({'filter[bundleId]':bundle}))['data']
         if len(apps)!=1:raise RuntimeError('Expected one matching app')
         builds=request(token,'/v1/builds?'+urllib.parse.urlencode({'filter[app]':apps[0]['id'],'sort':'-uploadedDate','limit':200}))['data']
@@ -96,12 +98,15 @@ def collect_live(now=None):
     except Exception as error:
         snapshot['apple']=dict(readAccessVerified=False,error='Apple read unavailable: '+type(error).__name__)
     try:
+        github_network=bool(os.environ.get('GH_TOKEN') or os.environ.get('GITHUB_TOKEN'))
         source=github('/git/ref/heads/main')['object']['sha']
         runs=github('/actions/runs?'+urllib.parse.urlencode({'head_sha':source,'per_page':100}))['workflow_runs']
         keys=['id','name','head_sha','status','conclusion']
         snapshot['github']=dict(readAccessVerified=True,source=source,runs=[{k:r.get(k) for k in keys} for r in runs])
     except Exception as error:
         snapshot['github']=dict(readAccessVerified=False,error='GitHub read unavailable: '+type(error).__name__)
+    snapshot['apple']['networkAttempted']=apple_network
+    snapshot['github']['networkAttempted']=github_network
     return snapshot
 
 

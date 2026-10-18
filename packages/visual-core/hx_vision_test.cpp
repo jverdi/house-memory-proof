@@ -42,6 +42,19 @@ extern "C" int32_t hx_vision_selftest(double* maximum,uint32_t* falseAccepts) tr
  int repeat=hx_vision_detect(gray.data(),uint32_t(gray.size()),w,h,w,other.data(),again.data(),1200);
  if(count<100||count!=repeat||std::memcmp(desc.data(),again.data(),count*32)||std::memcmp(xy.data(),other.data(),count*2*sizeof(float)))return -15;
  if(hx_vision_match(desc.data(),count,again.data(),repeat,pairs.data(),1200)!=count)return -16;
+ // Exposure handling must be deterministic, bounded and leave source bytes
+ // untouched. Uniform dark images must not manufacture evidence.
+ for(int exposure:{1,3,6}){
+  auto dim=gray;for(auto& value:dim)value=uint8_t(value/exposure);
+  const auto original=dim;
+  int a=hx_vision_detect(dim.data(),uint32_t(dim.size()),w,h,w,xy.data(),desc.data(),1200);
+  int b=hx_vision_detect(dim.data(),uint32_t(dim.size()),w,h,w,other.data(),again.data(),1200);
+  if(dim!=original||a<30||a>1200||a!=b||std::memcmp(desc.data(),again.data(),a*32)||std::memcmp(xy.data(),other.data(),a*2*sizeof(float)))return -21;
+ }
+ for(int level:{0,16,63,64,255}){
+  std::vector<uint8_t> blank(w*h,uint8_t(level));const auto original=blank;
+  if(hx_vision_detect(blank.data(),uint32_t(blank.size()),w,h,w,xy.data(),desc.data(),1200)!=0||blank!=original)return -22;
+ }
  // The same analysis pixels must produce identical descriptors and camera
  // rays whether resizing happens inside the adapter or before it. Odd input
  // dimensions also exercise independently rounded output rows and columns.

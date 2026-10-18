@@ -49,6 +49,7 @@ class ReleaseHealthContracts(unittest.TestCase):
             s=collect_live(NOW)
         r=summarize(s,POLICY,NOW)
         self.assertFalse(r['passed']);self.assertIsNone(r['refreshDue']);self.assertNotIn(secret,str(r))
+        self.assertFalse(s['apple']['networkAttempted'])
 
     def test_release_reference_mismatch_never_dispatches(self):
         with patch('release_health.github',return_value=dict(sha='b'*40)) as api:

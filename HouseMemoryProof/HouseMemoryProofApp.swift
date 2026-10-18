@@ -14,6 +14,19 @@ import Darwin
         }
         #endif
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--documentary-demo"),let repo=model.repository {
+          do {
+            if let existing=model.houses.first(where:{$0.name=="Single-photo annotation fixture" && $0.isDemo}) {
+              model.selected=existing.id
+              if ProcessInfo.processInfo.arguments.contains("--documentary-demo-reset") {model.edit{$0.documentaryPhotos[0].annotations=nil}}
+            } else {
+              let capture=try SimulatedCapture.make(repo:repo)
+              var h=House.empty("Single-photo annotation fixture");h.isDemo=true
+              h.documentaryPhotos=[DocumentaryPhoto(image:capture.observations[0].image,note:"Annotation source photograph",roomID:h.rooms[0].id,stageID:h.stages[0].id)]
+              model.commit(h)
+            }
+          }catch{model.error=error.localizedDescription}
+        }
         if ProcessInfo.processInfo.arguments.contains("--migration-fault"),let repo=model.repository {
           do {
             let root=repo.root.appendingPathComponent("migration-process-fixture-"+UUID().uuidString)

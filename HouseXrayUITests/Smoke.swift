@@ -140,6 +140,37 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(app.buttons["Step forward"].isEnabled)
     app.buttons["Layers"].tap();setSwitch(app.switches["Step and snap-turn buttons"],to:false);app.buttons["Done"].tap()
   }
+  @MainActor func testSinglePhotoAnnotationSurvivesRelaunch() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--documentary-demo","--documentary-demo-reset"];app.launch()
+    defer {app.terminate()}
+    func openPhoto(){
+      XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:30));app.tabBars.buttons["Evidence"].tap()
+      let photo=app.buttons.matching(NSPredicate(format:"label CONTAINS %@","Annotation source photograph")).firstMatch
+      XCTAssertTrue(photo.waitForExistence(timeout:10));photo.tap()
+      XCTAssertTrue(app.descendants(matching:.any)["documentary-annotation-image"].firstMatch.waitForExistence(timeout:10))
+    }
+    func reveal(_ element:XCUIElement){
+      for _ in 0..<8 {
+        if element.exists && element.isHittable && element.frame.maxY<app.frame.maxY-50{return}
+        app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.82)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.30)))
+      }
+      XCTAssertTrue(element.isHittable)
+    }
+    openPhoto()
+    let surface=app.descendants(matching:.any)["documentary-annotation-image"].firstMatch
+    surface.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.45)).tap()
+    let add=app.buttons["documentary-add-annotation"];reveal(add);XCTAssertTrue(add.isEnabled);add.tap()
+    let count=app.staticTexts["documentary-annotation-count"]
+    XCTAssertEqual(count.label,"1 2D annotations")
+    let undo=app.buttons["Undo annotation edit"];reveal(undo);undo.tap();XCTAssertEqual(count.label,"0 2D annotations")
+    app.swipeDown();app.swipeDown()
+    surface.coordinate(withNormalizedOffset:CGVector(dx:0.55,dy:0.45)).tap();reveal(add);add.tap()
+    app.buttons["documentary-save"].tap()
+    app.terminate();app.launchArguments=["--documentary-demo"];app.launch();openPhoto()
+    reveal(count);XCTAssertEqual(count.label,"1 2D annotations")
+    screenshot("15-single-photo-annotation-restored")
+  }
   @MainActor private func setSwitch(_ row:XCUIElement,to enabled:Bool) {
     XCTAssertTrue(row.waitForExistence(timeout:5))
     let expected=enabled ? "1":"0"

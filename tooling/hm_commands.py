@@ -28,9 +28,24 @@ def write_report(report, output=None):
 
 
 def doctor(live=False):
-    names = ['c++','python3','node','xcodebuild','xcrun','gh','openssl']
+    names = ['c++','python3','node','xcodebuild','xcrun','git','gh','openssl']
     capabilities = {name:bool(shutil.which(name)) for name in names}
+    source=None;dirty=None
+    if capabilities['git']:
+        try:
+            checked=subprocess.run(['git','rev-parse','--verify','HEAD'],cwd=ROOT,capture_output=True,text=True,timeout=5)
+            if checked.returncode==0 and re.fullmatch('[0-9a-f]{40}',checked.stdout.strip()):
+                source=checked.stdout.strip()
+                status=subprocess.run(['git','status','--porcelain','--untracked-files=no'],cwd=ROOT,capture_output=True,text=True,timeout=5)
+                if status.returncode==0:dirty=bool(status.stdout.strip())
+        except (OSError,subprocess.TimeoutExpired):pass
+    expected=os.environ.get('GITHUB_SHA','')
+    expected=expected if re.fullmatch('[0-9a-f]{40}',expected) else None
     report = dict(platform=platform.system(), tools=capabilities,
+                repository=dict(requiredSourceFilesPresent=all((ROOT/p).is_file() for p in ['tooling/hm','HouseMemoryProof/Domain.swift','HouseMemoryProof.xcodeproj/project.pbxproj']),
+                    gitSource=source,trackedFilesModified=dirty,runnerExpectedSource=expected,sourceMatchesRunner=source==expected if source and expected else None),
+                runner=dict(provider='GitHub Actions' if os.environ.get('GITHUB_ACTIONS')=='true' else 'local',architecture=platform.machine(),
+                    hostDiskFreeBytes=shutil.disk_usage(ROOT).free,physicalPhoneCapabilitiesVerified=False),
                 portableCoreAvailable=capabilities['c++'],
                 nativeSimulatorAvailable=platform.system()=='Darwin' and capabilities['xcrun'] and capabilities['xcodebuild'],
                 githubCredentialPresent=any(bool(os.environ.get(k)) for k in ['GH_TOKEN','GITHUB_TOKEN']),
@@ -43,7 +58,8 @@ def doctor(live=False):
         snapshot=release_health.collect_live()
         health=release_health.summarize(snapshot,json.loads((ROOT/'ci/release-policy.json').read_text()))
         verified=health['appleReadAccessVerified'] and health['githubReadAccessVerified']
-        report.update(passed=verified,networkChecked=True,accountAccessVerified=verified,
+        attempted=all(snapshot.get(service,{}).get('networkAttempted',snapshot.get(service,{}).get('readAccessVerified') is True) for service in ['apple','github'])
+        report.update(passed=verified,networkChecked=attempted,networkChecksRequested=True,accountAccessVerified=verified,
             appleReadAccessVerified=health['appleReadAccessVerified'],githubReadAccessVerified=health['githubReadAccessVerified'],
             checkedUTC=health['checkedUTC'],readOnly=True,errors=health['errors'],
             note='Live read access only. Signing, agreements, physical installation and field qualification remain separate checks.')

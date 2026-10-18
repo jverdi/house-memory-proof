@@ -1,5 +1,15 @@
 # Implementation ledger
 
+## Reconstruction integration passed; v18 detector and single-photo candidate
+
+Source **f62af5fe6e**, build **195.1**, passed **129 native checks**, **five interface flows**, **three process-kill recoveries**, **50 portable cases** and **20 independent reader reports**. Actual CLI reconstruction preserved **19 originals**, produced **10,956 points**, and passed independent archive validation. All seven generic GLB/USDZ/PLY/OBJ/CSV reader reports passed. Both artifacts were downloaded and SHA-256 verified. Search p95 was **54.148 ms**; all 300 movie frames decoded in **71.231 seconds**. Evidence: `docs/evidence/native-f62a-summary.json`. No additional upload occurred.
+
+The detector-only low-light experiment passed all four nominal/dim-blurred stage cases, **64/64 nominal queries** and **0/128 critical false accepts**, with unchanged pixels and geometric gates. Dim-blurred finished p95 was **7.895 mm**. The fixed detector-response rule enters the next candidate with a v18 map fingerprint, source-byte/determinism/blank-image regression and unchanged sensor/whole-house replays. The earlier gain experiment remains unadopted. Original 384-pixel finished and finished depth-edge failures remain open. Evidence: `docs/evidence/low-light-response-cb2b-summary.json`.
+
+Single-photo point/box/polygon/curve annotations now preserve normalized EXIF-oriented 2D coordinates, original source links, review state, undo and archive metadata/overlays. They create no depth or 3D geometry. Conflicting photo edits are refused. Native and portable admission also refuse missing/cross-session photograph controls. The next integration expects **131 native checks and six UI flows**; the new native paths are not yet verified. **23 local command/reader contracts and 38 release-tool tests pass.** Doctor now distinguishes requested network checks from attempted/verified reads and reports repository/runner capabilities without provisioning.
+
+Automatic approval review rejected publishing private Apple tester-feedback inventory counts to this public repository. That proposal was removed completely; no tester-feedback API read or schedule was added. It requires explicit disclosure approval. Unaffected development continues. Physical-device, iCloud/provider and independent field qualification remain open; precision remains disabled.
+
 ## Command-interface integration and reconstruction candidate
 
 Source **6f9aa373ed**, build **194.1**, passed **128/128 native checks** in **214.11 seconds**, **five UI flows** in **285.073 seconds**, **three actual process-kill recoveries**, **50 portable fusion cases** and **13 independent reader reports**. The production CLI tour created 12 shots, 150 timeline frames and eight native storyboard previews; the CLI archive reader passed the native export. Both evidence archives were downloaded and SHA-256 verified. No additional TestFlight upload occurred. Evidence: `docs/evidence/native-6f9a-summary.json`.

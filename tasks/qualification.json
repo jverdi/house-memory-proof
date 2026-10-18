@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T03:49:53.093410+00:00",
+  "updatedUTC": "2026-10-18T04:12:54.109428+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
+  "currentImplementationCommit": "f62af5fe6e22dac3cbb851e901cc748aa823b22a",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,19 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
-    "passed": 128,
+    "source": "f62af5fe6e22dac3cbb851e901cc748aa823b22a",
+    "passed": 129,
     "failed": 0,
-    "artifact": 12124330743,
-    "sha256": "15a44e9b90944a2e0f254b0a16bf2d546cdf97b76b824600ec9a96975e5340d1",
-    "searchP95Milliseconds": 70.48850000001039,
+    "artifact": 12124463114,
+    "sha256": "5c0cd19cac4bb0b88b053b598ca644e6efbe488c61f028018fdfaf2da461f9f4",
+    "searchP95Milliseconds": 54.14833333327351,
     "distinctPhotoNotes": 50000,
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "6f9aa373ed passed 128 native, five UI, three process-kill, 50 portable and 13 independent reader checks; actual CLI tour passed. Native reconstruction adds one regression (129 expected) and process-level independent restore validation. Generic GLB/USDZ/mesh/CSV readers await exact-source CI."
+      "remaining": "f62af5fe6e passed 129 native, five UI, three process-kill, 50 portable and 20 independent reader checks. Production CLI reconstruction preserved 19 originals and independently validated a separate 10,956-point candidate. The v18 detector, original-provenance and 2D annotation candidate now requires 131 native and six interface flows."
     },
     {
       "area": "finished localization",
@@ -55,15 +55,15 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Compile and validate the native reconstruction command and generic readers. Inspect the single bounded low-light analysis-gain experiment; retain original 384-pixel finished accuracy, finished depth-edge availability and physical acceptance gaps.",
+  "nextAction": "Validate the v18 exposure-aware detector on unchanged original, sensor and whole-house gates. Validate original-source provenance and single-photo annotation archive/undo/relaunch. Continue retained finished accuracy, depth-edge, full-house, thin-service, navigation and external qualification work.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "run": null,
-    "status": "pending native reconstruction and generic reader validation",
-    "nativeExpected": 129,
+    "status": "pending v18 detector, provenance and 2D annotation candidate",
+    "nativeExpected": 131,
     "nativePassed": null,
     "nativeFailed": null,
-    "interfaceExpected": 5,
+    "interfaceExpected": 6,
     "interfacePassed": null,
     "processKillPassed": null,
     "independentReadersPassed": null,
@@ -102,16 +102,16 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
-    "run": 39093916512,
-    "nativePassed": 128,
+    "source": "f62af5fe6e22dac3cbb851e901cc748aa823b22a",
+    "run": 39095027951,
+    "nativePassed": 129,
     "interfacePassed": 5,
     "processKillPassed": 3,
     "independentReadersPassed": true,
-    "independentReaderReports": 13,
+    "independentReaderReports": 20,
     "fullArtifact": {
-      "id": 12124536302,
-      "sha256": "27f2792c0534f15f8a29f28cf72e0b94334b91e97ba673a411645ae63a4bfe4a",
+      "id": 12124464171,
+      "sha256": "600e495caed8004af80ac76d42a106ecc1cc4f961aade0faf8b043eee74a41ef",
       "sha256IndependentlyVerified": true
     }
   },
@@ -207,8 +207,8 @@
     "readOnlyReleaseHealth": true,
     "exactRefReleaseDispatch": true,
     "nativeTourValidationPending": false,
-    "nativeReconstructionAdapterComplete": false,
-    "generalModelReadersComplete": false,
+    "nativeReconstructionAdapterComplete": true,
+    "generalModelReadersComplete": true,
     "nativeTourCLIValidated": true,
     "nativeReconstructionAdapterPrepared": true,
     "generalModelReadersPrepared": [
@@ -219,7 +219,8 @@
       "semantic CSV"
     ],
     "liveDoctorPrepared": true,
-    "localContractTestsPassed": 21
+    "localContractTestsPassed": 23,
+    "nativeReconstructionCLIValidated": true
   },
   "releaseHealth": {
     "source": "65b4ad44ce894ba6e93eebf528b940d8f747f89d",
@@ -245,6 +246,39 @@
     "maximumManagedRunnerMinutes": 60,
     "shippingDetectorChanged": false,
     "adopted": false,
-    "validation": "running"
+    "validation": "passed four stage cases; not adopted because analysis-copy gain conflicts with the display-only normalization contract"
+  },
+  "lowLightDetectorResponse": {
+    "source": "cb2b582b92f2359c4692750ec73e75cc431efd4f",
+    "run": 39095437509,
+    "stageCasesPassed": 4,
+    "nominalAccepted": 64,
+    "nominalAttempts": 64,
+    "criticalFalseAccepts": 0,
+    "criticalAttempts": 128,
+    "originalPixelsChanged": false,
+    "adoptedIntoCandidate": true,
+    "integratedValidationPending": true,
+    "original384FailuresRetained": true,
+    "physicalQualification": false
+  },
+  "singlePhotoAnnotations": {
+    "prepared": true,
+    "shapes": [
+      "point",
+      "box",
+      "polygon",
+      "curve"
+    ],
+    "coordinates": "normalized EXIF-oriented image, top-left origin",
+    "depthInferred": false,
+    "archiveMetadataAndOverlay": true,
+    "nativeValidationPending": true,
+    "interfaceValidationPending": true
+  },
+  "blockedFeedbackPublication": {
+    "enabled": false,
+    "reason": "Automatic approval review rejected disclosure of private Apple tester-feedback counts to public artifacts; removed, no feedback API read performed",
+    "explicitApprovalRequired": true
   }
 }

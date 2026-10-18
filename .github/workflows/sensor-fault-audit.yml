@@ -6,6 +6,9 @@ on:
       - .github/workflows/sensor-fault-audit.yml
       - experiments/sensor-fault-audit/**
       - tooling/simulation/summarize_whole_house.py
+      - packages/visual-core/**
+      - HouseMemoryProof/VisualMapping.swift
+      - HouseMemoryProof/Domain.swift
   workflow_dispatch:
 permissions:
   contents: read

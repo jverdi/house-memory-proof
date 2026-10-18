@@ -1,0 +1,258 @@
+{
+  "source": "f62af5fe6e22dac3cbb851e901cc748aa823b22a",
+  "run": 39095027951,
+  "build": "195.1",
+  "platform": "iPhone simulator",
+  "nativePassed": 129,
+  "nativeFailed": 0,
+  "elapsedSeconds": 217.17189070833342,
+  "completeIntegratedPass": true,
+  "integrationStatus": "passed",
+  "precisionProfileEnabled": false,
+  "fieldAccuracyValidated": false,
+  "testflightUpload": false,
+  "artifact": {
+    "id": 12124463114,
+    "sha256": "5c0cd19cac4bb0b88b053b598ca644e6efbe488c61f028018fdfaf2da461f9f4",
+    "sha256IndependentlyVerified": true
+  },
+  "fullArtifact": {
+    "id": 12124464171,
+    "sha256": "600e495caed8004af80ac76d42a106ecc1cc4f961aade0faf8b043eee74a41ef",
+    "sha256IndependentlyVerified": true
+  },
+  "uiPassed": 5,
+  "uiSeconds": 358.016,
+  "processKillPassed": 3,
+  "portableCasesPassed": 50,
+  "independentReaderReportsPassed": 20,
+  "nativeTourCLI": {
+    "passed": true,
+    "command": "production native tour via CLI",
+    "shots": 12,
+    "frames": 150,
+    "previews": 8,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "nativeReconstructionCLI": {
+    "passed": true,
+    "command": "production native reconstruction via CLI",
+    "sessions": 1,
+    "originalsVerified": 19,
+    "vertices": 10956,
+    "independentArchivePassed": true,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "commandContractTests": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 21,
+    "seconds": 3.647575541999913,
+    "exitCode": 0
+  },
+  "genericReaders": {
+    "general-textured-usd-validation.json": {
+      "passed": true,
+      "format": "USDZ native profile",
+      "reader": "OpenUSD 25.11",
+      "sha256": "c0d7426b7b94168d0d59afa1a93a994cb8573695a452e09259704ce7b4a7e14d",
+      "bytes": 48977,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "meshes": 2,
+      "pointClouds": 0,
+      "vertices": 36,
+      "faces": 12,
+      "textureReferences": 2,
+      "units": "metres",
+      "upAxis": "Z",
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "general-points-usd-validation.json": {
+      "passed": true,
+      "format": "USDZ native profile",
+      "reader": "OpenUSD 25.11",
+      "sha256": "3cc3e29e95851fe8f37e340746ca4a6c78b70d78e5b4085d4f7e32ec47842069",
+      "bytes": 667085,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "meshes": 0,
+      "pointClouds": 1,
+      "vertices": 10956,
+      "faces": 0,
+      "textureReferences": 0,
+      "units": "metres",
+      "upAxis": "Z",
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "general-glb-validation.json": {
+      "passed": true,
+      "format": "GLB 2.0",
+      "reader": "Khronos glTF Validator",
+      "sha256": "adb9a4630d1c7e517a641e9ab7a55cf891de00f44d19b529c5ba1a383f321814",
+      "bytes": 282000,
+      "errors": 0,
+      "warnings": 0,
+      "issueCodes": {},
+      "externalResourcesLoaded": false,
+      "sourceModified": false,
+      "physicalPrecisionQualified": false,
+      "houseXraySemanticsChecked": true,
+      "structure": {
+        "nodes": 205,
+        "meshes": 190,
+        "levels": 2,
+        "tourClips": 6,
+        "hierarchyAndAnimationPassed": true
+      }
+    },
+    "general-obj-validation.json": {
+      "passed": true,
+      "format": "OBJ",
+      "reader": "trimesh 5.1.1",
+      "sha256": "8e6dcab7d7e07e9a941a2865aabe6080be3ea70e590554a615dd3614b5ff1ff8",
+      "bytes": 283,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "groups": 2,
+      "vertices": 14,
+      "triangles": 5,
+      "pointClouds": 0,
+      "geometryOnly": true,
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "general-semantic-validation.json": {
+      "passed": true,
+      "format": "House Xray semantic CSV v1",
+      "reader": "Python standard-library csv",
+      "sha256": "d7038e7ccf9ed4651230e00e4656cfee2357d4d2757deafce10c51d46663c2a0",
+      "bytes": 10186,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "records": 17,
+      "recordTypes": {
+        "feature": 3,
+        "route_point": 6,
+        "endpoint": 6,
+        "measurement": 1,
+        "connection": 1
+      },
+      "relationshipsChecked": true,
+      "provenanceChecked": true,
+      "csvRoundTripPassed": true
+    },
+    "general-test-usd-validation.json": {
+      "passed": true,
+      "format": "USDZ native profile",
+      "reader": "OpenUSD 25.11",
+      "sha256": "b0df180d344d6d47d3f1fb1b7991b96dba1661e93d63fc2a4431425fb8147985",
+      "bytes": 147196,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "meshes": 190,
+      "pointClouds": 0,
+      "vertices": 1856,
+      "faces": 2568,
+      "textureReferences": 0,
+      "units": "metres",
+      "upAxis": "Z",
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "general-ply-validation.json": {
+      "passed": true,
+      "format": "PLY",
+      "reader": "trimesh 5.1.1",
+      "sha256": "73ae09cb7e26db782b69d94a51a9d600f44c8745b3a7fc5857bd45b201225b2d",
+      "bytes": 328,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "groups": 1,
+      "vertices": 7,
+      "triangles": 5,
+      "pointClouds": 0,
+      "geometryOnly": true,
+      "sourceGeometryEquivalenceChecked": false
+    }
+  },
+  "search": {
+    "defaultPageSize": 200,
+    "imageFilesRead": 0,
+    "indexBuildMilliseconds": 1381.669916666624,
+    "limitations": "Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone.",
+    "passed": true,
+    "photographs": 50000,
+    "queries": 12,
+    "queryP95Milliseconds": 54.14833333327351,
+    "queryTimingsMilliseconds": [
+      {
+        "milliseconds": 50.05033333338815,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 30.67616666669437,
+        "query": "finished"
+      },
+      {
+        "milliseconds": 51.591958333347065,
+        "query": "electrical outlet"
+      },
+      {
+        "milliseconds": 12.034291666736863,
+        "query": "absent result"
+      },
+      {
+        "milliseconds": 45.592333333388524,
+        "query": "panel a"
+      },
+      {
+        "milliseconds": 51.854166666657875,
+        "query": "caf\u00e9 kitchen"
+      },
+      {
+        "milliseconds": 54.14833333327351,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 39.591375000100015,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 36.76041666665242,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 36.77391666667518,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 32.652166666593985,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 37.52945833332433,
+        "query": "cafe valve"
+      }
+    ],
+    "substringReferenceQueries": 18,
+    "test": "Fifty-thousand photograph metadata search",
+    "uniquePhotoMetadata": 50000
+  },
+  "movie": {
+    "decodedFrames": 300,
+    "durationSeconds": 10,
+    "height": 1080,
+    "passed": true,
+    "recoveredEncoderStalls": [],
+    "seconds": 71.23141991666671,
+    "test": "1080p30 MP4 encode, decode and verified chunk reuse",
+    "width": 1920
+  }
+}

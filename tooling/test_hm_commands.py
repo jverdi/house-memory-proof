@@ -36,6 +36,11 @@ class CommandContracts(unittest.TestCase):
         with patch('release_health.collect_live',return_value=snapshot):
             result=doctor(live=True)
         self.assertFalse(result['passed']);self.assertFalse(result['accountAccessVerified'])
+        snapshot['apple']['networkAttempted']=False
+        snapshot['github']=dict(readAccessVerified=False,networkAttempted=False,runs=[])
+        with patch('release_health.collect_live',return_value=snapshot):
+            result=doctor(live=True)
+        self.assertFalse(result['networkChecked']);self.assertTrue(result['networkChecksRequested'])
 
     def test_export_command_checks_real_package_and_reports_failure(self):
         house,parts=fixture();path=self.root/'house.hxray';archive(path,house,parts)

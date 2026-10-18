@@ -77,12 +77,29 @@ struct DocumentaryPhotoDetail: View {
   @State var photo: DocumentaryPhoto
   @State private var image: UIImage?
   @State private var reading = false
+  @State private var projectID:UUID?
+  @State private var original:DocumentaryPhoto?
+  @State private var kind:ImageAnnotationKind = .point
+  @State private var draft:[UV]=[]
+  @State private var label=""
+  @State private var editingID:UUID?
+  @State private var undo:[[ImageAnnotation]]=[]
+  private var marks:[ImageAnnotation] {photo.annotations ?? []}
+  private var candidate:ImageAnnotation {ImageAnnotation(kind:kind,points:draft,label:label)}
   var body: some View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading) {
-          if let image { ZoomableEvidence(image: image).frame(height: 420) }
+          if let image {
+            ImageAnnotationSurface(image:image,marks:marks.filter{$0.id != editingID},draft:candidate){point in
+              guard draft.count<512 else{return}
+              let maximum=kind == .point ? 1:kind == .box ? 2:512
+              if draft.count>=maximum {draft=[]}
+              draft.append(point)
+            }.frame(height:340).accessibilityIdentifier("documentary-annotation-image")
+          }
           Text("Unposed original · no inferred dimensions or position").font(.caption)
+          annotationControls
           TextField("Notes and visible labels", text: $photo.note, axis: .vertical)
           if let house = model.house {
             Picker("Room", selection: $photo.roomID) {
@@ -108,15 +125,20 @@ struct DocumentaryPhotoDetail: View {
           Button("Share original") { model.shareURL = try? model.repository?.assetURL(photo.image) }
         }.padding()
       }.navigationTitle("Documentary evidence").toolbar {
+        ToolbarItem(placement:.cancellationAction){Button("Cancel"){dismiss()}}
+        ToolbarItem(placement:.confirmationAction){
         Button("Save") {
-          model.edit {
-            if let i = $0.documentaryPhotos.firstIndex(where: { $0.id == photo.id }) {
-              $0.documentaryPhotos[i] = photo
-            }
+          guard let projectID,let current=model.houses.first(where:{$0.id==projectID}),
+            current.documentaryPhotos.first(where:{$0.id==photo.id})==original else {
+            model.error="This photograph changed. Reopen it before saving your edits.";return
           }
-          dismiss()
+          if model.edit(projectID:projectID,{
+            if let i=$0.documentaryPhotos.firstIndex(where:{$0.id==photo.id}) {$0.documentaryPhotos[i]=photo}
+          }) {dismiss()}
+        }.disabled(!draft.isEmpty || projectID==nil).accessibilityIdentifier("documentary-save")
         }
       }.task {
+        if original==nil {original=photo;projectID=model.house?.id}
         if let url = try? model.repository?.assetURL(photo.image),
           let source = CGImageSourceCreateWithURL(url as CFURL, nil),
           let cg = CGImageSourceCreateThumbnailAtIndex(
@@ -131,5 +153,89 @@ struct DocumentaryPhotoDetail: View {
         }
       }
     }
+  }
+  private var annotationControls:some View {
+    VStack(alignment:.leading,spacing:12){
+      Text("2D annotations").font(.headline)
+      Text("Pinch to zoom, then tap the image. A box uses two opposite corners; a curve follows your taps. Add the annotation, then Save the photo. These marks describe only what is visible.").font(.caption)
+      Picker("Shape",selection:Binding(get:{kind},set:{kind=$0;clearDraft()})){ForEach(ImageAnnotationKind.allCases,id:\.self){Text($0.rawValue.capitalized).tag($0)}}
+        .pickerStyle(.segmented)
+      TextField("Annotation label",text:$label).accessibilityIdentifier("documentary-annotation-label")
+      HStack {
+        Button("Undo point"){if !draft.isEmpty{draft.removeLast()}}.disabled(draft.isEmpty)
+        Button("Clear draft"){clearDraft()}.disabled(draft.isEmpty && editingID==nil)
+      }.buttonStyle(.bordered)
+      Button(editingID==nil ? "Add annotation":"Update annotation"){
+        guard candidate.valid,marks.count<1000 || editingID != nil else{return}
+        remember();var updated=marks,varMark=candidate
+        if let id=editingID,let index=updated.firstIndex(where:{$0.id==id}) {varMark.id=id;updated[index]=varMark}
+        else {updated.append(varMark)}
+        photo.annotations=updated;clearDraft()
+      }.buttonStyle(.borderedProminent).disabled(!candidate.valid || (marks.count>=1000 && editingID==nil))
+        .accessibilityIdentifier("documentary-add-annotation")
+      Text("\(marks.count) 2D annotations").font(.caption).accessibilityIdentifier("documentary-annotation-count")
+      ForEach(marks){mark in
+        VStack(alignment:.leading){
+          Text(mark.label.isEmpty ? mark.kind.rawValue.capitalized:mark.label)
+          Text("\(mark.kind.rawValue.capitalized) · \(mark.points.count) points · \(mark.reviewed ? "Reviewed":"Unreviewed")").font(.caption)
+          HStack {
+            Button("Edit"){editingID=mark.id;kind=mark.kind;draft=mark.points;label=mark.label}
+              .accessibilityLabel("Edit \(mark.label.isEmpty ? mark.kind.rawValue:mark.label)")
+            Button(mark.reviewed ? "Unreview":"Mark reviewed"){
+              remember();photo.annotations=marks.map{var m=$0;if m.id==mark.id{m.reviewed.toggle()};return m}
+            }
+            Button("Delete",role:.destructive){remember();photo.annotations=marks.filter{$0.id != mark.id};if editingID==mark.id{clearDraft()}}
+          }.buttonStyle(.bordered).disabled(!draft.isEmpty)
+        }.padding(.vertical,4)
+      }
+      Button("Undo annotation edit") {if let previous=undo.popLast(){photo.annotations=previous;clearDraft()}}.disabled(undo.isEmpty)
+    }
+  }
+  private func remember(){undo.append(marks);if undo.count>25{undo.removeFirst()}}
+  private func clearDraft(){draft=[];editingID=nil;label=""}
+}
+
+struct ImageAnnotationSurface:UIViewRepresentable {
+  var image:UIImage;var marks:[ImageAnnotation];var draft:ImageAnnotation;var select:(UV)->Void
+  func makeUIView(context:Context)->ImageAnnotationScrollView {let view=ImageAnnotationScrollView();view.imageView.image=image;return view}
+  func updateUIView(_ view:ImageAnnotationScrollView,context:Context){view.select=select;view.marks=marks;view.draft=draft;view.setNeedsLayout()}
+}
+final class ImageAnnotationScrollView:UIScrollView,UIScrollViewDelegate {
+  let imageView=UIImageView(),saved=CAShapeLayer(),pending=CAShapeLayer()
+  var marks:[ImageAnnotation]=[];var draft:ImageAnnotation?;var select:((UV)->Void)?
+  init(){
+    super.init(frame:.zero);minimumZoomScale=1;maximumZoomScale=10;delegate=self;backgroundColor = .black
+    imageView.contentMode = .scaleAspectFit;imageView.isUserInteractionEnabled=true;addSubview(imageView)
+    for (layer,color) in [(saved,UIColor.systemMint),(pending,UIColor.systemYellow)]{
+      imageView.layer.addSublayer(layer);layer.strokeColor=color.cgColor;layer.fillColor=UIColor.clear.cgColor;layer.lineWidth=2
+    }
+    imageView.addGestureRecognizer(UITapGestureRecognizer(target:self,action:#selector(tap(_:))))
+  }
+  required init?(coder:NSCoder){fatalError("Not used")}
+  func imageRect()->CGRect {
+    guard let image=imageView.image else{return .zero}
+    let scale=min(imageView.bounds.width/image.size.width,imageView.bounds.height/image.size.height)
+    let size=CGSize(width:image.size.width*scale,height:image.size.height*scale)
+    return CGRect(x:(imageView.bounds.width-size.width)/2,y:(imageView.bounds.height-size.height)/2,width:size.width,height:size.height)
+  }
+  override func layoutSubviews(){
+    super.layoutSubviews();if zoomScale==1{imageView.frame=CGRect(origin:.zero,size:bounds.size);contentSize=bounds.size}
+    saved.path=path(marks).cgPath;pending.path=path(draft.map{[$0]} ?? []).cgPath
+  }
+  private func path(_ annotations:[ImageAnnotation])->UIBezierPath {
+    let result=UIBezierPath(),rect=imageRect()
+    for mark in annotations {
+      let points=mark.points.map{CGPoint(x:rect.minX+$0.u*rect.width,y:rect.minY+$0.v*rect.height)}
+      guard let first=points.first else{continue}
+      if mark.kind == .point || points.count==1 {result.append(UIBezierPath(ovalIn:CGRect(x:first.x-4,y:first.y-4,width:8,height:8)))}
+      else if mark.kind == .box {let b=points[1];result.append(UIBezierPath(rect:CGRect(x:min(first.x,b.x),y:min(first.y,b.y),width:abs(first.x-b.x),height:abs(first.y-b.y))))}
+      else {result.move(to:first);for point in points.dropFirst(){result.addLine(to:point)};if mark.kind == .polygon && points.count>=3{result.close()}}
+    }
+    return result
+  }
+  func viewForZooming(in scrollView:UIScrollView)->UIView?{imageView}
+  @objc func tap(_ gesture:UITapGestureRecognizer){
+    let p=gesture.location(in:imageView),r=imageRect();guard r.width>0,r.height>0,r.contains(p) else{return}
+    select?(UV(u:Double((p.x-r.minX)/r.width),v:Double((p.y-r.minY)/r.height)))
   }
 }

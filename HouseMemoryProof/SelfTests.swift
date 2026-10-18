@@ -418,6 +418,43 @@ import simd
                 capture.features=[result];try capture.validate()
                 return result.mesh.vertices.count>=20 && result.pointTracks?.count==result.mesh.vertices.count && result.pointTracks!.allSatisfy{$0.controls.count>=3}
             }
+            await check("One-photo annotations remain two-dimensional and preserve originals through archive restore") {
+                var h=House.empty("2D-only photograph")
+                let bytes=Data("unchanged single photograph original".utf8),key=try repo.put(bytes,ext:"jpg")
+                let points=[UV(u:0.1,v:0.2),UV(u:0.8,v:0.7),UV(u:0.3,v:0.9)]
+                let marks=[ImageAnnotation(kind:.point,points:[points[0]],label:"<script>unsafe</script> & endpoint",reviewed:true),
+                           ImageAnnotation(kind:.box,points:Array(points.prefix(2)),label:"Box"),
+                           ImageAnnotation(kind:.polygon,points:points,label:"Visible envelope"),
+                           ImageAnnotation(kind:.curve,points:points,label:"Visible route only")]
+                h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id,annotations:marks)]
+                try h.validate();let input=try JSONEncoder().encode(h)
+                let package=try Exporter.archive(h,repo:repo),target=try Repository(root:folder.appendingPathComponent("annotation-restore"))
+                let entries=try StreamingArchive.index(package)
+                guard let entry=entries["index.html"],let html=String(data:try StreamingArchive.read(entry,from:package),encoding:.utf8),
+                      html.contains("&lt;script&gt;unsafe&lt;/script&gt; &amp; endpoint"),!html.contains("<script>unsafe</script>"),
+                      html.contains("<circle"),html.contains("<rect"),html.contains("<polygon"),html.contains("<polyline") else{return false}
+                let restored=try Exporter.restore(package,repo:target)
+                guard restored.documentaryPhotos==h.documentaryPhotos,restored.features.isEmpty,restored.observations.isEmpty,
+                      restored.dimensions.isEmpty,try target.read(key)==bytes,try repo.read(key)==bytes else{return false}
+                var legacy=try JSONSerialization.jsonObject(with:input) as! [String:Any]
+                var photos=legacy["documentaryPhotos"] as! [[String:Any]];photos[0].removeValue(forKey:"annotations");legacy["documentaryPhotos"]=photos
+                let decoded=try JSONDecoder().decode(House.self,from:JSONSerialization.data(withJSONObject:legacy))
+                guard decoded.documentaryPhotos[0].annotations==nil else{return false}
+                for mode in 0..<7 {
+                    var bad=h
+                    switch mode {
+                    case 0:bad.documentaryPhotos[0].annotations![0].points[0].u=1.1
+                    case 1:bad.documentaryPhotos[0].annotations![1].points=[points[0],points[0]]
+                    case 2:bad.documentaryPhotos[0].annotations![2].points=Array(points.prefix(2))
+                    case 3:bad.documentaryPhotos[0].annotations![3].points=[points[0],points[0]]
+                    case 4:bad.documentaryPhotos[0].annotations!.append(marks[0])
+                    case 5:bad.documentaryPhotos[0].roomID=UUID()
+                    default:bad.documentaryPhotos[0].annotations![0].label=String(repeating:"x",count:4097)
+                    }
+                    do{try bad.validate();return false}catch{}
+                }
+                return try JSONDecoder().decode(House.self,from:input)==h && repo.read(key)==bytes
+            }
             await check("Incremental snapshots deduplicate originals and reject partial or corrupt restore") {
                 let folder=repo.root.appendingPathComponent("incremental-test"),restoredRepo=try Repository(root:repo.root.appendingPathComponent("incremental-restore"))
                 var h=House.empty("Snapshot test");let key=try repo.put(Data("original bytes".utf8),ext:"jpg");h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)]
@@ -1392,6 +1429,27 @@ import simd
                     guard (result-expected).length<1e-8 else{return false}
                     controls[2].v+=0.1
                     do{_=try PhotoTriangulation.locate(controls,house:fixture,segment:fixture.segments[0]);return false}catch{return true}
+                }
+                await check("Photograph point provenance refuses missing and cross-session originals") {
+                    let controls=[0,4,8].map{PhotoControl(observationID:fixture.observations[$0].id,u:0.5,v:0.5)}
+                    var candidate=fixture
+                    candidate.features=[Feature(name:"Provenance contract",trade:.unknown,roomID:fixture.rooms[0].id,stageID:fixture.segments[0].stageID,kind:.synthetic,
+                        mesh:Mesh(vertices:[V3(0,2,1)],triangles:[]),sourceIDs:controls.map{$0.observationID},segmentID:fixture.segments[0].id,pointTracks:[PointTrack(controls:controls)])]
+                    try candidate.validate()
+                    let bytes=try JSONEncoder().encode(candidate)
+                    for fault in 0..<3 {
+                        var changed=try JSONDecoder().decode(House.self,from:bytes)
+                        if fault==0 {
+                            let missing=UUID();changed.features[0].sourceIDs.append(missing)
+                            changed.features[0].pointTracks![0].controls[0].observationID=missing
+                        }else if fault==1 {
+                            var other=changed.segments[0];other.id=UUID();changed.segments.append(other)
+                            changed.observations[0].segmentID=other.id
+                        }else {changed.features[0].sourceIDs=[]}
+                        do{try changed.validate();return false}catch{}
+                    }
+                    let restored=try JSONDecoder().decode(House.self,from:bytes);try restored.validate()
+                    return restored.features==candidate.features && restored.observations==fixture.observations
                 }
                 let feature=try await Reconstruction.fuse(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}
                 let surface=try await SurfaceReconstruction.build(house:fixture,segment:fixture.segments[0],repo:mainRepo){_ in}

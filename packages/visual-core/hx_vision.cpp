@@ -18,7 +18,15 @@ extern "C" int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t 
  if(!gray||!xy||!descriptors||w<64||h<64||w>4096||h>4096||stride<w||uint64_t(stride)*h>bytes||capacity<1||capacity>2400)return -1;
  configure();cv::Mat source(h,w,CV_8U,const_cast<uint8_t*>(gray),stride),image;
  double scale=std::min(1.0,1280.0/std::max(w,h));cv::resize(source,image,cv::Size(),scale,scale,cv::INTER_AREA);
- auto detector=cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,256,3,0.001f,4,4,cv::KAZE::DIFF_PM_G2,int(capacity));
+ // Preserve analysis pixels. Dim, textured images need a correspondingly
+ // smaller detector response; matching and geometric admission are unchanged.
+ cv::Scalar mean,deviation;cv::meanStdDev(image,mean,deviation);
+ double response=0.001;
+ if(mean[0]<64.0 && deviation[0]>4.0){
+   const double ratio=std::max(0.25,mean[0]/96.0);
+   response*=ratio*ratio;
+ }
+ auto detector=cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,256,3,float(response),4,4,cv::KAZE::DIFF_PM_G2,int(capacity));
  std::vector<cv::KeyPoint> keys;cv::Mat desc;
  detector->detectAndCompute(image,cv::noArray(),keys,desc);
  if(keys.empty())return 0;
