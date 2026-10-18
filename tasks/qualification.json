@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T03:07:52.175809+00:00",
+  "updatedUTC": "2026-10-18T03:30:37.240022+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "0a4d59c875e1df41b90dae12675b17a20f284a6f",
+  "currentImplementationCommit": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,19 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "0a4d59c875e1df41b90dae12675b17a20f284a6f",
-    "passed": 126,
+    "source": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
+    "passed": 127,
     "failed": 0,
-    "artifact": 12122567897,
-    "sha256": "4a36d232b8f164b5524c683de5065fc6f5753c7d956a472f9176dbbc783bdb02",
-    "searchP95Milliseconds": 71.22812500000464,
+    "artifact": 12124025347,
+    "sha256": "b6679bbb90950e4df8445faf4713b3672925a89a29967d0f9780ee3295de0c69",
+    "searchP95Milliseconds": 72.14370833344219,
     "distinctPhotoNotes": 50000,
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "0a4d59c875 passed 126 native, five UI, three process-kill, 50 portable and twelve reader checks. The v17 clock/tracking admission candidate requires exact-source validation."
+      "remaining": "2fd081de5d passed 127 native, five UI, three process-kill, 50 portable and twelve reader checks. The command adapter adds a production tour storyboard regression and CLI process validation (128 native expected), pending exact-source integration."
     },
     {
       "area": "finished localization",
@@ -55,12 +55,12 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate v17 clock/tracking refusal across native pipelines and four declared sensor profiles; keep original 384-pixel localization failures open. Complete remaining command interfaces and house-scale acceptance work.",
+  "nextAction": "Validate native tour command, general archive checker and read-only release interfaces. Continue the complete native reconstruction CLI adapter and general model readers. Retain dim/blur, finished depth-edge availability and original 384-pixel accuracy failures; inspect aggregate failure categories.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "run": null,
-    "status": "pending v17 clock and tracking admission",
-    "nativeExpected": 127,
+    "status": "pending native tour/command adapter",
+    "nativeExpected": 128,
     "nativePassed": null,
     "nativeFailed": null,
     "interfaceExpected": 5,
@@ -102,21 +102,21 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "0a4d59c875e1df41b90dae12675b17a20f284a6f",
-    "run": 39091313973,
-    "nativePassed": 126,
+    "source": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
+    "run": 39092565738,
+    "nativePassed": 127,
     "interfacePassed": 5,
     "processKillPassed": 3,
     "independentReadersPassed": true,
     "fullArtifact": {
-      "id": 12122958990,
-      "sha256": "e8732fd7e9365513f83333275f5c19dfc60d155060fb2593413454a110090dc4",
+      "id": 12123398701,
+      "sha256": "915fb83ac7d1c7aec2cabebb059c6c72b7ec0ce4e0b64639c5991f083276f778",
       "sha256IndependentlyVerified": true
     }
   },
   "wholeHouseDevelopment": {
-    "source": "0a4d59c875e1df41b90dae12675b17a20f284a6f",
-    "run": 39091313974,
+    "source": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
+    "run": 39092565820,
     "houses": 3,
     "rooms": [
       4,
@@ -169,5 +169,43 @@
     "requiredRefusalPassed": false,
     "stages": 2,
     "mapsBuiltPerStage": 4
+  },
+  "sensorFaultDevelopment": {
+    "source": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
+    "run": 39092565798,
+    "profiles": 4,
+    "profilesPassed": 2,
+    "complete": true,
+    "knownClockRefusalPassed": true,
+    "calibrationDriftPassed": true,
+    "dimBlurredAvailabilityPassed": false,
+    "depthEdgesRoughPassed": true,
+    "depthEdgesFinishedPassed": false,
+    "criticalAttempts": 256,
+    "criticalFalseAccepts": 0,
+    "physicalQualification": false
+  },
+  "preparedCommands": {
+    "nativeTourStoryboard": true,
+    "independentArchiveReader": true,
+    "namedTestSuites": true,
+    "readOnlyReleaseHealth": true,
+    "exactRefReleaseDispatch": true,
+    "nativeTourValidationPending": true,
+    "nativeReconstructionAdapterComplete": false,
+    "generalModelReadersComplete": false
+  },
+  "releaseHealth": {
+    "source": "65b4ad44ce894ba6e93eebf528b940d8f747f89d",
+    "run": 39093524097,
+    "appleReadAccessVerified": true,
+    "githubReadAccessVerified": true,
+    "newestValidBuild": "161.1",
+    "daysUntilExpiry": 89.84696188657408,
+    "activeCertificates": 4,
+    "expiredCertificates": 0,
+    "exactSourceCIPassed": false,
+    "renewalPerformed": false,
+    "uploadPerformed": false
   }
 }

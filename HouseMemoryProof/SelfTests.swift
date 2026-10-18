@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import SceneKit
 import PDFKit
 import SQLite3
@@ -1457,6 +1458,35 @@ import simd
             mark("Direct Metal movie target, color order, orientation and depth")
             do {results.append(try await movieTargetReport(root:mainRepo.root))}
             catch {results.append(["test":"Direct Metal movie target, color order, orientation and depth","passed":false,"error":error.localizedDescription])}
+            await check("Developer tour command uses production planning, verified originals and deterministic output") {
+                let directory=folder.appendingPathComponent("developer-tour"),input=directory.appendingPathComponent("input")
+                try FileManager.default.createDirectory(at:input.appendingPathComponent("assets"),withIntermediateDirectories:true)
+                let sample=DemoFactory.make(),encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+                let bytes=try encoder.encode(sample),hash=SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()
+                try DurableFiles.write(bytes,to:input.appendingPathComponent("house.json"))
+                var request=DeveloperCommands.Request(schema:1,command:"tour",houseSHA256:hash,preset:"before-after",duration:5)
+                try DurableFiles.write(try encoder.encode(request),to:directory.appendingPathComponent("request.json"))
+                let report=try DeveloperCommands.execute(folder:directory)
+                let first=try Data(contentsOf:directory.appendingPathComponent("output/tour.json"))
+                let decoded=try JSONDecoder().decode(TourPlan.self,from:first)
+                let expected=TourDirector.plan(sample,duration:5,preset:.beforeAfter)
+                guard (report["passed"] as? Bool)==true,(report["frames"] as? Int)==150,
+                    try encoder.encode(decoded)==encoder.encode(expected),
+                    let previews=report["previews"] as? [String],!previews.isEmpty,
+                    previews.allSatisfy({UIImage(contentsOfFile:directory.appendingPathComponent("output/"+$0).path)?.size==CGSize(width:640,height:360)}) else{return false}
+                request.houseSHA256=String(repeating:"0",count:64)
+                try DurableFiles.write(try encoder.encode(request),to:directory.appendingPathComponent("request.json"))
+                do {_=try DeveloperCommands.execute(folder:directory);return false}catch{}
+                let emptyFolder=folder.appendingPathComponent("developer-tour-empty"),emptyInput=emptyFolder.appendingPathComponent("input")
+                try FileManager.default.createDirectory(at:emptyInput.appendingPathComponent("assets"),withIntermediateDirectories:true)
+                let empty=try encoder.encode(House.empty("No observed viewpoint"))
+                request.houseSHA256=SHA256.hash(data:empty).map{String(format:"%02x",$0)}.joined()
+                try DurableFiles.write(empty,to:emptyInput.appendingPathComponent("house.json"))
+                try DurableFiles.write(try encoder.encode(request),to:emptyFolder.appendingPathComponent("request.json"))
+                let refused=try DeveloperCommands.execute(folder:emptyFolder)
+                guard (refused["passed"] as? Bool)==false,let exclusions=refused["excluded"] as? [String],!exclusions.isEmpty else{return false}
+                return try Data(contentsOf:input.appendingPathComponent("house.json"))==bytes && Data(contentsOf:directory.appendingPathComponent("output/tour.json"))==first
+            }
             if includeMovie || ProcessInfo.processInfo.arguments.contains("--video-test") {
                 mark("100-space scene capacity")
                 do{results.append(try await largeSceneReport(repo:mainRepo))}

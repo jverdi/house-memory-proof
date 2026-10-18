@@ -73,7 +73,7 @@ def summarize(snapshot,policy,now=None):
         signingCertificateInventory=apple.get('certificateInventory'),
         errors=[x['error'] for x in [apple,ci] if x.get('error')],
         unknown=['Current signing/export requires the separate signed archive audit.','Developer agreement and physical installation state are not inferred from API access.'],
-        physicalInstallationVerified=False,releaseAccepted=False)
+        physicalInstallationVerified=False,releaseAccepted=None,releaseAcceptanceEvaluated=False)
 
 
 def collect_live(now=None):

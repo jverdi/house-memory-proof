@@ -5,8 +5,9 @@ Updated during the October 17–18, 2026 implementation session. This document r
 ## Release state
 
 - Prior delivery proof: build 2.1 was installed by the owner.
-- Current complete native result: **0a4d59c875**, run **39091313973**, passed **126/126 checks**, five UI flows, three process-kill recoveries, 50 portable cases and all twelve independent reader reports. Both artifacts were downloaded and SHA-256 verified. Search p95 was **71.228 ms**; concurrent snapshot branches and separate restores passed. The v17 known-clock/limited-tracking admission repair awaits exact-source validation (127 expected native checks). These are simulator results, not physical qualification.
+- Current complete native result: **2fd081de5d**, run **39092565738**, build **193.1**, passed **127/127 checks**, five UI flows, three actual process-kill recoveries, 50 portable cases and all twelve independent readers. Both artifacts were downloaded and SHA-256 verified. Search p95 was **72.144 ms**. Clock/tracking refusal and concurrent snapshot branches passed. The next command adapter requires exact-source validation (128 expected native checks). These are simulator results, not physical qualification.
 - The requested current-state TestFlight snapshot **161.1**, source **2fae54ff2d**, is uploaded and verified **VALID / IN_BETA_TESTING**, with owner access in Personal iPhone (delivery run 39078429529; readiness run 39080146782). Physical installation is unverified. Subsequent development commits do not upload.
+- Source **2fd081de5d** additionally passes **127/127 native checks**, including known clock/tracking refusals and original preservation; complete interface/export validation passed. Its sensor audit passes intentional clock refusal and calibration drift, while dim/blurred and finished depth-edge availability fail. All 256 critical challenges abstain. The original three 384-pixel finished accuracy failures are unchanged.
 - Production readiness: **not established**.
 - Field precision profile: **disabled**. No synthetic metric enables one.
 - No promise that only field calibration remains: substantial software acceptance work remains below.
@@ -26,7 +27,7 @@ Updated during the October 17–18, 2026 implementation session. This document r
 | P8 Labels/plans/import | Trades/routes/endpoints/confirmed connections/OCR; source revision propagation; PDF/image scale and independently checked alignment; offline IFC/PLY | Broader drawing-revision and IFC fixtures; optional model suggestions not included |
 | P9 Exports/recovery | GLB level/room/stage hierarchy and tour-camera clips; textured USDZ; texture-inclusive export admission and checksums; PLY/OBJ; evidence JSON and streamed semantic CSV; ZIP64 restore; offline WebGL viewer | GLB/USDZ/ZIP64/offline-viewer and PLY/OBJ independent readers pass through be375307; semantic CSV native/independent-reader checks pass at be375307; large-file/cross-version matrix and remaining semantic handoff cases |
 | P10 iCloud/resources | Local operation; coordinated version 2 Files snapshots with 16 MiB chunks, packed small originals, reused content, parent/device identity, per-file transfer status, account-change refusal, legacy reading and separate-project restore; granted CPU continuation and foreground resource retry | Real provider partial arrivals/quota/account transitions, actual device resource/lifecycle qualification |
-| P11 Qualification | Portable/core/native tests, independent readers, UI flows, real process-kill recovery, retained failures and versioned evidence | Full runbook synthetic/lifecycle suite and final exact-source integrated pass; no production gate passed |
+| P11 Qualification | Portable/core/native tests, independent readers, UI flows, real process-kill recovery, retained failures and versioned evidence; candidate production tour CLI, general archive checker and read-only release-health commands | Full runbook synthetic/lifecycle suite and final exact-source integrated pass; no production gate passed |
 | P12 Field | Phone field-check recording, calibration/validation separation, source snapshots, independent truth/uncertainty, abstentions, local JSON export | Physical acquisition correctness, identifiable calibration and independent measured validation; precision remains disabled |
 | P13 Sustained use | Mobile recovery guidance, source checkpoints, proof delivery, prepared renewal/expiry workflows | Enable renewal only after accepted release; final signed manifest, refresh cycle and completed handoff |
 
@@ -56,7 +57,7 @@ Updated during the October 17–18, 2026 implementation session. This document r
 
 ## Continuation priorities
 
-1. Resolve finished-stage natural-feature accuracy while preserving spatial and ambiguity gates; exact-source native/UI/export integration passes at 0a4d59c875. All three 768-pixel layouts pass both stages (172/176 nominal, 0/352 critical), but the original 384-pixel failures remain acceptance blockers.
+1. Resolve finished-stage natural-feature accuracy while preserving spatial and ambiguity gates; exact-source native/UI/export integration passes at 2fd081de5d. All three 768-pixel layouts pass both stages (172/176 nominal, 0/352 critical), but the original 384-pixel failures remain acceptance blockers.
 2. Qualify full-house pose/frame registration, reconstruction and thin-service geometry across independent protected house/sensor/topology scenarios. The 70-case analytic corner suite is not that qualification.
 3. Complete large-house navigation/streaming, drawing registration and independent end-to-end synthetic house scenarios.
 4. Complete iCloud/resource/lifecycle gates and release only against an explicitly declared support profile.

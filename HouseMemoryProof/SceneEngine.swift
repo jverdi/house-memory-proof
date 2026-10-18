@@ -101,7 +101,7 @@ enum SceneBuilder {
     scene.rootNode.addChildNode(sun)
     return scene
   }
-  static func scene(_ h: House, options: SceneOptions) -> SCNScene {
+  static func scene(_ h: House, options: SceneOptions,assetRoot:URL?=nil) -> SCNScene {
     let scene=baseScene()
     // Unregistered sessions have independent frames; never silently overlay them.
     var textureCache: [String: UIImage] = [:]
@@ -113,12 +113,12 @@ enum SceneBuilder {
       if let sid = f.segmentID, let t = h.segments.first(where: { $0.id == sid })?.registration {
         mesh.vertices = mesh.vertices.map { t.apply($0) }
       }
-      let n=node(f,mesh:mesh,uv:reduced.1,options:options,textures:&textureCache)
+      let n=node(f,mesh:mesh,uv:reduced.1,options:options,textures:&textureCache,assetRoot:assetRoot)
       scene.rootNode.addChildNode(n)
     }
     return scene
   }
-  static func node(_ f:Feature,mesh:Mesh,uv:[UV]?,options:SceneOptions,textures:inout [String:UIImage],textured:Bool=true)->SCNNode {
+  static func node(_ f:Feature,mesh:Mesh,uv:[UV]?,options:SceneOptions,textures:inout [String:UIImage],textured:Bool=true,assetRoot:URL?=nil)->SCNNode {
       let n = SCNNode(geometry: geometry(mesh, uv: uv))
       n.name = f.id.uuidString
       let m = SCNMaterial()
@@ -131,7 +131,7 @@ enum SceneBuilder {
         m.writesToDepthBuffer = false
       }
       if textured,let key = f.texture {
-        let root = Repository.defaultRoot.appendingPathComponent("assets")
+        let root = assetRoot ?? Repository.defaultRoot.appendingPathComponent("assets")
         if textures[key] == nil,textures.count<DisplayGeometry.textureBudget,
           let source = CGImageSourceCreateWithURL(root.appendingPathComponent(key) as CFURL, nil),
           let cg = CGImageSourceCreateThumbnailAtIndex(

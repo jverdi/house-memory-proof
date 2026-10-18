@@ -24,6 +24,10 @@ Native source targets iOS 26+. Runtime hardware checks determine whether ARKit, 
 
 `python3 tooling/hm test` builds the portable C++ core and runs 50 analytic noisy-depth cases. Those cases are **not** 50 distinct houses or field/localization qualification.
 
+The [command reference](docs/COMMANDS.md) covers production native tour planning,
+independent archive inspection, named test suites and read-only release health,
+including their runtime requirements and remaining scope.
+
 The managed macOS workflow compiles the app, launches the iPhone simulator, runs native self-tests and XCUITest navigation, and validates output with Khronos glTF Validator, OpenUSD, trimesh and Python's independent ZIP/CSV readers. CI artifacts distinguish simulator results from physical-device results. Exact evidence and limitations are recorded in the implementation ledger.
 
 `python3 tooling/project.py` and `python3 tooling/ui-project.py` maintain the checked-in Xcode source/test references. `tooling/prepare-ifc.sh` downloads pinned web-ifc 0.0.72 during builds; the resulting parser runs entirely offline inside the app. See [third-party notices](docs/THIRD_PARTY.md).

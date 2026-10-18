@@ -20,7 +20,7 @@ class ReleaseHealthContracts(unittest.TestCase):
         result=summarize(snapshot(),POLICY,NOW)
         self.assertTrue(result['passed']);self.assertEqual(result['buildAgeDays'],1)
         self.assertEqual(result['daysUntilExpiry'],89)
-        self.assertFalse(result['automaticRenewal']);self.assertFalse(result['releaseAccepted'])
+        self.assertFalse(result['automaticRenewal']);self.assertIsNone(result['releaseAccepted']);self.assertFalse(result['releaseAcceptanceEvaluated'])
         self.assertFalse(result['physicalInstallationVerified'])
 
     def test_monitor_does_not_wait_for_itself_or_skipped_readiness(self):

@@ -1,0 +1,54 @@
+{
+  "candidate": "uncommitted command adapter after 2fd081de5d",
+  "checkedUTC": "2026-10-18T03:20:25.822628+00:00",
+  "platform": "Linux",
+  "commandTests": 11,
+  "releaseTests": 38,
+  "simulationTests": 41,
+  "portableFusionCases": 50,
+  "portableFusionMaximumP95Metres": 0.0011250724095434594,
+  "actualNativeArchive": {
+    "passed": true,
+    "reader": "Python standard library independent archive reader",
+    "archiveVersion": 1,
+    "sourceRevision": 2,
+    "metadataSHA256": "00709e132eee31b8b58c615ffbe4ea1aad42f7aabbffe0a796a60293e687ea3b",
+    "verifiedOriginals": 1,
+    "verifiedPayloadBytes": 794621,
+    "members": 5,
+    "semanticCounts": {
+      "rooms": 3,
+      "stages": 2,
+      "sessions": 0,
+      "features": 217,
+      "observations": 0,
+      "documentaryPhotos": 0,
+      "vertices": 2072,
+      "triangles": 2892,
+      "serviceConnections": 0
+    },
+    "jsonRoundTripPassed": true,
+    "sourceModified": false,
+    "extractedFiles": 0,
+    "physicalPrecisionQualified": false,
+    "limitations": [
+      "Schema/identity/geometry/asset checks do not qualify capture accuracy or actual cloud-provider recovery.",
+      "GLB, USDZ and rendered viewer behavior require their separate independent readers."
+    ]
+  },
+  "nativeTourAdapter": "pending macOS simulator execution",
+  "readOnlyLiveHealth": "pending credentialed CI",
+  "testflightUpload": false,
+  "physicalQualification": false,
+  "candidateFileSHA256": {
+    "tooling/hm": "f0a08a1b167006355864042f980a575bfe53aa1e300c543b2bcd96e5200db9df",
+    "tooling/hm_commands.py": "18b5942865fa30edabf6c0934c00747daad96e8a384109c90b4d6d117e985bb7",
+    "tooling/package_check.py": "8868b653df9f315314dc9c3911d9deb6eba818a15c2cf080374e519ed2dfed1f",
+    "tooling/test_package_check.py": "99211506fb18b55b0d12a99dc30ea4999064c1bd39991b8da9681422226faab9",
+    "tooling/test_hm_commands.py": "44642c18afa47ff16766bc67bb44bc9d90c5fc30c74f382c83ae23f775a3c23e",
+    "ci/release_health.py": "c86eac38efa812435086bc4cd8e7e646a2c17057ae614a34d0a115c73cd06e2f",
+    "ci/test_release_health.py": "0bebe44d4b6ac30f6fad484339373f1ad145562f2d06a3cc69497d210b9a2d6d",
+    "tooling/simulation/summarize_whole_house.py": "d6186f6f74afa353836d0f7d671d8ca103df238c33acd2106afe66900af38a31",
+    "tooling/simulation/test_whole_house_summary.py": "da16f4655c6d0e57b0b55e435ecb24070bc23703584072e8f42dd5459c14692b"
+  }
+}

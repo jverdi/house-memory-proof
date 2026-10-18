@@ -1,5 +1,13 @@
 # Implementation ledger
 
+## Native clock/tracking pass and command-interface candidate
+
+Source **2fd081de5d**, build **193.1**, passed **127/127 native checks** in **275.41 seconds**. Known-clock/limited-tracking admission passed a synchronized positive control, all 12 pipeline refusals and preservation of 19 originals. Search p95 was **72.144 ms**; all 300 movie frames decoded. The complete integration also passed **five UI flows** (320.198 seconds), **three process-kill recoveries**, **50 portable cases** and **12 independent readers**. Both artifacts were downloaded and SHA-256 verified.
+
+The four-profile sensor audit completed. Known-clock refusal and calibration-drift spatial gates pass both stages. Dim/blurred images yield no admitted map in either stage; depth-edge rough captures pass at **3.153 mm p95**, while finished captures yield no map. All **256** wrong-room/floor challenges abstain. Failures remain failures; no availability/accuracy gate or operating envelope was relaxed. Exact aggregate evidence: `docs/evidence/sensor-faults-2fd0-summary.json`.
+
+The next candidate adds production native tour planning/storyboard commands, an independent streaming archive reader, named test suites, read-only release health and exact-reference CI dispatch. The command adapter is isolated in a Debug simulator request directory and uses the existing TourDirector/SceneKit paths. Eleven command tests, 38 release tests, 41 simulation contracts and 50 portable fusion cases have been exercised locally; native command compilation/execution remains pending. The arbitrary image/depth reconstruction CLI and general model readers remain explicit interface gaps. See `docs/COMMANDS.md` and `docs/evidence/commands-local-summary.json`.
+
 ## Clock and tracking admission candidate; integration checkpoint 192.1
 
 Source **0a4d59c875**, build **192.1**, passed **126 native checks**, **five UI flows**, **three process-kill recoveries**, **50 portable cases** and **12 independent reader reports**. Both artifacts were downloaded and SHA-256 verified. Search p95 was **71.228 ms**. The new concurrent snapshot ancestry and independent branch-restore regression passed. Evidence: `docs/evidence/native-0a4d-summary.json`.

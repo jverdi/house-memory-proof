@@ -16,6 +16,26 @@ def distribution(source):
     return {key:number(source.get(key)) for key in ['count','p50','p95','maximum']}
 
 
+def failure_categories(source):
+    # Fixed labels only: never emit exception text, paths, UUIDs or source poses.
+    categories={}
+    prefixes=[('Capture at least two overlapping','input-admission'),
+        ('Not enough stable, textured depth features','depth-texture-support'),
+        ('Pose refinement needs at least three','pose-view-count'),
+        ('Fewer than three photographs share reliable overlap','pose-overlap'),
+        ('Insufficient independently matched overlap','pose-loop-support'),
+        ('Pose graph rejected','pose-consistency'),
+        ('Too few independently checked photograph details','photo-track-support'),
+        ('Joint refinement needs twenty','bundle-anchor-support'),
+        ('Joint refinement did not pass','bundle-held-out-check'),
+        ('Camera matching reached','pose-time-budget'),
+        ('Photograph matching reached','photo-time-budget')]
+    for message in source.values():
+        category=next((label for prefix,label in prefixes if isinstance(message,str) and message.startswith(prefix)),'unclassified')
+        categories[category]=categories.get(category,0)+1
+    return categories
+
+
 def summarize(folder):
     cases=[]
     for stage in ['rough','finished']:
@@ -28,6 +48,7 @@ def summarize(folder):
                 rooms=number(generated.get('rooms')),levels=number(generated.get('levels')),width=number(generated.get('width')),
                 inputArchiveCheckPassed=checked.get('passed') is True,oracleReadDenied=report.get('oracleReadDenied') is True,queryLabelsExcluded=report.get('queryLabelsExcluded') is True)
             for key in COUNTS+SCALARS:case[key]=number(report.get(key))
+            case['mappingFailureCategories']=failure_categories(report.get('mappingFailures',{}))
             case['rotationErrorDegrees']=distribution(report.get('rotationErrorDegrees',{}))
             overlay=report.get('visibleSurfaceOverlay',{})
             case['visibleSurfaceOverlay']=dict(scoredAcceptedQueries=number(overlay.get('scoredAcceptedQueries')),samples=number(overlay.get('samples')),behindCamera=number(overlay.get('behindCamera')),

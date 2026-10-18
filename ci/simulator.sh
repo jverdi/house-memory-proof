@@ -129,6 +129,27 @@ failed=[t for t in r['tests'] if not t.get('passed')]
 print(json.dumps({'nativePassed':r['passed'],'checks':len(r['tests']),'failures':failed},sort_keys=True))
 if not r['passed']: raise SystemExit('Native diagnostic failures retained in native-self-test.json')
 PYTEST
+if [ "$native_failed" -eq 0 ]; then
+  mkdir -p build/command-private
+  python3 tooling/hm export-check --package build/evidence/test.hxray --output build/evidence/portable-package-validation.json || native_failed=1
+  python3 tooling/hm test --suite commands --output build/evidence/command-tests.json || native_failed=1
+  python3 tooling/hm tour --scene build/evidence/test.hxray --preset before-after --duration 5 --simulator "$device_id" --output build/command-private/tour > build/command-private/tour-result.json || native_failed=1
+  python3 - <<'PYCOMMAND' || native_failed=1
+import json,pathlib,struct
+root=pathlib.Path('build/command-private/tour')
+try:
+    result=json.loads((root/'result.json').read_text());plan=json.loads((root/'tour.json').read_text())
+    assert result['passed'] and result['frames']==150 and result['shots']==len(plan['shots'])>0
+    assert sum(round(s['duration']*30) for s in plan['shots'])==150
+    for name in result['previews']:
+        image=(root/name).read_bytes();assert image[:8]==b'\x89PNG\r\n\x1a\n' and struct.unpack('>II',image[16:24])==(640,360)
+    report=dict(passed=True,command='production native tour via CLI',shots=result['shots'],frames=result['frames'],previews=len(result['previews']),sourceModified=False,physicalQualification=False)
+except Exception as error:
+    report=dict(passed=False,command='production native tour via CLI',errorClass=type(error).__name__,physicalQualification=False)
+pathlib.Path('build/evidence/cli-command-validation.json').write_text(json.dumps(report,indent=2)+'\n')
+assert report['passed'],report
+PYCOMMAND
+fi
 fi
 if [ "$mode" = native ]; then exit "$native_failed"; fi
 

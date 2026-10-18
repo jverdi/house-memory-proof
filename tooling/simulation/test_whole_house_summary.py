@@ -2,10 +2,15 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from summarize_whole_house import summarize,COUNTS,SCALARS
+from summarize_whole_house import summarize,COUNTS,SCALARS,failure_categories
 
 
 class AggregatePublication(unittest.TestCase):
+    def test_failure_categories_never_publish_source_names_or_exception_text(self):
+        result=failure_categories({'PRIVATE-UUID':'Pose graph rejected PRIVATE-POSE','ANOTHER-SOURCE':'PRIVATE-PATH'})
+        self.assertEqual(result,{'pose-consistency':1,'unclassified':1})
+        self.assertNotIn('PRIVATE',json.dumps(result))
+
     def test_nested_source_payload_cannot_escape_the_allowlist(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);sentinel='PRIVATE-POSE-IMAGE-OR-SEED'

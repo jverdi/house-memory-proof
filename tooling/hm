@@ -27,7 +27,7 @@ def evaluate(candidate,truth):
  errors=[min(math.dist(p[:3],g) for g in gt) for p in pts]
  completeness=sum(any(math.dist(p[:3],g)<.01 for p in pts) for g in gt)/len(gt)
  return {'count':len(pts),'completeness':completeness,'p95_m':sorted(errors)[int(.95*(len(errors)-1))] if errors else None,'max_m':max(errors) if errors else None}
-def test():
+def test(output=None):
  exe=build();subprocess.run(['c++','-std=c++17','-O2',str(ROOT/'packages/spatial-core/hx_core.cpp'),str(ROOT/'packages/spatial-core/test.cpp'),'-o',str(exe)+'-test'],check=True);subprocess.run([str(exe)+'-test'],check=True)
  surface=ROOT/'build/hx-surface-test'
  subprocess.run(['c++','-std=c++17','-O2',str(ROOT/'packages/spatial-core/hx_surface.cpp'),str(ROOT/'packages/spatial-core/surface_test.cpp'),'-o',str(surface)],check=True)
@@ -39,17 +39,54 @@ def test():
    with (p/'observations.xyz').open('rb') as src,(p/'candidate.xyz').open('wb') as out:subprocess.run([str(exe)],stdin=src,stdout=out,check=True)
    result=evaluate(p/'candidate.xyz',p/'truth.json');result['seed']=seed;results.append(result)
  report={'suite':'portable C++ analytic fusion','not_tested':['ARKit','image matching','pose optimization','localization','field precision','Blender sensor simulation'],'cases':results,'passed':all(r['p95_m']<.003 and r['completeness']>.98 for r in results)}
- target=ROOT/'build/evidence/portable-tests.json';target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(report,indent=2));print(json.dumps({'passed':report['passed'],'cases':len(results),'max_p95_m':max(r['p95_m'] for r in results),'report':str(target)}));return 0 if report['passed'] else 1
-p=argparse.ArgumentParser();sub=p.add_subparsers(dest='cmd',required=True)
-sub.add_parser('doctor');sub.add_parser('test')
-s=sub.add_parser('simulate');s.add_argument('--seed',type=int,default=42);s.add_argument('--output',type=Path,required=True)
-r=sub.add_parser('reconstruct');r.add_argument('--bundle',type=Path,required=True);r.add_argument('--output',type=Path,required=True)
-e=sub.add_parser('evaluate');e.add_argument('--candidate',type=Path,required=True);e.add_argument('--truth',type=Path,required=True)
-a=p.parse_args()
-if a.cmd=='doctor':print(json.dumps({'root':str(ROOT),'compiler':subprocess.check_output(['c++','--version']).decode().splitlines()[0],'runtime_backend_required':False}))
-elif a.cmd=='test':sys.exit(test())
-elif a.cmd=='simulate':simulate(a.seed,a.output)
-elif a.cmd=='reconstruct':
- exe=build()
- with a.bundle.open('rb') as src,a.output.open('wb') as out:subprocess.run([str(exe)],stdin=src,stdout=out,check=True)
-elif a.cmd=='evaluate':print(json.dumps(evaluate(a.candidate,a.truth)))
+ target=output or ROOT/'build/evidence/portable-tests.json';target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(report,indent=2));print(json.dumps({'passed':report['passed'],'cases':len(results),'max_p95_m':max(r['p95_m'] for r in results),'report':str(target)}));return 0 if report['passed'] else 1
+def main():
+ import hm_commands
+ from package_check import check_package
+ p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='cmd',required=True)
+ sub.add_parser('doctor',help='Inspect available capabilities without provisioning')
+ t=sub.add_parser('test');t.add_argument('--suite',choices=['portable','simulation','release','commands'],default='portable');t.add_argument('--output',type=Path)
+ s=sub.add_parser('simulate');s.add_argument('--seed',type=int,default=42);s.add_argument('--output',type=Path,required=True)
+ s.add_argument('--scenario',choices=['analytic-depth','connected-house'],default='analytic-depth');s.add_argument('--stage',choices=['rough','finished'],default='rough');s.add_argument('--profile',default='nominal');s.add_argument('--width',type=int,default=384)
+ r=sub.add_parser('reconstruct',help='Portable analytic XYZ fusion; image/depth bundles use the native replay interface');r.add_argument('--bundle',type=Path,required=True);r.add_argument('--output',type=Path,required=True)
+ e=sub.add_parser('evaluate');e.add_argument('--candidate',type=Path,required=True);e.add_argument('--truth',type=Path);e.add_argument('--fixture',type=Path);e.add_argument('--output',type=Path)
+ tour=sub.add_parser('tour',help='Run production TourDirector in an explicitly selected installed Debug simulator app')
+ tour.add_argument('--scene',type=Path,required=True);tour.add_argument('--preset',choices=['overview','before-after','services'],default='overview');tour.add_argument('--duration',type=float,default=20)
+ tour.add_argument('--simulator',required=True);tour.add_argument('--bundle-id',default='com.example.HouseMemoryProof');tour.add_argument('--output',type=Path,required=True)
+ c=sub.add_parser('export-check');c.add_argument('--package',type=Path,required=True);c.add_argument('--output',type=Path)
+ health=sub.add_parser('release-health');health.add_argument('--live',action='store_true');health.add_argument('--input',type=Path);health.add_argument('--output',type=Path)
+ release=sub.add_parser('release');release.add_argument('--commit',required=True);release.add_argument('--ref',default='main');release.add_argument('--ship',action='store_true');release.add_argument('--dispatch',action='store_true');release.add_argument('--output',type=Path)
+ a=p.parse_args()
+ try:
+  if a.cmd=='doctor':return hm_commands.write_report(hm_commands.doctor())
+  if a.cmd=='test':return test(a.output) if a.suite=='portable' else hm_commands.run_suite(a.suite,a.output)
+  if a.cmd=='simulate':
+   if a.output.exists():raise ValueError('Choose a new simulation directory; previous evidence is preserved')
+   if a.scenario=='analytic-depth':simulate(a.seed,a.output);return 0
+   return subprocess.run([sys.executable,str(ROOT/'tooling/simulation/whole_house_fixture.py'),str(a.output),'--seed',str(a.seed),'--stage',a.stage,'--profile',a.profile,'--width',str(a.width)],cwd=ROOT).returncode
+  if a.cmd=='reconstruct':
+   if a.output.exists():raise ValueError('Choose a new reconstruction path; existing output is preserved')
+   exe=build()
+   with a.bundle.open('rb') as src,a.output.open('xb') as out:subprocess.run([str(exe)],stdin=src,stdout=out,check=True)
+   return 0
+  if a.cmd=='evaluate':
+   if a.fixture:
+    if a.truth or not a.output:raise ValueError('Localization evaluation requires --fixture and --output, without --truth')
+    return subprocess.run([sys.executable,str(ROOT/'tooling/simulation/replay_fixture.py'),'--executable',str(a.candidate),'--fixture',str(a.fixture),'--output',str(a.output),'--house','--refine','--bundle'],cwd=ROOT).returncode
+   if not a.truth:raise ValueError('Analytic depth evaluation requires --truth; localization requires --fixture')
+   return hm_commands.write_report(evaluate(a.candidate,a.truth),a.output)
+  if a.cmd=='tour':return hm_commands.write_report(hm_commands.tour(a.scene,a.preset,a.duration,a.simulator,a.bundle_id,a.output))
+  if a.cmd=='export-check':return hm_commands.write_report(check_package(a.package),a.output)
+  if a.cmd in ['release-health','release']:
+   sys.path.insert(0,str(ROOT/'ci'))
+   import release_health
+   if a.cmd=='release':return hm_commands.write_report(release_health.release(a.commit,a.ref,a.ship,a.dispatch),a.output)
+   if a.input and a.live:raise ValueError('Choose either a saved snapshot or live read-only checks')
+   snapshot=json.loads(a.input.read_text()) if a.input else release_health.collect_live()
+   policy=json.loads((ROOT/'ci/release-policy.json').read_text())
+   return hm_commands.write_report(release_health.summarize(snapshot,policy),a.output)
+ except Exception as error:
+  target=getattr(a,'output',None) if a.cmd in ['release-health','release','test','evaluate'] else None
+  return hm_commands.write_report(dict(passed=False,command=a.cmd,error=str(error)[:2000]),target)
+
+if __name__=='__main__':sys.exit(main())

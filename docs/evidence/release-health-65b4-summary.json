@@ -1,0 +1,49 @@
+{
+  "source": "65b4ad44ce894ba6e93eebf528b940d8f747f89d",
+  "run": 39093524097,
+  "artifact": {
+    "id": 12123896295,
+    "sha256": "57239919d88d8c36fab66e93e7f25e36ce964d705c21c163613f6251ae54ecf7",
+    "sha256IndependentlyVerified": true
+  },
+  "report": {
+    "checkedUTC": "2026-10-18T03:24:50.987019+00:00",
+    "readOnly": true,
+    "fresh": true,
+    "passed": false,
+    "appleReadAccessVerified": true,
+    "githubReadAccessVerified": true,
+    "newestValidBuild": "161.1",
+    "buildAgeDays": 0.15303811342592594,
+    "daysUntilExpiry": 89.84696188657408,
+    "refreshDue": false,
+    "expiryWarningDays": null,
+    "renewalReason": "Latest valid build is 0.2 days old and expires in 89.8 days.",
+    "automaticRenewal": false,
+    "pinnedReleaseTag": "personal-beta",
+    "currentSource": "65b4ad44ce894ba6e93eebf528b940d8f747f89d",
+    "exactSourceCIPassed": false,
+    "workflows": [
+      {
+        "id": 39093524097,
+        "name": "Inspect release health",
+        "status": "in_progress",
+        "conclusion": null
+      }
+    ],
+    "signingCertificateInventory": {
+      "checked": true,
+      "active": 4,
+      "expired": 0,
+      "signingTested": false
+    },
+    "errors": [],
+    "unknown": [
+      "Current signing/export requires the separate signed archive audit.",
+      "Developer agreement and physical installation state are not inferred from API access."
+    ],
+    "physicalInstallationVerified": false,
+    "releaseAccepted": false
+  },
+  "interpretation": "Apple and GitHub reads succeeded. Build 161.1 remains valid with about 89.8 days until expiry. Overall health remains non-passing because this monitoring-only source has no exact-source native workflow; this is not an Apple availability failure. No upload, provisioning or renewal was performed."
+}
