@@ -1,3 +1,7 @@
+## Explicit batch-filter keyboard control prepared
+
+Follow-up 218.1 retains **171/171 native checks and all 18 reader phases**, but its batch UI case fails at the new keyboard-dismissal assertion: submitting the text field did not dismiss the keyboard within five seconds (57.293-second failed case). The next repair adds one focus-scoped keyboard-toolbar **Done** button, using the existing validated object-editor pattern. The UI test taps that explicit control and retains the same keyboard, two-object selection and saved-classification assertions. Validation is pending; no timeout or acceptance threshold changes. TestFlight **216.1 remains verified available**.
+
 ## TestFlight 216.1 is available; follow-up native checks pass
 
 Apple processing is **VALID**, internal state is **IN_BETA_TESTING**, and the verified owner has access through **Personal iPhone**. Build **216.1**, source **f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a**, completed delivery run **39149363050** and readiness run **39153055373**. Both upload/readiness artifacts are independently SHA-256 verified. Signed distribution identity and matching retained symbols pass; debugger attachment is disabled. Physical installation is unverified. This is the requested development snapshot; final acceptance and automatic renewal remain gated. Evidence: `docs/evidence/testflight-216-1-summary.json`.

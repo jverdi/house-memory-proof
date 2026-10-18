@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T18:14:26.125932Z",
+  "updatedUTC": "2026-10-18T18:16:32.966324Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -66,7 +66,7 @@
     "interfaceExpected": 13,
     "nativeReaderPhasesExpected": 18,
     "integrationComplete": false,
-    "status": "native_passed_interface_running",
+    "status": "native_passed_interface_keyboard_dismissal_failure_observed",
     "nativePassed": 171,
     "nativeReaderPhasesPassed": 18,
     "commandContractsPassed": 48,
@@ -983,9 +983,13 @@
     "recordedSwitchTap": true,
     "expectedValueNotReached": true,
     "keyboardVisibleAfterFailure": true,
-    "repair": "Expose Done for the object filter and explicitly finish text entry before selection; preserve both switch-state and applied-classification assertions.",
-    "nativeValidationPending": false,
-    "interfaceValidationPending": true
+    "repair": "Add one focus-scoped Done control in the batch filter keyboard toolbar, following the validated object-editor pattern. Keep keyboard-dismissal, both switch-state and saved-classification assertions.",
+    "nativeValidationPending": true,
+    "interfaceValidationPending": true,
+    "submitOnlyRepairFailed": true,
+    "failedSubmitSource": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
+    "failedSubmitRun": 39151470099,
+    "explicitKeyboardToolbarPrepared": true
   },
   "previousIntegratedPass": {
     "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",

@@ -173,7 +173,10 @@ final class HouseXraySmoke: XCTestCase {
     try XCTUnwrap(app.buttons.matching(identifier:"Low voltage").allElementsBoundByIndex.last(where:{$0.isHittable})).tap()
     app.descendants(matching:.any)["batch-class"].firstMatch.tap()
     try XCTUnwrap(app.buttons.matching(identifier:"Low voltage").allElementsBoundByIndex.last(where:{$0.isHittable})).tap()
-    let filter=app.textFields["Filter objects"];filter.tap();filter.typeText("Speaker\n")
+    let filter=app.textFields["Filter objects"];filter.tap();filter.typeText("Speaker")
+    let done=app.buttons["batch-filter-done"]
+    XCTAssertTrue(done.waitForExistence(timeout:5));XCTAssertEqual(app.buttons.matching(identifier:"batch-filter-done").count,1)
+    screenshot("batch-filter-before-done");done.tap()
     let keyboardDismissed=expectation(for:NSPredicate(format:"exists == false"),evaluatedWith:app.keyboards.firstMatch)
     wait(for:[keyboardDismissed],timeout:5)
     let toggles=app.switches.matching(NSPredicate(format:"identifier BEGINSWITH %@","batch-object-"))

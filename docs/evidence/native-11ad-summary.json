@@ -123,7 +123,7 @@
   "readerPhasesExpected": 18,
   "validationReportsExpected": 35,
   "interfaceExpected": 13,
-  "interfaceStatus": "pending",
+  "interfaceStatus": "failed_batch_keyboard_dismissal_in_live_run",
   "appleUploadVerified": false,
   "boundarySource": {
     "analyticOnly": true,
@@ -419,5 +419,16 @@
   "unsignedReleaseCompilePassed": true,
   "nativePhaseConclusion": "success",
   "nativePhaseSeconds": 279,
-  "appleUploadRequested": false
+  "appleUploadRequested": false,
+  "interfaceObservedFailures": [
+    {
+      "test": "testBatchClassificationWorkflow",
+      "file": "HouseXrayUITests/Smoke.swift",
+      "line": 178,
+      "failure": "Keyboard exists remained true after filter submit; five-second expectation failed",
+      "seconds": 57.293,
+      "evidence": "GitHub job 117746119378 live XCTest output",
+      "fullArtifactVerified": false
+    }
+  ]
 }

@@ -113,6 +113,9 @@ struct BatchServiceEditor:View {
         }
       }.navigationTitle("Classify objects")
         .toolbar {
+          ToolbarItemGroup(placement:.keyboard){
+            if filterFocused {Spacer();Button("Done"){filterFocused=false}.accessibilityIdentifier("batch-filter-done")}
+          }
           ToolbarItem(placement:.cancellationAction){Button("Cancel"){dismiss()}}
           ToolbarItem(placement:.confirmationAction){Button("Apply to \(selected.count) objects"){
             if model.classifyFeatures(house.features.filter{selected.contains($0.id)},classification:classification,trade:trade,projectID:house.id){dismiss()}
