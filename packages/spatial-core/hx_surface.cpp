@@ -21,16 +21,21 @@ extern "C" void* hx_surface_create(double v,uint32_t cap){if(!std::isfinite(v)||
 extern "C" void hx_surface_destroy(void*p){delete static_cast<Surface*>(p);}
 extern "C" uint32_t hx_surface_dropped(void*p){return p?static_cast<Surface*>(p)->dropped:0;}
 extern "C" int32_t hx_surface_integrate(void*p,const float*depth,const uint8_t*confidence,uint32_t w,uint32_t h,double fx,double fy,double cx,double cy,const double*m,uint32_t frame) try {
- if(!p||!depth||!m||w<3||h<3||uint64_t(w)*h>1000000||!std::isfinite(fx)||!std::isfinite(fy)||fx<0.1||fy<0.1||fx>1000000||fy>1000000||!std::isfinite(cx)||!std::isfinite(cy)||std::abs(cx)>1000000||std::abs(cy)>1000000||frame==UINT32_MAX)return -1;
+ if(!p||!depth||!confidence||!m||w<3||h<3||uint64_t(w)*h>1000000||!std::isfinite(fx)||!std::isfinite(fy)||fx<0.1||fy<0.1||fx>1000000||fy>1000000||!std::isfinite(cx)||!std::isfinite(cy)||std::abs(cx)>1000000||std::abs(cy)>1000000||frame==UINT32_MAX)return -1;
  for(int i=0;i<16;i++)if(!std::isfinite(m[i]))return -1;
  Vec axisX={m[0],m[4],m[8]},axisY={m[1],m[5],m[9]},axisZ={m[2],m[6],m[10]};
  if(std::abs(dot(axisX,axisX)-1)>0.002||std::abs(dot(axisY,axisY)-1)>0.002||std::abs(dot(axisZ,axisZ)-1)>0.002||std::abs(dot(axisX,axisY))>0.001||std::abs(dot(cross(axisX,axisY),axisZ)-1)>0.001||std::abs(m[12])+std::abs(m[13])+std::abs(m[14])+std::abs(m[15]-1)>0.001)return -1;
  if(std::abs(m[3])+std::abs(m[7])+std::abs(m[11])>10000)return -1;
  auto&s=*static_cast<Surface*>(p);int32_t accepted=0;
+ // Every value used to seed or update a cell needs a continuous, explicitly
+ // measured neighborhood. Unknown confidence is never a medium-confidence vote.
+ auto continuous=[&](size_t i){
+  double z=depth[i];if(!std::isfinite(z)||z<0.15||z>5||(confidence[i]!=1&&confidence[i]!=2))return false;
+  for(size_t n:{i-1,i+1,i-w,i+w})if((confidence[n]!=1&&confidence[n]!=2)||!std::isfinite(depth[n])||depth[n]<0.15||depth[n]>5||std::abs(z-depth[n])>0.08)return false;
+  return true;
+ };
  for(uint32_t y=1;y+1<h;y++)for(uint32_t x=1;x+1<w;x++){
-  const size_t i=size_t(y)*w+x;double z=depth[i];if(!std::isfinite(z)||z<0.15||z>5||(confidence&&confidence[i]==0))continue;
-  // Do not interpolate a depth discontinuity across foreground services.
-  if(!std::isfinite(depth[i-1])||!std::isfinite(depth[i+1])||!std::isfinite(depth[i-w])||!std::isfinite(depth[i+w])||std::abs(z-depth[i-1])>0.08||std::abs(z-depth[i+1])>0.08||std::abs(z-depth[i-w])>0.08||std::abs(z-depth[i+w])>0.08)continue;
+  const size_t i=size_t(y)*w+x;if(!continuous(i))continue;double z=depth[i];
   for(double sample=z-s.band;sample<=z+s.band;sample+=s.voxel*0.7){
    Vec q=world((double(x)-cx)*sample/fx,(double(y)-cy)*sample/fy,sample,m);
    if(!std::isfinite(q.x)||!std::isfinite(q.y)||!std::isfinite(q.z)||std::abs(q.x)>10000||std::abs(q.y)>10000||std::abs(q.z)>10000)continue;
@@ -40,10 +45,10 @@ extern "C" int32_t hx_surface_integrate(void*p,const float*depth,const uint8_t*c
    double projectedX=fx*c.x/c.z+cx,projectedY=fy*c.y/c.z+cy;
    if(!std::isfinite(projectedX)||!std::isfinite(projectedY)||projectedX<1||projectedX>=w-1||projectedY<1||projectedY>=h-1)continue;
    int px=int(std::lround(projectedX)),py=int(std::lround(projectedY));if(px<1||px>=int(w)-1||py<1||py>=int(h)-1)continue;
-   size_t j=size_t(py)*w+px;double measured=depth[j];if(!std::isfinite(measured)||measured<0.15||measured>5||(confidence&&confidence[j]==0))continue;
+   size_t j=size_t(py)*w+px;if(!continuous(j))continue;double measured=depth[j];
    double distance=measured-c.z;if(distance < -s.band||distance>s.band)continue;
    if(it==s.cells.end()){if(s.cells.size()>=s.capacity){s.dropped++;continue;}it=s.cells.emplace(key,Cell{}).first;}
-   auto&cell=it->second;double weight=confidence&&confidence[j]==2?1:0.5;cell.value=(cell.value*cell.weight+distance*weight)/(cell.weight+weight);cell.weight=std::min(64.0,cell.weight+weight);cell.views++;cell.last=frame;accepted++;
+   auto&cell=it->second;double weight=confidence[j]==2?1:0.5;cell.value=(cell.value*cell.weight+distance*weight)/(cell.weight+weight);cell.weight=std::min(64.0,cell.weight+weight);cell.views++;cell.last=frame;accepted++;
   }
  }
  return accepted;

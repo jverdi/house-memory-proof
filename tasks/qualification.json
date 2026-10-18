@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T01:41:34.569592+00:00",
+  "updatedUTC": "2026-10-18T01:59:32.826333+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "6852e809d0bbacda7a022ba92e5e0e5f6ff932c9",
+  "currentImplementationCommit": "c663851d2434ba2901f49514751a06c59d27a70f",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -27,7 +27,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "Validate the next explicit-confidence and verified-original-read candidate. The complete 6852e809d0 integrated workflow passed, including encoder recovery and independent full movie decoding."
+      "remaining": "Validate the v16 capture-provenance, bounded depth/confidence and inverted metadata-search candidate. The v15 workflow passed 121/122 native checks, all five UI flows, three process-kill recoveries and independent readers, but failed the unchanged 300 ms search gate."
     },
     {
       "area": "finished localization",
@@ -55,18 +55,20 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Run native, frozen, analytic stress and retained finished-map qualification for the explicit-confidence candidate; continue capture-provenance and remaining whole-house work without enabling physical precision.",
+  "nextAction": "Validate the v16 candidate without relaxing gates, then continue whole-house topology, sensor diversity and retained finished-localization failures. Physical precision remains disabled.",
   "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts.",
   "currentValidation": {
-    "run": 39085733551,
-    "status": "passed",
-    "nativeExpected": 120,
+    "run": 39087426341,
+    "status": "failed",
+    "nativeExpected": 122,
+    "nativePassed": 121,
+    "nativeFailed": 1,
     "interfaceExpected": 5,
-    "physicalQualification": false,
-    "nativePassed": 120,
     "interfacePassed": 5,
     "processKillPassed": 3,
-    "independentReadersPassed": true
+    "independentReadersPassed": true,
+    "physicalQualification": false,
+    "failure": "Search p95 332.687 ms exceeded 300 ms"
   },
   "previousIntegratedAttempt": {
     "source": "6045475e6192601687279df064d349a5686a0385",
@@ -112,5 +114,16 @@
       "sha256": "62ffc243b9416f16cceb653274a8fc673ceb3fdff0dc43319443f771c61b78c6",
       "sha256IndependentlyVerified": true
     }
+  },
+  "pendingCandidate": {
+    "version": "visual-v16-bounded-capture-depth",
+    "nativeExpected": 125,
+    "status": "unvalidated",
+    "changes": [
+      "Versioned capture receipts and raw EXIF originals with explicit unknown clock relationships",
+      "Strict depth/confidence formats and bounded readers; no confidence substitution",
+      "Inverted metadata-word postings preserving substring matching and exact totals"
+    ],
+    "portableSurfaceContract": "passed locally; native integration pending"
   }
 }

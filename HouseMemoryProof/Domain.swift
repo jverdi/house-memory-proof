@@ -96,6 +96,9 @@ struct Observation:Codable,Identifiable,Equatable {
     var image:String;var depth:String?;var confidence:String?;var depthWidth:Int=0;var depthHeight:Int=0
     var width:Int;var height:Int;var camera:[Double];var intrinsics:[Double]
     var tracking:String;var light:Double;var sharpness:Double;var note="";var documentary=false;var imageOrientation:Int?=nil;var referenceObservations:[ReferencePose]?=nil;var codedDetections:[CodedDetection]?=nil
+    var captureMetadata:CaptureMetadata?=nil
+    var resolvedKind:ObservationKind {documentary ? .imageUnregistered:depth==nil ? .rgbPosed:.rgbdPosed}
+    var assets:Set<String> {Set([image,depth,confidence,captureMetadata?.exifAsset].compactMap{$0})}
     // Native camera transform is row-major, ARKit right/up/back. No pretend calibration.
 }
 struct DocumentaryPhoto:Codable,Identifiable,Equatable {var id=UUID();var image:String;var date=Date();var note="";var roomID:UUID?;var stageID:UUID?}
@@ -121,7 +124,7 @@ struct House:Codable,Identifiable,Equatable {
     var documentaryPhotos:[DocumentaryPhoto]=[]
     var references:[ReferenceBoard]=[];var isDemo=false;var notes="";var closureNotes=""
     var assets:Set<String> {
-        var keys=observations.flatMap{[$0.image,$0.depth,$0.confidence].compactMap{$0}}
+        var keys=observations.flatMap{$0.assets}
         keys+=visualMaps.map{$0.asset}
         keys+=drawings.map{$0.asset};keys+=segments.compactMap{$0.worldMap};keys+=references.flatMap{[$0.image,$0.pdf]};keys+=features.compactMap{$0.texture};keys+=documentaryPhotos.map{$0.image}
         return Set(keys)
@@ -164,7 +167,9 @@ struct House:Codable,Identifiable,Equatable {
             boardIDs.contains(pose.boardID) && Rigid(values:pose.matrix).valid && (pose.method==nil || pose.method=="coded-corners") && (pose.imageFitRMS==nil || (pose.imageFitRMS!.isFinite && (0...0.8).contains(pose.imageFitRMS!))) && (pose.method != "coded-corners" || pose.imageFitRMS != nil)
           }) else{throw HouseError.message("Invalid recorded reference pose or pixel-fit provenance.")}
         }
-        for observation in observations {if let detections=observation.codedDetections {
+        for observation in observations {
+          if let metadata=observation.captureMetadata,!metadata.valid(for:observation) {throw HouseError.message("Invalid capture clock, calibration or source metadata.")}
+          if let detections=observation.codedDetections {
           guard detections.count<=64,Set(detections.map{$0.tagID}).count==detections.count,detections.allSatisfy({detection in detection.valid && boardIDs.contains(detection.boardID) && references.first(where:{$0.id==detection.boardID})?.tagID==detection.tagID}) else{throw HouseError.message("Invalid coded-reference capture provenance.")}
         }}
         for map in visualMaps {guard segmentByID[map.segmentID]?.roomID==map.roomID,segmentByID[map.segmentID]?.stageID==map.stageID else{throw HouseError.message("Invalid visual reference provenance.")}}

@@ -4,10 +4,10 @@ enum SurfaceReconstruction {
   static func build(
     house: House, segment: Segment, repo: Repository, progress: @escaping @MainActor (Double) -> Void
   ) async throws -> Feature {
-    let raw = house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && !$0.documentary }
+    let raw = house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && $0.confidence != nil && !$0.documentary }
     let (observations, referenceSupported) = PoseRefinement.selected(
       raw, segment: segment, house: house)
-    let fingerprint="surface-v2|" + (try VisualMapping.fingerprint(house:house,segment:segment))
+    let fingerprint="surface-v3-explicit-confidence|" + (try VisualMapping.fingerprint(house:house,segment:segment))
     let checkpoint=try FusionCheckpoint.load(repo:repo,segment:segment,fingerprint:fingerprint,frameCount:observations.count)
     guard !observations.isEmpty, let core = checkpoint?.0 ?? hx_surface_create(0.02, 400000) else {
       throw HouseError.message("No depth observations or insufficient surface-fusion resources.")
@@ -21,20 +21,18 @@ enum SurfaceReconstruction {
           "Surface fusion paused because the phone is too warm. Originals and the last completed checkpoint remain intact; retry after cooling."
         )
       }
-      let depth = try repo.read(o.depth!)
-      let confidence = try o.confidence.map { try repo.read($0) }
       let w = o.depthWidth
       let h = o.depthHeight
-      guard w >= 3, h >= 3, w * h <= 1_000_000, depth.count == w * h * 4,
-        confidence == nil || confidence?.count == w * h
+      guard w>=3,h>=3,w<=1_000_000/h,let depthKey=o.depth,let confidenceKey=o.confidence else{throw HouseError.message("Invalid depth dimensions or missing confidence.")}
+      let depth=try repo.read(depthKey,limit:w*h*4),confidence=try repo.read(confidenceKey,limit:w*h)
+      guard depth.count == w * h * 4,confidence.count == w * h
       else { throw HouseError.message("Depth buffer does not match its calibration.") }
       let fx = o.intrinsics[0] * Double(w) / Double(o.width)
       let fy = o.intrinsics[4] * Double(h) / Double(o.height)
       let cx = o.intrinsics[2] * Double(w) / Double(o.width)
       let cy = o.intrinsics[5] * Double(h) / Double(o.height)
-      let conf = confidence ?? Data(repeating: 1, count: w * h)
       let status = depth.withUnsafeBytes { d in
-        conf.withUnsafeBytes { c in
+        confidence.withUnsafeBytes { c in
           o.camera.withUnsafeBufferPointer { m in
             hx_surface_integrate(
               core, d.bindMemory(to: Float.self).baseAddress,

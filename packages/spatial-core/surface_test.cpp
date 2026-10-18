@@ -12,14 +12,22 @@ int main(){
   else if(f>3)assert(hx_surface_integrate(resumed,depth.data(),confidence.data(),w,h,65,65,48,36,m,f)>0);
  }
  uint32_t fullSize=hx_surface_checkpoint(p,nullptr,0);assert(hx_surface_checkpoint(resumed,nullptr,0)==fullSize);std::vector<uint8_t> full(fullSize),restored(fullSize);hx_surface_checkpoint(p,full.data(),fullSize);hx_surface_checkpoint(resumed,restored.data(),fullSize);assert(full==restored);hx_surface_destroy(resumed);
+ assert(hx_surface_integrate(p,depth.data(),nullptr,w,h,65,65,48,36,m,9)==-1);
+ std::vector<uint8_t> unknown(w*h,255);
+ assert(hx_surface_integrate(p,depth.data(),unknown.data(),w,h,65,65,48,36,m,9)==0);
+ std::vector<uint8_t> afterRefusal(fullSize);assert(hx_surface_checkpoint(p,afterRefusal.data(),fullSize)==fullSize);assert(afterRefusal==full);
  assert(hx_surface_integrate(p,depth.data(),confidence.data(),w,h,1e300,65,48,36,m,9)==-1);
  double invalid[16];std::copy(m,m+16,invalid);invalid[0]=2;assert(hx_surface_integrate(p,depth.data(),confidence.data(),w,h,65,65,48,36,invalid,9)==-1);
  assert(hx_surface_dropped(p)==0);auto count=hx_surface_mesh(p,nullptr,0,3);assert(count>300&&count%3==0);std::vector<HXVertex> mesh(count);assert(hx_surface_mesh(p,mesh.data(),count,3)==count);double max=0;for(auto v:mesh){assert(std::isfinite(v.x)&&std::isfinite(v.y)&&std::isfinite(v.z));max=std::fmax(max,std::abs(v.y-2));}assert(max<.003);
  assert(hx_surface_integrate(p,depth.data(),confidence.data(),w,h,65,65,48,36,m,8)==0);assert(hx_surface_integrate(p,depth.data(),confidence.data(),w,h,0,65,48,36,m,9)==-1);hx_surface_destroy(p);
  p=hx_surface_create(.02,1);assert(hx_surface_integrate(p,depth.data(),confidence.data(),w,h,65,65,48,36,m,0)>0);assert(hx_surface_dropped(p)>0);hx_surface_destroy(p);
+ // Explicit medium confidence remains supported at its existing lower weight.
+ p=hx_surface_create(.02,200000);std::vector<uint8_t> medium(w*h,1);std::fill(depth.begin(),depth.end(),2.f);
+ for(int f=0;f<4;f++){m[3]=(f-2)*.04;assert(hx_surface_integrate(p,depth.data(),medium.data(),w,h,65,65,48,36,m,f)>0);}
+ auto mediumCount=hx_surface_mesh(p,nullptr,0,3);assert(mediumCount>300);std::vector<HXVertex> mediumMesh(mediumCount);hx_surface_mesh(p,mediumMesh.data(),mediumCount,3);for(auto v:mediumMesh)assert(std::abs(v.y-2)<.003);hx_surface_destroy(p);
  // A one-metre foreground/background discontinuity must not become a bridge.
  p=hx_surface_create(.02,200000);m[3]=0;
  for(int f=0;f<4;f++){for(int y=0;y<h;y++)for(int x=0;x<w;x++)depth[y*w+x]=x<w/2?1.f:2.f;assert(hx_surface_integrate(p,depth.data(),confidence.data(),w,h,65,65,48,36,m,f)>0);}
  auto edgeCount=hx_surface_mesh(p,nullptr,0,3);assert(edgeCount>300);std::vector<HXVertex> edge(edgeCount);hx_surface_mesh(p,edge.data(),edgeCount,3);for(auto v:edge)assert(std::fmin(std::abs(v.y-1),std::abs(v.y-2))<.003);hx_surface_destroy(p);
- std::cout<<"{\"passed\":true,\"checkpointResumeIdentical\":true,\"checkpointCorruptionRejected\":true,\"surface_vertices\":"<<count<<",\"max_plane_error_m\":"<<max<<",\"scope\":\"analytic noisy depth with known pose priors\"}\n";
+ std::cout<<"{\"passed\":true,\"explicitMediumConfidenceSupported\":true,\"missingConfidenceRefused\":true,\"invalidConfidenceIgnored\":true,\"refusalPreservesCheckpoint\":true,\"checkpointResumeIdentical\":true,\"checkpointCorruptionRejected\":true,\"surface_vertices\":"<<count<<",\"max_plane_error_m\":"<<max<<",\"scope\":\"analytic noisy depth with known pose priors\"}\n";
 }

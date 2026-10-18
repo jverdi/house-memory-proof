@@ -5,6 +5,26 @@ import SceneKit
 import SwiftUI
 import Vision
 
+enum CaptureBuffers {
+  // Copy rows while the buffer is locked; remove row padding and retain no
+  // framework-owned pointer. Never reinterpret a different pixel format.
+  static func copy(_ buffer:CVPixelBuffer,format:OSType,bytesPerPixel:Int,width:Int,height:Int)throws->Data {
+    guard (format==kCVPixelFormatType_DepthFloat32 && bytesPerPixel==4) || (format==kCVPixelFormatType_OneComponent8 && bytesPerPixel==1),width>0,height>0,width<=1_000_000/height,
+      CVPixelBufferGetPixelFormatType(buffer)==format,!CVPixelBufferIsPlanar(buffer),
+      CVPixelBufferGetWidth(buffer)==width,CVPixelBufferGetHeight(buffer)==height,
+      CVPixelBufferGetBytesPerRow(buffer)>=width*bytesPerPixel,
+      CVPixelBufferLockBaseAddress(buffer,.readOnly)==kCVReturnSuccess
+    else{throw HouseError.message("The camera depth buffer has an unsupported shape or format.")}
+    defer{CVPixelBufferUnlockBaseAddress(buffer,.readOnly)}
+    guard let base=CVPixelBufferGetBaseAddress(buffer) else{throw HouseError.message("The camera depth buffer is unavailable.")}
+    var data=Data();data.reserveCapacity(width*height*bytesPerPixel)
+    for row in 0..<height {
+      data.append(base.advanced(by:row*CVPixelBufferGetBytesPerRow(buffer)).assumingMemoryBound(to:UInt8.self),count:width*bytesPerPixel)
+    }
+    return data
+  }
+}
+
 @MainActor final class CaptureController: NSObject, ObservableObject, ARSessionDelegate {
   let view = ARSCNView(frame: .zero)
   @Published var running = false
@@ -370,6 +390,8 @@ import Vision
       return
     }
     pending += 1
+    let receiptBefore=ProcessInfo.processInfo.systemUptime,receivedUTC=Date(),receiptAfter=ProcessInfo.processInfo.systemUptime
+    let deviceModel=UIDevice.current.model,systemVersion=UIDevice.current.systemVersion
     let checkReferenceCoverage = !documentary && count%5==0 && project.references.contains{$0.valid && $0.tagID != nil}
     let token = generation
     let orientation: Int
@@ -395,39 +417,49 @@ import Vision
           let jpg = UIImage(cgImage: image).jpegData(compressionQuality: 0.95)
         else { throw HouseError.message("Image encoding failed.") }
         let imageKey = try repo.put(jpg, ext: "jpg")
+        let calibrationSize=frame.camera.imageResolution
+        guard calibrationSize.width.isFinite,calibrationSize.height.isFinite,
+          calibrationSize.width>=1,calibrationSize.height>=1,calibrationSize.width<=20000,calibrationSize.height<=20000
+        else{throw HouseError.message("The saved image has invalid camera calibration dimensions.")}
+        let calibratedWidth=Int(calibrationSize.width),calibratedHeight=Int(calibrationSize.height)
+        let calibrationMatches=calibratedWidth==image.width && calibratedHeight==image.height
+        let isDocumentary=documentary || !calibrationMatches
+        var captureIssue:String?=calibrationMatches ? nil:"Camera calibration did not match this image size. Saved as a documentary photo."
+        var unavailable=["frameToUTC":"Receipt UTC and host uptime are recorded together. Frame transport latency and the frame-to-host clock relationship are not calibrated.",
+          "depthTimestamp":"ARDepthData sceneDepth exposes no separate acquisition timestamp. No front-camera depth timestamp was substituted.",
+          "motionTimestamp":"No separate motion sample was acquired.","distortion":"ARFrame does not expose a calibrated lens-distortion model for this adapter."]
+        var exifKey:String?
+        do {
+          let exif=frame.exifData
+          guard !exif.isEmpty else{throw HouseError.message("No EXIF data was exposed for this frame.")}
+          let bytes=try PropertyListSerialization.data(fromPropertyList:exif,format:.binary,options:0)
+          guard bytes.count<=262144 else{throw HouseError.message("EXIF data exceeded the 256 KiB metadata budget.")}
+          exifKey=try repo.put(bytes,ext:"plist")
+        }catch{unavailable["exif"]=String(error.localizedDescription.prefix(1000))}
         var depthKey: String?
         var confidenceKey: String?
         var dw = 0
         var dh = 0
-        if !documentary, let depth = frame.sceneDepth {
+        if !isDocumentary, let depth = frame.sceneDepth {
           let buffer = depth.depthMap
           dw = CVPixelBufferGetWidth(buffer)
           dh = CVPixelBufferGetHeight(buffer)
-          CVPixelBufferLockBaseAddress(buffer, .readOnly)
-          var data = Data()
-          if let base = CVPixelBufferGetBaseAddress(buffer) {
-            for row in 0..<dh {
-              data.append(
-                base.advanced(by: row * CVPixelBufferGetBytesPerRow(buffer)).assumingMemoryBound(
-                  to: UInt8.self), count: dw * 4)
-            }
+          do {
+            let data=try CaptureBuffers.copy(buffer,format:kCVPixelFormatType_DepthFloat32,bytesPerPixel:4,width:dw,height:dh)
+            depthKey=try repo.put(data,ext:"depth32")
+            if let cb=depth.confidenceMap {
+              let confidence=try CaptureBuffers.copy(cb,format:kCVPixelFormatType_OneComponent8,bytesPerPixel:1,width:dw,height:dh)
+              confidenceKey=try repo.put(confidence,ext:"confidence8")
+            }else{unavailable["confidence"]="No confidence map was exposed for this frame."}
+          }catch {
+            // Preserve the photograph, but never publish malformed depth as
+            // measured evidence or silently substitute another frame.
+            depthKey=nil;confidenceKey=nil;dw=0;dh=0
+            unavailable["depth"]=String(error.localizedDescription.prefix(1000))
+            captureIssue="Photo saved. This frame's depth data was unavailable or invalid; revisit the area."
           }
-          CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
-          depthKey = try repo.put(data, ext: "depth32")
-          if let cb = depth.confidenceMap {
-            CVPixelBufferLockBaseAddress(cb, .readOnly)
-            var d = Data()
-            if let base = CVPixelBufferGetBaseAddress(cb) {
-              for row in 0..<dh {
-                d.append(
-                  base.advanced(by: row * CVPixelBufferGetBytesPerRow(cb)).assumingMemoryBound(
-                    to: UInt8.self), count: dw)
-              }
-            }
-            CVPixelBufferUnlockBaseAddress(cb, .readOnly)
-            confidenceKey = try repo.put(d, ext: "confidence8")
-          }
-        }
+        }else{unavailable["depth"]=isDocumentary ? "Documentary photographs do not claim registered depth.":"No scene depth was exposed for this frame."}
+        if confidenceKey==nil,unavailable["confidence"]==nil {unavailable["confidence"]="No depth confidence was recorded for this photograph."}
         let k = frame.camera.intrinsics
         let t = frame.camera.transform
         var camera: [Double] = []
@@ -436,21 +468,23 @@ import Vision
         for row in 0..<3 { for col in 0..<3 { intrinsics.append(Double(k[col][row])) } }
         let quality = Self.sharpness(image)
         var coded:[CodedDetection]=[]
-        if !documentary,project.references.contains(where:{$0.valid && $0.tagID != nil}),
+        if !isDocumentary,project.references.contains(where:{$0.valid && $0.tagID != nil}),
           let (gray,w,h,stride)=try? CodedReferences.gray(frame.capturedImage) {
           coded=(try? CodedReferences.detect(gray:gray,width:w,height:h,stride:stride,boards:project.references)) ?? []
         }
         let measured=CodedReferences.measure(coded,camera:camera,intrinsics:intrinsics,width:image.width,height:image.height,boards:project.references)
         let measuredIDs=Set(measured.map{$0.boardID})
         let referencePoses=observedReferences.filter{!measuredIDs.contains($0.boardID)}+measured
-        let obs = Observation(
+        var obs = Observation(
           roomID: segment.roomID, stageID: segment.stageID, segmentID: segment.id,
-          timestamp: frame.timestamp, image: imageKey, depth: depthKey, confidence: confidenceKey,
+          timestamp: frame.timestamp,date:receivedUTC, image: imageKey, depth: depthKey, confidence: confidenceKey,
           depthWidth: dw, depthHeight: dh, width: image.width, height: image.height, camera: camera,
           intrinsics: intrinsics, tracking: String(describing: frame.camera.trackingState),
           light: Double(frame.lightEstimate?.ambientIntensity ?? 0), sharpness: quality,
-          documentary: documentary, imageOrientation: orientation,
+          documentary: isDocumentary, imageOrientation: orientation,
           referenceObservations: referencePoses,codedDetections:coded.isEmpty ? nil:coded)
+        obs.captureMetadata=CaptureMetadata(source:"arkit",kind:obs.resolvedKind,mode:documentary ? "high-resolution-frame":"video-frame",deviceModel:deviceModel,systemVersion:systemVersion,frameTimestamp:frame.timestamp,receivedUTC:receivedUTC,receiptUptimeBeforeUTC:receiptBefore,receiptUptimeAfterUTC:receiptAfter,calibrationWidth:calibratedWidth,calibrationHeight:calibratedHeight,imagePixelFormat:CVPixelBufferGetPixelFormatType(frame.capturedImage),depthEncoding:depthKey==nil ? nil:"float32-le-metres-optical-axis",confidenceEncoding:confidenceKey==nil ? nil:"uint8-arkit-0-low-1-medium-2-high",depthTimestamp:nil,exifAsset:exifKey,unavailable:unavailable)
+        guard obs.captureMetadata?.valid(for:obs)==true else{throw HouseError.message("Capture metadata could not be validated; existing evidence is unchanged.")}
         try repo.journalCapture(projectID: houseID, observation: obs)
         try repo.stageCapture(obs,projectID:houseID,room:room,stage:stage,segment:segment,references:project.references)
         try repo.finishCaptureJournal(obs.id)
@@ -465,7 +499,9 @@ import Vision
           referenceAdvice="\(map.boards.count) of \(seen) seen references supported by separated views. "+advice
         }
         let completedReferenceAdvice=referenceAdvice
+        let completedCaptureIssue=captureIssue,completedObservation=obs
         Task { @MainActor in
+          let obs=completedObservation
           guard let self else { return }
           self.pending -= 1
           guard self.generation == token else { return }
@@ -489,13 +525,13 @@ import Vision
           let p = self.lastPosition
           self.cellSet.insert("\(Int(floor(p.x/0.25))):\(Int(floor(p.z/0.25)))")
           self.coverageCells = self.cellSet.count
-          self.message = referenceConflict
+          self.message = completedCaptureIssue ?? (referenceConflict
             ? "A coded reference disagreed across views and was excluded. Verify that it is flat and fixed; review the saved reference inventory."
             : obs.light < 150
             ? "Low light: add illumination and revisit dark cavities."
             : quality < 0.02
               ? "Low detail or blur: hold still and move closer."
-              : "Saved locally. Change your viewing angle; unseen cavity depth remains unverified."
+              : "Saved locally. Change your viewing angle; unseen cavity depth remains unverified.")
           if self.stopping { self.finishStop() }
         }
       } catch {

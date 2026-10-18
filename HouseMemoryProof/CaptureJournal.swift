@@ -49,17 +49,17 @@ extension Repository {
           throw HouseError.message(
             "Capture's original project is unavailable; its journal is preserved.")
         }
+        // An idempotent retry must still verify its originals before removing
+        // the recovery record, including separately retained camera metadata.
+        for key in o.assets {
+          let digest=try StreamingArchive.digest(assetURL(key))
+          guard key.hasPrefix(digest.sha+".") else{throw HouseError.message("Capture asset failed its recovery checksum.")}
+        }
         if let existing = h.observations.first(where: { $0.id == o.id }) {
           guard existing == o else {
             throw HouseError.message("Conflicting capture identities; journal preserved.")
           }
         } else {
-          for key in [o.image, o.depth, o.confidence].compactMap({ $0 }) {
-            let digest = try StreamingArchive.digest(assetURL(key))
-            guard key.hasPrefix(digest.sha + ".") else {
-              throw HouseError.message("Capture asset failed its recovery checksum.")
-            }
-          }
           h.observations.append(o)
           h.revision += 1
           try save(h)

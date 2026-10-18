@@ -1,0 +1,71 @@
+{
+  "source": "c663851d2434ba2901f49514751a06c59d27a70f",
+  "run": 39087426206,
+  "artifact": 12121313177,
+  "sha256": "e9fc3e8e90819902ff824a8f924e12142a0479f36c3e764d46146337eac452d9",
+  "sha256IndependentlyVerified": true,
+  "cases": [
+    {
+      "case": "683431-384",
+      "passed": false,
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.020859879102066665,
+      "worstAcceptedPositionErrorMetres": 0.03348820788345665,
+      "oracleReadDenied": true,
+      "mapCount": 4,
+      "optimizedCameraCount": 24,
+      "maximumOptimizedCameraPositionErrorMetres": 0.008506454488777342
+    },
+    {
+      "case": "683431-768",
+      "passed": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 19,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.006168092966285194,
+      "worstAcceptedPositionErrorMetres": 0.006168092966285194,
+      "oracleReadDenied": true,
+      "mapCount": 4,
+      "optimizedCameraCount": 24,
+      "maximumOptimizedCameraPositionErrorMetres": 0.0029886979504265827
+    },
+    {
+      "case": "905771-384",
+      "passed": false,
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.011225926925754845,
+      "worstAcceptedPositionErrorMetres": 0.011660114677089325,
+      "oracleReadDenied": true,
+      "mapCount": 4,
+      "optimizedCameraCount": 24,
+      "maximumOptimizedCameraPositionErrorMetres": 0.004841341096779399
+    },
+    {
+      "case": "905771-768",
+      "passed": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 19,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.006269729232097975,
+      "worstAcceptedPositionErrorMetres": 0.006269729232097975,
+      "oracleReadDenied": true,
+      "mapCount": 4,
+      "optimizedCameraCount": 24,
+      "maximumOptimizedCameraPositionErrorMetres": 0.003625998663870436
+    }
+  ],
+  "productionQualified": false,
+  "limitations": [
+    "Development four-room analytic layouts, not protected whole-house qualification.",
+    "Both 384-pixel accuracy failures remain; both 768-pixel cases pass their existing gates.",
+    "No field or phone sensor qualification."
+  ]
+}

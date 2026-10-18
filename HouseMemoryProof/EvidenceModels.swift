@@ -1,5 +1,58 @@
 import Foundation
 
+enum ObservationKind:String,Codable {
+  case rgbdPosed="rgbd_posed",rgbPosed="rgb_posed",imageUnregistered="image_unregistered"
+}
+
+// Capture receipts are not a calibrated RGB/depth/UTC synchronization claim.
+// Legacy observations have no receipt; unavailable measurements stay explicit.
+struct CaptureMetadata:Codable,Equatable {
+  var version=1
+  var source:String
+  var kind:ObservationKind
+  var mode:String
+  var deviceModel:String
+  var systemVersion:String
+  var frameTimestamp:Double
+  var receivedUTC:Date
+  var receiptUptimeBeforeUTC:Double
+  var receiptUptimeAfterUTC:Double
+  var calibrationWidth:Int
+  var calibrationHeight:Int
+  var imagePixelFormat:UInt32
+  var depthEncoding:String?
+  var confidenceEncoding:String?
+  var depthTimestamp:Double?
+  var exifAsset:String?
+  var unavailable:[String:String]
+
+  func valid(for observation:Observation)->Bool {
+    guard version==1,["arkit","analytic-replay"].contains(source),
+      ["video-frame","high-resolution-frame","synthetic-frame"].contains(mode),
+      kind==observation.resolvedKind,frameTimestamp==observation.timestamp,
+      frameTimestamp.isFinite,receivedUTC.timeIntervalSinceReferenceDate.isFinite,
+      receiptUptimeBeforeUTC.isFinite,receiptUptimeAfterUTC.isFinite,
+      receiptUptimeBeforeUTC>=0,receiptUptimeAfterUTC>=receiptUptimeBeforeUTC,
+      (1...20000).contains(calibrationWidth),(1...20000).contains(calibrationHeight),
+      !deviceModel.isEmpty,deviceModel.count<=200,!systemVersion.isEmpty,systemVersion.count<=200,
+      unavailable.count<=20,unavailable.allSatisfy({!$0.key.isEmpty && $0.key.count<=100 && !$0.value.isEmpty && $0.value.count<=1000}),
+      depthTimestamp==nil || (depthTimestamp!.isFinite && depthTimestamp!>=0),
+      source != "arkit" || depthTimestamp==nil,
+      mode != "high-resolution-frame" || observation.documentary,
+      observation.documentary || (calibrationWidth==observation.width && calibrationHeight==observation.height)
+    else{return false}
+    guard (observation.depth==nil && depthEncoding==nil) || (observation.depth != nil && depthEncoding=="float32-le-metres-optical-axis"),
+      (observation.confidence==nil && confidenceEncoding==nil) || (observation.confidence != nil && confidenceEncoding=="uint8-arkit-0-low-1-medium-2-high"),
+      depthTimestamp != nil || unavailable["depthTimestamp"] != nil,
+      exifAsset != nil || unavailable["exif"] != nil,
+      observation.depth != nil || unavailable["depth"] != nil,
+      observation.confidence != nil || unavailable["confidence"] != nil,
+      unavailable["frameToUTC"] != nil,unavailable["motionTimestamp"] != nil,unavailable["distortion"] != nil
+    else{return false}
+    return true
+  }
+}
+
 struct ReferenceBoard: Codable, Identifiable, Equatable {
   var id = UUID()
   var name: String
@@ -180,68 +233,97 @@ enum EvidenceSearch {
     var photographCount:Int {observationCount+documentaryCount}
   }
   struct Index {
-    struct Photo {var value:Observation;var group:Int}
-    struct Object {var value:Feature;var group:Int}
-    struct Documentary {var value:DocumentaryPhoto;var group:Int}
+    struct Word {var bytes:Data;var byteMask:UInt64;var groups:[Int]}
     let id=UUID();var houseID:UUID;var revision:Int
-    private var photos:[Photo]=[],objects:[Object]=[],documentary:[Documentary]=[]
-    private var textBytes:[Data]=[]
+    private var photos:[Observation]=[],objects:[Feature]=[],documentary:[DocumentaryPhoto]=[]
+    private var photoGroups:[Int]=[],objectGroups:[Int]=[],documentaryGroups:[Int]=[]
+    private var words:[Word]=[]
+    private var groupCount=0
+    private static func byteMask(_ bytes:Data)->UInt64 {
+      bytes.reduce(UInt64(0)){$0 | (UInt64(1)<<UInt64($1 & 63))}
+    }
     init(house:House)throws {
       houseID=house.id;revision=house.revision
       let rooms=Dictionary(house.rooms.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
       let stages=Dictionary(house.stages.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
-      var groups:[String:Int]=[:]
+      var groups:[String:Int]=[:],wordIDs:[String:Int]=[:]
       func group(_ text:String)->Int {
         if let existing=groups[text] {return existing}
-        let id=textBytes.count;textBytes.append(Data(text.utf8));groups[text]=id;return id
+        let id=groupCount;groupCount+=1;groups[text]=id
+        // Query terms cannot contain whitespace, so substring matching within
+        // these words is equivalent to matching the concatenated metadata.
+        // One posting per word/group avoids counting repeated words twice.
+        for word in Set(text.split(whereSeparator:{$0.isWhitespace})) {
+          let key=String(word)
+          if let index=wordIDs[key] {words[index].groups.append(id)}
+          else {
+            let bytes=Data(word.utf8);wordIDs[key]=words.count
+            words.append(Word(bytes:bytes,byteMask:Self.byteMask(bytes),groups:[id]))
+          }
+        }
+        return id
       }
       for (index,o) in house.observations.reversed().enumerated() {
         if index%256==0 {try Task.checkCancellation()}
         let text=EvidenceSearch.normalized(o.note)+" "+(rooms[o.roomID] ?? "")+" "+(stages[o.stageID] ?? "")
-        let id=group(text);photos.append(Photo(value:o,group:id))
+        let id=group(text);photoGroups.append(id);photos.append(o)
       }
       for (index,f) in house.features.enumerated() {
         if index%256==0 {try Task.checkCancellation()}
         let text=EvidenceSearch.normalized(f.name+" "+f.notes+" "+f.endpoint+" "+f.trade.rawValue+" "+f.kind.rawValue)+" "+(rooms[f.roomID] ?? "")+" "+(stages[f.stageID] ?? "")
-        let id=group(text);objects.append(Object(value:f,group:id))
+        let id=group(text);objectGroups.append(id);objects.append(f)
       }
       for (index,p) in house.documentaryPhotos.reversed().enumerated() {
         if index%256==0 {try Task.checkCancellation()}
         let text=EvidenceSearch.normalized(p.note)+" "+(p.roomID.flatMap{rooms[$0]} ?? "")+" "+(p.stageID.flatMap{stages[$0]} ?? "")
-        let id=group(text);documentary.append(Documentary(value:p,group:id))
+        let id=group(text);documentaryGroups.append(id);documentary.append(p)
       }
     }
     func find(_ query:String,limit:Int=200)throws->Result {
       guard (1...50000).contains(limit) else{throw HouseError.message("Search result limit is outside the supported range.")}
-      let terms=EvidenceSearch.normalized(String(query.prefix(500))).split(whereSeparator:{$0.isWhitespace}).map{Data($0.utf8)}
-      // Both sides are case/diacritic folded and canonically composed once.
-      // Native byte search avoids repeated grapheme work in every record;
-      // shared metadata is matched once without caching a previous query.
-      var matches=[Bool](repeating:false,count:textBytes.count)
-      for index in textBytes.indices {
-        if index%256==0 {try Task.checkCancellation()}
-        matches[index]=terms.allSatisfy{textBytes[index].range(of:$0) != nil}
+      let terms=Set(EvidenceSearch.normalized(String(query.prefix(500))).split(whereSeparator:{$0.isWhitespace}).map{Data($0.utf8)}).sorted{$0.count==$1.count ? $0.lexicographicallyPrecedes($1):$0.count>$1.count}
+      var matches=[Bool](repeating:true,count:groupCount)
+      for term in terms {
+        try Task.checkCancellation()
+        let mask=Self.byteMask(term)
+        var found=[Bool](repeating:false,count:groupCount),matchedGroups=0
+        for (index,word) in words.enumerated() {
+          if index%256==0 {try Task.checkCancellation()}
+          // This byte-presence filter can only create false positives; exact
+          // matching below preserves substring, Unicode and punctuation rules.
+          guard word.byteMask & mask == mask,word.bytes.count>=term.count else{continue}
+          let exact=word.bytes.count==term.count ? word.bytes==term:word.bytes.range(of:term) != nil
+          guard exact else{continue}
+          for (offset,group) in word.groups.enumerated() {
+            if offset%1024==0 {try Task.checkCancellation()}
+            if matches[group] && !found[group] {found[group]=true;matchedGroups+=1}
+          }
+        }
+        matches=found
+        if matchedGroups==0 {return Result()}
       }
       var result=Result()
-      for index in photos.indices {
+      // Scan small integer group arrays for exact totals. Copy a full evidence
+      // value only when it belongs to the requested result page.
+      for (index,group) in photoGroups.enumerated() {
         if index%256==0 {try Task.checkCancellation()}
-        if matches[photos[index].group] {
+        if matches[group] {
           result.observationCount+=1
-          if result.observations.count<limit {result.observations.append(photos[index].value)}
+          if result.observations.count<limit {result.observations.append(photos[index])}
         }
       }
-      for index in objects.indices {
+      for (index,group) in objectGroups.enumerated() {
         if index%256==0 {try Task.checkCancellation()}
-        if matches[objects[index].group] {
+        if matches[group] {
           result.featureCount+=1
-          if result.features.count<limit {result.features.append(objects[index].value)}
+          if result.features.count<limit {result.features.append(objects[index])}
         }
       }
-      for index in documentary.indices {
+      for (index,group) in documentaryGroups.enumerated() {
         if index%256==0 {try Task.checkCancellation()}
-        if matches[documentary[index].group] {
+        if matches[group] {
           result.documentaryCount+=1
-          if result.documentaryPhotos.count<limit {result.documentaryPhotos.append(documentary[index].value)}
+          if result.documentaryPhotos.count<limit {result.documentaryPhotos.append(documentary[index])}
         }
       }
       return result

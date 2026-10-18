@@ -1,5 +1,5 @@
 name: Qualify observed finished visual maps and depth refusal
-# Requalify the v15 explicit-confidence and verified-asset input contract.
+# Requalify the v16 bounded capture-depth input contract.
 on:
   push:
     branches: [main]

@@ -1,5 +1,11 @@
 # Implementation ledger
 
+## v16 capture/depth/search candidate — awaiting native validation
+
+The complete v15 workflow at `c663851d24` finished **121/122 native**, **5/5 UI**, **3/3 actual process-kill recoveries**, and all independent readers. Its sole native failure was the 50,000-distinct-photo search at **332.687 ms p95**, above the unchanged **300 ms** limit. Movie encoding and full native decoding passed. Aggregate evidence: `docs/evidence/native-c663-summary.json`. Frozen replay passed; both 384-pixel observed-finished layouts still fail accuracy, both 768-pixel layouts pass, and rough-only maps accept **0/8** finished queries in each retained fixture.
+
+The next candidate preserves versioned capture receipts and raw EXIF as verified originals, distinguishes documentary/calibration mismatch inputs, validates packed depth/confidence copies, and refuses absent/unknown confidence in reconstruction and texturing. Existing archives remain readable without invented metadata. Surface checkpoints and derived outputs get a new fingerprint. Portable surface tests pass locally; physical camera/timing/device behavior remains unqualified. Native coverage grows to **125** checks. Search indexes normalized word postings while retaining arbitrary substring matching, Unicode folding, order and exact totals; an independent naive reference checks 18 mixed Unicode/punctuation queries, and the original workload and 300 ms gate remain.
+
 Current delivery: owner-requested snapshot build **161.1**, source **2fae54ff2d3177958a4b7e78da1f3546d23314fd**, uploaded and verified **VALID / IN_BETA_TESTING**, with owner access in Personal iPhone on 2026-10-17. Physical installation of this build remains unverified. Direct commits to main are explicitly authorized. Later implementation changes do not trigger another TestFlight upload.
 
 Acceptance remains the runbook's gates. Implemented features below are not equivalent to complete package qualification. See [requirement audit](../docs/IMPLEMENTATION.md).

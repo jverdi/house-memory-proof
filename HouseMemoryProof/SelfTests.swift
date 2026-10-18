@@ -47,6 +47,106 @@ import simd
                 do {_=try isolated.read(key,limit:original.count);return false}catch{}
                 return try Data(contentsOf:file)==corrupt
             }
+            await check("Capture buffer copies reject mismatched formats and preserve row padding") {
+                for format in [kCVPixelFormatType_DepthFloat32,kCVPixelFormatType_OneComponent8] {
+                    let strideBytes=format==kCVPixelFormatType_DepthFloat32 ? 4:1
+                    var allocated:CVPixelBuffer?
+                    guard CVPixelBufferCreate(kCFAllocatorDefault,3,2,format,[kCVPixelBufferBytesPerRowAlignmentKey as String:64] as CFDictionary,&allocated)==kCVReturnSuccess,let buffer=allocated,
+                      CVPixelBufferLockBaseAddress(buffer,[])==kCVReturnSuccess,let base=CVPixelBufferGetBaseAddress(buffer) else{return false}
+                    let rowBytes=CVPixelBufferGetBytesPerRow(buffer)
+                    memset(base,0xA5,rowBytes*2)
+                    for row in 0..<2 {for column in 0..<3 {
+                        if strideBytes==4 {base.advanced(by:row*rowBytes).assumingMemoryBound(to:Float.self)[column]=Float(row*3+column+1)/2}
+                        else{base.advanced(by:row*rowBytes).assumingMemoryBound(to:UInt8.self)[column]=UInt8((row*3+column)%3)}
+                    }}
+                    CVPixelBufferUnlockBaseAddress(buffer,[])
+                    let packed=try CaptureBuffers.copy(buffer,format:format,bytesPerPixel:strideBytes,width:3,height:2)
+                    guard packed.count==6*strideBytes else{return false}
+                    for i in 0..<6 {
+                        if strideBytes==4 {guard Float(bitPattern:packed.uint32(i*4))==Float(i+1)/2 else{return false}}
+                        else{guard packed[i]==UInt8(i%3) else{return false}}
+                    }
+                    for fault in 0..<3 {
+                        do {_=try CaptureBuffers.copy(buffer,format:fault==0 ? kCVPixelFormatType_32BGRA:format,bytesPerPixel:fault==1 ? 2:strideBytes,width:fault==2 ? 4:3,height:2);return false}catch{}
+                    }
+                    guard CVPixelBufferLockBaseAddress(buffer,.readOnly)==kCVReturnSuccess else{return false}
+                    let currentBase=CVPixelBufferGetBaseAddress(buffer)
+                    let unchanged=rowBytes>3*strideBytes && currentBase?.advanced(by:3*strideBytes).assumingMemoryBound(to:UInt8.self).pointee==0xA5
+                    CVPixelBufferUnlockBaseAddress(buffer,.readOnly)
+                    guard unchanged else{return false}
+                }
+                return true
+            }
+            await check("Capture provenance survives archive, durable recovery and legacy decoding") {
+                let isolated=try Repository(root:folder.appendingPathComponent("capture-provenance"))
+                var h=House.empty("Capture provenance")
+                let segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments=[segment];try isolated.save(h)
+                let key=try isolated.put(Data("original image fixture".utf8),ext:"jpg")
+                let exif=try PropertyListSerialization.data(fromPropertyList:["ExposureTime":1.0/60.0,"FocalLength":5.7],format:.binary,options:0)
+                let exifKey=try isolated.put(exif,ext:"plist")
+                var o=Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,timestamp:1,image:key,width:64,height:48,camera:Rigid().values,intrinsics:[32,0,32,0,32,24,0,0,1],tracking:"synthetic",light:800,sharpness:0.1)
+                let metadata=CaptureMetadata(source:"analytic-replay",kind:.rgbPosed,mode:"synthetic-frame",deviceModel:"Synthetic fixture",systemVersion:"Test",frameTimestamp:1,receivedUTC:Date(timeIntervalSince1970:1000),receiptUptimeBeforeUTC:10,receiptUptimeAfterUTC:10.001,calibrationWidth:64,calibrationHeight:48,imagePixelFormat:kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,depthEncoding:nil,confidenceEncoding:nil,depthTimestamp:nil,exifAsset:exifKey,unavailable:["frameToUTC":"No calibrated mapping","depthTimestamp":"No separate depth clock","motionTimestamp":"No motion sample","distortion":"Unavailable","depth":"No depth recorded","confidence":"No confidence recorded"])
+                o.captureMetadata=metadata;h.observations=[o];try h.validate()
+                guard h.assets==Set([key,exifKey]),metadata.valid(for:o) else{return false}
+                var legacy=try JSONSerialization.jsonObject(with:JSONEncoder().encode(o)) as! [String:Any];legacy.removeValue(forKey:"captureMetadata")
+                let old=try JSONDecoder().decode(Observation.self,from:JSONSerialization.data(withJSONObject:legacy))
+                guard old.captureMetadata==nil,old.resolvedKind == .rgbPosed else{return false}
+                for fault in 0..<9 {
+                    var bad=metadata
+                    switch fault {
+                    case 0:bad.version=2
+                    case 1:bad.frameTimestamp=2
+                    case 2:bad.receiptUptimeAfterUTC=9
+                    case 3:bad.calibrationWidth=63
+                    case 4:bad.kind = .rgbdPosed
+                    case 5:bad.depthEncoding="float32-le-metres-optical-axis"
+                    case 6:bad.unavailable.removeValue(forKey:"depthTimestamp")
+                    case 7:bad.exifAsset=nil
+                    default:bad.depthTimestamp = .nan
+                    }
+                    var changed=h;changed.observations[0].captureMetadata=bad
+                    do {try changed.validate();return false}catch{}
+                }
+                let archive=try Exporter.archive(h,repo:isolated)
+                let restoredRepo=try Repository(root:folder.appendingPathComponent("capture-provenance-restore"))
+                let restored=try Exporter.restore(archive,repo:restoredRepo)
+                guard restored.observations==[o],try restoredRepo.read(exifKey)==exif else{return false}
+                try isolated.stageCapture(o,projectID:h.id,room:h.rooms[0],stage:h.stages[0],segment:segment)
+                guard try Repository(root:isolated.root).all().first?.observations==[o] else{return false}
+                try isolated.journalCapture(projectID:h.id,observation:o)
+                var corrupt=exif;corrupt[0] ^= 1;let exifURL=try isolated.assetURL(exifKey)
+                try DurableFiles.write(corrupt,to:exifURL)
+                guard try !isolated.recoverPendingCaptures().isEmpty,
+                  FileManager.default.fileExists(atPath:isolated.captureJournal.appendingPathComponent(o.id.uuidString+".json").path),try Data(contentsOf:exifURL)==corrupt else{return false}
+                try DurableFiles.write(exif,to:exifURL)
+                guard try isolated.recoverPendingCaptures().isEmpty,try isolated.all().first?.observations==[o] else{return false}
+                return try isolated.read(exifKey)==exif
+            }
+            mark("Depth confidence and bounded input admission")
+            do {
+                let isolated=try Repository(root:folder.appendingPathComponent("depth-input-admission"))
+                let capture=try SimulatedCapture.make(repo:isolated),segment=capture.segments[0]
+                let verified=try isolated.integrity(capture);var refused=0
+                for fault in 0..<5 {
+                    var changed=capture
+                    for i in changed.observations.indices {
+                        let o=changed.observations[i],count=o.depthWidth*o.depthHeight
+                        switch fault {
+                        case 0:changed.observations[i].confidence=nil
+                        case 1:changed.observations[i].confidence=try isolated.put(Data(repeating:255,count:count),ext:"confidence8")
+                        case 2:changed.observations[i].confidence=try isolated.put(Data(repeating:2,count:count+1),ext:"confidence8")
+                        case 3:changed.observations[i].confidence=try isolated.put(Data(repeating:2,count:count-1),ext:"confidence8")
+                        default:
+                            var data=try isolated.read(o.depth!);data.append(0)
+                            changed.observations[i].depth=try isolated.put(data,ext:"depth32")
+                        }
+                    }
+                    do{_=try await Reconstruction.fuse(house:changed,segment:segment,repo:isolated,progress:{_ in})}catch{refused+=1}
+                    do{_=try await SurfaceReconstruction.build(house:changed,segment:segment,repo:isolated,progress:{_ in})}catch{refused+=1}
+                }
+                guard refused==10,try isolated.integrity(capture)==verified else{throw HouseError.message("Depth admission accepted an invalid input or changed original evidence.")}
+                results.append(["test":"Depth fusion refuses unknown confidence and malformed buffers","passed":true,"refusedInputs":refused,"originalAssetsVerified":verified,"physicalDeviceQualified":false])
+            }catch{results.append(["test":"Depth fusion refuses unknown confidence and malformed buffers","passed":false,"error":error.localizedDescription])}
             mark("Coded reference image-to-pose integration")
             do {results.append(try codedReferenceReport(repo:Repository(root:folder.appendingPathComponent("coded-references")),outputRoot:mainRepo.root))}
             catch {results.append(["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":false,"error":error.localizedDescription])}
@@ -1134,7 +1234,10 @@ import simd
                 let o=Observation(roomID:house.rooms[0].id,stageID:house.stages[0].id,segmentID:UUID(),timestamp:0,image:"fixture.jpg",width:64,height:64,camera:Rigid().values,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"normal",light:1000,sharpness:0.1)
                 guard let (uv,z)=TextureBuilder.project(V3(0,1,0),through:o) else{return false}
                 var withDepth=o;withDepth.depthWidth=64;withDepth.depthHeight=64
-                let camera=TextureBuilder.Camera(observation:withDepth,depth:depth)
+                let camera=TextureBuilder.Camera(observation:withDepth,depth:depth,confidence:Data(repeating:2,count:64*64))
+                for invalid in [Data?.none,Data(repeating:255,count:64*64),Data(repeating:1,count:64*64)] {
+                    guard !TextureBuilder.visible(uv,z:z,camera:TextureBuilder.Camera(observation:withDepth,depth:depth,confidence:invalid)) else{return false}
+                }
                 return abs(uv.u-0.5)<1e-9 && abs(uv.v-0.5)<1e-9 && TextureBuilder.visible(uv,z:z,camera:camera) && !TextureBuilder.visible(uv,z:2,camera:camera)
             }
             await check("IFC total geometry budget and complete transaction boundary") {
@@ -1536,11 +1639,12 @@ extension SelfTests {
         let first=try index.find("",limit:200),valves=try index.find("CAFE valve"),panel=try index.find("cafe\u{301} panel")
         guard first.observationCount==50000,first.observations.count==200,first.observations.first?.id==house.observations.last?.id,
           valves.observationCount==50,Set(valves.observations.map{$0.id})==expected,panel.featureCount==1,panel.observationCount==0 else{throw HouseError.message("Search lost room metadata, word matching, ordering or result pagination.")}
-        var times:[Double]=[]
+        var times:[Double]=[],queryTimings:[[String:Any]]=[]
         for query in ["cafe valve","finished","electrical outlet","absent result","panel a","café kitchen"]+Array(repeating:"cafe valve",count:6) {
             let time=ProcessInfo.processInfo.systemUptime
             _ = try index.find(query)
-            times.append((ProcessInfo.processInfo.systemUptime-time)*1000)
+            let elapsed=(ProcessInfo.processInfo.systemUptime-time)*1000
+            times.append(elapsed);queryTimings.append(["query":query,"milliseconds":elapsed])
         }
         times.sort();let p95=times[Int(ceil(Double(times.count)*0.95))-1]
         var imported=House.empty("Imported evidence");imported.rooms[0].name="Kitchen"
@@ -1551,7 +1655,24 @@ extension SelfTests {
         guard named.documentaryPhotos.map({$0.id})==[known.id],named.photographCount==1,
           all.photographCount==2,all.documentaryPhotos.count==1,all.documentaryPhotos[0].id==unknown.id,
           all.observations.isEmpty else{throw HouseError.message("Documentary search lost labels or fabricated room/stage metadata.")}
-        return ["test":"Fifty-thousand photograph metadata search","passed":p95<=300,"photographs":50000,"uniquePhotoMetadata":50000,"defaultPageSize":200,"indexBuildMilliseconds":build,"queryP95Milliseconds":p95,"queries":times.count,"imageFilesRead":0,"limitations":"Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone."]
+        var reference=House.empty("Substring reference");reference.rooms[0].name="Café utility"
+        let referenceSegment=Segment(roomID:reference.rooms[0].id,stageID:reference.stages[0].id);reference.segments=[referenceSegment]
+        let notes=["Valves and electrical outlets","valve valve","CAFÉ label","cafe\u{301} label","12-34 outlet.","line\nvalve","👷🏽 pipe","Ελληνικά service"," 東京 配管 ","","valve valve"]
+        reference.observations=notes.enumerated().map{index,note in
+            var o=base;o.id=UUID();o.roomID=referenceSegment.roomID;o.stageID=referenceSegment.stageID;o.segmentID=referenceSegment.id;o.timestamp=Double(index);o.note=note;return o
+        }
+        let referenceIndex=try EvidenceSearch.Index(house:reference)
+        let referenceQueries=["","val","valve","valve valve","lec out","CAFÉ label","afe","12-3","outlet.","line valve","👷","🏽","ελλην","東京","管","utility pipe","not-found","rough valve"]
+        for query in referenceQueries {
+            let terms=EvidenceSearch.normalized(query).split(whereSeparator:{$0.isWhitespace}).map{Data($0.utf8)}
+            let expected=reference.observations.reversed().filter{o in
+                let bytes=Data((EvidenceSearch.normalized(o.note)+" "+EvidenceSearch.normalized(reference.rooms[0].name)+" "+EvidenceSearch.normalized(reference.stages[0].name)).utf8)
+                return terms.allSatisfy{bytes.range(of:$0) != nil}
+            }.map{$0.id}
+            let actual=try referenceIndex.find(query)
+            guard actual.observationCount==expected.count,actual.observations.map({$0.id})==expected else{throw HouseError.message("Indexed search disagreed with independent full-text substring matching.")}
+        }
+        return ["test":"Fifty-thousand photograph metadata search","passed":p95<=300,"photographs":50000,"uniquePhotoMetadata":50000,"defaultPageSize":200,"indexBuildMilliseconds":build,"queryP95Milliseconds":p95,"queries":times.count,"queryTimingsMilliseconds":queryTimings,"substringReferenceQueries":referenceQueries.count,"imageFilesRead":0,"limitations":"Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone."]
     }
     nonisolated static func memorySample()->[String:UInt64] {
         var info=task_vm_info_data_t()

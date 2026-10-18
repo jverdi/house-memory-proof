@@ -4,6 +4,7 @@ enum TextureBuilder {
   struct Camera {
     var observation: Observation
     var depth: Data?
+    var confidence:Data?=nil
   }
   static func project(_ p: V3, through o: Observation) -> (UV, Double)? {
     CameraProjection.project(p,through:o)
@@ -11,17 +12,19 @@ enum TextureBuilder {
 
   static func visible(_ uv: UV, z: Double, camera: Camera) -> Bool {
     let o = camera.observation
-    guard let depth = camera.depth, o.depthWidth > 0, o.depthHeight > 0 else { return false }
+    guard let depth = camera.depth,let confidence=camera.confidence,o.depthWidth>0,o.depthHeight>0,o.depthWidth<=1_000_000/o.depthHeight,
+      depth.count==o.depthWidth*o.depthHeight*4,confidence.count==o.depthWidth*o.depthHeight,
+      uv.u.isFinite,uv.v.isFinite,(0...1).contains(uv.u),(0...1).contains(uv.v),z.isFinite else { return false }
     let x = min(o.depthWidth - 1, Int(uv.u * Double(o.depthWidth)))
     let y = min(o.depthHeight - 1, Int(uv.v * Double(o.depthHeight)))
     let i = (y * o.depthWidth + x) * 4
-    guard i + 4 <= depth.count else { return false }
+    guard i + 4 <= depth.count,confidence[i/4]==2 else { return false }
     let measured = Double(Float(bitPattern: depth.uint32(i)))
     return measured.isFinite && measured > 0 && abs(measured - z) < 0.08
   }
   static func build(house: House, segment: Segment, repo: Repository) throws -> [Feature] {
     let raw = house.observations.filter {
-      $0.segmentID == segment.id && $0.depth != nil && !$0.documentary
+      $0.segmentID == segment.id && $0.depth != nil && $0.confidence != nil && !$0.documentary
     }.sorted { $0.sharpness > $1.sharpness }
     let current=DerivedEvidence.currentIDs(house)
     let eligible=house.features.filter{$0.segmentID==segment.id && current.contains($0.id) && !$0.mesh.triangles.isEmpty}
@@ -29,7 +32,13 @@ enum TextureBuilder {
     let usesSurface = !reconstructed.isEmpty
     let observations = usesSurface ? PoseRefinement.selected(raw,segment:segment,house:house).0:raw
     let candidates=Array(observations.filter{$0.light>100}.prefix(16))
-    let cameras=try candidates.map{Camera(observation:$0,depth:try $0.depth.map{try repo.read($0)})}
+    let cameras=try candidates.map{o->Camera in
+      let w=o.depthWidth,h=o.depthHeight
+      guard w>0,h>0,w<=1_000_000/h,let depth=o.depth,let confidence=o.confidence else{throw HouseError.message("Invalid texture visibility depth metadata.")}
+      let depthBytes=try repo.read(depth,limit:w*h*4),confidenceBytes=try repo.read(confidence,limit:w*h)
+      guard depthBytes.count==w*h*4,confidenceBytes.count==w*h else{throw HouseError.message("Texture visibility depth and confidence do not match their declared dimensions.")}
+      return Camera(observation:o,depth:depthBytes,confidence:confidenceBytes)
+    }
     guard !cameras.isEmpty else{throw HouseError.message("No posed depth photographs are available for visibility-tested textures.")}
     let input=reconstructed.isEmpty ? eligible.filter{$0.resolvedGeometrySource == .capturedMesh}:reconstructed
     guard !input.isEmpty else {

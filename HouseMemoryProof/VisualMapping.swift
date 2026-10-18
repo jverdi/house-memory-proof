@@ -29,7 +29,7 @@ enum VisualMapping {
   struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v15-explicit-depth-confidence";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v16-bounded-capture-depth";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))

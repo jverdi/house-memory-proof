@@ -5,11 +5,11 @@ enum Reconstruction {
   static func fuse(
     house: House, segment: Segment, repo: Repository, progress: @escaping @MainActor (Double) -> Void
   ) async throws -> Feature {
-    let raw = house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && !$0.documentary }
+    let raw = house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && $0.confidence != nil && !$0.documentary }
     let (observations, referenceSupported) = PoseRefinement.selected(
       raw, segment: segment, house: house)
     guard !observations.isEmpty else {
-      throw HouseError.message("This segment has no saved depth observations.")
+      throw HouseError.message("This segment has no saved depth observations with recorded confidence.")
     }
     guard let core = hx_create(0.02, 100000) else {
       throw HouseError.message("Could not allocate bounded depth fusion.")
@@ -21,13 +21,11 @@ enum Reconstruction {
         throw HouseError.message(
           "Phone is too warm. Originals are preserved; retry reconstruction after cooling.")
       }
-      guard let key = obs.depth else { continue }
-      let data = try repo.read(key)
-      let confidence = try obs.confidence.map { try repo.read($0) }
       let w = obs.depthWidth
       let h = obs.depthHeight
-      guard w > 0, h > 0, w * h <= 1_000_000, data.count == w * h * 4,
-        confidence == nil || confidence?.count == w * h
+      guard w>0,h>0,w<=1_000_000/h,let key=obs.depth,let confidenceKey=obs.confidence else{throw HouseError.message("Invalid depth dimensions or missing confidence.")}
+      let data=try repo.read(key,limit:w*h*4),confidence=try repo.read(confidenceKey,limit:w*h)
+      guard data.count == w * h * 4,confidence.count == w * h
       else { throw HouseError.message("Depth array metadata does not match its bytes.") }
       let fx = obs.intrinsics[0] * Double(w) / Double(obs.width)
       let fy = obs.intrinsics[4] * Double(h) / Double(obs.height)
@@ -40,7 +38,7 @@ enum Reconstruction {
         for x in stride(from: 0, to: w, by: 2) {
           let i = y * w + x
           let z = Double(Float(bitPattern: data.uint32(i * 4)))
-          guard z.isFinite, z > 0.15, z < 5, (confidence?[i] ?? 1) > 0 else { continue }
+          guard z.isFinite, z > 0.15, z < 5, confidence[i]==1 || confidence[i]==2 else { continue }
           let a = (Double(x) - cx) * z / fx
           let b = -(Double(y) - cy) * z / fy
           let c = -z
@@ -49,7 +47,7 @@ enum Reconstruction {
             m[4] * a + m[5] * b + m[6] * c + m[7])
           samples.append(
             HXSample(
-              x: p.x, y: p.y, z: p.z, weight: (confidence?[i] ?? 1) == 2 ? 1 : 0.5,
+              x: p.x, y: p.y, z: p.z, weight: confidence[i] == 2 ? 1 : 0.5,
               frame: UInt32(frame)))
         }
       }
@@ -85,7 +83,7 @@ enum Reconstruction {
 // in the report; cancellation never publishes a partially rebuilt project.
 enum CaptureProcessing {
   static func build(house:House,segmentID:UUID,repo:Repository,checkpoint:((String)throws->Void)?=nil,progress:@escaping @MainActor (String,Double)->Void)async throws->House {
-    guard let index=house.segments.firstIndex(where:{$0.id==segmentID}),house.observations.filter({$0.segmentID==segmentID && $0.depth != nil && !$0.documentary}).count>=3 else{throw HouseError.message("Save at least three overlapping depth photographs before processing this capture.")}
+    guard let index=house.segments.firstIndex(where:{$0.id==segmentID}),house.observations.filter({$0.segmentID==segmentID && $0.depth != nil && $0.confidence != nil && !$0.documentary}).count>=3 else{throw HouseError.message("Save at least three overlapping depth photographs with recorded confidence before processing this capture.")}
     let started=ProcessInfo.processInfo.systemUptime
     var candidate=house,steps:[CaptureProcessingStep]=[]
     func note(_ name:String,_ passed:Bool,_ detail:String){steps.append(CaptureProcessingStep(name:name,passed:passed,detail:detail))}

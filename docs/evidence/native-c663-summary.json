@@ -1,0 +1,86 @@
+{
+  "source": "c663851d2434ba2901f49514751a06c59d27a70f",
+  "run": 39087426341,
+  "build": "189.1",
+  "platform": "iPhone simulator",
+  "nativePassed": 121,
+  "nativeFailed": 1,
+  "elapsedSeconds": 210.42475533333322,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1206910976,
+    "physicalFootprintBytes": 63562304,
+    "residentBytes": 403619840
+  },
+  "processKillChecksPassed": 3,
+  "interfaceTestsPassed": 5,
+  "interfaceElapsedSeconds": 277.748,
+  "independentReaderReportsPassed": 12,
+  "independentReaderReportFiles": [
+    "archive-validation.json",
+    "chunked-snapshot-validation.json",
+    "house-surface-gltf-validation.json",
+    "mesh-interchange-validation.json",
+    "offline-viewer-validation.json",
+    "points-gltf-validation.json",
+    "points-usd-validation.json",
+    "semantic-csv-validation.json",
+    "test-gltf-validation.json",
+    "test-usd-validation.json",
+    "textured-gltf-validation.json",
+    "textured-usd-validation.json"
+  ],
+  "independentReadersPassed": true,
+  "completeIntegratedPass": false,
+  "precisionProfileEnabled": false,
+  "fieldAccuracyValidated": false,
+  "testflightUpload": false,
+  "artifact": {
+    "id": 12121357081,
+    "sha256": "7dee7a5a951d77fd721a08ed263dfb3c2af34d9cf8e71311b2f8a9ada354dfae",
+    "sha256IndependentlyVerified": true
+  },
+  "fullArtifact": {
+    "id": 12121637625,
+    "sha256": "fba968ec7210cb177318801a245fbb3df4a54e7aeacb12ccb9b0109c7ce6a17b",
+    "sha256IndependentlyVerified": true
+  },
+  "movie": {
+    "decodedFrames": 300,
+    "durationSeconds": 10,
+    "height": 1080,
+    "passed": true,
+    "recoveredEncoderStalls": [],
+    "seconds": 58.257779666666465,
+    "test": "1080p30 MP4 encode, decode and verified chunk reuse",
+    "width": 1920
+  },
+  "encoderRetry": {
+    "completedShotsPreserved": 1,
+    "corruptChecksumRebuiltFrames": 50,
+    "injectedFailures": 3,
+    "passed": true,
+    "persistentFailureAttempts": 2,
+    "physicalDeviceQualified": false,
+    "successfulRetryCount": 1,
+    "test": "Movie encoder retries one unfinished shot and stops after a second stall"
+  },
+  "search": {
+    "defaultPageSize": 200,
+    "imageFilesRead": 0,
+    "indexBuildMilliseconds": 832.8713333332871,
+    "limitations": "Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone.",
+    "passed": false,
+    "photographs": 50000,
+    "queries": 12,
+    "queryP95Milliseconds": 332.68708333343966,
+    "test": "Fifty-thousand photograph metadata search",
+    "uniquePhotoMetadata": 50000
+  },
+  "failureClasses": [
+    "50,000-photograph search p95 exceeded the unchanged 300 ms gate"
+  ],
+  "limitations": [
+    "Simulator evidence does not qualify phone performance or field precision.",
+    "This complete workflow failed solely on the search performance gate; passing UI and export steps do not override it."
+  ]
+}

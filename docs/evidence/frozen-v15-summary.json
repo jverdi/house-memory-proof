@@ -1,0 +1,33 @@
+{
+  "source": "c663851d2434ba2901f49514751a06c59d27a70f",
+  "run": 39087426215,
+  "artifact": {
+    "id": 12121248843,
+    "sha256": "3696f38abb8ab154f580b40072120d7f4d87250b5766b56422f9491c927e7ed8",
+    "sha256IndependentlyVerified": true
+  },
+  "cases": [
+    {
+      "report": "rendered.json",
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "negativeQueries": 1,
+      "falseAccepts": 0,
+      "ambiguityCases": 6,
+      "ambiguityRejected": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "mapViews": 5,
+      "mapFeatures": 5559,
+      "worstAcceptedPositionErrorMetres": 0.008099905352539724,
+      "maximumOptimizedCameraPositionErrorMetres": 0.010550516031309215,
+      "optimizedCameraCount": 5
+    }
+  ],
+  "physicalQualification": false,
+  "limitations": [
+    "Partial synthetic observations; not the required diverse whole-house topology/sensor qualification.",
+    "No identities, camera matrices, individual replay records or protected seeds are published in this summary."
+  ]
+}
