@@ -22,7 +22,7 @@ Updated 18 October 2026. The full plan is **in progress**. Precision use and fin
 
 Latest complete integration: **224.1**, source `3883931263a2861a28cd354f190bbc3d8d71f178`, run `39169002149`: 172 native checks, 17 interface workflows, 19 reader phases, 52 command contracts, 36 validation reports, three process recoveries and 50 portable checks pass. Artifact hashes are independently verified in [the retained report](evidence/native-388-summary.json).
 
-Current candidate: **225.1**, source `bf0a75c353953233c6a517fca7a71693cae37f1e`, run `39172396220`. Debug and release compilation have passed; native diagnostics are running. Expected totals are 178 native checks and 19 interface workflows. An active build is not a passing result.
+Current candidate: **225.1**, source `bf0a75c353953233c6a517fca7a71693cae37f1e`, run `39172396220`. Debug and release compilation, all 178 native checks, all 19 reader phases and 52 command contracts have passed. The native artifact hash is independently verified. The 19 interface workflows and final screenshot review are pending; this is not yet a complete integration pass.
 
 ## What prevents full completion
 
@@ -37,6 +37,8 @@ Current candidate: **225.1**, source `bf0a75c353953233c6a517fca7a71693cae37f1e`,
 | Final delivery and upkeep | After the applicable gates pass, sign and upload the accepted source, verify Apple processing/access, and enable the approved renewal process for that accepted source. |
 
 The original specification and its thresholds remain unchanged. Documentary and approximate use is the retained fallback while accuracy gates are open; it does not count as completing those gates.
+
+The [proposed next localization diagnostic](LOCALIZATION_DIAGNOSTIC_PROPOSAL.md) defines a possible renewed budget: two serial jobs of at most 40 minutes each, using the unchanged estimator and already disclosed development cases. It is a proposal only; no new experiment has run.
 
 ## Next steps
 

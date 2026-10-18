@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T22:43:48.119726Z",
+  "updatedUTC": "2026-10-18T22:47:38.549561Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "bf0a75c353953233c6a517fca7a71693cae37f1e",
@@ -18,12 +18,12 @@
     "automaticRenewalEnabled": false
   },
   "verifiedNative": {
-    "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
-    "passed": 172,
+    "source": "bf0a75c353953233c6a517fca7a71693cae37f1e",
+    "passed": 178,
     "failed": 0,
-    "artifact": 12151344299,
-    "sha256": "7eeead23fabaeb809de66e80142a461d70f9e5e7a4fc40bc3138a4847c5bab6e",
-    "completeIntegratedPass": true
+    "artifact": 12153477442,
+    "sha256": "198f6c3e1418907d8f87c376ee83c806223b49879972711178c25726db0eb596",
+    "completeIntegratedPass": false
   },
   "softwareAcceptanceOpen": [
     {
@@ -67,7 +67,7 @@
   "nextAction": "Validate the combined movement/settings and room-map candidate with all 19 interface workflows and 178 native checks. Inspect screenshots 34/38/40\u201346. Then continue broader software acceptance while retaining localization failures, the exhausted detector budget and all device/provider/field gates. TestFlight remains 216.1 without an intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "native_diagnostics_in_progress",
+    "status": "interface_in_progress",
     "precedingSource": "3883931263a2861a28cd354f190bbc3d8d71f178",
     "nativeExpected": 178,
     "interfaceExpected": 19,
@@ -86,7 +86,15 @@
     "build": "225.1",
     "debugCompilationPassed": true,
     "unsignedReleaseCompilationPassed": true,
-    "simulatorJob": 117808007897
+    "simulatorJob": 117808007897,
+    "nativePassed": 178,
+    "nativeReaderPhasesPassed": 19,
+    "commandContractsPassed": 52,
+    "nativePhaseConclusion": "success",
+    "nativeSeconds": 231.07335183333316,
+    "nativeArtifact": 12153477442,
+    "nativeArtifactSHA256": "198f6c3e1418907d8f87c376ee83c806223b49879972711178c25726db0eb596",
+    "evidence": "docs/evidence/native-bf0-summary.json"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",

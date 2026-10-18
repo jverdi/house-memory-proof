@@ -1,3 +1,9 @@
+## Combined viewer native checkpoint passes — interface review pending
+
+Source **bf0a75c353953233c6a517fca7a71693cae37f1e**, run **39172396220 / 225.1**, passes Debug/Release compilation, **178/178 native checks in 231.073 seconds**, all **19 reader phases** and **52 command contracts**. Native artifact **12153477442** is independently SHA-256 verified in `docs/evidence/native-bf0-summary.json`.
+
+The 19 interface workflows are running. Screenshot review and complete export integration remain pending, so latest complete integration remains **224.1**. TestFlight remains **216.1**, without these additions. The concise current state is `docs/CURRENT_PROGRESS.md`. A proposed bounded localization diagnostic is recorded in `docs/LOCALIZATION_DIAGNOSTIC_PROPOSAL.md`; it has not been authorized or executed. The overall plan, precision and accepted-release gates remain open.
+
 ## Movement settings and room map prepared for combined validation
 
 Explore → Layers now has prepared Movement & view settings and a scoped Room map with a remembered mini-map. Preferences include speed, acceleration, sensitivity, turn rate, bounded view width, eye height, invert-Y, handedness and reset. The map shows room/floor/direction, recorded photo positions and saved viewpoints while keeping unaligned visits separate and coverage explicitly unknown. Cancelled drags clear movement; bright action buttons use dark lettering. Long walking notices have their own full-width row, the mini-map fits between header and controls, and capture-count guidance is clearer. House records and source camera calibration remain unchanged.
