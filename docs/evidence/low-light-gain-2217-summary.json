@@ -1,0 +1,274 @@
+{
+  "source": "22174b6d0040a18ff476ac6e6086968cec7699f2",
+  "run": 39094919110,
+  "profiles": [
+    {
+      "cases": [
+        {
+          "stage": "rough",
+          "complete": true,
+          "passed": true,
+          "rooms": 4,
+          "levels": 1,
+          "width": 768,
+          "inputArchiveCheckPassed": true,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "positiveQueries": 16,
+          "positiveAccepted": 16,
+          "negativeQueries": 32,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 32,
+          "optimizedCameraCount": 32,
+          "p95Metres": 0.00160125905335354,
+          "worstAcceptedPositionErrorMetres": 0.00160125905335354,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0018834757894324679,
+          "mappingFailureCategories": {},
+          "rotationErrorDegrees": {
+            "count": 16,
+            "p50": 0.016842988229993448,
+            "p95": 0.03847910704179838,
+            "maximum": 0.03847910704179838
+          },
+          "visibleSurfaceOverlay": {
+            "scoredAcceptedQueries": 16,
+            "samples": 768,
+            "behindCamera": 0,
+            "worldMetres": {
+              "count": 768,
+              "p50": 0.0003609347127316623,
+              "p95": 0.0006985627434739695,
+              "maximum": 0.0008385209299313564
+            },
+            "reprojectionPixels": {
+              "count": 768,
+              "p50": 0.04928841302534898,
+              "p95": 0.09898558459808678,
+              "maximum": 0.1342409050302868
+            },
+            "diagnosticOnly": true,
+            "alignmentToTruth": false
+          }
+        },
+        {
+          "stage": "finished",
+          "complete": true,
+          "passed": true,
+          "rooms": 4,
+          "levels": 1,
+          "width": 768,
+          "inputArchiveCheckPassed": true,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "positiveQueries": 16,
+          "positiveAccepted": 16,
+          "negativeQueries": 32,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 32,
+          "optimizedCameraCount": 32,
+          "p95Metres": 0.0026884524405990113,
+          "worstAcceptedPositionErrorMetres": 0.0026884524405990113,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0021919451477364197,
+          "mappingFailureCategories": {},
+          "rotationErrorDegrees": {
+            "count": 16,
+            "p50": 0.02251880690578707,
+            "p95": 0.05008537756255183,
+            "maximum": 0.05008537756255183
+          },
+          "visibleSurfaceOverlay": {
+            "scoredAcceptedQueries": 16,
+            "samples": 768,
+            "behindCamera": 0,
+            "worldMetres": {
+              "count": 768,
+              "p50": 0.0004708166077796765,
+              "p95": 0.0010478495660108218,
+              "maximum": 0.0015767642638259078
+            },
+            "reprojectionPixels": {
+              "count": 768,
+              "p50": 0.06256206834855825,
+              "p95": 0.13920979519449309,
+              "maximum": 0.23310776766404964
+            },
+            "diagnosticOnly": true,
+            "alignmentToTruth": false
+          }
+        }
+      ],
+      "complete": true,
+      "passed": true,
+      "rawEvidencePublished": false,
+      "physicalQualification": false,
+      "source": "22174b6d0040a18ff476ac6e6086968cec7699f2",
+      "candidateSHA256": "cb34743b6db2f0c29c7dc9e3828705a72fadc364bcfb605e436eee4f19bc5afb",
+      "profile": "nominal",
+      "attempts": [
+        {
+          "stage": "rough",
+          "complete": true,
+          "passed": true
+        },
+        {
+          "stage": "finished",
+          "complete": true,
+          "passed": true
+        }
+      ],
+      "experimentAdopted": false,
+      "limitations": [
+        "One analytic development house, not protected qualification",
+        "Fixed candidate and original gates; no parameter search",
+        "Original 384-pixel accuracy and finished depth-edge failures remain open"
+      ],
+      "artifact": {
+        "id": 12124730015,
+        "sha256": "c251253b2fd809dc2c3ae3b6b0d3c804f43b369eaee330d26ded0ba98faba8f0",
+        "sha256IndependentlyVerified": true
+      }
+    },
+    {
+      "cases": [
+        {
+          "stage": "rough",
+          "complete": true,
+          "passed": true,
+          "rooms": 4,
+          "levels": 1,
+          "width": 768,
+          "inputArchiveCheckPassed": true,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "positiveQueries": 16,
+          "positiveAccepted": 16,
+          "negativeQueries": 32,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 32,
+          "optimizedCameraCount": 32,
+          "p95Metres": 0.001774435113143111,
+          "worstAcceptedPositionErrorMetres": 0.001774435113143111,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0022460132190282433,
+          "mappingFailureCategories": {},
+          "rotationErrorDegrees": {
+            "count": 16,
+            "p50": 0.014799363698879978,
+            "p95": 0.03701863263254448,
+            "maximum": 0.03701863263254448
+          },
+          "visibleSurfaceOverlay": {
+            "scoredAcceptedQueries": 16,
+            "samples": 768,
+            "behindCamera": 0,
+            "worldMetres": {
+              "count": 768,
+              "p50": 0.0004235853644761599,
+              "p95": 0.0008040787910715117,
+              "maximum": 0.0012346536076000704
+            },
+            "reprojectionPixels": {
+              "count": 768,
+              "p50": 0.054123815730671605,
+              "p95": 0.1262997176638796,
+              "maximum": 0.20256703195319578
+            },
+            "diagnosticOnly": true,
+            "alignmentToTruth": false
+          }
+        },
+        {
+          "stage": "finished",
+          "complete": true,
+          "passed": true,
+          "rooms": 4,
+          "levels": 1,
+          "width": 768,
+          "inputArchiveCheckPassed": true,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "positiveQueries": 16,
+          "positiveAccepted": 16,
+          "negativeQueries": 32,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 32,
+          "optimizedCameraCount": 32,
+          "p95Metres": 0.0076002847268875065,
+          "worstAcceptedPositionErrorMetres": 0.0076002847268875065,
+          "maximumOptimizedCameraPositionErrorMetres": 0.005195722490735402,
+          "mappingFailureCategories": {},
+          "rotationErrorDegrees": {
+            "count": 16,
+            "p50": 0.05536816387616138,
+            "p95": 0.1823141554184444,
+            "maximum": 0.1823141554184444
+          },
+          "visibleSurfaceOverlay": {
+            "scoredAcceptedQueries": 16,
+            "samples": 768,
+            "behindCamera": 0,
+            "worldMetres": {
+              "count": 768,
+              "p50": 0.0010268558890426246,
+              "p95": 0.0032387611138985106,
+              "maximum": 0.005510921786684704
+            },
+            "reprojectionPixels": {
+              "count": 768,
+              "p50": 0.12010356370005897,
+              "p95": 0.4070657307173563,
+              "maximum": 0.8028890293336043
+            },
+            "diagnosticOnly": true,
+            "alignmentToTruth": false
+          }
+        }
+      ],
+      "complete": true,
+      "passed": true,
+      "rawEvidencePublished": false,
+      "physicalQualification": false,
+      "source": "22174b6d0040a18ff476ac6e6086968cec7699f2",
+      "candidateSHA256": "cb34743b6db2f0c29c7dc9e3828705a72fadc364bcfb605e436eee4f19bc5afb",
+      "profile": "dim-blurred",
+      "attempts": [
+        {
+          "stage": "rough",
+          "complete": true,
+          "passed": true
+        },
+        {
+          "stage": "finished",
+          "complete": true,
+          "passed": true
+        }
+      ],
+      "experimentAdopted": false,
+      "limitations": [
+        "One analytic development house, not protected qualification",
+        "Fixed candidate and original gates; no parameter search",
+        "Original 384-pixel accuracy and finished depth-edge failures remain open"
+      ],
+      "artifact": {
+        "id": 12124172168,
+        "sha256": "132f7e9d0d51eed59c421ec1453427bb98f6c64f79524a602adec0e05db160df",
+        "sha256IndependentlyVerified": true
+      }
+    }
+  ],
+  "adopted": false,
+  "reason": "Analysis-copy gain is diagnostic only; the runbook reserves photometric normalization for display derivatives. A separate detector-response candidate keeps image values unchanged.",
+  "nominalAccepted": 64,
+  "nominalAttempts": 64,
+  "criticalFalseAccepts": 0,
+  "criticalAttempts": 128,
+  "physicalQualification": false,
+  "original384FailuresRetained": true
+}
