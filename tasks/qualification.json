@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T01:15:00Z",
+  "updatedUTC": "2026-10-18T01:41:34.569592+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "6852e809d0bbacda7a022ba92e5e0e5f6ff932c9",
@@ -15,19 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "75807dbab1e16e184b0093f2c184df7ae6e03d53",
-    "passed": 117,
+    "source": "6852e809d0bbacda7a022ba92e5e0e5f6ff932c9",
+    "passed": 120,
     "failed": 0,
-    "artifact": 12119103951,
-    "sha256": "01f57ff511ad8487e7096af958d8f40ec9163cd4c011edcc389356afda754f71",
-    "searchP95Milliseconds": 119.15399999998044,
+    "artifact": 12120439828,
+    "sha256": "b178157595e30aaf808527ed9156aee9499a6672e656b0be98150a0dadaf040b",
+    "searchP95Milliseconds": 139.02149999989888,
     "distinctPhotoNotes": 50000,
-    "completeIntegratedPass": false
+    "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "Verify the twenty-session registration regression and diagnose/recover the intermittent encoder stall without weakening video checks. Source 6045475e61 passed five UI workflows, all process recovery and independent readers."
+      "remaining": "Validate the next explicit-confidence and verified-original-read candidate. The complete 6852e809d0 integrated workflow passed, including encoder recovery and independent full movie decoding."
     },
     {
       "area": "finished localization",
@@ -55,14 +55,18 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate bounded encoder retry, explicit complete-frame decoding and cache-integrity recovery, then continue remaining spatial and whole-house qualification without enabling physical precision.",
+  "nextAction": "Run native, frozen, analytic stress and retained finished-map qualification for the explicit-confidence candidate; continue capture-provenance and remaining whole-house work without enabling physical precision.",
   "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts.",
   "currentValidation": {
     "run": 39085733551,
-    "status": "in_progress",
+    "status": "passed",
     "nativeExpected": 120,
     "interfaceExpected": 5,
-    "physicalQualification": false
+    "physicalQualification": false,
+    "nativePassed": 120,
+    "interfacePassed": 5,
+    "processKillPassed": 3,
+    "independentReadersPassed": true
   },
   "previousIntegratedAttempt": {
     "source": "6045475e6192601687279df064d349a5686a0385",
@@ -95,5 +99,18 @@
     "incorrectScaleRefused": 19,
     "descendantsInvalidated": 19,
     "analyticOnly": true
+  },
+  "latestIntegratedPass": {
+    "source": "6852e809d0bbacda7a022ba92e5e0e5f6ff932c9",
+    "run": 39085733551,
+    "nativePassed": 120,
+    "interfacePassed": 5,
+    "processKillPassed": 3,
+    "independentReadersPassed": true,
+    "fullArtifact": {
+      "id": 12121571233,
+      "sha256": "62ffc243b9416f16cceb653274a8fc673ceb3fdff0dc43319443f771c61b78c6",
+      "sha256IndependentlyVerified": true
+    }
   }
 }

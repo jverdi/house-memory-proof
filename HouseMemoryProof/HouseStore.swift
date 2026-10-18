@@ -261,7 +261,16 @@ final class Repository: EvidenceAssetReader {
     return key
   }
   func read(_ key: String) throws -> Data {
-    try Data(contentsOf: assetURL(key), options: .mappedIfSafe)
+    try checked(Data(contentsOf:assetURL(key),options:.mappedIfSafe),key:key)
+  }
+  func read(_ key:String,limit:Int)throws->Data {
+    guard limit>=0,limit<Int.max else{throw HouseError.message("Invalid original asset read budget.")}
+    return try checked(DurableFiles.read(assetURL(key),limit:limit),key:key)
+  }
+  private func checked(_ data:Data,key:String)throws->Data {
+    let hash=SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
+    guard key.hasPrefix(hash+".") else{throw HouseError.message("Original asset checksum mismatch: \(key.prefix(12)). The saved bytes were preserved for recovery.")}
+    return data
   }
   func integrity(_ h: House) throws -> Int {
     var count = 0

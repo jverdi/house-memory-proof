@@ -5,7 +5,7 @@ Updated during the October 17–18, 2026 implementation session. This document r
 ## Release state
 
 - Prior delivery proof: build 2.1 was installed by the owner.
-- Current implementation: source **6852e809d0**, experimental; run 39085733551 is checking 120 native cases, including bounded encoder recovery and explicit complete-frame decoding. Source 5692529353 passed the new twenty-session analytic registration check and 118/119 native cases. Its encoder stalled on shot 1, next frame 25, after a 15.002-second capacity wait. Source 6045475e61 passed five interface workflows, all process recovery and independent readers. No exact-source complete integrated pass is claimed yet.
+- Current implementation: the v15 explicit-confidence and verified-original-read candidate is awaiting exact-source validation. The prior movie repair **6852e809d0**, run **39085733551**, passed **120 native checks, five UI workflows, three actual process-kill recoveries, 50 portable cases and all independent readers**. Its downloaded 1080p30 ten-second movie also passed independent FFmpeg decoding of all 300 frames. This is a complete simulator integration pass, not full product or physical qualification.
 - The requested current-state TestFlight snapshot **161.1**, source **2fae54ff2d**, is uploaded and verified **VALID / IN_BETA_TESTING**, with owner access in Personal iPhone (delivery run 39078429529; readiness run 39080146782). Physical installation is unverified. Subsequent development commits do not upload.
 - Production readiness: **not established**.
 - Field precision profile: **disabled**. No synthetic metric enables one.
@@ -545,3 +545,17 @@ A bounded encoder recovery candidate now discards only the unfinished shot after
 The movie evidence audit found that older prose overstated full decoding: historical sources 1ec81a32ca, ffab99e3b9 and be375307 used compressed sample reads plus selected-frame decoding. Their descriptions above are corrected. The new candidate explicitly requests decoded pixel buffers, checks every returned frame and dimensions, and validates all 300 decoded timestamps in the 10-second 1080p30 diagnostic. It also decodes all 150 frames recovered by the injected-stall test. These strengthened checks must pass before claiming a complete-frame decode.
 
 Source 5692529353 passed the twenty-session analytic registration regression: all 19 independently moved controls and 19 10%-scale-error cases refused; all 19 descendant registrations invalidated after a print change; original poses survived. The run passed 118/119 native checks and all three process-termination cases. Its interface phase was superseded by movie candidate 6852e809d0 after the native checkpoint was retained. The candidate also drains Objective-C/Metal temporaries per submitted frame while retaining the buffer/texture/command explicitly until GPU completion, and bounds checksum sidecar reads to the exact SHA-256 length. Neither this ownership change nor a passing injected retry establishes the cause of the earlier hosted encoder stalls.
+
+
+### 2026-10-18 — verified original reads and explicit depth confidence candidate
+
+Visual mapping now requires a complete, high-confidence 3×3 depth neighborhood. Missing confidence, low confidence, invalid values and malformed depth/mask lengths cannot supply map landmarks. Joint refinement and both coverage paths also require the defined high-confidence value rather than accepting arbitrary larger bytes. Reads enforce their declared byte budget and verify the content-addressed original hash before consuming it; same-size corruption is refused without rewriting saved evidence. The visual algorithm fingerprint advances to v15 so derived maps cannot silently retain the previous input contract.
+
+Joint refinement now streams one bounded depth/confidence pair at a time while preserving residual order and excluding held-out views from all fitting constraints. This removes the prior accumulation of up to 120 camera buffer pairs; it does not establish physical-phone memory qualification.
+
+Two new native groups and extended coverage fault cases bring the expected native total to 122. The host replay also checks original-read corruption and size refusal. Full native/UI/export, frozen rendering, unchanged analytic stress and unchanged finished-map cases must run on this candidate. Existing low-resolution and rough-to-finished failures remain open; no gate or protected seed was changed.
+
+
+### 2026-10-18 — complete movie repair integration
+
+Source 6852e809d0 passed the complete simulator workflow in run 39085733551: all 120 native checks, five UI workflows (402.623 seconds), three process-kill recoveries, 50 portable cases and twelve independent reader reports. The SHA-verified full artifact contains a playable 1920×1080 H.264 movie at exactly 30 fps and ten seconds. An independent FFmpeg decode read all 300 frames without errors, and its captioned rough-in frame was inspected. The bounded injected encoder retry, repeated-failure stop and checksum repair passed; no spontaneous capacity timeout occurred in this run. Aggregate provenance is retained in docs/evidence/native-6852-summary.json. No additional TestFlight upload occurred.

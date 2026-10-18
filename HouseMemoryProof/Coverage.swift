@@ -61,8 +61,8 @@ enum CoverageAnalyzer {
       let count=dimensionsValid ? w*h:0
       let depth:Data?,confidence:Data?
       if dimensionsValid {
-        depth=try o.depth.map{try DurableFiles.read(repo.assetURL($0),limit:count*4)}
-        confidence=try o.confidence.map{try DurableFiles.read(repo.assetURL($0),limit:count)}
+        depth=try o.depth.map{try repo.read($0,limit:count*4)}
+        confidence=try o.confidence.map{try repo.read($0,limit:count)}
       }else{depth=nil;confidence=nil}
       let position=V3(o.camera[3],-o.camera[11],o.camera[7])
       for i in patches.indices where !patches[i].supported {
@@ -74,7 +74,7 @@ enum CoverageAnalyzer {
             continue
           }
           let index=min(h-1,Int(uv.v*Double(h)))*w+min(w-1,Int(uv.u*Double(w)))
-          guard let confidence,confidence.count==count,confidence[index]>=2 else {
+          guard let confidence,confidence.count==count,confidence[index]==2 else {
             patches[i].lowQuality=true;continue
           }
           let measured=Double(Float(bitPattern:depth.uint32(index*4)))

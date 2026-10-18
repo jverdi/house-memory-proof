@@ -1,4 +1,5 @@
 name: Analytic spatial stress and protected configurations
+# Requalify the v15 explicit-confidence and verified-asset input contract.
 on:
   push:
     branches: [main]

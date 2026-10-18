@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 struct ReplayQuery:Decodable {var image:String;var width:Int;var height:Int;var intrinsics:[Double];var segmentID:UUID?}
 struct ReplayQueries:Decodable {var queries:[ReplayQuery]}
@@ -7,7 +8,22 @@ final class DiskEvidence:EvidenceAssetReader {
   init(_ root:URL){self.root=root}
   func read(_ key:String)throws->Data {
     guard !key.contains("/"),!key.contains(".."),!key.contains("\\") else{throw HouseError.message("Unsafe asset key.")}
-    return try Data(contentsOf:root.appendingPathComponent("assets").appendingPathComponent(key))
+    return try checked(Data(contentsOf:root.appendingPathComponent("assets").appendingPathComponent(key)),key:key)
+  }
+  func read(_ key:String,limit:Int)throws->Data {
+    guard limit>=0,limit<Int.max,!key.contains("/"),!key.contains(".."),!key.contains("\\") else{throw HouseError.message("Invalid bounded asset read.")}
+    let url=root.appendingPathComponent("assets").appendingPathComponent(key)
+    let size=try url.resourceValues(forKeys:[.fileSizeKey]).fileSize
+    guard let size,size>=0,size<=limit else{throw HouseError.message("Asset exceeds its declared depth/confidence size.")}
+    let file=try FileHandle(forReadingFrom:url);defer{try? file.close()}
+    let data=try file.read(upToCount:limit+1) ?? Data()
+    guard data.count==size,data.count<=limit else{throw HouseError.message("Asset changed during bounded read.")}
+    return try checked(data,key:key)
+  }
+  private func checked(_ data:Data,key:String)throws->Data {
+    let hash=SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
+    guard key.hasPrefix(hash+".") else{throw HouseError.message("Original asset checksum mismatch.")}
+    return data
   }
 }
 @main struct VisionReplay {
@@ -22,12 +38,14 @@ final class DiskEvidence:EvidenceAssetReader {
       try JSONSerialization.data(withJSONObject:book,options:[.sortedKeys]).write(to:URL(fileURLWithPath:CommandLine.arguments[2]));return
     }
     if CommandLine.arguments.contains("--self-test") {
+      let assetFaults=try assetReaderCheck()
       var maximum=0.0;var falseAccepts:UInt32=0
       let status=hx_vision_selftest(&maximum,&falseAccepts)
       var graphError=0.0;let graphStatus=hx_graph_selftest(&graphError)
       var referenceError=0.0;let referenceStatus=hx_reference_selftest(&referenceError)
-      print(String(data:try JSONSerialization.data(withJSONObject:["passed":status==1 && graphStatus==1 && referenceStatus==1,"referenceStatus":referenceStatus,"referenceMaxPositionErrorMetres":referenceError,"referenceAnalyticCases":50,"sourceBoardAnalyticCases":25,"status":status,"graphStatus":graphStatus,"graphMaxPositionErrorMetres":graphError,"maxPositionErrorMetres":maximum,"randomCorrespondenceFalseAccepts":falseAccepts,"positiveCases":200,"negativeCases":300,"imageQualification":false],options:[.sortedKeys]),encoding:.utf8)!)
+      print(String(data:try JSONSerialization.data(withJSONObject:["passed":status==1 && graphStatus==1 && referenceStatus==1 && assetFaults==3,"assetReadFaultsRefused":assetFaults,"referenceStatus":referenceStatus,"referenceMaxPositionErrorMetres":referenceError,"referenceAnalyticCases":50,"sourceBoardAnalyticCases":25,"status":status,"graphStatus":graphStatus,"graphMaxPositionErrorMetres":graphError,"maxPositionErrorMetres":maximum,"randomCorrespondenceFalseAccepts":falseAccepts,"positiveCases":200,"negativeCases":300,"imageQualification":false],options:[.sortedKeys]),encoding:.utf8)!)
       fflush(stdout)
+      guard assetFaults==3 else{throw HouseError.message("Original asset read fault checks failed.")}
       guard referenceStatus==1 else{throw HouseError.message("Reference pose diagnostics failed at gate \(referenceStatus).") }
       guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed at gate \(graphStatus).")}
       guard status==1 else{throw HouseError.message("Native vision diagnostics failed.")};return
@@ -138,4 +156,21 @@ final class DiskEvidence:EvidenceAssetReader {
     print(String(data:try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]),encoding:.utf8)!)
   }
 
+  private static func assetReaderCheck()throws->Int {
+    let root=FileManager.default.temporaryDirectory.appendingPathComponent("asset-reader-"+UUID().uuidString)
+    try FileManager.default.createDirectory(at:root.appendingPathComponent("assets"),withIntermediateDirectories:true)
+    defer{try? FileManager.default.removeItem(at:root)}
+    let original=Data("Known captured evidence".utf8)
+    let key=SHA256.hash(data:original).map{String(format:"%02x",$0)}.joined()+".bin"
+    let url=root.appendingPathComponent("assets").appendingPathComponent(key),reader=DiskEvidence(root)
+    try original.write(to:url)
+    guard try reader.read(key)==original,try reader.read(key,limit:original.count)==original else{throw HouseError.message("Healthy asset read failed.")}
+    var refused=0
+    do{_=try reader.read(key,limit:original.count-1)}catch{refused+=1}
+    var corrupt=original;corrupt[3] ^= 1;try corrupt.write(to:url)
+    do{_=try reader.read(key)}catch{refused+=1}
+    do{_=try reader.read(key,limit:original.count)}catch{refused+=1}
+    guard try Data(contentsOf:url)==corrupt else{throw HouseError.message("Failed asset read changed the saved bytes.")}
+    return refused
+  }
 }

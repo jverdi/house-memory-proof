@@ -28,9 +28,8 @@ enum BundleRefinement {
     let lookup=Dictionary(uniqueKeysWithValues:observations.enumerated().map{($0.element.id,$0.offset)})
     let cameras=observations.flatMap{$0.camera},points=vertices.flatMap{[$0.x,$0.z,-$0.y]}
     let intrinsics=observations.flatMap{[$0.intrinsics[0],$0.intrinsics[4],$0.intrinsics[2],$0.intrinsics[5]]}
-    var depths:[UUID:Data]=[:],confidences:[UUID:Data]=[:]
-    for o in observations {try Task.checkCancellation();if let key=o.depth {depths[o.id]=try repo.read(key)};if let key=o.confidence {confidences[o.id]=try repo.read(key)}}
     var evidence:[HXBundleObservation]=[]
+    var depthInputs=[[(evidence:Int,point:Int,order:Int)]](repeating:[],count:observations.count)
     for (point,track) in tracks.enumerated() {
       for (order,control) in track.controls.enumerated() {
         guard let camera=lookup[control.observationID] else{throw HouseError.message("Track references an unavailable camera estimate.")}
@@ -38,9 +37,22 @@ enum BundleRefinement {
         // This point's held-out image is never a residual or depth constraint
         // in the solve, even when that camera fits other independent points.
         let fitting=order != heldOut[point]
-        let depth=fitting ? measuredDepth(control,point:vertices[point],observation:o,data:depths[o.id],confidence:confidences[o.id]):0
-        evidence.append(HXBundleObservation(camera:UInt32(camera),point:UInt32(point),fit:fitting ? 1:0,u:control.u*Double(o.width),v:control.v*Double(o.height),depth:depth))
+        if fitting {depthInputs[camera].append((evidence.count,point,order))}
+        evidence.append(HXBundleObservation(camera:UInt32(camera),point:UInt32(point),fit:fitting ? 1:0,u:control.u*Double(o.width),v:control.v*Double(o.height),depth:0))
       }
+    }
+    // Keep the original residual order, but inspect one verified camera buffer
+    // pair at a time. Held-out observations never receive depth constraints.
+    for (camera,o) in observations.enumerated() {
+      try Task.checkCancellation()
+      let w=o.depthWidth,h=o.depthHeight
+      guard !depthInputs[camera].isEmpty,w>=3,h>=3,w<=1000000/h,let depthKey=o.depth,let confidenceKey=o.confidence else{continue}
+      let depth=try repo.read(depthKey,limit:w*h*4),confidence=try repo.read(confidenceKey,limit:w*h)
+      for input in depthInputs[camera] {
+        if input.evidence%256==0 {try Task.checkCancellation()}
+        evidence[input.evidence].depth=measuredDepth(tracks[input.point].controls[input.order],point:vertices[input.point],observation:o,data:depth,confidence:confidence)
+      }
+      depthInputs[camera]=[]
     }
     var outputCameras=[Double](repeating:0,count:cameras.count),outputPoints=[Double](repeating:0,count:points.count),quality=HXBundleQuality()
     let status=cameras.withUnsafeBufferPointer{c in points.withUnsafeBufferPointer{p in intrinsics.withUnsafeBufferPointer{k in evidence.withUnsafeBufferPointer{e in outputCameras.withUnsafeMutableBufferPointer{oc in outputPoints.withUnsafeMutableBufferPointer{op in
@@ -63,11 +75,11 @@ enum BundleRefinement {
   }
   static func measuredDepth(_ control:PhotoControl,point:V3,observation o:Observation,data:Data?,confidence:Data?)->Double {
     let w=o.depthWidth,h=o.depthHeight
-    guard w>=3,h>=3,w*h<=1000000,let data,data.count==w*h*4,let confidence,confidence.count==w*h else{return 0}
+    guard w>=3,h>=3,w<=1000000/h,let data,data.count==w*h*4,let confidence,confidence.count==w*h else{return 0}
     let px=control.u*Double(w),py=control.v*Double(h),x=Int(px),y=Int(py)
     guard x>0,y>0,x<w-1,y<h-1 else{return 0}
     var values:[Double]=[]
-    for dy in -1...1 {for dx in -1...1 {let i=(y+dy)*w+x+dx;guard confidence[i]>=2 else{return 0};let value=Double(data.withUnsafeBytes{$0.loadUnaligned(fromByteOffset:i*4,as:Float.self)});guard value.isFinite,value>=0.15,value<=5 else{return 0};values.append(value)}}
+    for dy in -1...1 {for dx in -1...1 {let i=(y+dy)*w+x+dx;guard confidence[i]==2 else{return 0};let value=Double(data.withUnsafeBytes{$0.loadUnaligned(fromByteOffset:i*4,as:Float.self)});guard value.isFinite,value>=0.15,value<=5 else{return 0};values.append(value)}}
     guard values.max()!-values.min()!<0.04 else{return 0}
     let tx=px-Double(x),ty=py-Double(y),depth=values[4]*(1-tx)*(1-ty)+values[5]*tx*(1-ty)+values[7]*(1-tx)*ty+values[8]*tx*ty
     let native=SIMD4(point.x,point.z,-point.y,1),camera=simd_inverse(PoseRefinement.matrix(o.camera)!)*native

@@ -7,7 +7,7 @@ struct VisualMapsPage: View {
   var body: some View {
     Form {
       Text(
-        "Build an experimental visual reference from sharp, overlapping depth photographs. Later views must match two separated captured viewpoints. Blank planar walls are deliberately rejected. This does not enable a precision profile."
+        "Build an experimental visual reference from sharp, overlapping photographs with reliable depth confidence. Later views must match two separated captured viewpoints. Blank planar walls are deliberately rejected. This does not enable a precision profile."
       ).font(.footnote)
       Picker("Capture segment", selection: $selected) {
         Text("Choose").tag(UUID?.none)

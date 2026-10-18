@@ -36,6 +36,17 @@ import simd
         let folder=FileManager.default.temporaryDirectory.appendingPathComponent("self-tests-"+UUID().uuidString)
         do {
             let repo=try Repository(root:folder);var house=DemoFactory.make()
+            await check("Original asset reads refuse same-size corruption without rewriting saved bytes") {
+                let isolated=try Repository(root:folder.appendingPathComponent("asset-read-integrity"))
+                let original=Data("Captured original evidence".utf8),key=try isolated.put(original,ext:"bin")
+                guard try isolated.read(key)==original,try isolated.read(key,limit:original.count)==original else{return false}
+                do {_=try isolated.read(key,limit:original.count-1);return false}catch{}
+                var corrupt=original;corrupt[3] ^= 1
+                let file=try isolated.assetURL(key);try DurableFiles.write(corrupt,to:file)
+                do {_=try isolated.read(key);return false}catch{}
+                do {_=try isolated.read(key,limit:original.count);return false}catch{}
+                return try Data(contentsOf:file)==corrupt
+            }
             mark("Coded reference image-to-pose integration")
             do {results.append(try codedReferenceReport(repo:Repository(root:folder.appendingPathComponent("coded-references")),outputRoot:mainRepo.root))}
             catch {results.append(["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":false,"error":error.localizedDescription])}
@@ -430,7 +441,7 @@ import simd
                 let good=try CoverageAnalyzer.analyze(house:h,segment:segment,repo:repo)
                 guard good.sampledPatches==1,good.supportedPatches==1,abs(good.observedArea-0.045)<1e-9 else{return false}
                 let foreground=try plane(1.95),absent=try plane(0)
-                for fault in 0..<9 {
+                for fault in 0..<10 {
                     h.observations=o
                     for i in h.observations.indices {
                         switch fault {
@@ -442,7 +453,8 @@ import simd
                         case 5:h.observations[i].camera[3]=0
                         case 6:h.observations[i].sharpness=0
                         case 7:h.observations[i].light=50
-                        default:h.observations[i].confidence=try repo.put(Data([2]),ext:"confidence8")
+                        case 8:h.observations[i].confidence=try repo.put(Data([2]),ext:"confidence8")
+                        default:h.observations[i].confidence=try repo.put(Data(repeating:255,count:256),ext:"confidence8")
                         }
                     }
                     guard try CoverageAnalyzer.analyze(house:h,segment:segment,repo:repo).supportedPatches==0 else{return false}
@@ -468,9 +480,16 @@ import simd
                 var unseen=b;unseen.origin.x=100
                 let unknown=try BoundaryCoverage.analyze(house:h,boundary:unseen,repo:repo)
                 guard supported.supported>0 && blocked.supported==0 && blocked.states.contains(3) && unknown.states.allSatisfy({$0==0}) else{return false}
-                for i in h.observations.indices {h.observations[i].confidence=nil}
-                var unverified=b;unverified.sourceFingerprint=try VisualMapping.fingerprint(house:h,segment:segment)
-                return try BoundaryCoverage.analyze(house:h,boundary:unverified,repo:repo).supported==0
+                for fault in 0..<2 {
+                    for i in h.observations.indices {
+                        let count=h.observations[i].depthWidth*h.observations[i].depthHeight
+                        if fault==0 {h.observations[i].confidence=nil}
+                        else {h.observations[i].confidence=try repo.put(Data(repeating:255,count:count),ext:"confidence8")}
+                    }
+                    var unverified=b;unverified.sourceFingerprint=try VisualMapping.fingerprint(house:h,segment:segment)
+                    guard try BoundaryCoverage.analyze(house:h,boundary:unverified,repo:repo).supported==0 else{return false}
+                }
+                return true
             }
             await check("Disconnected photograph is excluded without inventing camera corrections") {
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
@@ -616,6 +635,43 @@ import simd
                 }
                 guard matched>=2,worst<0.03 else{throw HouseError.message("Image localization: \(matched)/3 held views, worst accepted position error \(worst) m, \(map.points.count) map features.")}
                 return true
+            }
+            await check("Visual maps reject missing, weak, invalid and oversized depth confidence") {
+                let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
+                let capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
+                let segment=capture.segments[0],original=capture.observations
+                let healthy=try VisualMapping.build(house:capture,segment:segment,repo:repo)
+                guard healthy.valid else{return false}
+                for fault in 0..<7 {
+                    var changed=capture
+                    for i in changed.observations.indices where changed.observations[i].segmentID==segment.id {
+                        let o=changed.observations[i],count=o.depthWidth*o.depthHeight
+                        guard let depthKey=o.depth,count>=9 else{continue}
+                        switch fault {
+                        case 0:changed.observations[i].confidence=nil
+                        case 1:changed.observations[i].confidence=try repo.put(Data(repeating:1,count:count),ext:"confidence8")
+                        case 2:
+                            var confidence=Data(repeating:2,count:count)
+                            for pixel in confidence.indices where (pixel/o.depthWidth+pixel%o.depthWidth)%2==1 {confidence[pixel]=1}
+                            changed.observations[i].confidence=try repo.put(confidence,ext:"confidence8")
+                        case 3:changed.observations[i].confidence=try repo.put(Data(repeating:255,count:count),ext:"confidence8")
+                        case 4:changed.observations[i].confidence=try repo.put(Data(repeating:2,count:count-1),ext:"confidence8")
+                        case 5:changed.observations[i].confidence=try repo.put(Data(repeating:2,count:count+1),ext:"confidence8")
+                        default:
+                            var depth=try repo.read(depthKey);depth.append(0)
+                            changed.observations[i].depth=try repo.put(depth,ext:"depth32")
+                        }
+                    }
+                    do {_=try VisualMapping.build(house:changed,segment:segment,repo:repo);return false}catch{}
+                }
+                // A bounded rejection must preserve original bytes and source
+                // metadata so the healthy capture remains independently usable.
+                for o in original where o.segmentID==segment.id {
+                    guard let key=o.confidence,try repo.read(key,limit:o.depthWidth*o.depthHeight).count==o.depthWidth*o.depthHeight else{return false}
+                }
+                let fingerprint=try VisualMapping.fingerprint(house:capture,segment:segment)
+                let assets=try repo.integrity(capture)
+                return capture.observations==original && healthy.fingerprint==fingerprint && assets==capture.assets.count
             }
             await check("Derived surfaces are excluded when camera inputs change"){
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!

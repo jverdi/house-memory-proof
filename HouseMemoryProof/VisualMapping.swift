@@ -4,7 +4,10 @@ import ImageIO
 import simd
 import CoreGraphics
 
-protocol EvidenceAssetReader {func read(_ key:String)throws->Data}
+protocol EvidenceAssetReader {
+  func read(_ key:String)throws->Data
+  func read(_ key:String,limit:Int)throws->Data
+}
 
 struct VisualMapReference: Codable, Identifiable, Equatable {
   var id=UUID();var segmentID:UUID;var roomID:UUID;var stageID:UUID
@@ -26,7 +29,7 @@ enum VisualMapping {
   struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v14-contradictory-depth-abstention";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v15-explicit-depth-confidence";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -70,9 +73,9 @@ enum VisualMapping {
     return (0..<count).map{ordered[$0*(ordered.count-1)/(count-1)]}
   }
   static func build(house:House,segment:Segment,repo:any EvidenceAssetReader,maximumViews:Int=12)throws->VisualMap {
-    let all=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && !$0.documentary}
+    let all=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && $0.confidence != nil && !$0.documentary}
     let selected=PoseRefinement.selected(all,segment:segment,house:house).0.filter{$0.sharpness>=0.02}
-    guard selected.count>=2 else{throw HouseError.message("Capture at least two overlapping, sharp depth views of this stage first.")}
+    guard selected.count>=2 else{throw HouseError.message("Capture at least two overlapping, sharp views with confident depth of this stage first.")}
     var map=VisualMap(segmentID:segment.id,roomID:segment.roomID,stageID:segment.stageID,frameID:segment.registration==nil ? segment.id:nil,fingerprint:try fingerprint(house:house,segment:segment),points:[],descriptors:Data(),views:[])
     var optimized:[UUID:[PixelIdentity:V3]]=[:],conflicts:[UUID:Set<PixelIdentity>]=[:]
     if let solution=segment.poseSolution,solution.fingerprint == (try? PoseGraph.fingerprint(house:house,segment:segment)),let landmarks=solution.landmarks {
@@ -86,18 +89,21 @@ enum VisualMapping {
     for o in retainedViews {
       try Task.checkCancellation()
       let w=o.depthWidth,h=o.depthHeight
-      guard w>=3,h>=3,w*h<=1000000 else{continue}
-      let depth=try repo.read(o.depth!),confidence=try o.confidence.map{try repo.read($0)}
-      guard depth.count==w*h*4,confidence==nil || confidence?.count==w*h else{continue}
+      guard w>=3,h>=3,w<=1000000/h else{continue}
+      guard let depthKey=o.depth,let confidenceKey=o.confidence else{continue}
+      let depth=try repo.read(depthKey,limit:w*h*4),confidence=try repo.read(confidenceKey,limit:w*h)
+      guard depth.count==w*h*4,confidence.count==w*h else{continue}
       let features=try detectImage(repo.read(o.image),cameraWidth:o.width,cameraHeight:o.height)
       let start=map.points.count
       for i in 0..<features.count {
         let u=Double(features.xy[i*2]),v=Double(features.xy[i*2+1]);let x=Int(u*Double(w)),y=Int(v*Double(h))
         guard x>0,y>0,x<w-1,y<h-1 else{continue}
-        if let confidence,confidence[y*w+x]<2{continue}
         var samples:[Double]=[]
-        for dy in -1...1{for dx in -1...1{samples.append(Double(depth.withUnsafeBytes{$0.loadUnaligned(fromByteOffset:((y+dy)*w+x+dx)*4,as:Float.self)}))}}
-        guard samples.allSatisfy({$0.isFinite && $0>=0.15 && $0<=5}),let low=samples.min(),let high=samples.max(),high-low<0.04 else{continue}
+        for dy in -1...1 {for dx in -1...1 {
+          let pixel=(y+dy)*w+x+dx
+          if confidence[pixel]==2 {samples.append(Double(depth.withUnsafeBytes{$0.loadUnaligned(fromByteOffset:pixel*4,as:Float.self)}))}
+        }}
+        guard samples.count==9,samples.allSatisfy({$0.isFinite && $0>=0.15 && $0<=5}),let low=samples.min(),let high=samples.max(),high-low<0.04 else{continue}
         // Interpolate the continuous depth patch at the RGB feature's subpixel
         // location. Nearest-cell depth biases oblique surfaces by up to one
         // coarse depth pixel; the continuity gate above still rejects edges.

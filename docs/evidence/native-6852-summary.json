@@ -1,0 +1,122 @@
+{
+  "source": "6852e809d0bbacda7a022ba92e5e0e5f6ff932c9",
+  "run": 39085733551,
+  "build": "188.1",
+  "platform": "iPhone simulator",
+  "nativePassed": 120,
+  "nativeFailed": 0,
+  "elapsedSeconds": 232.3496245416668,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1197965312,
+    "physicalFootprintBytes": 65217024,
+    "residentBytes": 244678656
+  },
+  "processKillChecksPassed": 3,
+  "interfaceStepPassed": true,
+  "independentReadersPassed": true,
+  "completeIntegratedPass": true,
+  "precisionProfileEnabled": false,
+  "fieldAccuracyValidated": false,
+  "artifact": {
+    "id": 12120439828,
+    "sha256": "b178157595e30aaf808527ed9156aee9499a6672e656b0be98150a0dadaf040b",
+    "sha256IndependentlyVerified": true
+  },
+  "movie": {
+    "decodedFrames": 300,
+    "durationSeconds": 10,
+    "height": 1080,
+    "passed": true,
+    "recoveredEncoderStalls": [],
+    "seconds": 68.41833825000003,
+    "test": "1080p30 MP4 encode, decode and verified chunk reuse",
+    "width": 1920
+  },
+  "movieRecovery": {
+    "actualTaskCancellation": true,
+    "faultPhases": [
+      "mid-shot",
+      "shot-committed",
+      "assembly-started",
+      "assembly-completed"
+    ],
+    "passed": true,
+    "physicalDeviceQualified": false,
+    "recoveredFrames": 150,
+    "recoveredMovieSHA256": "4af98050ecdd5a301d27f4aeab588fcaf27b9df9de585f028193e4644ad0f73f",
+    "retainedShots": 3,
+    "test": "Movie interruption and final-publication recovery"
+  },
+  "encoderRetry": {
+    "completedShotsPreserved": 1,
+    "corruptChecksumRebuiltFrames": 50,
+    "injectedFailures": 3,
+    "passed": true,
+    "persistentFailureAttempts": 2,
+    "physicalDeviceQualified": false,
+    "successfulRetryCount": 1,
+    "test": "Movie encoder retries one unfinished shot and stops after a second stall"
+  },
+  "search": {
+    "defaultPageSize": 200,
+    "imageFilesRead": 0,
+    "indexBuildMilliseconds": 501.97912499993436,
+    "limitations": "Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone.",
+    "passed": true,
+    "photographs": 50000,
+    "queries": 12,
+    "queryP95Milliseconds": 139.02149999989888,
+    "test": "Fifty-thousand photograph metadata search",
+    "uniquePhotoMetadata": 50000
+  },
+  "registration": {
+    "descendantsInvalidated": 19,
+    "incorrectScaleRefused": 19,
+    "independentlyMovedControlsRefused": 19,
+    "limitations": "Exact analytic reference poses; not image-based house, sensor-scale or physical precision qualification.",
+    "maximumAnalyticWitnessErrorMetres": 1.813711657009355e-14,
+    "passed": true,
+    "physicalDeviceQualified": false,
+    "sessions": 20,
+    "test": "Chained session registration preserves the house frame and invalidates descendants"
+  },
+  "limitations": [
+    "Simulator evidence does not qualify phone performance or field precision.",
+    "No spontaneous encoder capacity timeout occurred in this run; bounded fault-injected recovery passed."
+  ],
+  "independentReaderReportsPassed": 12,
+  "independentReaderReportFiles": [
+    "archive-validation.json",
+    "chunked-snapshot-validation.json",
+    "house-surface-gltf-validation.json",
+    "mesh-interchange-validation.json",
+    "offline-viewer-validation.json",
+    "points-gltf-validation.json",
+    "points-usd-validation.json",
+    "semantic-csv-validation.json",
+    "test-gltf-validation.json",
+    "test-usd-validation.json",
+    "textured-gltf-validation.json",
+    "textured-usd-validation.json"
+  ],
+  "portableCases": 50,
+  "interfaceTestsPassed": 5,
+  "interfaceElapsedSeconds": 402.623,
+  "testflightUpload": false,
+  "fullArtifact": {
+    "id": 12121571233,
+    "sha256": "62ffc243b9416f16cceb653274a8fc673ceb3fdff0dc43319443f771c61b78c6",
+    "sha256IndependentlyVerified": true
+  },
+  "independentMovieCheck": {
+    "reader": "FFmpeg ffprobe and complete ffmpeg decode",
+    "width": 1920,
+    "height": 1080,
+    "frames": 300,
+    "framesPerSecond": 30,
+    "durationSeconds": 10,
+    "decodeExitCode": 0,
+    "visuallyInspectedFrame": true,
+    "sha256": "81805403832c1797c8f92f85507d97bd644c3c0f04bf51858af7e84bf2ce393a"
+  }
+}
