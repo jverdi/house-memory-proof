@@ -1,31 +1,34 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T17:50:46.602894Z",
+  "updatedUTC": "2026-10-18T18:14:26.125932Z",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+  "currentImplementationCommit": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
   "testflight": {
-    "build": "161.1",
-    "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
+    "build": "216.1",
+    "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
     "appleProcessing": "VALID",
     "internalState": "IN_BETA_TESTING",
     "ownerAccessVerified": true,
     "physicalInstallationVerified": false,
-    "readinessRun": 39080146782,
-    "additionalIntermediateUploads": false
+    "readinessRun": 39153055373,
+    "deliveryRun": 39149363050,
+    "evidence": "docs/evidence/testflight-216-1-summary.json",
+    "acceptedRelease": false,
+    "automaticRenewalEnabled": false
   },
   "verifiedNative": {
-    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
-    "passed": 163,
+    "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+    "passed": 170,
     "failed": 0,
-    "artifact": 12140104811,
-    "sha256": "9f60cd39ff0026a11c34f6182e9692939adc49c60987c98144476682f87f4bb5",
+    "artifact": 12145405843,
+    "sha256": "dd09f811874a2d304e9b9481f7c84c3075474265c7e5bb26f9f9fa81fba27814",
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "whole-house product qualification",
-      "remaining": "Bounded reveal, reviewed service-route, importer and metadata-sharing cases pass complete integration at d7f5. Full-house navigation/streaming, mixed-stage coverage, broad tour/route coverage, drawing recognition and large-workload qualification remain open."
+      "remaining": "Source 216.1 passes 170 native checks, thirteen interface flows and all 34 export reports. Connected analytic navigation is under validation at 218.1. Reconstructed-house navigation/streaming, mixed-stage/closed-loop coverage, broad tour/route coverage and device workloads remain open."
     },
     {
       "area": "finished localization",
@@ -37,11 +40,11 @@
     },
     {
       "area": "registration and thin services",
-      "remaining": "Straight measured envelopes pass native archive/GLB/CSV checks at 6033. Broad curve/envelope geometry, calibrated uncertainty and whole-house registration qualification remain open."
+      "remaining": "Straight and connected circular measured envelopes pass complete native/archive/GLB/CSV integration at 216.1. Broad thin-route/variable-section geometry, calibrated uncertainty and whole-house registration qualification remain open."
     },
     {
       "area": "persistence and interchange",
-      "remaining": "Complete large-workload, cross-version, semantic handoff, importer and provider fault matrices."
+      "remaining": "The genuine 161.1-source schema 1 archive preserves 217 features, three rooms and original bytes through current re-export/reimport; future-schema refusal passes. Actual signed-app update, large-device workloads and real provider fault matrices remain open."
     },
     {
       "area": "release durability",
@@ -53,21 +56,23 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Continue independent full-house navigation/streaming, mixed-stage coverage, curved-envelope and cross-version acceptance. Preserve the original finished-localization failures and exhausted five-attempt budget. Owner-device/provider and measured field qualification remain required; deliver the newly owner-requested current-state TestFlight snapshot, then continue implementation.",
+  "nextAction": "Complete the 218.1 interface/export integration and retain exact-source results. Continue independent full-house navigation/streaming, mixed-stage coverage, broad service-envelope and cross-version acceptance. Preserve original finished-localization failures and the exhausted five-attempt budget. The requested 216.1 snapshot is available to its owner; device/provider and measured field qualification remain required.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "c835925d412db66ec204825e1f2cec4093917394",
-    "run": 39147161265,
-    "build": "215.1",
-    "nativeExpected": 170,
+    "source": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
+    "run": 39151470099,
+    "build": "218.1",
+    "nativeExpected": 171,
     "interfaceExpected": 13,
+    "nativeReaderPhasesExpected": 18,
     "integrationComplete": false,
-    "status": "All app and reader checks pass; enclosing ten-minute native step timed out after cold simulator startup",
-    "nativePassed": 170,
-    "nativeFailed": 0,
-    "nativePhaseChecksPassed": 17,
-    "nativeSeconds": 283.7584302916666,
-    "evidence": "docs/evidence/native-c835-summary.json"
+    "status": "native_passed_interface_running",
+    "nativePassed": 171,
+    "nativeReaderPhasesPassed": 18,
+    "commandContractsPassed": 48,
+    "nativeSeconds": 190.86271375,
+    "nativeArtifact": 12144944730,
+    "nativeArtifactSHA256": "7a41f7c4107241770b4511be5b6ef4a8cf2bb0738ff5af0bf34d3c53b819b3df"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -112,24 +117,24 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
-    "run": 39138960576,
-    "nativePassed": 163,
+    "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+    "run": 39149363050,
+    "nativePassed": 170,
     "nativeFailed": 0,
-    "nativePhaseChecksPassed": 15,
-    "interfacePassed": 12,
+    "nativePhaseChecksPassed": 17,
+    "interfacePassed": 13,
     "interfaceFailed": 0,
-    "uiSeconds": 1004.189,
+    "uiSeconds": 1058.337,
     "processKillPassed": 3,
-    "validationReportsPassed": 32,
+    "validationReportsPassed": 34,
     "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12141826272,
-      "sha256": "f30036a78518f57c08b3ed48c1f3645da6df5415fc1a48a17e646e91ba91c709",
+      "id": 12144619865,
+      "sha256": "daf782cee416aaf7850e7c269b55d8c8e6ac0b9995fec285ddcca40d3843e7ff",
       "sha256IndependentlyVerified": true
     },
     "portableCasesPassed": 50,
-    "commandContractTestsPassed": 36,
+    "commandContractTestsPassed": 44,
     "nativeTourCLIValidated": true,
     "nativeServiceTourCLIValidated": true,
     "nativeReconstructionCLIValidated": true
@@ -716,13 +721,13 @@
     "interfaceFlowSeconds": 50.902
   },
   "requestedSnapshot": {
-    "status": "native_passed_interface_in_progress",
-    "implementationSource": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
-    "validatedRun": 39138960576,
+    "status": "available_to_owner",
+    "implementationSource": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+    "validatedRun": 39149363050,
     "ownerRequest": "Also please trigger a new TestFlight",
     "fullyQualifiedRelease": false,
-    "appleProcessingVerified": false,
-    "internalTesterAccessVerified": false,
+    "appleProcessingVerified": true,
+    "internalTesterAccessVerified": true,
     "physicalInstallationVerified": false,
     "initialAttempt": {
       "source": "f0fbc7444bb65a61f71f57174137fb2db3ebbf0c",
@@ -778,8 +783,24 @@
       "nativePhaseConclusion": "success",
       "nativeArtifact": 12145405843,
       "nativeArtifactSHA256": "dd09f811874a2d304e9b9481f7c84c3075474265c7e5bb26f9f9fa81fba27814",
-      "appleUploadVerified": false,
-      "interfaceStatus": "in_progress"
+      "appleUploadVerified": true,
+      "interfaceStatus": "passed",
+      "interfacePassed": 13,
+      "interfaceSeconds": 1058.337,
+      "fullArtifact": 12144619865,
+      "fullArtifactSHA256": "daf782cee416aaf7850e7c269b55d8c8e6ac0b9995fec285ddcca40d3843e7ff",
+      "simulatorConclusion": "success",
+      "integrationComplete": true,
+      "appleJob": 117748373792,
+      "appleJobConclusion": "success",
+      "uploadArtifact": 12145419638,
+      "uploadArtifactSHA256": "86e3105d72275ff3fc108395017c68b717b03301346f988af5e9602c701528e8",
+      "readinessRun": 39153055373,
+      "readinessArtifact": 12145419830,
+      "readinessArtifactSHA256": "70c785469c24da1d57d7cd91c6af91b3eeb4604e9ac50dfe5f83a8fd17800f2e",
+      "appleProcessing": "VALID",
+      "internalBuildState": "IN_BETA_TESTING",
+      "ownerAccessVerified": true
     },
     "previousAttempt": {
       "source": "c835925d412db66ec204825e1f2cec4093917394",
@@ -799,7 +820,8 @@
       "fullArtifactSHA256": "8413c073426a5d4f911c49707d6ee361b138337abc9e78cc928581b4d01853b6",
       "workflowConclusion": "failure",
       "uploadSkipped": true
-    }
+    },
+    "deliveryEvidence": "docs/evidence/testflight-216-1-summary.json"
   },
   "pendingContinuation": {
     "scope": [
@@ -828,7 +850,10 @@
       ],
       "boundaryCompatibilityAndReleaseValidationPending": false
     },
-    "nativeValidatedSource": "c835925d412db66ec204825e1f2cec4093917394"
+    "nativeValidatedSource": "c835925d412db66ec204825e1f2cec4093917394",
+    "completeIntegratedPass": true,
+    "integratedSource": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+    "interfaceValidated": true
   },
   "captureRuntimeCandidate": {
     "prepared": true,
@@ -853,7 +878,8 @@
       "validatedSource": "c835925d412db66ec204825e1f2cec4093917394",
       "passed": true
     },
-    "independentReaderPassed": true
+    "independentReaderPassed": true,
+    "completeIntegratedSource": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a"
   },
   "drawingBenchmarkCandidate": {
     "prepared": true,
@@ -879,7 +905,8 @@
       "small": 0.32,
       "large": 0.5
     },
-    "negativeCaseProposals": 2
+    "negativeCaseProposals": 2,
+    "completeIntegratedSource": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a"
   },
   "closureReviewCandidate": {
     "prepared": true,
@@ -895,15 +922,18 @@
     "interfaceValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
     "interfacePassed": true,
     "interfaceSeconds": 27.216,
-    "visualInspectionPassed": true
+    "visualInspectionPassed": true,
+    "completeIntegratedSource": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a"
   },
   "ownerDeviceProtocol": "docs/DEVICE_ACCEPTANCE.md",
   "latestHostReplay": {
-    "source": "da549f2bf1fa4c34a3796f5fcd5b56dbd1bafbb5",
+    "source": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
     "artifactsSHA256Verified": 12,
-    "evidence": "docs/evidence/host-da549-summary.json",
+    "evidence": "docs/evidence/host-11ad-summary.json",
+    "hostBinaryUnchanged": true,
     "originalFailuresRetained": true,
-    "protectedDraw": false
+    "protectedDraw": false,
+    "newDetectorAttempt": false
   },
   "simulatorStartupRepair": {
     "prepared": true,
@@ -935,12 +965,17 @@
     "expectedReaderPhases": 18,
     "expectedUIFlows": 13,
     "localCommandContractsPassed": 48,
-    "nativeValidationPending": true,
-    "independentTraceReaderPending": true,
+    "nativeValidationPending": false,
+    "independentTraceReaderPending": false,
     "reconstructedTopologyQualified": false,
     "physicalQualification": false,
     "horizontalRoundTripMetres": 56.8,
-    "perStepRefusalTraces": true
+    "perStepRefusalTraces": true,
+    "nativeSource": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
+    "nativeRun": 39151470099,
+    "passed": true,
+    "casesPassed": 8,
+    "independentMaximumCoordinateErrorMetres": 1.2588500979404671e-05
   },
   "batchSelectionRecovery": {
     "failedSource": "c835925d412db66ec204825e1f2cec4093917394",
@@ -949,7 +984,40 @@
     "expectedValueNotReached": true,
     "keyboardVisibleAfterFailure": true,
     "repair": "Expose Done for the object filter and explicitly finish text entry before selection; preserve both switch-state and applied-classification assertions.",
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "interfaceValidationPending": true
+  },
+  "previousIntegratedPass": {
+    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+    "run": 39138960576,
+    "nativePassed": 163,
+    "nativeFailed": 0,
+    "nativePhaseChecksPassed": 15,
+    "interfacePassed": 12,
+    "interfaceFailed": 0,
+    "uiSeconds": 1004.189,
+    "processKillPassed": 3,
+    "validationReportsPassed": 32,
+    "completeIntegratedPass": true,
+    "fullArtifact": {
+      "id": 12141826272,
+      "sha256": "f30036a78518f57c08b3ed48c1f3645da6df5415fc1a48a17e646e91ba91c709",
+      "sha256IndependentlyVerified": true
+    },
+    "portableCasesPassed": 50,
+    "commandContractTestsPassed": 36,
+    "nativeTourCLIValidated": true,
+    "nativeServiceTourCLIValidated": true,
+    "nativeReconstructionCLIValidated": true
+  },
+  "previousTestflight": {
+    "build": "161.1",
+    "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
+    "appleProcessing": "VALID",
+    "internalState": "IN_BETA_TESTING",
+    "ownerAccessVerified": true,
+    "physicalInstallationVerified": false,
+    "readinessRun": 39080146782,
+    "additionalIntermediateUploads": false
   }
 }

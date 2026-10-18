@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "build": "216.1",
+  "sourceRevision": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+  "deliveryRun": 39149363050,
+  "nativeChecks": 170,
+  "nativePassed": true,
+  "interfaceWorkflowsPassed": 13,
+  "exportValidationReportsPassed": 34,
+  "simulatorWorkflowPassed": true,
+  "archiveAndUploadPassed": true,
+  "readinessRun": 39153055373,
+  "appleProcessing": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "ownerAccessVerified": true,
+  "internalGroup": "Personal iPhone",
+  "uploadedDate": "2026-10-18T11:12:23-07:00",
+  "expirationDate": "2027-01-16T10:12:23-08:00",
+  "physicalInstallationVerified": false,
+  "precisionQualified": false,
+  "acceptedRelease": false,
+  "automaticRenewalEnabled": false,
+  "signedDistribution": {
+    "signatureVerified": true,
+    "releaseIdentityVerified": true,
+    "debuggerAttachmentAllowed": false,
+    "backgroundGPURequested": false,
+    "executableSHA256": "d8328d58628a1eb7681d93071def61d188213f0514346ff5adcb11e2c40d73f7",
+    "symbolsSHA256": "aacfb0b847ae38780e277eacf467fd99931dce16f2811592f73e5d381e1c3bc9",
+    "inspectedIPASHA256": "94fd7e337bf436c9fb1f002d51cb35115511deece332b16d13111860dbfe20d9",
+    "inspectedIPABytes": 17161522
+  },
+  "matchingSymbolsRetained": true,
+  "uploadedIPAHashIndependentlyVerified": false,
+  "artifacts": {
+    "upload": {
+      "id": 12145419638,
+      "sha256": "86e3105d72275ff3fc108395017c68b717b03301346f988af5e9602c701528e8",
+      "sha256IndependentlyVerified": true
+    },
+    "readiness": {
+      "id": 12145419830,
+      "sha256": "70c785469c24da1d57d7cd91c6af91b3eeb4604e9ac50dfe5f83a8fd17800f2e",
+      "sha256IndependentlyVerified": true
+    }
+  }
+}

@@ -1,3 +1,13 @@
+## TestFlight 216.1 is available; follow-up native checks pass
+
+Apple processing is **VALID**, internal state is **IN_BETA_TESTING**, and the verified owner has access through **Personal iPhone**. Build **216.1**, source **f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a**, completed delivery run **39149363050** and readiness run **39153055373**. Both upload/readiness artifacts are independently SHA-256 verified. Signed distribution identity and matching retained symbols pass; debugger attachment is disabled. Physical installation is unverified. This is the requested development snapshot; final acceptance and automatic renewal remain gated. Evidence: `docs/evidence/testflight-216-1-summary.json`.
+
+Its full simulator integration passes **170/170 native checks, all 17 reader/command phases, 13/13 UI workflows in 1058.337 seconds, three process recoveries, 50 portable cases and all 34 export validation reports**. Native and full artifact hashes are verified in `docs/evidence/native-f2a3-summary.json`. The retained 215.1 failure is separate.
+
+Follow-up **11ad4ad7bc4356707d3b8b8e3c5ef530224bee73 / 218.1**, run **39151470099**, passes Debug/Release compilation, **171/171 native checks in 190.863 seconds**, all **18 reader phases** and **48 command contracts**. All 284 connected room/stair steps and seven additional refusal/isolation cases pass; the independent trace reader agrees. Interface/export completion is pending. No delivery was requested for this follow-up. The superseded 217.1 run was cancelled automatically.
+
+All twelve follow-up host artifacts are independently SHA-verified (`docs/evidence/host-11ad-summary.json`). Their compiled host binary is unchanged. Finished 384-pixel accuracy/availability, rough-to-finished and depth-edge failures remain; no sixth detector attempt, threshold change or protected draw occurred.
+
 ## Batch-filter completion prepared after retained interface failure
 
 The 215.1 screen recording and accessibility/event attachments show the intended switch was tapped at its recorded bounds while the filter keyboard remained visible after scrolling; selection stayed off. The filter now exposes **Done** and explicitly releases focus. The interface test finishes text entry and requires keyboard dismissal before selecting the same two objects, retaining exact switch-state and applied-classification assertions. The connected-route report also retains every refusal step, so an intermediate obstacle crossing cannot be hidden by its final position. Native/interface validation remains pending. Requested TestFlight 216.1 continues independently.

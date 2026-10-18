@@ -112,11 +112,14 @@
       "passed": true
     }
   ],
-  "integrationComplete": false,
+  "integrationComplete": true,
   "physicalQualification": false,
+  "nativeExpected": 170,
+  "readerPhasesExpected": 17,
+  "validationReportsExpected": 34,
   "interfaceExpected": 13,
-  "interfaceStatus": "pending",
-  "appleUploadVerified": false,
+  "interfaceStatus": "passed",
+  "appleUploadVerified": true,
   "boundarySource": {
     "analyticOnly": true,
     "finalSupportedPatches": 16,
@@ -331,7 +334,150 @@
     "seconds": 1.800817625000036,
     "exitCode": 0
   },
+  "fullArtifact": {
+    "id": 12144619865,
+    "sha256": "daf782cee416aaf7850e7c269b55d8c8e6ac0b9995fec285ddcca40d3843e7ff",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 13,
+  "interfacePassed": 13,
+  "interfaceFailures": 0,
+  "interfaceElapsedSeconds": 1058.337,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "result": "passed",
+      "seconds": 82.285
+    },
+    {
+      "name": "testClosureReviewKeepsMissingStageEvidenceExplicit",
+      "result": "passed",
+      "seconds": 23.544
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "result": "passed",
+      "seconds": 51.759
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "result": "passed",
+      "seconds": 69.886
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "result": "passed",
+      "seconds": 42.75
+    },
+    {
+      "name": "testMeasuredEnvelopeSaveAndRelaunch",
+      "result": "passed",
+      "seconds": 78.817
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "result": "passed",
+      "seconds": 58.087
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "result": "passed",
+      "seconds": 304.019
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "result": "passed",
+      "seconds": 55.208
+    },
+    {
+      "name": "testReviewedServiceTourPreviewAndTradeScope",
+      "result": "passed",
+      "seconds": 43.989
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "result": "passed",
+      "seconds": 43.881
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "result": "passed",
+      "seconds": 88.787
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "result": "passed",
+      "seconds": 115.324
+    }
+  ],
+  "processRecoveries": {
+    "process-recovery-capture-row.json": {
+      "verifiedAssets": 3,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "powerLossQualified": false,
+      "recoveredExactlyOnce": true,
+      "passed": true
+    },
+    "process-recovery-journal.json": {
+      "passed": true,
+      "powerLossQualified": false,
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit"
+    },
+    "process-recovery-migration.json": {
+      "verifiedAssets": 19,
+      "passed": true,
+      "fault": "SIGKILL inside schema transaction before COMMIT",
+      "powerLossQualified": false
+    }
+  },
+  "portableChecks": 50,
+  "portablePassed": true,
+  "validationReports": {
+    "archive-validation.json": true,
+    "capture-runtime-validation.json": true,
+    "chunked-snapshot-validation.json": true,
+    "cli-command-validation.json": true,
+    "cli-reconstruction-validation.json": true,
+    "drawing-benchmark-validation.json": true,
+    "drawing-marks-validation.json": true,
+    "general-glb-validation.json": true,
+    "general-obj-validation.json": true,
+    "general-ply-validation.json": true,
+    "general-points-usd-validation.json": true,
+    "general-semantic-validation.json": true,
+    "general-test-usd-validation.json": true,
+    "general-textured-usd-validation.json": true,
+    "house-surface-gltf-validation.json": true,
+    "ifc-properties-validation.json": true,
+    "ifc-source-gltf-validation.json": true,
+    "ifc-source-validation.json": true,
+    "mesh-interchange-validation.json": true,
+    "offline-viewer-validation.json": true,
+    "photo-curve-gltf-validation.json": true,
+    "photo-curve-viewer-validation.json": true,
+    "points-gltf-validation.json": true,
+    "points-usd-validation.json": true,
+    "portable-package-validation.json": true,
+    "semantic-csv-validation.json": true,
+    "service-envelope-gltf-validation.json": true,
+    "service-envelope-validation.json": true,
+    "service-tour-validation.json": true,
+    "test-gltf-validation.json": true,
+    "test-usd-validation.json": true,
+    "textured-gltf-validation.json": true,
+    "textured-usd-validation.json": true,
+    "tour-reveal-validation.json": true
+  },
+  "validationReportsPassed": true,
+  "recordedAssertionsComplete": true,
+  "simulatorJobConclusion": "success",
   "debugAndReleaseCompiled": true,
   "separateSimulatorStartupPassed": true,
-  "nativePhaseConclusion": "success"
+  "nativePhaseConclusion": "success",
+  "appleJobConclusion": "success",
+  "appleProcessingVerified": true,
+  "internalTesterAccessVerified": true,
+  "testflightDeliveryEvidence": "docs/evidence/testflight-216-1-summary.json"
 }
