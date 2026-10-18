@@ -1,3 +1,13 @@
+## Homeowner guidance passes simulator integration — 223.1
+
+Source **2b8a9bb195282e91da8fdd026bb44d81213e972e**, run **39165628733**, passes Debug/Release compilation, **171/171 native checks**, all **18 reader phases**, **48 command contracts**, **17/17 UI workflows in 1367.054 seconds**, three process recoveries, 50 portable cases and **35/35 export reports**. Both artifacts are independently SHA-256 verified and all eight homeowner screenshots are inspected in `docs/evidence/native-2b8-summary.json`.
+
+The four homeowner workflows cover completion/back/restart and remembered goals; skip/next-launch replay; searchable guides, empty results and correct task routing; help before creating a house at accessibility-XXXL text; landscape; and sample-to-real-house capture with the new house's room/stage. The existing search assertions now pass with the matching record above the keyboard. The failed **221.1** and **222.1** integrations remain separately retained; all seventeen workflows and their assertions remain. After 222.1 exhausted the former UI allocation, the harness allows 30 minutes; native/startup and the 60-minute job bounds remain unchanged, as do product acceptance requirements.
+
+R19's automated simulator workflows pass. Visual review found that the capture header disappears against a bright preview and the opening message repeats room selection. Those two usability repairs remain open. Actual owner-device VoiceOver/offline usability and construction-task comprehension remain open. The whole runbook is **not complete**: broad software qualification, retained localization failures, device/provider workloads and independent physical validation remain. **TestFlight 216.1** remains the available requested snapshot and does not contain the new guidance. This follow-up was validation-only, consistent with the owner's instruction against incremental uploads.
+
+Entries below retain their state at earlier checkpoints.
+
 ## Three homeowner workflows pass; first real capture needs a presentation repair
 
 Source **9cb41a0cb12d5d49c7dd9cc47a6a6b2670c63b67 / 222.1**, run **39161820775**, passes Debug/Release compilation, **171/171 native checks**, **18 reader phases**, **48 command contracts**, three process recoveries, 50 portable cases and **35/35 export reports**. The interface log records **15 passed and one failed completed case**; the seventeenth navigation case is interrupted when the 1,500-second runner allocation expires. No complete XCTest totals are available. Both artifacts are independently SHA-256 verified in `docs/evidence/native-9cb-summary.json`. This is a failed, incomplete integration; no upload was requested.
