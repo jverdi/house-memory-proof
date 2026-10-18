@@ -1,0 +1,52 @@
+name: Evaluate declared sensor-fault responses
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/sensor-fault-audit.yml
+      - experiments/sensor-fault-audit/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sensor-fault-audit
+  cancel-in-progress: true
+jobs:
+  replay:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        profile: [clock-interruptions]
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Compile exact production estimator
+        run: |
+          bash tooling/opencv/build-host.sh
+          python3 -m venv build/sensor-env
+          build/sensor-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+      - name: Evaluate both observed stages under the declared fault
+        run: build/sensor-env/bin/python experiments/sensor-fault-audit/run.py --profile ${{ matrix.profile }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sensor-fault-aggregate-${{ matrix.profile }}
+          path: build/sensor-aggregates/
+          retention-days: 14
