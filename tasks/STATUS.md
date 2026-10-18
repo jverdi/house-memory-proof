@@ -2,7 +2,15 @@
 
 The owner requested first-time guidance, a way to restart/turn it back on, and plain-language help for homeowners during construction. Runbook **R19 / §1.4** now defines the requirement and acceptance criteria. Implementation adds a five-step introduction with three starting goals, completion/skip persistence, restart and next-launch settings, a House starting card, contextual help and fourteen offline task guides with search, troubleshooting and a glossary. Guide actions lead to the relevant app screen. Reading/replaying help does not mutate house records or request camera access.
 
-Three additional UI flows exercise completion/back/restart, skip and next-launch replay, goal persistence, guide search and empty results, task navigation, no-house access, landscape and large text. Expected interface count becomes **16**; native checks remain **171**, reader phases **18**, command contracts **48** and export reports **35**. Native/Release compilation, full CI, retained screenshots and owner-device usability remain pending. This implementation is not yet in TestFlight. Available TestFlight remains **216.1**. Source 51bc6ba / 220.1 continues its separate validation before this candidate is published.
+Three additional UI flows exercise completion/back/restart, skip and next-launch replay, goal persistence, guide search and empty results, task navigation, no-house access, landscape and large text. Expected interface count becomes **16**; native checks remain **171**, reader phases **18**, command contracts **48** and export reports **35**. Native/Release compilation, full CI, retained screenshots and owner-device usability remain pending. This implementation is not yet in TestFlight. Available TestFlight remains **216.1**. Source 51bc6ba / 220.1 has completed its separate integration; the onboarding candidate is next for validation.
+
+## Follow-up 220.1 completes integration; homeowner guidance is next
+
+Source **51bc6ba347b892039fc9606a04b638b3b6819586**, run **39156497915**, passes Debug/Release compilation, **171/171 native checks**, all **18 reader phases**, **48 command contracts**, **13/13 UI workflows in 970.917 seconds**, three process recoveries, 50 portable cases and all **35 export reports**. Native and full artifacts are independently SHA-256 verified in `docs/evidence/native-51bc-summary.json`.
+
+The persistent photo toolbar passes point-to-curve switching, two independently checked curve tracks, saved-curve verification and return to point mode. The explicit batch keyboard Done flow and connected room/stair trace also pass. The failed 219.1 photo-mode artifact and partial 218.1 batch failure remain separate; no assertion or gate was relaxed.
+
+**TestFlight 216.1 remains the available owner snapshot**, VALID / IN_BETA_TESTING with Personal iPhone access verified. Follow-up 220.1 was validation-only and was not uploaded. The fourteen-guide R19 implementation now requires its own 16-flow native/UI integration. Original host failures at 8d2a1d28de, the exhausted five-attempt localization budget and all device/provider/field gates remain open.
 
 ## Retained 219.1 photo-mode failure; persistent mode action prepared
 

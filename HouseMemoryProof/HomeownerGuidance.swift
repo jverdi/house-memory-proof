@@ -105,11 +105,11 @@ struct HomeownerIntroduction: View {
               Text("Your starting guide will be on the House tab. You can always open Help & getting started, or restart this introduction in Help settings.")
                 .foregroundStyle(.secondary)
             } else {
-              Button("Continue") { page += 1; proxy.scrollTo("intro-top", anchor: .top) }
+              Button("Continue") { page = min(titles.count - 1, page + 1); proxy.scrollTo("intro-top", anchor: .top) }
                 .buttonStyle(.borderedProminent).accessibilityIdentifier("introduction-next")
             }
             if page > 0 {
-              Button("Back") { page -= 1; proxy.scrollTo("intro-top", anchor: .top) }
+              Button("Back") { page = max(0, page - 1); proxy.scrollTo("intro-top", anchor: .top) }
                 .buttonStyle(.bordered).accessibilityIdentifier("introduction-back")
             }
           }.frame(maxWidth: 620, alignment: .leading).padding(24).frame(maxWidth: .infinity)
@@ -118,7 +118,7 @@ struct HomeownerIntroduction: View {
         .toolbar { ToolbarItem(placement: .topBarTrailing) {
           Button("Skip for now") { guidance.finishIntroduction() }.accessibilityIdentifier("introduction-skip")
         } }
-    }.controlSize(.large).interactiveDismissDisabled()
+    }.controlSize(.large).interactiveDismissDisabled().onAppear { page = 0 }
   }
   @ViewBuilder private var pageContent: some View {
     switch page {
@@ -231,7 +231,7 @@ struct HomeHelpCenter: View {
         }
       }
     }.navigationTitle("Help & getting started").navigationBarTitleDisplayMode(.inline)
-      .searchable(text: $search, prompt: "Search tasks or unfamiliar words")
+      .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search tasks or unfamiliar words")
       .toolbar { HomeHelpToolbar() }
   }
 }

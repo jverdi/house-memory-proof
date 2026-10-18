@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T19:13:23.317447Z",
+  "updatedUTC": "2026-10-18T19:33:29.364967Z",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+  "currentImplementationCommit": "51bc6ba347b892039fc9606a04b638b3b6819586",
   "testflight": {
     "build": "216.1",
     "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -18,17 +18,17 @@
     "automaticRenewalEnabled": false
   },
   "verifiedNative": {
-    "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
-    "passed": 170,
+    "source": "51bc6ba347b892039fc9606a04b638b3b6819586",
+    "passed": 171,
     "failed": 0,
-    "artifact": 12145405843,
-    "sha256": "dd09f811874a2d304e9b9481f7c84c3075474265c7e5bb26f9f9fa81fba27814",
+    "artifact": 12147965356,
+    "sha256": "bf63956e4cb92aa6a116b284014dc085b46bb6bdad8ff3628bea8f39e5f912a9",
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "whole-house product qualification",
-      "remaining": "Source 216.1 passes 170 native checks, thirteen interface flows and all 34 export reports. Connected analytic navigation is under validation at 218.1. Reconstructed-house navigation/streaming, mixed-stage/closed-loop coverage, broad tour/route coverage and device workloads remain open."
+      "remaining": "Source 220.1 passes 171 native checks, thirteen interface flows and all 35 export reports, including connected analytic navigation, the explicit batch Done control and persistent point/curve mode action. Reconstructed-house navigation/streaming, mixed-stage/closed-loop coverage, broad tour/route coverage and device workloads remain open."
     },
     {
       "area": "finished localization",
@@ -60,7 +60,7 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Finish 220.1 follow-up evidence, then publish and validate restartable homeowner onboarding and fourteen offline task guides. Continue remaining software/full-house work without relaxing the exhausted localization budget or device/provider/field gates. TestFlight216.1 remains available.",
+  "nextAction": "Publish and validate the R19 homeowner onboarding and fourteen offline task guides, including all sixteen interface flows. Continue independent software/full-house acceptance without relaxing original failed localization gates or its exhausted repair budget. TestFlight216.1 remains available; device/provider and independent field results remain required.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "source": "51bc6ba347b892039fc9606a04b638b3b6819586",
@@ -70,14 +70,22 @@
     "interfaceExpected": 13,
     "nativeReaderPhasesExpected": 18,
     "validationReportsExpected": 35,
-    "integrationComplete": false,
-    "status": "native_passed_interface_running",
+    "integrationComplete": true,
+    "status": "complete_integrated_pass",
     "nativePassed": 171,
     "nativeReaderPhasesPassed": 18,
     "commandContractsPassed": 48,
     "nativeArtifact": {
       "id": 12147965356,
       "sha256": "bf63956e4cb92aa6a116b284014dc085b46bb6bdad8ff3628bea8f39e5f912a9",
+      "sha256IndependentlyVerified": true
+    },
+    "interfacePassed": 13,
+    "interfaceSeconds": 970.917,
+    "validationReportsPassed": 35,
+    "fullArtifact": {
+      "id": 12147493172,
+      "sha256": "3f63711146010aafe7f5753fc15e609d5e482a1b9990476de3c4f553496e8700",
       "sha256IndependentlyVerified": true
     }
   },
@@ -124,24 +132,24 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
-    "run": 39149363050,
-    "nativePassed": 170,
+    "source": "51bc6ba347b892039fc9606a04b638b3b6819586",
+    "run": 39156497915,
+    "nativePassed": 171,
     "nativeFailed": 0,
-    "nativePhaseChecksPassed": 17,
+    "nativePhaseChecksPassed": 18,
     "interfacePassed": 13,
     "interfaceFailed": 0,
-    "uiSeconds": 1058.337,
+    "uiSeconds": 970.917,
     "processKillPassed": 3,
-    "validationReportsPassed": 34,
+    "validationReportsPassed": 35,
     "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12144619865,
-      "sha256": "daf782cee416aaf7850e7c269b55d8c8e6ac0b9995fec285ddcca40d3843e7ff",
+      "id": 12147493172,
+      "sha256": "3f63711146010aafe7f5753fc15e609d5e482a1b9990476de3c4f553496e8700",
       "sha256IndependentlyVerified": true
     },
     "portableCasesPassed": 50,
-    "commandContractTestsPassed": 44,
+    "commandContractTestsPassed": 48,
     "nativeTourCLIValidated": true,
     "nativeServiceTourCLIValidated": true,
     "nativeReconstructionCLIValidated": true
@@ -978,11 +986,13 @@
     "physicalQualification": false,
     "horizontalRoundTripMetres": 56.8,
     "perStepRefusalTraces": true,
-    "nativeSource": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
-    "nativeRun": 39151470099,
+    "nativeSource": "51bc6ba347b892039fc9606a04b638b3b6819586",
+    "nativeRun": 39156497915,
     "passed": true,
     "casesPassed": 8,
-    "independentMaximumCoordinateErrorMetres": 1.2588500979404671e-05
+    "independentMaximumCoordinateErrorMetres": 1.2588500979404671e-05,
+    "completeIntegrationPassed": true,
+    "evidence": "docs/evidence/native-51bc-summary.json"
   },
   "batchSelectionRecovery": {
     "failedSource": "c835925d412db66ec204825e1f2cec4093917394",
@@ -1001,28 +1011,30 @@
     "validatedRun": 39153443322,
     "interfacePassed": true,
     "interfaceSeconds": 87.44,
-    "completeIntegrationPending": true,
-    "evidenceStatus": "Batch workflow and native checks passed in SHA-verified 219.1 artifacts; separate photo-mode UI failure prevents complete integration"
+    "completeIntegrationPending": false,
+    "evidenceStatus": "Complete SHA-verified native/interface/export integration",
+    "completeIntegratedSource": "51bc6ba347b892039fc9606a04b638b3b6819586",
+    "evidence": "docs/evidence/native-51bc-summary.json"
   },
   "previousIntegratedPass": {
-    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
-    "run": 39138960576,
-    "nativePassed": 163,
+    "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
+    "run": 39149363050,
+    "nativePassed": 170,
     "nativeFailed": 0,
-    "nativePhaseChecksPassed": 15,
-    "interfacePassed": 12,
+    "nativePhaseChecksPassed": 17,
+    "interfacePassed": 13,
     "interfaceFailed": 0,
-    "uiSeconds": 1004.189,
+    "uiSeconds": 1058.337,
     "processKillPassed": 3,
-    "validationReportsPassed": 32,
+    "validationReportsPassed": 34,
     "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12141826272,
-      "sha256": "f30036a78518f57c08b3ed48c1f3645da6df5415fc1a48a17e646e91ba91c709",
+      "id": 12144619865,
+      "sha256": "daf782cee416aaf7850e7c269b55d8c8e6ac0b9995fec285ddcca40d3843e7ff",
       "sha256IndependentlyVerified": true
     },
     "portableCasesPassed": 50,
-    "commandContractTestsPassed": 36,
+    "commandContractTestsPassed": 44,
     "nativeTourCLIValidated": true,
     "nativeServiceTourCLIValidated": true,
     "nativeReconstructionCLIValidated": true
@@ -1071,7 +1083,11 @@
     "fullArtifactSHA256": "13a27fd44176890ab91fefe0b14e9c0415aecc4d5738862864cdfc85fd8c6ea5",
     "inspection": "Recorded tap did not change the curve switch; screen recording shows it near the navigation bar despite the reported frame farther down the page. Root cause is not established on a physical device.",
     "preparedRepair": "Persistent toolbar action changes point/curve mode without scrolling to the form header; root-level mode change resets the same draft selections. UI preserves explicit mode assertion, two independently checked tracks, saved curve and return-to-point assertions.",
-    "validationPending": true
+    "validationPending": false,
+    "validatedSource": "51bc6ba347b892039fc9606a04b638b3b6819586",
+    "validatedRun": 39156497915,
+    "evidence": "docs/evidence/native-51bc-summary.json",
+    "interfacePassed": true
   },
   "homeownerGuidance": {
     "requirement": "R19 / architecture-runbook \u00a71.4",

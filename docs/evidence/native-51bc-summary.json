@@ -117,13 +117,13 @@
       "passed": true
     }
   ],
-  "integrationComplete": false,
+  "integrationComplete": true,
   "physicalQualification": false,
   "nativeExpected": 171,
   "readerPhasesExpected": 18,
   "validationReportsExpected": 35,
   "interfaceExpected": 13,
-  "interfaceStatus": "pending",
+  "interfaceStatus": "passed",
   "appleUploadVerified": false,
   "boundarySource": {
     "analyticOnly": true,
@@ -414,6 +414,153 @@
         "passed": true
       }
     ]
+  },
+  "fullArtifact": {
+    "id": 12147493172,
+    "sha256": "3f63711146010aafe7f5753fc15e609d5e482a1b9990476de3c4f553496e8700",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 13,
+  "interfacePassed": 13,
+  "interfaceFailures": 0,
+  "interfaceElapsedSeconds": 970.917,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "result": "passed",
+      "seconds": 94.541
+    },
+    {
+      "name": "testClosureReviewKeepsMissingStageEvidenceExplicit",
+      "result": "passed",
+      "seconds": 26.915
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "result": "passed",
+      "seconds": 56.14
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "result": "passed",
+      "seconds": 66.584
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "result": "passed",
+      "seconds": 41.555
+    },
+    {
+      "name": "testMeasuredEnvelopeSaveAndRelaunch",
+      "result": "passed",
+      "seconds": 67.535
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "result": "passed",
+      "seconds": 50.343
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "result": "passed",
+      "seconds": 281.522
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "result": "passed",
+      "seconds": 53.876
+    },
+    {
+      "name": "testReviewedServiceTourPreviewAndTradeScope",
+      "result": "passed",
+      "seconds": 47.981
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "result": "passed",
+      "seconds": 39.137
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "result": "passed",
+      "seconds": 49.203
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "result": "passed",
+      "seconds": 95.585
+    }
+  ],
+  "processRecoveries": {
+    "process-recovery-capture-row.json": {
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "verifiedAssets": 3,
+      "recoveredExactlyOnce": true,
+      "passed": true,
+      "powerLossQualified": false
+    },
+    "process-recovery-journal.json": {
+      "verifiedAssets": 3,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "passed": true,
+      "recoveredExactlyOnce": true,
+      "powerLossQualified": false
+    },
+    "process-recovery-migration.json": {
+      "fault": "SIGKILL inside schema transaction before COMMIT",
+      "verifiedAssets": 19,
+      "passed": true,
+      "powerLossQualified": false
+    }
+  },
+  "portableChecks": 50,
+  "portablePassed": true,
+  "validationReports": {
+    "archive-validation.json": true,
+    "capture-runtime-validation.json": true,
+    "chunked-snapshot-validation.json": true,
+    "cli-command-validation.json": true,
+    "cli-reconstruction-validation.json": true,
+    "drawing-benchmark-validation.json": true,
+    "drawing-marks-validation.json": true,
+    "general-glb-validation.json": true,
+    "general-obj-validation.json": true,
+    "general-ply-validation.json": true,
+    "general-points-usd-validation.json": true,
+    "general-semantic-validation.json": true,
+    "general-test-usd-validation.json": true,
+    "general-textured-usd-validation.json": true,
+    "house-surface-gltf-validation.json": true,
+    "ifc-properties-validation.json": true,
+    "ifc-source-gltf-validation.json": true,
+    "ifc-source-validation.json": true,
+    "mesh-interchange-validation.json": true,
+    "navigation-benchmark-validation.json": true,
+    "offline-viewer-validation.json": true,
+    "photo-curve-gltf-validation.json": true,
+    "photo-curve-viewer-validation.json": true,
+    "points-gltf-validation.json": true,
+    "points-usd-validation.json": true,
+    "portable-package-validation.json": true,
+    "semantic-csv-validation.json": true,
+    "service-envelope-gltf-validation.json": true,
+    "service-envelope-validation.json": true,
+    "service-tour-validation.json": true,
+    "test-gltf-validation.json": true,
+    "test-usd-validation.json": true,
+    "textured-gltf-validation.json": true,
+    "textured-usd-validation.json": true,
+    "tour-reveal-validation.json": true
+  },
+  "validationReportsPassed": true,
+  "recordedAssertionsComplete": true,
+  "simulatorJobConclusion": "success",
+  "photoModeVisualReview": {
+    "inspected": true,
+    "attachment": "ui-attachments/F953479D-994C-46D9-9873-06D0A29E2721.png",
+    "sha256": "54bcb211003a6450fe1f4bf4e85da6e89e86ebc064f041adadf230db5c65f2b2",
+    "observed": "Photo curve title, persistent Locate a point toolbar action and saved result with 2 independently checked source tracks are visible together.",
+    "physicalDeviceVerified": false
   },
   "debugCompilationPassed": true,
   "unsignedReleaseCompilationPassed": true,
