@@ -324,6 +324,83 @@ import Darwin
                 let retried=try IncrementalSnapshots.inspectCatalog(folder:destination)
                 return retried.unreadableRecords.isEmpty && retried.revisions.map({$0.id})==[good.id]
             }
+            await check("Chunked snapshots pack small originals, split large ones and reuse unchanged content") {
+                let source=try Repository(root:folder.appendingPathComponent("chunk-source")),target=try Repository(root:folder.appendingPathComponent("chunk-target")),destination=folder.appendingPathComponent("chunk-snapshots")
+                var h=House.empty("Chunk boundary workload")
+                let large=try source.put(Data(repeating:71,count:ChunkedSnapshots.chunkLimit+12345),ext:"jpg")
+                h.documentaryPhotos=[DocumentaryPhoto(image:large,roomID:h.rooms[0].id,stageID:h.stages[0].id)]
+                for i in 0..<40 {let key=try source.put(Data(("small-\(i)-"+String(repeating:"x",count:997)).utf8),ext:"jpg");h.documentaryPhotos.append(DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id))}
+                let device=UUID(),first=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:device)
+                let base=IncrementalSnapshots.root(destination),m=try ChunkedSnapshots.manifest(first,base:base)
+                let firstChunks=Set(m.assets.flatMap{$0.slices.map{$0.chunk}})
+                guard firstChunks.count==2,m.assets.count==41,m.deviceID==device,m.parentMetadata==nil else{return false}
+                let originalAssets=m.assets
+                h.revision+=1;h.notes="New original only"
+                let newKey=try source.put(Data("one newly imported original".utf8),ext:"jpg")
+                h.documentaryPhotos.append(DocumentaryPhoto(image:newKey,roomID:h.rooms[0].id,stageID:h.stages[0].id))
+                let second=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:device)
+                let next=try ChunkedSnapshots.manifest(second,base:base)
+                guard next.parentMetadata==first.metadata,originalAssets.allSatisfy({old in next.assets.contains(old)}),Set(next.assets.flatMap{$0.slices.map{$0.chunk}}).count==3 else{return false}
+                let restored=try IncrementalSnapshots.restore(second,repo:target,folder:destination)
+                guard restored.id != h.id,restored.documentaryPhotos==h.documentaryPhotos,try target.integrity(restored)==42 else{return false}
+                let legacy=try IncrementalSnapshots.write(house:h,repo:source,folder:destination)
+                let old=try IncrementalSnapshots.restore(legacy,repo:target,folder:destination)
+                let revisions=try IncrementalSnapshots.catalog(folder:destination)
+                return old.documentaryPhotos==h.documentaryPhotos && revisions.count==3
+            }
+            await check("Chunked snapshot commit, retry and partial arrival preserve healthy local projects") {
+                let source=try Repository(root:folder.appendingPathComponent("chunk-fault-source")),target=try Repository(root:folder.appendingPathComponent("chunk-fault-target"))
+                var h=House.empty("Chunk fault matrix");let key=try source.put(Data("immutable chunk original".utf8),ext:"jpg"),healthy=House.empty("Keep this project")
+                h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)];try source.save(h);try target.save(healthy)
+                for phase in ["chunk-verified","metadata-verified","manifest-verified","revision-committed"] {
+                    let destination=folder.appendingPathComponent("chunk-fault-"+phase),device=UUID()
+                    do{_=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:device,checkpoint:{if $0==phase{throw CancellationError()}});return false}catch is CancellationError{}
+                    guard try IncrementalSnapshots.catalog(folder:destination).count==(phase=="revision-committed" ? 1:0) else{return false}
+                    let first=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:device),retried=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:UUID())
+                    guard first.id==retried.id,first.date==retried.date,try IncrementalSnapshots.catalog(folder:destination).count==1 else{return false}
+                    let base=IncrementalSnapshots.root(destination),m=try ChunkedSnapshots.manifest(first,base:base),chunk=base.appendingPathComponent("chunks").appendingPathComponent(m.assets[0].slices[0].chunk)
+                    let saved=try Data(contentsOf:chunk);try FileManager.default.removeItem(at:chunk)
+                    do{_=try IncrementalSnapshots.restore(first,repo:target,folder:destination);return false}catch{}
+                    try Data("corrupt chunk".utf8).write(to:chunk)
+                    do{_=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:device);return false}catch{}
+                    try saved.write(to:chunk,options:.atomic)
+                    let restored=try IncrementalSnapshots.restore(first,repo:target,folder:destination)
+                    guard restored.documentaryPhotos==h.documentaryPhotos,try target.all().map({$0.id})==[healthy.id],try source.integrity(h)==1 else{return false}
+                }
+                return true
+            }
+            await check("Chunked snapshot range and manifest contradictions are refused without activation") {
+                let source=try Repository(root:folder.appendingPathComponent("chunk-range-source")),target=try Repository(root:folder.appendingPathComponent("chunk-range-target")),destination=folder.appendingPathComponent("chunk-range-snapshots")
+                var h=House.empty("Range refusal");let key=try source.put(Data("bounded immutable range".utf8),ext:"jpg"),healthy=House.empty("Healthy")
+                h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)];try target.save(healthy)
+                let revision=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:UUID()),base=IncrementalSnapshots.root(destination),m=try ChunkedSnapshots.manifest(revision,base:base)
+                for fault in 0..<5 {
+                    var changed=m,record=revision
+                    switch fault {
+                    case 0:changed.assets[0].slices[0].offset=Int.max
+                    case 1:changed.assets[0].bytes=UInt64.max
+                    case 2:changed.assets.append(changed.assets[0])
+                    case 3:changed.assets[0].slices[0].chunk="../outside.chunk"
+                    default:changed.assets[0].slices[0].offset=1
+                    }
+                    record.chunkManifest=try ChunkedSnapshots.object(ChunkedSnapshots.encode(changed),kind:"manifests",extension:"json",base:base)
+                    do{_=try IncrementalSnapshots.restore(record,repo:target,folder:destination);return false}catch{}
+                }
+                var future=revision;future.version=99
+                do{_=try IncrementalSnapshots.restore(future,repo:target,folder:destination);return false}catch{}
+                return try target.all().map({$0.id})==[healthy.id]
+            }
+            await check("Snapshot transfer status never promotes a local readback or a partial upload") {
+                let evidence=mainRepo.root.appendingPathComponent("incremental-v2"),device=UUID()
+                var h=House.empty("Independent chunk handoff")
+                for text in ["first independent original","second independent original"] {let key=try repo.put(Data(text.utf8),ext:"jpg");h.documentaryPhotos.append(DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id))}
+                let revision=try ChunkedSnapshots.write(house:h,repo:repo,folder:evidence,deviceID:device),status=try ChunkedSnapshots.transfers(revision,folder:evidence)
+                guard status.total==4,status.uploaded==0,status.unknown==4 else{return false}
+                let waiting=ChunkedSnapshots.TransferSummary(total:4,uploaded:3,waiting:1)
+                let complete=ChunkedSnapshots.TransferSummary(total:4,uploaded:4)
+                let conflict=ChunkedSnapshots.TransferSummary(total:4,uploaded:3,conflicts:1)
+                return !waiting.message.contains("reports all") && complete.message.contains("restore on another") && conflict.message.contains("needs attention")
+            }
             await check("Boundary coverage counts unseen and occluded nominal patches") {
                 var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
                 // Narrow-FOV planar depth diagnostic; RGB pixels are not consumed by coverage.

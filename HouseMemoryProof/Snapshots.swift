@@ -1,6 +1,48 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+// The selected folder stays local to this installation. A changed iCloud
+// identity requires a fresh folder selection before any further cloud access.
+enum SnapshotAccountAccess {
+  static let cloudKey="snapshot-folder-is-icloud",tokenKey="snapshot-account-token",invalidKey="snapshot-account-changed",generationKey="snapshot-access-generation"
+  static let observer=NotificationCenter.default.addObserver(forName:.NSUbiquityIdentityDidChange,object:nil,queue:nil){_ in
+    let defaults=UserDefaults.standard
+    if defaults.bool(forKey:cloudKey) {defaults.set(true,forKey:invalidKey);defaults.set(defaults.integer(forKey:generationKey)+1,forKey:generationKey)}
+  }
+  static func selected(_ folder:URL)throws {
+    _=observer;let defaults=UserDefaults.standard
+    let cloud=(try? folder.resourceValues(forKeys:[.isUbiquitousItemKey]).isUbiquitousItem)==true
+    let token=FileManager.default.ubiquityIdentityToken
+    let bytes:Data?
+    if cloud {bytes=try token.map{try NSKeyedArchiver.archivedData(withRootObject:$0,requiringSecureCoding:false)}} else{bytes=nil}
+    defaults.set(cloud,forKey:cloudKey);defaults.set(bytes,forKey:tokenKey);defaults.set(false,forKey:invalidKey)
+    defaults.set(defaults.integer(forKey:generationKey)+1,forKey:generationKey)
+  }
+  struct Lease {
+    var generation:Int
+    func check()throws {
+      let defaults=UserDefaults.standard
+      guard generation==defaults.integer(forKey:generationKey),!defaults.bool(forKey:invalidKey) else{throw HouseError.message("Snapshot folder or iCloud account changed. Choose the folder again; local originals remain intact.")}
+    }
+  }
+  static func lease()throws->Lease {
+    _=observer;let defaults=UserDefaults.standard
+    if defaults.bool(forKey:cloudKey) {
+      let old=try defaults.data(forKey:tokenKey).flatMap{try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData($0) as? NSObject}
+      let current=FileManager.default.ubiquityIdentityToken
+      let same=(old==nil && current==nil) || (old != nil && current != nil && old!.isEqual(current!))
+      if !same {defaults.set(true,forKey:invalidKey)}
+    }
+    let result=Lease(generation:defaults.integer(forKey:generationKey));try result.check();return result
+  }
+  static func validateFolder(_ folder:URL)throws {
+    let cloud=(try? folder.resourceValues(forKeys:[.isUbiquitousItemKey]).isUbiquitousItem)==true
+    if cloud && !UserDefaults.standard.bool(forKey:cloudKey) {
+      throw HouseError.message("Choose this iCloud snapshot folder again to verify its account association. Local originals remain intact.")
+    }
+  }
+}
+
 // User-selected Files storage avoids a hosted service or a required iCloud container.
 // File-provider sync is managed by iOS; successful local copy is not proof of cloud upload.
 enum SnapshotStorage {
@@ -50,6 +92,7 @@ enum SnapshotStorage {
     defer { if access { folder.stopAccessingSecurityScopedResource() } }
     let bookmark = try folder.bookmarkData(
       options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
+    try SnapshotAccountAccess.selected(folder)
     UserDefaults.standard.set(bookmark, forKey: bookmarkKey)
     UserDefaults.standard.set(
       "Folder selected. Save a snapshot and verify a restore.", forKey: statusKey)
@@ -59,6 +102,7 @@ enum SnapshotStorage {
       throw HouseError.message("Choose a backup folder in Files first.")
     }
     let result = try await LocalWorker.run(priority: .utility) {
+      let lease=try SnapshotAccountAccess.lease()
       var stale = false
       let folder = try URL(
         resolvingBookmarkData: bookmark, options: .withoutUI, relativeTo: nil,
@@ -70,8 +114,15 @@ enum SnapshotStorage {
       }
       let access = folder.startAccessingSecurityScopedResource()
       defer { if access { folder.stopAccessingSecurityScopedResource() } }
-      let revision=try IncrementalSnapshots.write(house:house,repo:repo,folder:folder)
-      return "Incremental snapshot saved: \(revision.id.uuidString.prefix(8)). Provider upload completion is not verified."
+      try SnapshotAccountAccess.validateFolder(folder)
+      let deviceKey="snapshot-device-id"
+      let device=UserDefaults.standard.string(forKey:deviceKey).flatMap(UUID.init(uuidString:)) ?? UUID()
+      UserDefaults.standard.set(device.uuidString,forKey:deviceKey)
+      try lease.check()
+      let revision=try ChunkedSnapshots.write(house:house,repo:repo,folder:folder,deviceID:device,checkpoint:{_ in try lease.check()})
+      try lease.check()
+      let transfer=try ChunkedSnapshots.transfers(revision,folder:folder)
+      return "Incremental snapshot saved: \(revision.id.uuidString.prefix(8)). "+transfer.message
     }
     UserDefaults.standard.set(result + " Revision \(house.revision).", forKey: statusKey)
     UserDefaults.standard.set(Date(), forKey: "snapshot-date-" + house.id.uuidString)
@@ -79,10 +130,12 @@ enum SnapshotStorage {
   static func inFolder<T>(_ operation:@escaping @Sendable (URL)throws->T) async throws->T {
     guard let bookmark=UserDefaults.standard.data(forKey:bookmarkKey) else{throw HouseError.message("Choose a snapshot folder first.")}
     return try await LocalWorker.run(priority:.utility) {
+      let lease=try SnapshotAccountAccess.lease()
       var stale=false;let folder=try URL(resolvingBookmarkData:bookmark,options:.withoutUI,relativeTo:nil,bookmarkDataIsStale:&stale)
       guard !stale else{throw HouseError.message("Choose the snapshot folder again to renew its permission.")}
       let access=folder.startAccessingSecurityScopedResource();defer{if access {folder.stopAccessingSecurityScopedResource()}}
-      return try operation(folder)
+      try SnapshotAccountAccess.validateFolder(folder)
+      let result=try operation(folder);try lease.check();return result
     }
   }
   static func automatic(model: AppModel) {
@@ -139,6 +192,16 @@ struct SnapshotSettings: View {
           }
         }.disabled(model.busy)
         Text(status).font(.footnote)
+        Button("Refresh snapshot transfer status") {
+          model.perform("Checking snapshot file transfers") {
+            let projectID=house.id
+            let message=try await SnapshotService.inFolder {folder in
+              guard let revision=try IncrementalSnapshots.catalog(folder:folder).first(where:{$0.projectID==projectID}) else{return "No saved snapshot for this house was found."}
+              return try ChunkedSnapshots.transfers(revision,folder:folder).message
+            }
+            status=message;UserDefaults.standard.set(message,forKey:SnapshotService.statusKey);return nil
+          }
+        }.disabled(model.busy)
       }
       Section("Restore an independent revision") {
         Button("List saved revisions") {
@@ -166,7 +229,7 @@ struct SnapshotSettings: View {
       }
       Section {
         Text(
-          "Runs while the app is active; it cannot promise an overnight upload while iOS suspends the app. Incomplete files fail archive restore checks. Originals are never evicted. Incremental revisions share immutable originals; only new assets and metadata are copied. Existing assets are verified, never pruned. Full portable .hxray archives remain available under Tools. Provider conflicts or partial arrivals never merge projects automatically."
+          "Runs while the app is active; it cannot promise an overnight upload while iOS suspends the app. Originals are never evicted. Incremental revisions pack small files and split large originals into shared 16 MiB chunks. Every restore checks all required chunks and original checksums. Older snapshots remain readable. Full portable .hxray archives remain available under Tools. Provider conflicts or partial arrivals never merge projects automatically."
         ).font(.footnote)
       }
     }.navigationTitle("Folder snapshots").fileImporter(

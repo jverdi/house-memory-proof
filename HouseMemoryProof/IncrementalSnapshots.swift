@@ -4,6 +4,7 @@ import CryptoKit
 struct SnapshotRevision:Codable,Identifiable {
   var format="HouseXraySnapshot";var version=1;var id=UUID();var date=Date()
   var projectID:UUID;var name:String;var revision:Int;var metadata:String;var assets:[String]
+  var chunkManifest:String?=nil
 }
 struct SnapshotCatalog {
   var revisions:[SnapshotRevision]=[]
@@ -88,7 +89,7 @@ enum IncrementalSnapshots {
         // checking size. A missing size must not silently hide that revision.
         let data=try read(url,limit:10_000_000)
         let record=try JSONDecoder().decode(SnapshotRevision.self,from:data)
-        guard record.format=="HouseXraySnapshot",record.version==1,record.id.uuidString==url.deletingPathExtension().lastPathComponent,safe(record.metadata),record.assets.count<=160000,record.assets.allSatisfy({safe($0)}),Set(record.assets).count==record.assets.count else{throw HouseError.message("Unsupported snapshot record.")}
+        guard record.format=="HouseXraySnapshot",[1,2].contains(record.version),record.id.uuidString==url.deletingPathExtension().lastPathComponent,safe(record.metadata),record.assets.count<=160000,record.assets.allSatisfy({safe($0)}),Set(record.assets).count==record.assets.count,record.version==1 || record.chunkManifest.map({safe($0)})==true else{throw HouseError.message("Unsupported snapshot record.")}
         result.revisions.append(record)
       } catch is CancellationError {throw CancellationError()}
       catch {result.unreadableRecords.append(url.lastPathComponent)}
@@ -99,11 +100,12 @@ enum IncrementalSnapshots {
   static func read(_ url:URL,limit:Int)throws->Data {
     let coordinator=NSFileCoordinator(filePresenter:nil);var coordinationError:NSError?,operationError:Error?,result:Data?
     coordinator.coordinate(readingItemAt:url,options:[],error:&coordinationError){source in
-      do {let values=try source.resourceValues(forKeys:[.fileSizeKey,.isUbiquitousItemKey,.ubiquitousItemDownloadingStatusKey]);if values.isUbiquitousItem==true && values.ubiquitousItemDownloadingStatus != .current {try FileManager.default.startDownloadingUbiquitousItem(at:source);throw HouseError.message("Snapshot files are still downloading. Retry after Files finishes syncing.")};guard let size=values.fileSize,size<=limit else{throw HouseError.message("Snapshot object exceeds its read budget.")};result=try DurableFiles.read(source,limit:limit)}catch{operationError=error}
+      do {let values=try source.resourceValues(forKeys:[.fileSizeKey,.isUbiquitousItemKey,.ubiquitousItemDownloadingStatusKey,.ubiquitousItemHasUnresolvedConflictsKey]);if values.ubiquitousItemHasUnresolvedConflicts==true {throw HouseError.message("Snapshot file has unresolved provider conflicts. No conflicting version was selected automatically.")};if values.isUbiquitousItem==true && values.ubiquitousItemDownloadingStatus != .current {try FileManager.default.startDownloadingUbiquitousItem(at:source);throw HouseError.message("Snapshot files are still downloading. Retry after Files finishes syncing.")};guard let size=values.fileSize,size<=limit else{throw HouseError.message("Snapshot object exceeds its read budget.")};result=try DurableFiles.read(source,limit:limit)}catch{operationError=error}
     }
     if let coordinationError {throw coordinationError};if let operationError {throw operationError};guard let result else{throw HouseError.message("Snapshot object is unavailable.")};return result
   }
   static func restore(_ revision:SnapshotRevision,repo:Repository,folder:URL)throws->House {
+    if revision.version==2 {return try ChunkedSnapshots.restore(revision,repo:repo,folder:folder)}
     guard revision.format=="HouseXraySnapshot",revision.version==1,safe(revision.metadata),revision.assets.count<=160000,revision.assets.allSatisfy({safe($0)}) else{throw HouseError.message("Unsupported snapshot revision.")}
     let base=root(folder),data=try read(base.appendingPathComponent("metadata").appendingPathComponent(revision.metadata),limit:100_000_000)
     guard hash(data)==String(revision.metadata.prefix(64)) else{throw HouseError.message("Snapshot metadata checksum mismatch.")}
@@ -115,7 +117,8 @@ enum IncrementalSnapshots {
       let coordinator=NSFileCoordinator(filePresenter:nil);var coordinationError:NSError?,operationError:Error?
       coordinator.coordinate(readingItemAt:source,options:[],error:&coordinationError){url in
         do {
-          let values=try url.resourceValues(forKeys:[.fileSizeKey,.isUbiquitousItemKey,.ubiquitousItemDownloadingStatusKey])
+          let values=try url.resourceValues(forKeys:[.fileSizeKey,.isUbiquitousItemKey,.ubiquitousItemDownloadingStatusKey,.ubiquitousItemHasUnresolvedConflictsKey])
+          guard values.ubiquitousItemHasUnresolvedConflicts != true else{throw HouseError.message("Snapshot original has unresolved provider conflicts.")}
           if values.isUbiquitousItem==true && values.ubiquitousItemDownloadingStatus != .current {try FileManager.default.startDownloadingUbiquitousItem(at:url);throw HouseError.message("Snapshot originals are downloading. Retry after Files finishes syncing.")}
           guard let size=values.fileSize,size<=512_000_000,repo.freeBytes()>Int64(size)+64_000_000 else{throw HouseError.message("Insufficient free space or unsupported individual snapshot asset size.")}
           FileManager.default.createFile(atPath:temporary.path,contents:nil)

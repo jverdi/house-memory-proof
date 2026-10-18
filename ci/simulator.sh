@@ -115,6 +115,7 @@ cp "$app_root/textured.glb" build/evidence/textured.glb
 cp "$app_root/test.glb" build/evidence/test.glb
 cp "$app_root/test.usdz" build/evidence/test.usdz
 cp "$app_root/test-render.png" build/evidence/test-render.png
+cp -R "$app_root/incremental-v2" build/evidence/incremental-v2
 # Retain diagnostics before failing if the encoder did not produce a movie.
 for media in test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi

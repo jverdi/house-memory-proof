@@ -94,6 +94,7 @@ jobs:
         run: |
           python3 tooling/hm test
           python3 tooling/check_semantic_csv.py
+          python3 tooling/check_chunked_snapshot.py
           npm install --prefix build/validation --ignore-scripts gltf-validator@2.0.0-dev.3.10 playwright@1.56.1
           node tooling/check_exports.cjs
           python3 -c "import zipfile; z=zipfile.ZipFile('build/evidence/test.hxray'); open('build/evidence/offline-viewer.html','wb').write(z.read('viewer.html'))"
