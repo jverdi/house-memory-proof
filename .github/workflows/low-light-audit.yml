@@ -1,0 +1,53 @@
+name: Evaluate bounded low-light analysis gain
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/low-light-audit.yml
+      - experiments/low-light-audit/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: low-light-audit
+  cancel-in-progress: true
+jobs:
+  replay:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        profile: [dim-blurred, nominal]
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Prepare one isolated candidate and compile before generation
+        run: |
+          python3 experiments/low-light-audit/prepare.py
+          bash tooling/opencv/build-host.sh
+          python3 -m venv build/low-light-env
+          build/low-light-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+      - name: Evaluate both stages with the original acceptance gates
+        run: build/low-light-env/bin/python experiments/low-light-audit/run.py --profile ${{ matrix.profile }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: low-light-aggregate-${{ matrix.profile }}
+          path: build/low-light-aggregates/
+          retention-days: 14
