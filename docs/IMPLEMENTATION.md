@@ -11,6 +11,10 @@ Updated during the October 17–18, 2026 implementation session. This document r
 - **Spatial gates remain failed:** the twelve SHA-verified 11ad4ad7bc host artifacts (unchanged compiled host binary) retain finished 4/7/11-room p95 of 15.094/15.632/22.486 mm, rough-to-finished unavailability and finished depth-edge failures. Window/clutter finished accuracy fails at 23.050/14.859 mm. The five-attempt detector budget remains exhausted. No sixth detector variant or protected draw is authorized by these independent improvements.
 - **Qualification:** production readiness and physical precision remain unestablished. Precision is disabled, overall work is in progress, and accepted-release/renewal gates remain closed. The [owner-device protocol](DEVICE_ACCEPTANCE.md) identifies the concrete phone, Files/iCloud, signed-update, camera and independent field checks. Substantial software acceptance also remains in the package audit below.
 
+## Homeowner guidance candidate
+
+R19 / runbook §1.4 adds a five-step, skippable first-use introduction, three remembered starting goals, restart and next-launch replay settings, contextual help and fourteen searchable offline homeowner guides. Help is available without a project. Steps use current control names and link to the next task; original photos remain the fallback when spatial features are unavailable. Guidance preferences are separate from project data. Three new UI flows cover persistence, restart, search, routing, landscape and large text, bringing the expected count to sixteen. Native/Release and full integration validation are pending; this candidate has not been uploaded to TestFlight.
+
 ## Runbook package audit
 
 | Phase | Implemented | Remaining acceptance work |

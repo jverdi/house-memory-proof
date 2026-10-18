@@ -106,6 +106,7 @@ Simulation cannot establish real camera accuracy, iCloud reliability on the owne
 | R16 | Avoid commercial product overhead | No app login, billing, backend, hosted reconstruction, public release, or recurring server management |
 | R17 | Iterate without physical capture dependencies | Procedural houses and observation replay test the real portable core and native UI |
 | R18 | Remain trustworthy on the owner's phone | Capability, performance, field accuracy, migration, and beta-expiry gates pass |
+| R19 | Learn and use the app without technical expertise | Restartable first-use guidance and searchable offline homeowner task guides pass §1.4 |
 
 ### 1.2 Supported envelope
 
@@ -126,6 +127,16 @@ No Android client, multiplayer walkthrough, public website, contractor accounts,
 Finished appearance is an **observed finished capture** only when captured after finishing. Before then, an optional finish shell can be generated from measured/design assemblies and shown as a clearly labeled planned visualization. Its textures and unseen details are not evidence of the eventual house.
 
 An owner can review or correct uncertain labels and alignments. Agents automate engineering; they cannot determine unknown physical cable identity or access an occluded surface through software. The UI must accommodate uncertainty rather than demand complete manual labeling before the record is useful.
+
+### 1.4 Homeowner onboarding and in-app guidance — added October 18, 2026
+
+**R19.** First-time use must explain how to achieve a useful construction record without technical training. Homeowners must be able to choose a starting goal: record exposed work before walls close, document a later visit, or find earlier records. The introduction must explain one-room setup, dated construction stages, capture/import, review before closure, finding records and independent backup. It must be skippable, remember completion across launches, and appear for existing installations that have not seen it.
+
+Help settings must provide **Restart introduction** and a persistent **Show introduction next time** switch, plus a changeable starting goal. Replaying or skipping guidance must not change houses, originals, notes, selection history or backups. No account, network access or camera permission is needed to read guidance.
+
+Human-readable guides must be bundled offline, searchable by tasks and common words, reachable before creating a house and from House, Capture, Evidence, Explore and Tools. Each guide must state the intended result, use actual control names, give concrete steps and offer a relevant next action. Coverage includes setup, pre-cover capture, dated changes, ordinary photo import/annotation, optional printed references and stage alignment, closure review, finding evidence, navigation/layers, live reveal prerequisites, backups/restores, sharing, drawing references, troubleshooting and a plain-language glossary. Explanations must distinguish observed, planned, synthetic and approximate records without requiring implementation knowledge. Missing views and unavailable overlays must lead to useful photo-based alternatives, with no claim that the app sees through drywall or certifies unseen cavities.
+
+Acceptance requires Debug and Release compilation, first-use completion and skip/relaunch persistence, restart and next-launch replay, preserved house records/preferences, guide search and empty-search recovery, correct task navigation, help before project creation, and reachable content in landscape and large text. Inspect retained native UI screenshots and keep prior failures. VoiceOver labels, scalable text and scrollable layouts are required; actual owner-device accessibility/usability and construction-site comprehension remain part of device acceptance. Guidance completion never implies spatial or physical qualification. This requirement is added to P0/P1 product usability and the end-to-end acceptance demonstration; it does not remove other runbook gates.
 
 ## 2. Accuracy and evidence contract
 

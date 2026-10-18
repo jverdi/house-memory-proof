@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T18:18:14.896230Z",
+  "updatedUTC": "2026-10-18T19:13:23.317447Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -49,6 +49,10 @@
     {
       "area": "release durability",
       "remaining": "No-upload signed identity and symbol retention passed at 5692529353. Final accepted release and pinned-source renewal after acceptance remain."
+    },
+    {
+      "area": "homeowner onboarding and plain-language help",
+      "remaining": "R19 / \u00a71.4 implemented locally; native/Release compilation, 16-flow integration and visual accessibility review pending. Owner-device usability remains separate."
     }
   ],
   "externalAcceptanceOpen": [
@@ -56,31 +60,24 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Complete the 218.1 interface/export integration and retain exact-source results. Continue independent full-house navigation/streaming, mixed-stage coverage, broad service-envelope and cross-version acceptance. Preserve original finished-localization failures and the exhausted five-attempt budget. The requested 216.1 snapshot is available to its owner; device/provider and measured field qualification remain required.",
+  "nextAction": "Finish 220.1 follow-up evidence, then publish and validate restartable homeowner onboarding and fourteen offline task guides. Continue remaining software/full-house work without relaxing the exhausted localization budget or device/provider/field gates. TestFlight216.1 remains available.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "8d2a1d28de265d2491345c37cf664293434a6b14",
-    "run": 39153443322,
-    "build": "219.1",
+    "source": "51bc6ba347b892039fc9606a04b638b3b6819586",
+    "run": 39156497915,
+    "build": "220.1",
     "nativeExpected": 171,
     "interfaceExpected": 13,
     "nativeReaderPhasesExpected": 18,
+    "validationReportsExpected": 35,
     "integrationComplete": false,
-    "status": "failed_photo_curve_switch",
+    "status": "native_passed_interface_running",
     "nativePassed": 171,
     "nativeReaderPhasesPassed": 18,
     "commandContractsPassed": 48,
-    "nativeSeconds": 164.02193212500015,
-    "nativeArtifact": 12146452724,
-    "nativeArtifactSHA256": "17f2b74223f97bdb2f955bf0a70e58bbb7d9fa00c679635bcdfc797b2181a53d",
-    "observedInterfaceFailure": "testPhotoPointWorkflow: curve mode switch did not reach value 1",
-    "interfacePassed": 12,
-    "interfaceFailed": 1,
-    "interfaceSeconds": 821.669,
-    "validationReportsPassed": 35,
-    "fullArtifact": {
-      "id": 12146518254,
-      "sha256": "13a27fd44176890ab91fefe0b14e9c0415aecc4d5738862864cdfc85fd8c6ea5",
+    "nativeArtifact": {
+      "id": 12147965356,
+      "sha256": "bf63956e4cb92aa6a116b284014dc085b46bb6bdad8ff3628bea8f39e5f912a9",
       "sha256IndependentlyVerified": true
     }
   },
@@ -1041,20 +1038,30 @@
     "additionalIntermediateUploads": false
   },
   "previousValidation": {
-    "source": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
-    "run": 39151470099,
-    "build": "218.1",
+    "source": "8d2a1d28de265d2491345c37cf664293434a6b14",
+    "run": 39153443322,
+    "build": "219.1",
     "nativeExpected": 171,
     "interfaceExpected": 13,
     "nativeReaderPhasesExpected": 18,
     "integrationComplete": false,
-    "status": "superseded_after_native_pass_and_batch_ui_failure",
+    "status": "failed_photo_curve_switch",
     "nativePassed": 171,
     "nativeReaderPhasesPassed": 18,
     "commandContractsPassed": 48,
-    "nativeSeconds": 190.86271375,
-    "nativeArtifact": 12144944730,
-    "nativeArtifactSHA256": "7a41f7c4107241770b4511be5b6ef4a8cf2bb0738ff5af0bf34d3c53b819b3df"
+    "nativeSeconds": 164.02193212500015,
+    "nativeArtifact": 12146452724,
+    "nativeArtifactSHA256": "17f2b74223f97bdb2f955bf0a70e58bbb7d9fa00c679635bcdfc797b2181a53d",
+    "observedInterfaceFailure": "testPhotoPointWorkflow: curve mode switch did not reach value 1",
+    "interfacePassed": 12,
+    "interfaceFailed": 1,
+    "interfaceSeconds": 821.669,
+    "validationReportsPassed": 35,
+    "fullArtifact": {
+      "id": 12146518254,
+      "sha256": "13a27fd44176890ab91fefe0b14e9c0415aecc4d5738862864cdfc85fd8c6ea5",
+      "sha256IndependentlyVerified": true
+    }
   },
   "photoModeRecovery": {
     "failedSource": "8d2a1d28de265d2491345c37cf664293434a6b14",
@@ -1065,5 +1072,32 @@
     "inspection": "Recorded tap did not change the curve switch; screen recording shows it near the navigation bar despite the reported frame farther down the page. Root cause is not established on a physical device.",
     "preparedRepair": "Persistent toolbar action changes point/curve mode without scrolling to the form header; root-level mode change resets the same draft selections. UI preserves explicit mode assertion, two independently checked tracks, saved curve and return-to-point assertions.",
     "validationPending": true
+  },
+  "homeownerGuidance": {
+    "requirement": "R19 / architecture-runbook \u00a71.4",
+    "status": "implemented_pending_validation",
+    "requestedDate": "2026-10-18",
+    "onboardingSteps": 5,
+    "startingGoals": 3,
+    "offlineGuides": 14,
+    "restartIntroduction": true,
+    "showOnNextLaunch": true,
+    "searchAndTaskLinks": true,
+    "contexts": [
+      "welcome",
+      "House",
+      "Capture",
+      "Evidence",
+      "Explore",
+      "Tools"
+    ],
+    "houseDataUnchangedByGuidance": true,
+    "expectedUIFlows": 16,
+    "nativeExpected": 171,
+    "nativeCompilationValidated": false,
+    "interfaceValidated": false,
+    "screenshotsInspected": false,
+    "ownerDeviceUsabilityVerified": false,
+    "testflightDelivered": false
   }
 }

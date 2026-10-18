@@ -1,0 +1,150 @@
+import Foundation
+
+enum HomeGuideID: String, CaseIterable { case setup, capture, visits, photos, references, review, find, explore, reveal, backup, share, plans, troubleshoot, glossary }
+enum HomeGuideCategory: String, CaseIterable { case begin = "Start and record", review = "Review and find", keep = "Keep and share", support = "When you need help" }
+struct HomeGuideStep { var title: String; var body: String }
+struct HomeGuide: Identifiable {
+  var id: HomeGuideID
+  var category: HomeGuideCategory
+  var title: String
+  var summary: String
+  var outcome: String
+  var steps: [HomeGuideStep]
+  var note: String
+  var actionTitle: String
+  var destination: GuidanceDestination
+  var related: [HomeGuideID]
+  private var searchTerms: String {
+    switch id {
+    case .setup: return "start first time home rooms floors level tutorial"
+    case .capture: return "scan scanning photo picture drywall wall ceiling pipe cable wire"
+    case .visits: return "before after progress date history change renovation"
+    case .photos: return "import camera roll picture annotation mark label"
+    case .references: return "marker reference board print printed align alignment registration before drywall"
+    case .review: return "checklist inspect builder contractor gaps missing drywall"
+    case .find: return "search find wire pipe cable photo notes"
+    case .explore: return "walk walking 3D model rotate zoom controls layer ghost"
+    case .reveal: return "xray x-ray augmented reality AR overlay see through drywall"
+    case .backup: return "backup back up recover recovery archive restore iCloud files snapshot"
+    case .share: return "share export video movie tour flythrough contractor"
+    case .plans: return "blueprint floorplan plan drawing PDF BIM IFC scale calibration"
+    case .troubleshoot: return "error stuck help permission camera blank unavailable slow heat storage"
+    case .glossary: return "meaning definition jargon terms words"
+    }
+  }
+  func matches(_ query: String) -> Bool {
+    let words = query.split(whereSeparator: \.isWhitespace)
+    let content = ([title, summary, outcome, note, searchTerms] + steps.flatMap { [$0.title, $0.body] }).joined(separator: " ")
+    return words.allSatisfy { content.localizedStandardContains(String($0)) }
+  }
+  private static func step(_ title: String, _ body: String) -> HomeGuideStep { HomeGuideStep(title: title, body: body) }
+  static let all: [HomeGuide] = [
+    HomeGuide(id: .setup, category: .begin, title: "Set up your house", summary: "Create a record you can recognize months or years later.", outcome: "Aim for one named room and one dated construction stage before your first visit.", steps: [
+      step("Create a real house", "On the welcome screen, tap Create your house and enter a recognizable name. If a house is already open, go to House, tap Choose house (the stacked squares at the top right), then New house. The sample house is a practice example and cannot capture your site."),
+      step("Add the room", "On House, tap + beside Spaces (Add space). Name the room, choose its level and tap Add. Level 0 is the main level; 1 is the next floor and −1 is a basement. The size entries are design estimates in metres, not measurements made by the phone. You can start with approximate dimensions."),
+      step("Name this point in construction", "Open Tools → Construction stages → Add construction stage. Use a name such as Kitchen plumbing before drywall, choose the actual date, then Save. Rough-in means exposed work before wall or ceiling coverings. Finished means work after those coverings are in place."),
+      step("Choose your first task", "Use Capture for new camera records, or Evidence → Import existing photographs for photos you already took. Start with one wall or small area. You do not need to complete a whole-house 3D model before your photographs are useful.")
+    ], note: "Keep practice records separate from real work. Switching houses changes which record you are viewing; it does not combine their photographs.", actionTitle: "Open House", destination: .house, related: [.capture, .photos]),
+
+    HomeGuide(id: .capture, category: .begin, title: "Record a wall before it is covered", summary: "Keep a clear view of pipes, cables, framing and connections.", outcome: "You should finish with saved original photos, the correct room and date, and a list of any views you still need.", steps: [
+      step("Prepare a small area", "Choose an accessible wall, ceiling or section of a room. Light the details so labels and connections are visible. Include a wide view that makes the location recognizable, then closer views of important details. Avoid deep shadows, glare and quick movements."),
+      step("Choose the room and stage", "Open Capture. Check Room and Stage before tapping Start capture. On the camera screen, tap Start. Allow camera access if asked. A construction stage is simply a named, dated visit or period of work."),
+      step("Move slowly with overlapping views", "Move sideways so the same details appear from several viewpoints. Capture both sides of an exposed area when accessible, including where cables or pipes enter and leave it. Tap Detail photo for readable labels and small connections. A photo count does not mean the whole area has been recorded."),
+      step("Save and check", "Tap Save & stop. Wait until saving finishes, then Close. Open Evidence and look at the original photos. Check focus, readability and location before leaving. If an important detail is missing, capture another short session while it is still visible."),
+      step("Add useful notes and a backup", "In Evidence, open a photo, add notes and tap Save. Describe the visible location and anything unknown. For example: Kitchen sink wall, red pipe left of window; destination not confirmed. Then use Tools → Export complete house archive to keep a separate copy.")
+    ], note: "Camera capture and 3D processing depend on the phone and the available views. If capture is unavailable, you can still import ordinary photos and keep dated notes. No capture certifies that an unseen area is empty.", actionTitle: "Open Capture", destination: .capture, related: [.review, .photos, .references, .troubleshoot]),
+
+    HomeGuide(id: .visits, category: .begin, title: "Record a later visit or a change", summary: "Keep before-and-after records without losing earlier work.", outcome: "Each visit should have its own date and a clear description of what changed.", steps: [
+      step("Open the same house", "Use the house selector on House to choose your project. Keep the same room names across visits so you can find earlier records."),
+      step("Add a dated stage", "In Tools → Construction stages, tap Add construction stage. Give it a specific name, such as Bathroom pipe moved, 18 October. Set the construction date and layer category, then Save. Add a stage for a later visit rather than renaming an old visit to stand for new work."),
+      step("Record the change in context", "In Capture, select the same Room and the new Stage. Include a wide view and close details of the change. Save & stop, then check the photos in Evidence. For imported photographs, open each photo and choose its Room and Stage before saving."),
+      step("Write what changed", "Add notes that explain the old and new locations, what is visible and what remains unknown. Compare the dated photos in Evidence. If the views do not line up in 3D, keep using the originals; different sessions may need alignment before a combined spatial view is useful.")
+    ], note: "Changing a stage category changes which layer displays it. It does not move a pipe, prove a change happened, or turn a planned drawing into a photograph of completed work.", actionTitle: "Open Capture", destination: .capture, related: [.find, .review]),
+
+    HomeGuide(id: .photos, category: .begin, title: "Use photos you already have", summary: "Make a useful record without starting a camera scan.", outcome: "Imported originals can have room names, dates, notes and marks, even when their position in 3D is unknown.", steps: [
+      step("Choose the originals", "Open Evidence → Import existing photographs → Choose photographs. Select the photos you want to keep. Wait for the import to finish; earlier successful imports remain saved if a later image cannot be read."),
+      step("Add the missing context", "Open an imported photograph. Choose its Room and Stage, then write Notes and visible labels. A note such as Upstairs bathroom, wall facing landing is more useful than Pipe photo. Tap Save."),
+      step("Mark a visible detail", "Use the photo's annotation controls to mark a point, line or box and give it a label. Finish or discard a mark in progress before saving. These marks identify something in that photograph; they do not establish its real-world depth or dimensions."),
+      step("Find it later", "Return to Evidence and search for words from your notes or the room. Open the photo to inspect the original. Read labels on device can help copy visible text; check the text before relying on it.")
+    ], note: "You may see the term unposed photograph. It means the app does not know the camera's exact position when the photo was taken. The photo is still useful evidence.", actionTitle: "Open Evidence", destination: .evidence, related: [.find, .backup]),
+
+    HomeGuide(id: .references, category: .begin, title: "Prepare markers for a later camera overlay", summary: "Printed markers can help the app match a room across construction visits.", outcome: "This is optional preparation for the experimental camera overlay. Ordinary photos and notes remain useful without markers.", steps: [
+      step("Plan before the room changes", "If you want to try a camera overlay after drywall, plan marker locations before your first capture. A reference board is a printed pattern the app can recognize. Choose stable locations that can remain visible and unmoved through the work. Ask your builder where they can stay."),
+      step("Create separate markers", "Open Tools → Printable references. Enter a Board name, choose Reference room and tap Create coded reference. Save or print the PDF from the share sheet. Repeat to make different markers; do not print several copies of one code for different locations."),
+      step("Print, measure and record", "Print at actual size. Measure the full outer image, including its white margin. Open that board's entry, enter Measured print width in metres and describe the Mounting location, then Save reference. For example, a measured width of 18 centimetres is 0.18 metres. Use the width you actually measured, not an assumed printer size."),
+      step("Place and record several together", "Keep markers flat, unobscured and fixed. For the coded camera overlay, the app needs at least four well-distributed markers visible together. Spread them across two walls at different heights and distances, rather than in one straight row. Six distinct markers can give more viewing options. During capture, include sharp views from different positions, at least 15 centimetres apart, and read the on-screen reference guidance."),
+      step("Keep later visits comparable", "Record the same unchanged markers again on later visits. If a marker moves, open its entry, turn off Still fixed in its original location and Save reference. Do not treat the moved marker as the old location."),
+      step("Combine visits only when supported", "Tools → Register capture segments can align sessions using shared reference boards. Choose the first session and Use selected session as house origin. For another visit, choose it under Segment, choose the first under Registered anchor session, then Align using shared reference boards. This requires at least three shared, fixed boards recorded in both sessions. If it is refused, keep the sessions separate and use their original photos; do not guess coordinates to force them together.")
+    ], note: "Markers help match recorded locations but do not make the current app a precision survey. The printed-layout and capture checks must agree; a successful fit alone does not qualify accuracy. Do not cover, move or discard the originals you need to understand a later view.", actionTitle: "Open Tools", destination: .tools, related: [.capture, .reveal, .troubleshoot]),
+
+    HomeGuide(id: .review, category: .review, title: "Review before closing walls", summary: "Find missing photos and keep questions for your builder together.", outcome: "Use this as a record review, with specific gaps and follow-up notes for each room.", steps: [
+      step("Choose the room", "On House, open Closure review and notes. Choose the room, then tap Review dated evidence. The list separates records by construction stage so a later visit does not stand in for a missing earlier view."),
+      step("Look for missing details", "Review which dates and stages have photos. Open Evidence to inspect the originals: can you recognize each wall and see the details that will be hidden? A count alone cannot answer that. Take missing or clearer photos while the work is still exposed."),
+      step("Write open questions", "Keep specific notes such as No photo of cable above kitchen door, or Ask builder which valve this serves. Tap Save review notes. Use Check wall and ceiling gaps for available photo-support information, remembering that it only considers surfaces the app observed."),
+      step("Share and preserve the review", "Tap Export dated review inventory to share the list, then export a complete house archive from Tools. The inventory helps communicate what was recorded; the archive keeps the original record.")
+    ], note: "Closure review is not an inspection approval. A missing or hidden pipe cannot be ruled out by a photograph count, a coverage display or an empty-looking 3D view.", actionTitle: "Open House", destination: .house, related: [.capture, .backup]),
+
+    HomeGuide(id: .find, category: .review, title: "Find a pipe, cable or earlier photo", summary: "Start with a room and the original evidence.", outcome: "Find the relevant date, read the notes and check the source photo before interpreting a 3D view.", steps: [
+      step("Search Evidence", "Open Evidence and search for a room, system or phrase from your notes, such as kitchen sink. Check the filters if expected records are missing. Clear the search or broaden the filters to see more results."),
+      step("Check the date and source", "Open the original photograph and read its notes. Look for the correct room and construction stage. An old photo may show a route before it was moved; compare later visits if work changed."),
+      step("Inspect the related object", "If the record includes a 3D object, open its details to review its name, system and source photos. A label describes the record; it does not by itself confirm which circuit, cable destination or pipe contents are present."),
+      step("Use 3D as another view", "Open Explore and use Layers to choose the room, stage and systems. Use All evidence when you need to see the available records across layers. If a view is missing or confusing, return to the dated photographs instead of assuming the area was empty.")
+    ], note: "House Xray shows historical records. It does not detect what is currently behind a finished wall or establish a safe drilling position.", actionTitle: "Open Evidence", destination: .evidence, related: [.explore, .reveal, .troubleshoot]),
+
+    HomeGuide(id: .explore, category: .review, title: "Understand the 3D view and layers", summary: "Look around the record and choose which work to show.", outcome: "Use the view for context while keeping the source photos and uncertainty visible in your decisions.", steps: [
+      step("Start with an overview", "Open Explore. Tap Layers and turn on Orbit overview if you want to look around the house from outside. Drag to rotate and pinch to zoom. Turn it off to return to walking. Step and snap-turn buttons provide small movement and turning steps; they are also available with VoiceOver."),
+      step("Choose what to show", "Use Rough-in for exposed construction, Finished for finished-stage records, Ghost for a see-through comparison, or All evidence for the available layers. In Layers, choose the room under Scope, the Stage and the Systems you want visible. Done returns to the view."),
+      step("Inspect a detail", "Choose Inspect and select an object to open its details and available source photos. Measure and Trace route are tools for recording approximate dimensions or visible paths; a drawn route does not prove a hidden connection."),
+      step("Understand a blocked or missing view", "Walking stays within supported captured areas and checks obstacles. Use Orbit overview or Free fly to inspect from another viewpoint. Separate capture sessions may not yet be aligned, so the app may show one at a time. Hiding a layer only changes the display; it does not remove a real obstacle or prove empty space.")
+    ], note: "The current app does not have a validated precision profile for your phone. 3D positions, measurements and overlays remain approximate. Planned and sample geometry are not proof of installed work.", actionTitle: "Open Explore", destination: .explore, related: [.find, .glossary]),
+
+    HomeGuide(id: .reveal, category: .review, title: "Use a saved view at a finished wall", summary: "Understand what the camera overlay can show and when to use photos instead.", outcome: "A camera overlay needs a usable saved session, a defined wall or ceiling area, and a current alignment with the room.", steps: [
+      step("Find the earlier session", "In Capture, look under Saved sessions · AR reveal for the room and date you recorded before the wall was covered. A photos only session may not support reopening an overlay. The dated originals remain available in Evidence."),
+      step("Define the area to reveal", "In Explore, choose the Wall tool. On the captured surface, select a corner, a point along its horizontal edge and a point along its other edge, then tap Define wall or ceiling volume. Name the area, enter its known construction depth and finish thickness, then Save reveal boundary. This defines the area for the display; it does not discover hidden construction. If the surface or dimensions are unavailable, use the original photos instead."),
+      step("Open the saved session", "Return to Capture, open that saved session, choose the wall or ceiling under Reveal volume, then Start. Follow the on-screen alignment message. The app needs to recognize the location before it can place the earlier record over the camera view."),
+      step("Use the originals if it cannot align", "If the overlay is unavailable, disappears or does not agree with the room, stop and open Evidence. Compare the original photos and notes. New finishes, moved reference markers, poor views and similar-looking rooms can prevent a reliable match.")
+    ], note: "The app cannot see through drywall. It displays earlier captured evidence, and its current alignment is approximate. A missing overlay means the record could not be placed; it does not mean no pipe or cable is present.", actionTitle: "Open Capture", destination: .capture, related: [.find, .references, .troubleshoot]),
+
+    HomeGuide(id: .backup, category: .keep, title: "Back up and restore your house", summary: "Keep a complete copy somewhere other than this app's local storage.", outcome: "A complete house archive preserves the record and original files together. Optional folder snapshots save separate revisions.", steps: [
+      step("Save a complete archive", "Open Tools → Export complete house archive. Wait for the share sheet, choose Save to Files and choose a folder you can find again. The file ends in .hxray. Use an independent location such as iCloud Drive or external storage when you want protection beyond this iPhone."),
+      step("Check that the copy arrived", "Open Files and confirm the archive is present. If you chose a cloud provider, check its transfer status before relying on another device to have the file. Creating a local file does not guarantee that the provider has finished uploading it."),
+      step("Set up optional folder snapshots", "In Tools → Automatic folder snapshots, tap Choose snapshot folder. Choose a folder, then Save snapshot now. You can enable Daily snapshot when opening this house. Refresh snapshot transfer status shows what the app can verify. These saves run while the app is active."),
+      step("Restore a saved record", "For a .hxray archive, use Tools → Import archive, IFC or point cloud and choose the file. For a folder snapshot, open Automatic folder snapshots, choose the correct folder, tap List saved revisions, and select the dated revision. Export your current record first if you want to keep an independent copy before restoring."),
+      step("Handle an incomplete restore", "If the app reports missing files or a transfer problem, keep the existing record. Let the provider finish downloading, check access to the folder, then retry. Separate revisions from different devices are not automatically merged.")
+    ], note: "A movie, screenshot, 3D export or metadata list is not a complete backup. Do not remove the app or its local data until you have checked a usable independent copy.", actionTitle: "Open Tools", destination: .tools, related: [.share, .troubleshoot]),
+
+    HomeGuide(id: .share, category: .keep, title: "Share photos, a movie or a 3D view", summary: "Choose the kind of file that matches what the recipient needs.", outcome: "Share a readable view for discussion, or a complete archive when preserving the house record matters.", steps: [
+      step("Share a photograph", "Open a photograph in Evidence. Where Share original is offered, it shares the original image. Include the room, date and relevant notes when explaining it; a bare photo may not identify the location for someone else."),
+      step("Make a tour movie", "In Tools, choose the Room, Stage and Layers under Export scope. Under Automatic tour, choose Film and the duration. Preview shot list explains what can be shown and what is omitted. Tap Create fly-through video, keep the app open and wait for the share sheet."),
+      step("Choose a reusable 3D file", "Tools offers GLB, USDZ, PLY and OBJ for software that accepts those formats. Choose the format requested by the person using it. These files show available geometry in metres; they do not turn approximate records into a measured survey."),
+      step("Keep the complete record separately", "For your own backup or transfer, use Export complete house archive. Metadata JSON and semantic CSV are detailed lists for other software; they are not needed for ordinary photo review.")
+    ], note: "Review what you are sharing. House records can include private interiors and notes. The movie share sheet also includes a file describing its source views and shots.", actionTitle: "Open Tools", destination: .tools, related: [.backup, .find]),
+
+    HomeGuide(id: .plans, category: .keep, title: "Add building plans for reference", summary: "Keep drawings alongside what was actually photographed.", outcome: "A plan helps explain intended work, while dated photos document visible work on site.", steps: [
+      step("Import the drawing", "Open Tools → Drawings & design references → Import drawing or source file. Choose a supported PDF, image or other source file, then open it from the list."),
+      step("Keep its meaning clear", "Use the drawing as a design reference. A line on a plan does not prove a pipe was installed there. Keep original drawings and later changes distinguishable in their names and notes."),
+      step("Review suggestions", "Labels and boundary suggestions can propose text and shapes from a drawing. Check them against the sheet before marking them reviewed. If a suggestion is wrong or missing, keep the original drawing and review it directly."),
+      step("Only align with known information", "Scale calibration and Align sheet to house need known dimensions and matching points. If you do not have that information, leave the drawing as a reference rather than guessing. Save any edits you choose to keep.")
+    ], note: "BIM means a building design model. IFC is one format for sharing it. Imported design objects stay distinct from construction photographs and captured surfaces.", actionTitle: "Open Tools", destination: .tools, related: [.glossary, .photos]),
+
+    HomeGuide(id: .troubleshoot, category: .support, title: "When something does not work", summary: "Find a next step without having to interpret technical diagnostics.", outcome: "Keep your existing record and use original photos whenever spatial processing is unavailable.", steps: [
+      step("Start capture is unavailable", "If you are in the sample house, create a real house first. Check the selected room and stage. If camera permission was denied, enable camera access for House Xray in iPhone Settings, then return and start again. If AR capture is unavailable on the device, use Evidence → Import existing photographs."),
+      step("Saving or processing pauses", "Read the message on screen. Let an active save finish before starting another task. Low storage, heat, leaving the app or an interruption may stop capture or pause processing. Return to Capture, check the saved session and use Process capture when available. Keep the phone cool and free storage without deleting your only copy of the record."),
+      step("The 3D view is empty or incomplete", "Check the house, room, stage and system filters. Try All evidence in Explore and inspect the source photos in Evidence. Imported ordinary photos do not automatically create a 3D model. Separate sessions may need alignment; a gap is not proof of empty space."),
+      step("The camera overlay cannot find the room", "Check that you chose the correct earlier session and a wall or ceiling volume. The room may have changed too much, the views may be poor, or reference markers may have moved. Use the dated originals instead of trying to force an uncertain overlay to fit."),
+      step("A backup or import is missing files", "Check the chosen folder in Files and let the storage provider finish transferring. Re-select the folder if permission changed. Keep the existing local record and retry after the files are available. Do not delete the app as a first troubleshooting step."),
+      step("You still need help", "Note what you were doing, the exact on-screen message and the build shown in Tools under Diagnostics. A screenshot of the message can help explain the problem. Diagnostics is an advanced section; you do not need to run synthetic self-tests to create an ordinary construction record.")
+    ], note: "You can restart the introduction or change your starting goal in Help settings. Restarting help does not reset your house data.", actionTitle: "Open House", destination: .house, related: [.photos, .backup, .glossary]),
+
+    HomeGuide(id: .glossary, category: .support, title: "Words you may see in the app", summary: "Plain-language meanings for construction and app terms.", outcome: "You do not need to learn the technical tools to start keeping useful photos and notes.", steps: [
+      step("Stage, rough-in and finished", "A stage is a named point in construction with a date. Rough-in is exposed work before wall or ceiling coverings; finished is after those surfaces are covered. A late repair can have its own stage."),
+      step("Evidence, observed, planned and synthetic", "Evidence is the saved material supporting a record, such as a photograph. Observed means captured from the site. Planned means intended design. Synthetic means a generated example or test. Planned and synthetic objects do not prove what is in your house."),
+      step("Capture session, segment and alignment", "A capture session is one recording visit to an area. The app may call it a segment. Alignment, also called registration, puts separate records into a shared position. Without a checked alignment, records from two visits may not line up."),
+      step("AR, LiDAR and reconstruction", "AR is a saved view placed over the live camera image. LiDAR is a sensor that estimates distance to visible surfaces; the app calls that information depth. Reconstruction builds a 3D representation from recorded information. None of these can reveal a pipe that was never visible or establish precise dimensions by themselves."),
+      step("Route, endpoint, trade and envelope", "A route is a recorded path of a pipe or cable. An endpoint is one of its ends. A trade is a group such as plumbing, electrical or heating and cooling. An envelope describes a recorded outer size or occupied space; it is not proof that a nearby space is clear."),
+      step("Coverage, closure and approximate", "Coverage describes what available photos support on observed surfaces. Closure is when construction is covered up. Approximate means the app has not established the precision needed to trust an exact location or dimension."),
+      step("OCR and reference boards", "OCR means reading text from an image, such as a visible product label. Check the suggested words against the photo. A reference board is a printed marker that helps the app recognize a location; it must stay fixed for a later visit."),
+      step("Archive, snapshot and original", "An original is the preserved source file. A complete house archive is a portable .hxray file containing the record and its originals. A folder snapshot is a separate saved revision in a chosen folder. Cloud transfer still needs to finish before another device can use that copy.")
+    ], note: "If a term is unfamiliar, search Help using the word or the task you are trying to do.", actionTitle: "Open House", destination: .house, related: [.setup, .troubleshoot])
+  ]
+}

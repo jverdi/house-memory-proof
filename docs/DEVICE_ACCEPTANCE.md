@@ -8,6 +8,14 @@ Keep the existing app installed. Export an existing house as a complete archive 
 
 After installing the new TestFlight build, open Tools → Run synthetic self-tests, then Export diagnostics. The report must identify the physical phone and the installed source; the simulator report is a separate result. Retain failures and the original report. A green self-test does not qualify the live camera or physical precision.
 
+## Homeowner guidance and accessibility (R19)
+
+On a build that includes R19, open Help & getting started → Help settings → Restart introduction. Complete it once, relaunch, and confirm it stays dismissed. Skip it once, enable Show introduction next time, fully close/relaunch, and confirm it returns. Verify that the same houses, photos and notes remain intact. This guide reset must not behave like a project reset.
+
+With networking off, use the guide for one real homeowner task: identify the correct house, room and date; record or import a photograph; find it again; and save a complete backup. Use the unfamiliar-word search and the unavailable-camera/overlay alternatives. Record any step whose wording or named control is unclear; successful navigation alone does not establish that the instructions are understandable.
+
+With the iPhone's larger accessibility text, landscape orientation and VoiceOver, read the introduction and a long guide. Confirm headings and actions are understandable, selection state is spoken, content scrolls, and Back, Skip, Done and the next action remain reachable. Retain screenshots or a recording of failures. Simulator screenshots do not substitute for this owner-device check.
+
 ## Thirty-minute visit
 
 Use several short capture segments in a disposable real project. Record the start/end times and what happened at each interruption. The report records ten-second resource samples; it does not record a video of the interaction.

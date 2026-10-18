@@ -8,6 +8,7 @@ private let ink = Color(red: 0.035, green: 0.055, blue: 0.08)
 struct RootView: View {
   @Environment(\.scenePhase) private var phase
   @EnvironmentObject var model: AppModel
+  @StateObject private var guidance = HomeownerGuidance()
   @State private var tab = 0
   @State private var newProject = false
   @State private var name = "My house"
@@ -40,6 +41,7 @@ struct RootView: View {
               Text(
                 "Your construction record. On your iPhone. Capture exposed services, explore their geometry, and keep the original evidence."
               ).font(.title3).foregroundStyle(.secondary)
+              HomeHelpButton()
               Button {
                 newProject = true
               } label: {
@@ -60,7 +62,8 @@ struct RootView: View {
         }
       }
     }
-    .onAppear {model.setProcessingForeground(phase == .active)}
+    .environmentObject(guidance)
+    .onAppear {model.setProcessingForeground(phase == .active);guidance.checkFirstLaunch()}
     .onChange(of: phase) { _, value in
       if value == .active {model.setProcessingForeground(true);SnapshotService.automatic(model: model)}
       if value == .inactive {model.foreground=false}
@@ -88,8 +91,35 @@ struct RootView: View {
       Text(model.error ?? "")
     }
     .sheet(
-      isPresented: Binding(get: { model.shareURL != nil }, set: { if !$0 { model.shareURL = nil } })
+      isPresented: Binding(get: { model.shareURL != nil && !guidance.showHelp }, set: { if !$0 { model.shareURL = nil } })
     ) { if let url = model.shareURL { ShareSheet(url: url) } }
+    .fullScreenCover(isPresented: $guidance.showIntroduction) {
+      HomeownerIntroduction().environmentObject(guidance)
+    }
+    .sheet(isPresented: $guidance.showHelp, onDismiss: {
+      guidance.helpDidDismiss()
+      if let destination = guidance.destination {
+        guidance.destination = nil
+        switch destination {
+        case .house: tab = 0
+        case .explore: tab = 1
+        case .capture: tab = 2
+        case .evidence: tab = 3
+        case .tools: tab = 4
+        case .createHouse: newProject = true
+        }
+      }
+    }) {
+      NavigationStack {
+        Group {
+          if let topic = guidance.helpTopic { HomeGuidePage(id: topic) }
+          else { HomeHelpCenter() }
+        }
+      }.environmentObject(guidance).environmentObject(model)
+        .sheet(isPresented: Binding(get: { model.shareURL != nil }, set: { if !$0 { model.shareURL = nil } })) {
+          if let url = model.shareURL { ShareSheet(url: url) }
+        }
+    }
     .overlay(alignment: .top) {
       if model.busy {
         VStack(alignment: .leading) {
@@ -152,6 +182,7 @@ struct OverviewView: View {
             }.accessibilityLabel("Choose house")
           }
           Text(house.name).font(.system(size: 34, weight: .semibold, design: .rounded))
+          HomeownerStartCard(isSample: house.isDemo)
           ScenePreview(house: house).frame(height: 260).clipShape(
             RoundedRectangle(cornerRadius: 24)
           ).overlay(alignment: .bottomLeading) {
@@ -328,6 +359,8 @@ struct ExploreView: View {
             } label: {
               Label("Layers", systemImage: "square.3.layers.3d")
             }.buttonStyle(.borderedProminent)
+            HomeHelpButton(topic: .explore, title: "Help with the 3D view").labelStyle(.iconOnly)
+              .buttonStyle(.bordered).accessibilityIdentifier("explore-help")
           }
           if verticalSizeClass != .compact {HStack {
             Picker("View", selection: $options.mode) {
@@ -624,6 +657,7 @@ struct CapturePage: View {
           Text(
             "Capture each wall side, joist bay, ceiling and late change before closing it. ARKit geometry is approximate; original images remain the primary evidence."
           )
+          HomeHelpButton(topic: .capture, title: "How to record this visit")
         }
         Section("Location") {
           Picker("Room", selection: $room) {
@@ -780,6 +814,7 @@ struct EvidencePage: View {
     NavigationStack {
       List {
         Section {
+          HomeHelpButton(topic: .find, title: "Help finding and organizing records")
           NavigationLink("Import existing photographs") { DocumentaryPhotosPage(house: house) }
           NavigationLink("Locate a point from three photos") { PhotoPointPage(house:house) }
           Button("Classify objects"){batchClassification=true}.disabled(house.features.isEmpty)

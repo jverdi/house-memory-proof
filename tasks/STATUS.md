@@ -1,3 +1,9 @@
+## Homeowner onboarding and offline help added to the plan
+
+The owner requested first-time guidance, a way to restart/turn it back on, and plain-language help for homeowners during construction. Runbook **R19 / §1.4** now defines the requirement and acceptance criteria. Implementation adds a five-step introduction with three starting goals, completion/skip persistence, restart and next-launch settings, a House starting card, contextual help and fourteen offline task guides with search, troubleshooting and a glossary. Guide actions lead to the relevant app screen. Reading/replaying help does not mutate house records or request camera access.
+
+Three additional UI flows exercise completion/back/restart, skip and next-launch replay, goal persistence, guide search and empty results, task navigation, no-house access, landscape and large text. Expected interface count becomes **16**; native checks remain **171**, reader phases **18**, command contracts **48** and export reports **35**. Native/Release compilation, full CI, retained screenshots and owner-device usability remain pending. This implementation is not yet in TestFlight. Available TestFlight remains **216.1**. Source 51bc6ba / 220.1 continues its separate validation before this candidate is published.
+
 ## Retained 219.1 photo-mode failure; persistent mode action prepared
 
 Source **8d2a1d28de265d2491345c37cf664293434a6b14**, run **39153443322**, passes 171 native checks, 18 reader phases, 48 command contracts, three process recoveries, 50 portable cases and all 35 export reports. **12/13 UI cases pass in 821.669 seconds**. The explicit batch-filter Done flow passes in 87.440 seconds and its screenshot is inspected. The photo-point case fails when the curve switch remains off after a recorded tap. Both artifacts are SHA-verified in `docs/evidence/native-8d2-summary.json`; this is a failed integration and no upload was requested.

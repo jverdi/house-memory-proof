@@ -25,6 +25,10 @@ struct ToolsPage: View {
   var body: some View {
     NavigationStack {
       Form {
+        Section("Getting started") {
+          HomeHelpButton()
+          Text("Step-by-step guides, unfamiliar words and settings to restart the introduction.").font(.footnote).foregroundStyle(.secondary)
+        }
         Section("Plans and spatial record") {
           NavigationLink("Construction stages") { StagesPage(house:house) }
           NavigationLink("Service endpoint connections") { ConnectionsPage(house: house) }

@@ -242,10 +242,9 @@ fi
 if [ "$mode" = recovery ]; then exit 0; fi
 
 set +e
-# Eleven workflows include photo persistence, multi-view curve selection,
-# service edits/batches, PLY/IFC import, drawing review and measured envelopes.
-# Nine flows took 913 seconds plus setup in build 202.1. Allow 25 minutes for
-# eleven flows; this changes the CI wall-clock budget, not app performance gates.
+# Sixteen workflows include the thirteen existing construction-record flows and
+# three homeowner guidance flows. Keep the existing 25-minute UI execution bound;
+# actual completed totals and failures are retained in the XCTest artifact.
 python3 ci/run_bounded.py 1500 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \

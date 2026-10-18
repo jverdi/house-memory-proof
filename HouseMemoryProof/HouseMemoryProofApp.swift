@@ -14,6 +14,7 @@ import Darwin
         }
         #endif
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--guidance-empty") { model.selected = nil }
         if ProcessInfo.processInfo.arguments.contains("--service-tour-demo"),model.repository != nil {
           if let existing=model.houses.first(where:{$0.name=="Reviewed service fixture" && $0.isDemo}) {model.selected=existing.id}
           else {model.commit(SelfTests.serviceTourFixture())}

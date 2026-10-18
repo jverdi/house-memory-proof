@@ -4,6 +4,10 @@ Personal, local-first native iPhone construction record. SwiftUI + ARKit + Scene
 
 **The source now contains a substantial experimental application. It does not yet satisfy the production/precision gates in the [architecture runbook](docs/architecture-runbook.md).** The requested current-state snapshot **216.1** is available in internal TestFlight, with Apple processing and owner access verified. Later implementation commits remain validation-only.
 
+## Getting started guidance (next implementation build)
+
+A five-step homeowner introduction and fourteen searchable offline guides are implemented for the next validated build. Help explains how to set up a room, record exposed work, keep dated visits, find the originals and save a complete backup. **Help & getting started → Help settings** offers **Restart introduction** and **Show introduction next time**. Contextual help is available on the main tabs and before a house is created. This work is not included in the already available TestFlight **216.1**; validation and delivery status are tracked in `tasks/STATUS.md`.
+
 ## Implemented paths
 
 - Local house/room/stage records, immutable hashed originals, transactional revisions and recovery copies.
