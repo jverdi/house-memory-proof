@@ -62,7 +62,11 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
   accepted_errors=sorted(q['evaluatorPositionErrorMetres'] for q in report['queries'] if 'evaluatorPositionErrorMetres' in q)
   p95=accepted_errors[max(0,math.ceil(len(accepted_errors)*.95)-1)] if accepted_errors else None
   availability=positive_accepted/max(1,report['positiveQueries'])
-  report.update(p95Metres=p95,availability=availability,passed=availability>=.9 and p95 is not None and p95<=.010 and worst<=.025 and false_accepts==0 and report['mapCount']==4)
+  expected_maps=oracle.get('expectedMapCount',4)
+  assert isinstance(expected_maps,int) and 1<=expected_maps<=24, 'Invalid evaluator map denominator'
+  input_house=json.loads((candidate/'house.json').read_text())
+  assert len(input_house['segments'])==expected_maps, 'Evaluator map denominator differs from supplied capture sessions'
+  report.update(expectedMapCount=expected_maps,p95Metres=p95,availability=availability,passed=availability>=.9 and p95 is not None and p95<=.010 and worst<=.025 and false_accepts==0 and report['mapCount']==expected_maps)
   scenarios={}
   for label in sorted(set(q.get('scenario','nominal') for q in oracle['queries'] if q['shouldMatch'] is True)):
    expected=[q for q in oracle['queries'] if q['shouldMatch'] is True and q.get('scenario','nominal')==label]
@@ -71,7 +75,7 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
    scenarios[label]=dict(attempts=len(expected),accepted=len(errors),availability=fraction,p95Metres=tail,worstMetres=max(errors,default=None),passed=fraction>=.9 and tail is not None and tail<=.010 and max(errors)<=.025)
   report['scenarioMetrics']=scenarios
   report['passed']=report['passed'] and all(s['passed'] for s in scenarios.values())
-  report['limitations']=['Four-room/two-level analytic construction layout','Incomplete corner coverage; no unseen cavity completeness claim','No calibrated phone sensor model','Finished-stage and full-house registration qualification remain separate']
+  report['limitations']=oracle.get('limitations',['Four-room/two-level analytic construction layout','Incomplete corner coverage; no unseen cavity completeness claim','No calibrated phone sensor model','Finished-stage and full-house registration qualification remain separate'])
  if a.refine:
   errors=[]
   for identity,pose in report['optimizedCameras'].items():

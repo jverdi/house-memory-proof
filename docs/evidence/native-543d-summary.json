@@ -1,0 +1,153 @@
+{
+  "source": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
+  "run": 39088505305,
+  "build": "190.1",
+  "platform": "iPhone simulator",
+  "nativePassed": 125,
+  "nativeFailed": 0,
+  "elapsedSeconds": 181.27262108333343,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1249591296,
+    "physicalFootprintBytes": 65249792,
+    "residentBytes": 265240576
+  },
+  "completeIntegratedPass": true,
+  "integrationStatus": "passed",
+  "precisionProfileEnabled": false,
+  "fieldAccuracyValidated": false,
+  "testflightUpload": false,
+  "artifact": {
+    "id": 12122330257,
+    "sha256": "a29b773408c9243c6c41e4408c05b9dbd86316cd056b08bcffcf1bbd32c7f9da",
+    "sha256IndependentlyVerified": true
+  },
+  "search": {
+    "defaultPageSize": 200,
+    "imageFilesRead": 0,
+    "indexBuildMilliseconds": 817.3778750001475,
+    "limitations": "Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone.",
+    "passed": true,
+    "photographs": 50000,
+    "queries": 12,
+    "queryP95Milliseconds": 43.80441666671686,
+    "queryTimingsMilliseconds": [
+      {
+        "milliseconds": 29.174624999996013,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 22.743208333167786,
+        "query": "finished"
+      },
+      {
+        "milliseconds": 37.987083333291594,
+        "query": "electrical outlet"
+      },
+      {
+        "milliseconds": 9.02879166665116,
+        "query": "absent result"
+      },
+      {
+        "milliseconds": 40.79300000012154,
+        "query": "panel a"
+      },
+      {
+        "milliseconds": 43.80441666671686,
+        "query": "caf\u00e9 kitchen"
+      },
+      {
+        "milliseconds": 29.37545833333388,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 29.702666666707955,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 29.064625000046362,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 27.971541666602207,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 30.007833333229428,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 33.60383333347272,
+        "query": "cafe valve"
+      }
+    ],
+    "substringReferenceQueries": 18,
+    "test": "Fifty-thousand photograph metadata search",
+    "uniquePhotoMetadata": 50000
+  },
+  "movie": {
+    "decodedFrames": 300,
+    "durationSeconds": 10,
+    "height": 1080,
+    "passed": true,
+    "recoveredEncoderStalls": [],
+    "seconds": 81.45179329166672,
+    "test": "1080p30 MP4 encode, decode and verified chunk reuse",
+    "width": 1920
+  },
+  "encoderRetry": {
+    "completedShotsPreserved": 1,
+    "corruptChecksumRebuiltFrames": 50,
+    "injectedFailures": 3,
+    "passed": true,
+    "persistentFailureAttempts": 2,
+    "physicalDeviceQualified": false,
+    "successfulRetryCount": 1,
+    "test": "Movie encoder retries one unfinished shot and stops after a second stall"
+  },
+  "captureBuffers": {
+    "passed": true,
+    "seconds": 0.00653737499987983,
+    "test": "Capture buffer copies reject mismatched formats and preserve row padding"
+  },
+  "captureProvenance": {
+    "passed": true,
+    "seconds": 0.15487783333333027,
+    "test": "Capture provenance survives archive, durable recovery and legacy decoding"
+  },
+  "depthInputRefusal": {
+    "originalAssetsVerified": 19,
+    "passed": true,
+    "physicalDeviceQualified": false,
+    "refusedInputs": 10,
+    "test": "Depth fusion refuses unknown confidence and malformed buffers"
+  },
+  "limitations": [
+    "Simulator evidence does not qualify physical camera/depth timing, phone performance, field precision or Files/iCloud behavior.",
+    "Finished-localization and full-house acceptance failures remain separate open gates."
+  ],
+  "processKillChecksPassed": 3,
+  "interfaceTestsPassed": 5,
+  "interfaceElapsedSeconds": 283.208,
+  "independentReadersPassed": true,
+  "independentReaderReportsPassed": 12,
+  "independentReaderReportFiles": [
+    "archive-validation.json",
+    "chunked-snapshot-validation.json",
+    "house-surface-gltf-validation.json",
+    "mesh-interchange-validation.json",
+    "offline-viewer-validation.json",
+    "points-gltf-validation.json",
+    "points-usd-validation.json",
+    "semantic-csv-validation.json",
+    "test-gltf-validation.json",
+    "test-usd-validation.json",
+    "textured-gltf-validation.json",
+    "textured-usd-validation.json"
+  ],
+  "portableCases": 50,
+  "fullArtifact": {
+    "id": 12122385876,
+    "sha256": "ecfd9670946e5d96f32e63df40f3c87ac863c147247306c2ff9a361252060da1",
+    "sha256IndependentlyVerified": true
+  }
+}

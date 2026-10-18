@@ -1,5 +1,13 @@
 # Implementation ledger
 
+## Connected-house replay preparation and v16 native result
+
+Source `543dd5f742` passed **125/125 native checks** in 181.27 seconds. The repaired 50,000-photo search measured **43.804 ms p95** with its unchanged 300 ms gate and all 18 independent substring-reference queries. Capture buffer shape/format, EXIF/archive/journal recovery and ten malformed/unknown-confidence depth refusals passed. The 1080p30 movie fully decoded all 300 frames. The complete workflow then passed **5/5 UI**, **3/3 actual process-kill recoveries**, **50 portable cases** and **all 12 independent reader reports**. The full artifact was downloaded and independently SHA-256 verified. This is a complete simulator integration pass, not physical or full-product qualification.
+
+The v15 analytic suite at `c663851d24` completed all 70 configurations: **1,000/1,000** nominal queries, **4.616 mm p95**, **6.877 mm worst**, and **0/3,400** critical false accepts. These are still textured-corner results. At v16 the frozen replay passes and the retained finished-map/rough-to-finished failures remain unchanged.
+
+The new whole-house generator has connected polygon rooms, cut portals, one to three levels, stair openings/landings, unchanged historical assemblies and separate crossing service routes. Fifty development seeds have distinct topology signatures. A separate sensor adapter models explicit analytic faults without presenting them as calibrated phone behavior. **21 local contract tests pass**. A generated four-room archive also passed an independent source/hash/buffer/oracle-exclusion check. A new CI matrix will evaluate the actual production map/query code on four-, seven- and eleven-room layouts, separately in rough and finished stages. This is preparation and a new candidate evaluation, not completion of the 50/20 protected-house, coverage, navigation or field gates. Details: `docs/WHOLE_HOUSE_SIMULATION.md`.
+
 ## v16 capture/depth/search candidate — awaiting native validation
 
 The complete v15 workflow at `c663851d24` finished **121/122 native**, **5/5 UI**, **3/3 actual process-kill recoveries**, and all independent readers. Its sole native failure was the 50,000-distinct-photo search at **332.687 ms p95**, above the unchanged **300 ms** limit. Movie encoding and full native decoding passed. Aggregate evidence: `docs/evidence/native-c663-summary.json`. Frozen replay passed; both 384-pixel observed-finished layouts still fail accuracy, both 768-pixel layouts pass, and rough-only maps accept **0/8** finished queries in each retained fixture.

@@ -27,13 +27,14 @@ def room(rng):
  items += [box((0,d/2-.04,-.25),(w*.8,.018,.018),(240,178,40),'electrical'),box((-.5,d/2-.05,.2),(.018,.018,1.2),(170,125,245),'lowVoltage'),box((w/2-.08,0,.2),(.05,d*.7,.05),(65,160,220),'plumbing'),box((0,0,height-1.65),(w*.7,.25,.25),(80,190,170),'hvac')]
  finish=[box((0,side*(d/2-.09),height/2-1.4),(w,.025,height),(205,210,210),'finish') for side in [-1,1]]+[box((side*(w/2-.09),0,height/2-1.4),(.025,d,height),(205,210,210),'finish') for side in [-1,1]]+[box((0,0,height-1.53),(w,d,.025),(220,220,225),'ceiling')]
  return items,finish,[w,d,height]
-def render(items,position,yaw,width,height,texture_seed=None):
+def render(items,position,yaw,width,height,texture_seed=None,*,pitch=0.,visibility=False):
  fx=width*.72;fy=fx;cx=width/2;cy=height/2
- yy,xx=np.mgrid[:height,:width];right=np.array([math.cos(yaw),-math.sin(yaw),0]);forward=np.array([math.sin(yaw),math.cos(yaw),0]);up=np.array([0,0,1])
+ yy,xx=np.mgrid[:height,:width];right=np.array([math.cos(yaw),-math.sin(yaw),0]);forward=np.array([math.sin(yaw)*math.cos(pitch),math.cos(yaw)*math.cos(pitch),math.sin(pitch)]);up=np.array([-math.sin(yaw)*math.sin(pitch),-math.cos(yaw)*math.sin(pitch),math.cos(pitch)])
  rays=(xx[...,None]-cx)/fx*right-(yy[...,None]-cy)/fy*up+forward
  inv=np.divide(1,rays,out=np.full_like(rays,np.inf),where=np.abs(rays)>1e-12)
  nearest=np.full((height,width),np.inf);colors=np.zeros((height,width,3),np.uint8)+15;texture_mask=np.ones((height,width),bool)
- for item in items:
+ visible_ids=np.full((height,width),-1,dtype=np.int32) if visibility else None
+ for item_index,item in enumerate(items):
   low=np.array(item['low']);high=np.array(item['high'])
   with np.errstate(invalid='ignore'):
    a=(low-position)*inv;b=(high-position)*inv
@@ -48,6 +49,7 @@ def render(items,position,yaw,width,height,texture_seed=None):
   near=entering.max(axis=2);far=leaving.min(axis=2);hit=np.where(near>1e-8,near,far)
   selected=(far>=near)&(hit>1e-8)&(hit<nearest)&(hit<5)
   nearest[selected]=hit[selected];colors[selected]=item['color'];texture_mask[selected]=not item.get('textureless',False)
+  if visibility:visible_ids[selected]=item_index
  # Stable spatial texture helps the renderer exhibit blur/lighting changes.
  finite=np.isfinite(nearest);safe=np.where(finite,nearest,0)
  surface=position+rays*safe[...,None]
@@ -63,7 +65,8 @@ def render(items,position,yaw,width,height,texture_seed=None):
  adapter=np.array([[1,0,0],[0,0,1],[0,-1,0]])
  matrix=np.eye(4);matrix[:3,:3]=adapter@rotation;matrix[:3,3]=adapter@position
  depth_valid=finite & (nearest>=.15)
- return colors,np.where(depth_valid,safe,0).astype('<f4'),depth_valid,matrix,[fx,0,cx,0,fy,cy,0,0,1]
+ result=(colors,np.where(depth_valid,safe,0).astype('<f4'),depth_valid,matrix,[fx,0,cx,0,fy,cy,0,0,1])
+ return result+(visible_ids,) if visibility else result
 def generate(seed,dest,rooms=3,frames=24,width=128,noise=.004,drift=.015):
  rng=np.random.default_rng(seed);dest.mkdir(parents=True,exist_ok=True);assets={};observations=[];segments=[];space=[];truth={'seed':seed,'generator':'analytic-aabb-v2','not_a_validated_sensor_model':True,'rooms':[],'frames':[]}
  rough=identity(seed,'rough');finished=identity(seed,'finished');now=813974400.0

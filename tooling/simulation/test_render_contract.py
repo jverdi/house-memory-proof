@@ -58,4 +58,23 @@ class RendererContract(unittest.TestCase):
   self.assertAlmostEqual(k[0]*camera[0]/(-camera[2])+k[2],64.)
   self.assertAlmostEqual(-k[4]*camera[1]/(-camera[2])+k[5],48.)
 
+class TiltedRendererContract(unittest.TestCase):
+ def test_ceiling_tilt_projects_to_image_centre(self):
+  pitch=.4;yaw=.2;position=np.array([0.,0.,1.4]);forward=np.array([math.sin(yaw)*math.cos(pitch),math.cos(yaw)*math.cos(pitch),math.sin(pitch)])
+  target=position+forward*2
+  rgb,depth,valid,m,k,ids=render([box(target,(.2,.2,.2),(200,50,30),'target')],position,yaw,128,96,pitch=pitch,visibility=True)
+  self.assertTrue(valid[48,64]);self.assertEqual(ids[48,64],0)
+  adapter=np.array([[1,0,0],[0,0,1],[0,-1,0]])
+  projected=np.linalg.inv(m)@np.r_[adapter@target,1]
+  self.assertAlmostEqual(k[0]*projected[0]/(-projected[2])+k[2],64.)
+  self.assertAlmostEqual(-k[4]*projected[1]/(-projected[2])+k[5],48.)
+  self.assertAlmostEqual(np.linalg.det(m[:3,:3]),1.)
+  self.assertTrue(np.allclose(m[:3,:3].T@m[:3,:3],np.eye(3)))
+ def test_visibility_pass_does_not_change_observation_pixels(self):
+  shapes=[box((0,2,0),(3,.1,3),(100,200,50),'wall')]
+  old=render(shapes,np.zeros(3),0,128,96,texture_seed=4)
+  extended=render(shapes,np.zeros(3),0,128,96,texture_seed=4,pitch=0,visibility=True)
+  for a,b in zip(old,extended):np.testing.assert_array_equal(a,b)
+  self.assertTrue(np.all(extended[-1][old[2]]==0))
+
 if __name__=='__main__':unittest.main()

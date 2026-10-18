@@ -1,0 +1,33 @@
+{
+  "source": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
+  "run": 39088505288,
+  "artifact": {
+    "id": 12121782452,
+    "sha256": "e70942e0d08ee4bbd2d7b073ee7008debfa5b0edb66a9436a20ad8cea1928be1",
+    "sha256IndependentlyVerified": true
+  },
+  "cases": [
+    {
+      "report": "rendered.json",
+      "passed": true,
+      "positiveAccepted": 3,
+      "positiveQueries": 3,
+      "negativeQueries": 1,
+      "falseAccepts": 0,
+      "ambiguityCases": 6,
+      "ambiguityRejected": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "mapViews": 5,
+      "mapFeatures": 5559,
+      "worstAcceptedPositionErrorMetres": 0.008099905352539724,
+      "maximumOptimizedCameraPositionErrorMetres": 0.010550516031309215,
+      "optimizedCameraCount": 5
+    }
+  ],
+  "physicalQualification": false,
+  "limitations": [
+    "Development synthetic observations; not the complete varied whole-house or calibrated sensor qualification.",
+    "Retained accuracy and availability failures remain failed gates."
+  ]
+}

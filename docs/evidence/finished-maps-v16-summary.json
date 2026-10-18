@@ -1,0 +1,132 @@
+{
+  "source": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
+  "run": 39088505303,
+  "artifact": {
+    "id": 12122016489,
+    "sha256": "9abf31a77fcbdb752c14f6c964966665c3e36acf653c9e50615be3b22768ab06",
+    "sha256IndependentlyVerified": true
+  },
+  "cases": [
+    {
+      "report": "683431-384.json",
+      "passed": false,
+      "positiveAccepted": 20,
+      "positiveQueries": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "ambiguityCases": 0,
+      "ambiguityRejected": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "mapCount": 4,
+      "mapViews": 24,
+      "mapFeatures": 4786,
+      "p95Metres": 0.020859879102066665,
+      "worstAcceptedPositionErrorMetres": 0.03348820788345665,
+      "maximumOptimizedCameraPositionErrorMetres": 0.008506454488777342,
+      "optimizedCameraCount": 24,
+      "scenarioMetrics": {
+        "finished room with observed finished map": {
+          "attempts": 20,
+          "accepted": 20,
+          "availability": 1.0,
+          "p95Metres": 0.020859879102066665,
+          "worstMetres": 0.03348820788345665,
+          "passed": false
+        }
+      }
+    },
+    {
+      "report": "683431-768.json",
+      "passed": true,
+      "positiveAccepted": 19,
+      "positiveQueries": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "ambiguityCases": 0,
+      "ambiguityRejected": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "mapCount": 4,
+      "mapViews": 24,
+      "mapFeatures": 18367,
+      "p95Metres": 0.006168092966285194,
+      "worstAcceptedPositionErrorMetres": 0.006168092966285194,
+      "maximumOptimizedCameraPositionErrorMetres": 0.0029886979504265827,
+      "optimizedCameraCount": 24,
+      "scenarioMetrics": {
+        "finished room with observed finished map": {
+          "attempts": 20,
+          "accepted": 19,
+          "availability": 0.95,
+          "p95Metres": 0.006168092966285194,
+          "worstMetres": 0.006168092966285194,
+          "passed": true
+        }
+      }
+    },
+    {
+      "report": "905771-384.json",
+      "passed": false,
+      "positiveAccepted": 20,
+      "positiveQueries": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "ambiguityCases": 0,
+      "ambiguityRejected": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "mapCount": 4,
+      "mapViews": 24,
+      "mapFeatures": 4649,
+      "p95Metres": 0.011225926925754845,
+      "worstAcceptedPositionErrorMetres": 0.011660114677089325,
+      "maximumOptimizedCameraPositionErrorMetres": 0.004841341096779399,
+      "optimizedCameraCount": 24,
+      "scenarioMetrics": {
+        "finished room with observed finished map": {
+          "attempts": 20,
+          "accepted": 20,
+          "availability": 1.0,
+          "p95Metres": 0.011225926925754845,
+          "worstMetres": 0.011660114677089325,
+          "passed": false
+        }
+      }
+    },
+    {
+      "report": "905771-768.json",
+      "passed": true,
+      "positiveAccepted": 19,
+      "positiveQueries": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "ambiguityCases": 0,
+      "ambiguityRejected": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "mapCount": 4,
+      "mapViews": 24,
+      "mapFeatures": 17400,
+      "p95Metres": 0.006269729232097975,
+      "worstAcceptedPositionErrorMetres": 0.006269729232097975,
+      "maximumOptimizedCameraPositionErrorMetres": 0.003625998663870436,
+      "optimizedCameraCount": 24,
+      "scenarioMetrics": {
+        "finished room with observed finished map": {
+          "attempts": 20,
+          "accepted": 19,
+          "availability": 0.95,
+          "p95Metres": 0.006269729232097975,
+          "worstMetres": 0.006269729232097975,
+          "passed": true
+        }
+      }
+    }
+  ],
+  "physicalQualification": false,
+  "limitations": [
+    "Development synthetic observations; not the complete varied whole-house or calibrated sensor qualification.",
+    "Retained accuracy and availability failures remain failed gates."
+  ]
+}

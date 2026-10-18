@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T01:59:32.826333+00:00",
+  "updatedUTC": "2026-10-18T02:16:51.872922+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "c663851d2434ba2901f49514751a06c59d27a70f",
+  "currentImplementationCommit": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,19 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "6852e809d0bbacda7a022ba92e5e0e5f6ff932c9",
-    "passed": 120,
+    "source": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
+    "passed": 125,
     "failed": 0,
-    "artifact": 12120439828,
-    "sha256": "b178157595e30aaf808527ed9156aee9499a6672e656b0be98150a0dadaf040b",
-    "searchP95Milliseconds": 139.02149999989888,
+    "artifact": 12122330257,
+    "sha256": "a29b773408c9243c6c41e4408c05b9dbd86316cd056b08bcffcf1bbd32c7f9da",
+    "searchP95Milliseconds": 43.80441666671686,
     "distinctPhotoNotes": 50000,
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "Validate the v16 capture-provenance, bounded depth/confidence and inverted metadata-search candidate. The v15 workflow passed 121/122 native checks, all five UI flows, three process-kill recoveries and independent readers, but failed the unchanged 300 ms search gate."
+      "remaining": "The complete 543dd5f742 workflow passed 125 native checks, five UI flows, three process-kill recoveries, 50 portable cases and all independent readers. Validate the next connected-house simulation and evaluator changes."
     },
     {
       "area": "finished localization",
@@ -35,7 +35,7 @@
     },
     {
       "area": "whole-house simulation",
-      "remaining": "50 development and 20 protected house topologies, paired stages, sensor/coverage degradation and closed-loop navigation; analytic corners do not satisfy this gate."
+      "remaining": "New generator has 50 distinct connected development topologies and 21 passing local geometry/sensor/renderer contract tests. Candidate replay on varied houses, 20 protected topologies, broader sensor/coverage degradation and closed-loop navigation remain incomplete."
     },
     {
       "area": "registration and thin services",
@@ -55,20 +55,19 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate the v16 candidate without relaxing gates, then continue whole-house topology, sensor diversity and retained finished-localization failures. Physical precision remains disabled.",
+  "nextAction": "Run the new one-, two- and three-floor development layouts through isolated native localization in both observed stages, then continue broader protected-house, sensor, coverage and retained finished-localization gates.",
   "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts.",
   "currentValidation": {
-    "run": 39087426341,
-    "status": "failed",
-    "nativeExpected": 122,
-    "nativePassed": 121,
-    "nativeFailed": 1,
+    "run": 39088505305,
+    "status": "passed",
+    "nativeExpected": 125,
+    "nativePassed": 125,
+    "nativeFailed": 0,
     "interfaceExpected": 5,
+    "physicalQualification": false,
     "interfacePassed": 5,
     "processKillPassed": 3,
-    "independentReadersPassed": true,
-    "physicalQualification": false,
-    "failure": "Search p95 332.687 ms exceeded 300 ms"
+    "independentReadersPassed": true
   },
   "previousIntegratedAttempt": {
     "source": "6045475e6192601687279df064d349a5686a0385",
@@ -103,27 +102,16 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "6852e809d0bbacda7a022ba92e5e0e5f6ff932c9",
-    "run": 39085733551,
-    "nativePassed": 120,
+    "source": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
+    "run": 39088505305,
+    "nativePassed": 125,
     "interfacePassed": 5,
     "processKillPassed": 3,
     "independentReadersPassed": true,
     "fullArtifact": {
-      "id": 12121571233,
-      "sha256": "62ffc243b9416f16cceb653274a8fc673ceb3fdff0dc43319443f771c61b78c6",
+      "id": 12122385876,
+      "sha256": "ecfd9670946e5d96f32e63df40f3c87ac863c147247306c2ff9a361252060da1",
       "sha256IndependentlyVerified": true
     }
-  },
-  "pendingCandidate": {
-    "version": "visual-v16-bounded-capture-depth",
-    "nativeExpected": 125,
-    "status": "unvalidated",
-    "changes": [
-      "Versioned capture receipts and raw EXIF originals with explicit unknown clock relationships",
-      "Strict depth/confidence formats and bounded readers; no confidence substitution",
-      "Inverted metadata-word postings preserving substring matching and exact totals"
-    ],
-    "portableSurfaceContract": "passed locally; native integration pending"
   }
 }
