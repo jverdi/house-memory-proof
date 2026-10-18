@@ -1,5 +1,13 @@
 # Implementation ledger
 
+## Command-interface integration and reconstruction candidate
+
+Source **6f9aa373ed**, build **194.1**, passed **128/128 native checks** in **214.11 seconds**, **five UI flows** in **285.073 seconds**, **three actual process-kill recoveries**, **50 portable fusion cases** and **13 independent reader reports**. The production CLI tour created 12 shots, 150 timeline frames and eight native storyboard previews; the CLI archive reader passed the native export. Both evidence archives were downloaded and SHA-256 verified. No additional TestFlight upload occurred. Evidence: `docs/evidence/native-6f9a-summary.json`.
+
+The next candidate connects `hm reconstruct` to the production camera/depth pipeline in an isolated Debug simulator request. It preserves originals, exports a separate candidate archive, reports partial-stage failures and checks the result independently. One new native regression and an actual process-level CLI invocation are prepared (**129 native checks expected**, validation pending). Generic GLB/USDZ/PLY/OBJ/semantic CSV checks reuse pinned independent readers. Live doctor reads account capabilities without provisioning. **21 local command contracts pass**, and the generic CSV reader passes an actual native 17-record export. Model readers requiring macOS CI dependencies remain unverified until that run completes.
+
+Sensor diagnostics now retain only fixed failure categories: dim/blur cases lack stable depth features or sufficient source views; finished depth-edge cases fail photo-track support in three rooms and pose overlap in one. Known-clock refusal and calibration drift still pass. All 256 critical challenges abstain. The isolated low-light experiment at `22174b6d00` tests one bounded analysis-copy gain against the unchanged dim/blur and nominal controls, capped at two 30-minute managed jobs. It is not adopted into the app. Original 384-pixel finished errors, protected/full-house qualification, registration/curve/coverage/navigation and device/provider/field gates remain open.
+
 ## Native clock/tracking pass and command-interface candidate
 
 Source **2fd081de5d**, build **193.1**, passed **127/127 native checks** in **275.41 seconds**. Known-clock/limited-tracking admission passed a synchronized positive control, all 12 pipeline refusals and preservation of 19 originals. Search p95 was **72.144 ms**; all 300 movie frames decoded. The complete integration also passed **five UI flows** (320.198 seconds), **three process-kill recoveries**, **50 portable cases** and **12 independent readers**. Both artifacts were downloaded and SHA-256 verified.

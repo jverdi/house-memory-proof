@@ -1,0 +1,152 @@
+{
+  "source": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
+  "run": 39093916512,
+  "build": "194.1",
+  "platform": "iPhone simulator",
+  "nativePassed": 128,
+  "nativeFailed": 0,
+  "elapsedSeconds": 214.10800654166655,
+  "completeIntegratedPass": true,
+  "integrationStatus": "passed",
+  "precisionProfileEnabled": false,
+  "fieldAccuracyValidated": false,
+  "testflightUpload": false,
+  "artifact": {
+    "id": 12124330743,
+    "sha256": "15a44e9b90944a2e0f254b0a16bf2d546cdf97b76b824600ec9a96975e5340d1",
+    "sha256IndependentlyVerified": true
+  },
+  "search": {
+    "defaultPageSize": 200,
+    "imageFilesRead": 0,
+    "indexBuildMilliseconds": 1486.8333750000602,
+    "limitations": "Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone.",
+    "passed": true,
+    "photographs": 50000,
+    "queries": 12,
+    "queryP95Milliseconds": 70.48850000001039,
+    "queryTimingsMilliseconds": [
+      {
+        "milliseconds": 41.38670833322067,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 35.16941666657658,
+        "query": "finished"
+      },
+      {
+        "milliseconds": 67.22916666672063,
+        "query": "electrical outlet"
+      },
+      {
+        "milliseconds": 21.02083333329574,
+        "query": "absent result"
+      },
+      {
+        "milliseconds": 54.2494583332882,
+        "query": "panel a"
+      },
+      {
+        "milliseconds": 42.94287500010796,
+        "query": "caf\u00e9 kitchen"
+      },
+      {
+        "milliseconds": 41.74720833339052,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 42.31270833338385,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 46.638625000014144,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 70.48850000001039,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 62.91800000008152,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 43.72074999992037,
+        "query": "cafe valve"
+      }
+    ],
+    "substringReferenceQueries": 18,
+    "test": "Fifty-thousand photograph metadata search",
+    "uniquePhotoMetadata": 50000
+  },
+  "movie": {
+    "decodedFrames": 300,
+    "durationSeconds": 10,
+    "height": 1080,
+    "passed": true,
+    "recoveredEncoderStalls": [],
+    "seconds": 48.15923408333333,
+    "test": "1080p30 MP4 encode, decode and verified chunk reuse",
+    "width": 1920
+  },
+  "nativeTour": {
+    "passed": true,
+    "seconds": 0.3826725000001261,
+    "test": "Developer tour command uses production planning, verified originals and deterministic output"
+  },
+  "uiPassed": 5,
+  "uiSeconds": 285.073,
+  "processKillPassed": 3,
+  "portableCasesPassed": 50,
+  "independentReaderReportsPassed": 13,
+  "fullArtifact": {
+    "id": 12124536302,
+    "sha256": "27f2792c0534f15f8a29f28cf72e0b94334b91e97ba673a411645ae63a4bfe4a",
+    "sha256IndependentlyVerified": true
+  },
+  "nativeTourCLI": {
+    "passed": true,
+    "command": "production native tour via CLI",
+    "shots": 12,
+    "frames": 150,
+    "previews": 8,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "commandContractTests": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 11,
+    "seconds": 1.276526166999929,
+    "exitCode": 0
+  },
+  "portableArchiveReader": {
+    "passed": true,
+    "reader": "Python standard library independent archive reader",
+    "archiveVersion": 1,
+    "sourceRevision": 2,
+    "metadataSHA256": "7c76d3c20e302c9abaa453ea2a5f39cfa891a1b276d3b861905f56abfabadcde",
+    "verifiedOriginals": 1,
+    "verifiedPayloadBytes": 794621,
+    "members": 5,
+    "semanticCounts": {
+      "rooms": 3,
+      "stages": 2,
+      "sessions": 0,
+      "features": 217,
+      "observations": 0,
+      "documentaryPhotos": 0,
+      "vertices": 2072,
+      "triangles": 2892,
+      "serviceConnections": 0
+    },
+    "jsonRoundTripPassed": true,
+    "sourceModified": false,
+    "extractedFiles": 0,
+    "physicalPrecisionQualified": false,
+    "limitations": [
+      "Schema/identity/geometry/asset checks do not qualify capture accuracy or actual cloud-provider recovery.",
+      "GLB, USDZ and rendered viewer behavior require their separate independent readers."
+    ]
+  }
+}

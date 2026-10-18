@@ -149,6 +149,20 @@ except Exception as error:
 pathlib.Path('build/evidence/cli-command-validation.json').write_text(json.dumps(report,indent=2)+'\n')
 assert report['passed'],report
 PYCOMMAND
+  python3 tooling/hm reconstruct --bundle "$app_root/command-capture.hxray" --kind points --simulator "$device_id" --output build/command-private/reconstruction > build/command-private/reconstruction-result.json || native_failed=1
+  python3 - <<'PYRECONSTRUCTION' || native_failed=1
+import json,pathlib
+try:
+    result=json.loads(pathlib.Path('build/command-private/reconstruction/result.json').read_text())
+    assert result['passed'] and result['completed'] and not result['sourceModified']
+    assert result['independentArchiveCheck']['passed'] and result['originalsVerified']>0
+    assert len(result['sessions'])==1 and result['sessions'][0]['vertices']>0
+    report=dict(passed=True,command='production native reconstruction via CLI',sessions=len(result['sessions']),originalsVerified=result['originalsVerified'],vertices=result['sessions'][0]['vertices'],independentArchivePassed=True,sourceModified=False,physicalQualification=False)
+except Exception as error:
+    report=dict(passed=False,command='production native reconstruction via CLI',errorClass=type(error).__name__,physicalQualification=False)
+pathlib.Path('build/evidence/cli-reconstruction-validation.json').write_text(json.dumps(report,indent=2)+'\n')
+assert report['passed'],report
+PYRECONSTRUCTION
 fi
 fi
 if [ "$mode" = native ]; then exit "$native_failed"; fi

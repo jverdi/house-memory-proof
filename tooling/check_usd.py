@@ -29,3 +29,8 @@ with zipfile.ZipFile('build/evidence/test.hxray') as archive:
  for name,digest in manifest['sha256'].items():
   assert hashlib.sha256(archive.read(name)).hexdigest()==digest
 json.dump({'reader':'Python zipfile','passed':True,'format':'ZIP64'},open('build/evidence/archive-validation.json','w'))
+
+# Run the public generic command with the same independent pinned reader.
+import subprocess,sys
+for name in ['test','textured','points']:
+ subprocess.run([sys.executable,'tooling/hm','export-check','--package','build/evidence/'+name+'.usdz','--output','build/evidence/general-'+name+'-usd-validation.json'],check=True)

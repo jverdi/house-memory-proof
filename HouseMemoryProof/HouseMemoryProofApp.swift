@@ -9,7 +9,7 @@ import Darwin
         #if DEBUG && targetEnvironment(simulator)
         let arguments=ProcessInfo.processInfo.arguments
         if let index=arguments.firstIndex(of:"--developer-command"),arguments.indices.contains(index+1),let repo=model.repository {
-          DeveloperCommands.launch(arguments[index+1],root:repo.root)
+          await DeveloperCommands.launch(arguments[index+1],root:repo.root)
           return
         }
         #endif

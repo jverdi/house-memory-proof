@@ -1,0 +1,25 @@
+{
+  "baseSource": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
+  "checkedUTC": "2026-10-18T03:49:53.093410+00:00",
+  "commandContractTestsPassed": 21,
+  "nativeReconstructionValidationPending": true,
+  "genericModelReadersValidationPending": true,
+  "actualNativeSemanticCSVPassed": true,
+  "physicalQualification": false,
+  "files": {
+    "HouseMemoryProof/DeveloperCommands.swift": "6161c0b52750f948da20321278df71ea5f471ef0401b5314e6e4d36f7e2c0bff",
+    "HouseMemoryProof/HouseMemoryProofApp.swift": "2eee4718a49b12d69fd767575e9b73d21ad3c3cad000bd613a61bceb703c36d0",
+    "HouseMemoryProof/SelfTests.swift": "317dea2ddffa6db5443d41bcece5c4d9d41a0e6adc60edc48ae0cba3c4a2d156",
+    "tooling/hm": "7ea590fa2fce3908f2a5c4c8a2f1fddf65e2c875b0ba82fdc4e79d5bb45fd077",
+    "tooling/hm_commands.py": "e410ccff320dd09664781c20046f228ea774bb862205776ce86cb79815eeefad",
+    "tooling/test_hm_commands.py": "c16a9c254060f0dc6afa7b34835a3fe6d1d3a23d801ebe0a775be6687bc83d84",
+    "ci/simulator.sh": "a3f8a80d35f53e31cdc4c501ae8ae1a4ff9c0a7db6fe0f77523a6aa4700085c0",
+    "tooling/check_exports.cjs": "056ec951eda39eba01029e3886acc2030715dff8f7ba1ed14a54b6b7b7bc2bad",
+    "tooling/model_check.cjs": "e6c971c977a81f9e60cdb765e76cef5ef484a3dc69d465c368adfdd49db97f1f",
+    "tooling/interchange_check.py": "cc3bc31bb9e689f9ce575956cc86527a32128943ff1e89532bed65f6cfb4fc12",
+    "tooling/test_interchange_check.py": "ba95d7ba020b6992c0a3874c3e9b214f7c0f4a8c10e252a1b83b90a9f4f81a0e",
+    "tooling/check_usd.py": "f7deed61d78fb0840b7c51b90b146dac265b51360f69417c65734758ac69b6ce",
+    "tooling/check_mesh_interchange.py": "71049d176dffea8ccbfd99f09f4a9c52959faff3ace0a06b6025ec3df6693b3d",
+    "tooling/check_semantic_csv.py": "7c8c76d74d33f96b109c3375036f30271257508ccbbfac26e8d6782056115333"
+  }
+}

@@ -59,6 +59,10 @@ def main():
               'files': results, 'objGroups': groups, 'objGroupGeometryMatches': True}
     (ROOT / 'mesh-interchange-validation.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report))
+    import subprocess
+    for extension in ['ply','obj']:
+        subprocess.run([sys.executable,'tooling/hm','export-check','--package',str(ROOT/('interchange.'+extension)),
+                        '--output',str(ROOT/('general-'+extension+'-validation.json'))],check=True)
 
 
 if __name__ == '__main__':

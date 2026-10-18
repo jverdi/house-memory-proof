@@ -40,10 +40,13 @@ function inspect(bytes) {
   }
   return {nodes:seen.size,meshes:doc.meshes.length,levels:roots.filter(i=>doc.nodes[i].extras?.type==='level').length,tourClips:shots.length,hierarchyAndAnimationPassed:true};
 }
-(async()=>{for(const name of ['test','textured','points','house-surface']){
+module.exports={inspect};
+if(require.main===module)(async()=>{for(const name of ['test','textured','points','house-surface']){
   const bytes=fs.readFileSync('build/evidence/'+name+'.glb');
   const result=await validator.validateBytes(new Uint8Array(bytes),{uri:name+'.glb',maxIssues:10000});
   fs.writeFileSync('build/evidence/'+name+'-gltf-validation.json',JSON.stringify(result,null,2));
   console.log(name,JSON.stringify(result.issues));if(result.issues.numErrors)process.exitCode=1;
   const structure=inspect(bytes);fs.writeFileSync('build/evidence/'+name+'-interchange.json',JSON.stringify(structure,null,2));console.log(name,JSON.stringify(structure));
-}})().catch(error=>{console.error(error);process.exitCode=1;});
+}
+require('node:child_process').execFileSync('python3',['tooling/hm','export-check','--package','build/evidence/test.glb','--output','build/evidence/general-glb-validation.json'],{stdio:'inherit'});
+})().catch(error=>{console.error(error);process.exitCode=1;});

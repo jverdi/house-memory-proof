@@ -1487,6 +1487,28 @@ import simd
                 guard (refused["passed"] as? Bool)==false,let exclusions=refused["excluded"] as? [String],!exclusions.isEmpty else{return false}
                 return try Data(contentsOf:input.appendingPathComponent("house.json"))==bytes && Data(contentsOf:directory.appendingPathComponent("output/tour.json"))==first
             }
+            mark("Native reconstruction command")
+            do {
+                let directory=folder.appendingPathComponent("developer-reconstruction"),input=directory.appendingPathComponent("input")
+                let source=try Repository(root:input),fixture=try SimulatedCapture.make(repo:source),verified=try source.integrity(fixture)
+                let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+                let bytes=try encoder.encode(fixture),hash=SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()
+                try DurableFiles.write(bytes,to:input.appendingPathComponent("house.json"))
+                let request=DeveloperCommands.ReconstructionRequest(schema:1,command:"reconstruct",houseSHA256:hash,kind:"points",segmentID:fixture.segments[0].id)
+                try DurableFiles.write(try encoder.encode(request),to:directory.appendingPathComponent("request.json"))
+                let report=try await DeveloperCommands.reconstruct(folder:directory)
+                let restoredRepo=try Repository(root:folder.appendingPathComponent("developer-reconstruction-restored"))
+                let restored=try Exporter.restore(directory.appendingPathComponent("output/reconstruction.hxray"),repo:restoredRepo)
+                guard (report["passed"] as? Bool)==true,restored.id != fixture.id,restored.observations==fixture.observations,
+                    restored.features.count==fixture.features.count+1,restored.features.last?.resolvedGeometrySource == .depthPoints,
+                    restored.features.last?.mesh.vertices.isEmpty==false,try source.integrity(fixture)==verified,
+                    try Data(contentsOf:input.appendingPathComponent("house.json"))==bytes else{throw HouseError.message("Native reconstruction command lost original evidence or failed its separate restore.")}
+                // Private CI input for the actual command-process test. It is
+                // deliberately absent from the public artifact copy list.
+                let archive=try Exporter.archive(fixture,repo:source),target=mainRepo.root.appendingPathComponent("command-capture.hxray")
+                try? FileManager.default.removeItem(at:target);try FileManager.default.moveItem(at:archive,to:target)
+                results.append(["test":"Native reconstruction command preserves originals and exports a separately restorable candidate","passed":true,"originalAssetsVerified":verified,"vertices":restored.features.last!.mesh.vertices.count,"physicalQualification":false])
+            }catch {results.append(["test":"Native reconstruction command preserves originals and exports a separately restorable candidate","passed":false,"error":error.localizedDescription])}
             if includeMovie || ProcessInfo.processInfo.arguments.contains("--video-test") {
                 mark("100-space scene capacity")
                 do{results.append(try await largeSceneReport(repo:mainRepo))}

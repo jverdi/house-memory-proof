@@ -44,11 +44,12 @@ def main():
  import hm_commands
  from package_check import check_package
  p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='cmd',required=True)
- sub.add_parser('doctor',help='Inspect available capabilities without provisioning')
+ doctor=sub.add_parser('doctor',help='Inspect available capabilities without provisioning');doctor.add_argument('--live',action='store_true');doctor.add_argument('--output',type=Path)
  t=sub.add_parser('test');t.add_argument('--suite',choices=['portable','simulation','release','commands'],default='portable');t.add_argument('--output',type=Path)
  s=sub.add_parser('simulate');s.add_argument('--seed',type=int,default=42);s.add_argument('--output',type=Path,required=True)
  s.add_argument('--scenario',choices=['analytic-depth','connected-house'],default='analytic-depth');s.add_argument('--stage',choices=['rough','finished'],default='rough');s.add_argument('--profile',default='nominal');s.add_argument('--width',type=int,default=384)
- r=sub.add_parser('reconstruct',help='Portable analytic XYZ fusion; image/depth bundles use the native replay interface');r.add_argument('--bundle',type=Path,required=True);r.add_argument('--output',type=Path,required=True)
+ r=sub.add_parser('reconstruct',help='Production native image/depth processing or portable XYZ fusion');r.add_argument('--bundle',type=Path,required=True);r.add_argument('--output',type=Path,required=True)
+ r.add_argument('--simulator');r.add_argument('--bundle-id',default='com.example.HouseMemoryProof');r.add_argument('--kind',choices=['points','surface','complete']);r.add_argument('--segment');r.add_argument('--timeout',type=int,default=900)
  e=sub.add_parser('evaluate');e.add_argument('--candidate',type=Path,required=True);e.add_argument('--truth',type=Path);e.add_argument('--fixture',type=Path);e.add_argument('--output',type=Path)
  tour=sub.add_parser('tour',help='Run production TourDirector in an explicitly selected installed Debug simulator app')
  tour.add_argument('--scene',type=Path,required=True);tour.add_argument('--preset',choices=['overview','before-after','services'],default='overview');tour.add_argument('--duration',type=float,default=20)
@@ -58,7 +59,7 @@ def main():
  release=sub.add_parser('release');release.add_argument('--commit',required=True);release.add_argument('--ref',default='main');release.add_argument('--ship',action='store_true');release.add_argument('--dispatch',action='store_true');release.add_argument('--output',type=Path)
  a=p.parse_args()
  try:
-  if a.cmd=='doctor':return hm_commands.write_report(hm_commands.doctor())
+  if a.cmd=='doctor':return hm_commands.write_report(hm_commands.doctor(a.live),a.output)
   if a.cmd=='test':return test(a.output) if a.suite=='portable' else hm_commands.run_suite(a.suite,a.output)
   if a.cmd=='simulate':
    if a.output.exists():raise ValueError('Choose a new simulation directory; previous evidence is preserved')
@@ -66,6 +67,10 @@ def main():
    return subprocess.run([sys.executable,str(ROOT/'tooling/simulation/whole_house_fixture.py'),str(a.output),'--seed',str(a.seed),'--stage',a.stage,'--profile',a.profile,'--width',str(a.width)],cwd=ROOT).returncode
   if a.cmd=='reconstruct':
    if a.output.exists():raise ValueError('Choose a new reconstruction path; existing output is preserved')
+   if a.simulator:
+    if not 1<=a.timeout<=3600:raise ValueError('Native command timeout must be between 1 and 3600 seconds')
+    return hm_commands.write_report(hm_commands.reconstruct(a.bundle,a.kind or 'complete',a.segment,a.simulator,a.bundle_id,a.output,a.timeout))
+   if a.bundle.is_dir() or a.bundle.suffix.lower() not in ['.xyz','.txt'] or a.kind or a.segment:raise ValueError('Image/depth reconstruction requires --simulator. The portable legacy input is an XYZ text file.')
    exe=build()
    with a.bundle.open('rb') as src,a.output.open('xb') as out:subprocess.run([str(exe)],stdin=src,stdout=out,check=True)
    return 0
@@ -76,7 +81,11 @@ def main():
    if not a.truth:raise ValueError('Analytic depth evaluation requires --truth; localization requires --fixture')
    return hm_commands.write_report(evaluate(a.candidate,a.truth),a.output)
   if a.cmd=='tour':return hm_commands.write_report(hm_commands.tour(a.scene,a.preset,a.duration,a.simulator,a.bundle_id,a.output))
-  if a.cmd=='export-check':return hm_commands.write_report(check_package(a.package),a.output)
+  if a.cmd=='export-check':
+   if a.output and a.output.resolve()==a.package.resolve():
+    a.output=None
+    raise ValueError('The validation report must not replace its source package')
+   return hm_commands.write_report(hm_commands.check_export(a.package),a.output)
   if a.cmd in ['release-health','release']:
    sys.path.insert(0,str(ROOT/'ci'))
    import release_health
@@ -86,7 +95,7 @@ def main():
    policy=json.loads((ROOT/'ci/release-policy.json').read_text())
    return hm_commands.write_report(release_health.summarize(snapshot,policy),a.output)
  except Exception as error:
-  target=getattr(a,'output',None) if a.cmd in ['release-health','release','test','evaluate'] else None
+  target=getattr(a,'output',None) if a.cmd in ['release-health','release','test','evaluate','export-check','doctor'] else None
   return hm_commands.write_report(dict(passed=False,command=a.cmd,error=str(error)[:2000]),target)
 
 if __name__=='__main__':sys.exit(main())

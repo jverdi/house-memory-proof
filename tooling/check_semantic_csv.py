@@ -80,6 +80,9 @@ def main():
               'sourceRelationshipsPreserved': True, 'physicalPrecisionQualified': False}
     (root / 'semantic-csv-validation.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report))
+    import subprocess
+    subprocess.run([sys.executable,'tooling/hm','export-check','--package',str(path),
+                    '--output',str(root/'general-semantic-validation.json')],check=True)
 
 
 if __name__ == '__main__':

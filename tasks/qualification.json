@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T03:30:37.240022+00:00",
+  "updatedUTC": "2026-10-18T03:49:53.093410+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
+  "currentImplementationCommit": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,19 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
-    "passed": 127,
+    "source": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
+    "passed": 128,
     "failed": 0,
-    "artifact": 12124025347,
-    "sha256": "b6679bbb90950e4df8445faf4713b3672925a89a29967d0f9780ee3295de0c69",
-    "searchP95Milliseconds": 72.14370833344219,
+    "artifact": 12124330743,
+    "sha256": "15a44e9b90944a2e0f254b0a16bf2d546cdf97b76b824600ec9a96975e5340d1",
+    "searchP95Milliseconds": 70.48850000001039,
     "distinctPhotoNotes": 50000,
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "2fd081de5d passed 127 native, five UI, three process-kill, 50 portable and twelve reader checks. The command adapter adds a production tour storyboard regression and CLI process validation (128 native expected), pending exact-source integration."
+      "remaining": "6f9aa373ed passed 128 native, five UI, three process-kill, 50 portable and 13 independent reader checks; actual CLI tour passed. Native reconstruction adds one regression (129 expected) and process-level independent restore validation. Generic GLB/USDZ/mesh/CSV readers await exact-source CI."
     },
     {
       "area": "finished localization",
@@ -55,12 +55,12 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate native tour command, general archive checker and read-only release interfaces. Continue the complete native reconstruction CLI adapter and general model readers. Retain dim/blur, finished depth-edge availability and original 384-pixel accuracy failures; inspect aggregate failure categories.",
+  "nextAction": "Compile and validate the native reconstruction command and generic readers. Inspect the single bounded low-light analysis-gain experiment; retain original 384-pixel finished accuracy, finished depth-edge availability and physical acceptance gaps.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "run": null,
-    "status": "pending native tour/command adapter",
-    "nativeExpected": 128,
+    "status": "pending native reconstruction and generic reader validation",
+    "nativeExpected": 129,
     "nativePassed": null,
     "nativeFailed": null,
     "interfaceExpected": 5,
@@ -102,15 +102,16 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
-    "run": 39092565738,
-    "nativePassed": 127,
+    "source": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
+    "run": 39093916512,
+    "nativePassed": 128,
     "interfacePassed": 5,
     "processKillPassed": 3,
     "independentReadersPassed": true,
+    "independentReaderReports": 13,
     "fullArtifact": {
-      "id": 12123398701,
-      "sha256": "915fb83ac7d1c7aec2cabebb059c6c72b7ec0ce4e0b64639c5991f083276f778",
+      "id": 12124536302,
+      "sha256": "27f2792c0534f15f8a29f28cf72e0b94334b91e97ba673a411645ae63a4bfe4a",
       "sha256IndependentlyVerified": true
     }
   },
@@ -171,8 +172,8 @@
     "mapsBuiltPerStage": 4
   },
   "sensorFaultDevelopment": {
-    "source": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
-    "run": 39092565798,
+    "source": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
+    "run": 39093916597,
     "profiles": 4,
     "profilesPassed": 2,
     "complete": true,
@@ -183,7 +184,21 @@
     "depthEdgesFinishedPassed": false,
     "criticalAttempts": 256,
     "criticalFalseAccepts": 0,
-    "physicalQualification": false
+    "physicalQualification": false,
+    "failureCategories": {
+      "dimBlurredRough": {
+        "depth-texture-support": 3,
+        "pose-view-count": 1
+      },
+      "dimBlurredFinished": {
+        "pose-view-count": 2,
+        "depth-texture-support": 2
+      },
+      "depthEdgesFinished": {
+        "photo-track-support": 3,
+        "pose-overlap": 1
+      }
+    }
   },
   "preparedCommands": {
     "nativeTourStoryboard": true,
@@ -191,9 +206,20 @@
     "namedTestSuites": true,
     "readOnlyReleaseHealth": true,
     "exactRefReleaseDispatch": true,
-    "nativeTourValidationPending": true,
+    "nativeTourValidationPending": false,
     "nativeReconstructionAdapterComplete": false,
-    "generalModelReadersComplete": false
+    "generalModelReadersComplete": false,
+    "nativeTourCLIValidated": true,
+    "nativeReconstructionAdapterPrepared": true,
+    "generalModelReadersPrepared": [
+      "GLB",
+      "USDZ native profile",
+      "PLY",
+      "OBJ",
+      "semantic CSV"
+    ],
+    "liveDoctorPrepared": true,
+    "localContractTestsPassed": 21
   },
   "releaseHealth": {
     "source": "65b4ad44ce894ba6e93eebf528b940d8f747f89d",
@@ -207,5 +233,18 @@
     "exactSourceCIPassed": false,
     "renewalPerformed": false,
     "uploadPerformed": false
+  },
+  "lowLightExperiment": {
+    "source": "22174b6d0040a18ff476ac6e6086968cec7699f2",
+    "run": 39094919110,
+    "candidates": 1,
+    "profiles": [
+      "dim-blurred",
+      "nominal"
+    ],
+    "maximumManagedRunnerMinutes": 60,
+    "shippingDetectorChanged": false,
+    "adopted": false,
+    "validation": "running"
   }
 }
