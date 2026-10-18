@@ -1,5 +1,17 @@
 # Implementation ledger
 
+## Curve/IFC integration passed; service/import compatibility candidate
+
+Source **0e191bca22**, build **197.1**, passed **133/133 native checks** in **156.535 seconds**, **six interface flows** (627.423 seconds; 750-second step), **three process-kill recoveries**, **50 portable cases** and **22 independent reader reports**. IFC2x3 completed every phase, and IFC4 units/nested placement/rotation plus bounded refusal/reuse passed. The visible photo-curve passed native source/foreground checks, LINE_STRIP coordinate/provenance checks and offline WebGL rendering with zero errors or network requests. Native tour/reconstruction CLI adapters passed again and preserved 19 originals. Both evidence archives were independently SHA-256 verified. Evidence: `docs/evidence/native-0e19-summary.json`. No upload occurred.
+
+Visual inspection confirmed the restored 2D marker and readable curve controls. The curve-save feedback was partly behind the floating tab bar; the next candidate moves feedback before the save control, identifies curve mode clearly, and requires visible feedback in its interface check.
+
+The next candidate adds typed service taxonomy, label/panel/circuit/cable/port/size/date/boundary/confidence fields with unknown values preserved, UTF-8/calendar/scope validation, indexed search, archive/CSV/GLB provenance, and atomic batch classification with stale-object refusal and single-revision undo. PLY originals are saved before parsing; geometry requires explicit units/upright/room association and gets a separate unregistered documentary frame. Ten unit/axis combinations, source/declaration invalidation, source-only fallback, repeated-request refusal and restore are covered. Saved PLY sources can reopen their import page. No size field, class change or import creates calibrated geometry or a connection.
+
+Project reader version 2 preserves legacy version-1 data through an in-memory upgrade. New app commits carry version 2 so older readers refuse them instead of silently dropping new fields. Future versions refuse without changing the original. The signed cross-version/provider handoff matrix remains open.
+
+**136 native checks, eight UI flows and 22 independent readers are expected; exact-source validation is pending. 27 local command/reader contracts pass.** The expanded interface process is bounded to 20 minutes (22-minute workflow step), based on the previous six-flow step's measured 750 seconds. Application native/IFC and spatial gates are unchanged. Original finished localization/depth-edge failures, full-house/protected qualification, envelopes/uncertainty, actual-device/provider/field work and blocked private-feedback publication remain open. Precision stays disabled.
+
 ## v18 checks and visible-curve / IFC continuation
 
 Source **67cc61c3d6**, build **196.1**, compiled and completed **128 native checks: 127 passed, one failed**. The existing IFC2x3 cancellation/reuse scenario reached its 60-second deadline; three later IFC cases in that block did not execute. **Both new annotation/provenance checks and all six UI flows passed** (309.252 seconds). Three process-kill recoveries and 19 independent reader reports passed; the portable archive command and native CLI invocations were skipped after the native failure. Both artifacts were SHA-256 verified. This is not a full integration pass. The previous complete native integration remains f62af5fe6e. Evidence is retained in `docs/evidence/native-67cc-summary.json`.

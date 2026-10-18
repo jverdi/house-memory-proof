@@ -195,9 +195,10 @@ fi
 if [ "$mode" = recovery ]; then exit 0; fi
 
 set +e
-# Six workflows now include single-photo persistence and repeated multi-view
-# curve selection. Keep a bounded 15-minute process budget for that larger suite.
-python3 ci/run_bounded.py 900 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
+# Eight workflows include photo persistence, multi-view curve selection,
+# service edits/batches and explicit PLY declarations. The prior six-flow step
+# took 750 seconds including setup; cap the expanded process at 20 minutes.
+python3 ci/run_bounded.py 1200 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \

@@ -1,6 +1,50 @@
 import XCTest
 
 final class HouseXraySmoke: XCTestCase {
+  @MainActor func testPointCloudDeclarationWorkflow() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--point-cloud-demo"];app.launch()
+    defer{app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["Tools"].waitForExistence(timeout:20));app.tabBars.buttons["Tools"].tap()
+    app.buttons["Drawings & design references"].tap();app.staticTexts["Source.ply"].tap()
+    let reopen=app.buttons["Import this point cloud"];XCTAssertTrue(reopen.waitForExistence(timeout:10));reopen.tap()
+    let add=app.buttons["Import declared geometry"];XCTAssertTrue(add.waitForExistence(timeout:10));XCTAssertFalse(add.isEnabled)
+    app.descendants(matching:.any)["point-cloud-units"].firstMatch.tap();app.buttons["Millimetres"].tap();XCTAssertFalse(add.isEnabled)
+    app.descendants(matching:.any)["point-cloud-upright"].firstMatch.tap();app.buttons["Y up"].tap();XCTAssertFalse(add.isEnabled)
+    app.descendants(matching:.any)["point-cloud-room"].firstMatch.tap();app.buttons["Source room"].tap()
+    XCTAssertTrue(add.isEnabled);screenshot("19-point-cloud-coordinate-declaration");add.tap()
+    XCTAssertTrue(reopen.waitForExistence(timeout:10));app.navigationBars["Source.ply"].buttons["Save"].tap()
+    app.tabBars.buttons["Evidence"].tap();app.swipeUp()
+    XCTAssertTrue(app.staticTexts["Source"].firstMatch.waitForExistence(timeout:10));app.staticTexts["Source"].firstMatch.tap()
+    let declaration=app.staticTexts["Imported coordinates: Millimetres, Y up. Owner-declared; placement is not independently calibrated."]
+    for _ in 0..<16 {if declaration.exists && declaration.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(declaration.isHittable);screenshot("20-point-cloud-recorded-provenance")
+  }
+  @MainActor func testBatchClassificationWorkflow() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
+    defer{app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:20));app.tabBars.buttons["Evidence"].tap()
+    app.buttons["Classify objects"].tap()
+    app.descendants(matching:.any)["batch-system"].firstMatch.tap();app.buttons["Low voltage"].lastMatch.tap()
+    app.descendants(matching:.any)["batch-class"].firstMatch.tap();app.buttons["Low voltage"].lastMatch.tap()
+    let filter=app.textFields["Filter objects"];filter.tap();filter.typeText("Speaker")
+    app.swipeUp()
+    let toggles=app.switches.matching(NSPredicate(format:"identifier BEGINSWITH %@","batch-object-"))
+    XCTAssertEqual(toggles.count,3)
+    setSwitch(toggles.element(boundBy:0),to:true);setSwitch(toggles.element(boundBy:1),to:true)
+    app.buttons["Apply to 2 objects"].tap()
+    XCTAssertTrue(app.navigationBars["Evidence"].waitForExistence(timeout:10))
+    app.swipeDown();let search=app.searchFields.firstMatch
+    search.tap();search.typeText("speaker")
+    let found=expectation(for:NSPredicate(format:"label == %@","0 photographs · 3 objects"),evaluatedWith:app.staticTexts["evidence-result-count"])
+    wait(for:[found],timeout:10)
+    app.staticTexts["Speaker prewire"].firstMatch.tap()
+    let service=app.descendants(matching:.any)["object-service-class"].firstMatch
+    for _ in 0..<10 {if service.exists && service.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(service.exists);XCTAssertTrue(service.label.contains("Low voltage") || (service.value as? String)?.contains("Low voltage")==true);screenshot("18-batch-classification")
+    app.navigationBars["Object details"].buttons["Cancel"].tap()
+  }
   @MainActor func testPersonalHouseWorkflow() throws {
     continueAfterFailure = false
     let app = XCUIApplication()
@@ -66,7 +110,7 @@ final class HouseXraySmoke: XCTestCase {
     }
     let save=app.buttons["Check and save point"];reveal(save);XCTAssertTrue(save.isEnabled);save.tap()
     let saved=app.staticTexts["Saved Photo-located point with three source photographs."]
-    XCTAssertTrue(saved.waitForExistence(timeout:10));screenshot("08-photo-point-saved")
+    XCTAssertTrue(saved.waitForExistence(timeout:10));reveal(saved);screenshot("08-photo-point-saved")
     let curve=app.switches["Trace a visible curve"]
     for _ in 0..<12 {
       if curve.exists && curve.isHittable{break}
@@ -89,7 +133,8 @@ final class HouseXraySmoke: XCTestCase {
     }
     let visible=app.switches["Every joining interval is visible in the source photos"];reveal(visible);setSwitch(visible,to:true)
     let saveCurve=app.buttons["Save photo-traced curve"];reveal(saveCurve);XCTAssertTrue(saveCurve.isEnabled);saveCurve.tap()
-    XCTAssertTrue(app.staticTexts["Saved Photo-traced curve with 2 independently checked source tracks."].waitForExistence(timeout:10))
+    let savedCurve=app.staticTexts["Saved Photo-traced curve with 2 independently checked source tracks."]
+    XCTAssertTrue(savedCurve.waitForExistence(timeout:10));reveal(savedCurve)
     screenshot("16-photo-curve-saved")
     app.tabBars.buttons["Explore"].tap();app.buttons["Wall"].tap()
     for point in [CGVector(dx:0.25,dy:0.29),CGVector(dx:0.65,dy:0.29),CGVector(dx:0.25,dy:0.42)] {app.coordinate(withNormalizedOffset:point).tap()}
@@ -138,6 +183,29 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(app.staticTexts["Speaker prewire"].firstMatch.isHittable)
     XCTAssertFalse(app.staticTexts["Outlet circuit"].firstMatch.exists)
     screenshot("12-evidence-room-and-system-search")
+    app.staticTexts["Speaker prewire"].firstMatch.tap()
+    func revealField(_ field:XCUIElement) {
+      for _ in 0..<12 {
+        if field.exists && field.isHittable && field.frame.maxY<app.frame.maxY-100{return}
+        app.swipeUp()
+      }
+      XCTAssertTrue(field.isHittable)
+    }
+    let label=app.textFields["service-observed-label"]
+    revealField(label);label.tap();label.typeText("Label-UI-contract")
+    let port=app.textFields["service-port"]
+    revealField(port);port.tap();port.typeText("P-UI-24")
+    app.navigationBars["Object details"].buttons["Save"].tap()
+    XCTAssertTrue(app.navigationBars["Evidence"].waitForExistence(timeout:10))
+    app.terminate();app.launch()
+    XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:20));app.tabBars.buttons["Evidence"].tap()
+    app.swipeDown();let freshSearch=app.searchFields.firstMatch
+    XCTAssertTrue(freshSearch.waitForExistence(timeout:10));freshSearch.tap();freshSearch.typeText("kitchen Label-UI-contract P-UI-24")
+    let restored=expectation(for:NSPredicate(format:"label == %@","0 photographs · 1 object"),evaluatedWith:app.staticTexts["evidence-result-count"])
+    wait(for:[restored],timeout:10)
+    app.staticTexts["Speaker prewire"].firstMatch.tap();revealField(label)
+    XCTAssertEqual(label.value as? String,"Label-UI-contract");revealField(port)
+    XCTAssertEqual(port.value as? String,"P-UI-24");screenshot("17-typed-service-details-restored")
   }
   @MainActor func testStepNavigationControlsInBothOrientations() throws {
     continueAfterFailure=false
@@ -186,14 +254,14 @@ final class HouseXraySmoke: XCTestCase {
     surface.coordinate(withNormalizedOffset:CGVector(dx:0.45,dy:0.45)).tap()
     let add=app.buttons["documentary-add-annotation"];reveal(add);XCTAssertTrue(add.isEnabled);add.tap()
     let count=app.staticTexts["documentary-annotation-count"]
-    XCTAssertEqual(count.label,"1 2D annotations")
+    XCTAssertEqual(count.label,"1 2D annotation")
     let undo=app.buttons["Undo annotation edit"];reveal(undo);undo.tap();XCTAssertEqual(count.label,"0 2D annotations")
     app.swipeDown();app.swipeDown()
     surface.coordinate(withNormalizedOffset:CGVector(dx:0.55,dy:0.45)).tap();reveal(add);add.tap()
     app.buttons["documentary-save"].tap()
     app.terminate();app.launchArguments=["--documentary-demo"];app.launch();openPhoto()
     screenshot("15a-single-photo-restored-image")
-    reveal(count);XCTAssertEqual(count.label,"1 2D annotations")
+    reveal(count);XCTAssertEqual(count.label,"1 2D annotation")
     screenshot("15-single-photo-annotation-restored")
   }
   @MainActor private func setSwitch(_ row:XCUIElement,to enabled:Bool) {

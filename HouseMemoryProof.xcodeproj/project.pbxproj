@@ -5,6 +5,12 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"B63401F3FC4499E31FCC8A4F" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "PointCloudImport.swift"; "sourceTree" = "<group>"; };
+		"F329ECAA415FCBD9E49084C6" = { "isa" = "PBXBuildFile"; "fileRef" = "B63401F3FC4499E31FCC8A4F"; };
+
+		"FAF450D43E9295D12EFFC50E" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "ServiceDetails.swift"; "sourceTree" = "<group>"; };
+		"0141F1AAE7834BD4A3DF7AED" = { "isa" = "PBXBuildFile"; "fileRef" = "FAF450D43E9295D12EFFC50E"; };
+
 		"24AEACCACEADE703315D813D" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "DeveloperCommands.swift"; "sourceTree" = "<group>"; };
 		"384B73155A99EB43774E6322" = { "isa" = "PBXBuildFile"; "fileRef" = "24AEACCACEADE703315D813D"; };
 
@@ -237,6 +243,8 @@
 			"buildActionMask" = 2147483647;
 			"files" = (
 				"534A5F435ADDB25DA9F43232",
+				"F329ECAA415FCBD9E49084C6",
+				"0141F1AAE7834BD4A3DF7AED",
 				"384B73155A99EB43774E6322",
 				"D165B97D52BA425C16357251",
 				"A3E1ED754FD68309113945E3",
@@ -309,6 +317,8 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"A33603BF79F74B056172D43B",
+				"B63401F3FC4499E31FCC8A4F",
+				"FAF450D43E9295D12EFFC50E",
 				"24AEACCACEADE703315D813D",
 				"F88AEA194A302B3505E5483F",
 				"7B02D04CAF0277F0724FAA4F",

@@ -173,7 +173,7 @@ struct DocumentaryPhotoDetail: View {
         photo.annotations=updated;clearDraft()
       }.buttonStyle(.borderedProminent).disabled(!candidate.valid || (marks.count>=1000 && editingID==nil))
         .accessibilityIdentifier("documentary-add-annotation")
-      Text("\(marks.count) 2D annotations").font(.caption).accessibilityIdentifier("documentary-annotation-count")
+      Text("\(marks.count) 2D \(marks.count==1 ? "annotation":"annotations")").font(.caption).accessibilityIdentifier("documentary-annotation-count")
       ForEach(marks){mark in
         VStack(alignment:.leading){
           Text(mark.label.isEmpty ? mark.kind.rawValue.capitalized:mark.label)

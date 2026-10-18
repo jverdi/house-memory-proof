@@ -149,7 +149,10 @@ enum DerivedEvidence {
     let eligible=house.features.filter { feature in
       guard feature.artifactValid != false else{return false}
       if let drawing=feature.sourceDrawingID {
-        guard let expected=feature.sourceDrawingFingerprint,drawings[drawing]==expected else{return false}
+        guard let expected=feature.sourceDrawingFingerprint else{return false}
+        if let declaration=feature.importedCoordinates {
+          guard let original=house.drawings.first(where:{$0.id==drawing}),let actual=try? PointCloudImport.fingerprint(original,declaration:declaration),actual==expected else{return false}
+        } else {guard drawings[drawing]==expected else{return false}}
       }
       guard let expected=feature.sourceFingerprint else{return true}
       guard let segment=feature.segmentID else{return false}

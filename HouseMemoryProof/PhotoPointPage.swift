@@ -16,7 +16,11 @@ struct PhotoPointPage:View {
   var observations:[Observation]{house.observations.filter{$0.segmentID==segmentID && $0.spatialPoseEligible}}
   var body:some View {Form{
     Text("Locate a small visible feature without trusting background LiDAR depth. Select the same point in three translated photographs. The first two fit the point; the third independently checks it. Results remain approximate. Photographs use their original sensor orientation.").font(.footnote)
-    Toggle("Trace a visible curve",isOn:$curveMode).onChange(of:curveMode){_,_ in samples=[];controls=[nil,nil,nil];intervalsVisible=false;saved=""}
+    Toggle("Trace a visible curve",isOn:$curveMode).onChange(of:curveMode){_,_ in
+      samples=[];controls=[nil,nil,nil];intervalsVisible=false;saved=""
+      if curveMode && name=="Photo-located point"{name="Photo-traced curve"}
+      if !curveMode && name=="Photo-traced curve"{name="Photo-located point"}
+    }
     Picker("Capture segment",selection:$segmentID){Text("Choose").tag(UUID?.none);ForEach(house.segments){s in Text(s.started.formatted()).accessibilityIdentifier("point-segment-choice").tag(Optional(s.id))}}
     .accessibilityIdentifier("point-segment-picker")
     ForEach(0..<3,id:\.self){index in
@@ -36,7 +40,7 @@ struct PhotoPointPage:View {
         do {
           guard let segment=house.segments.first(where:{$0.id==segmentID}),samples.count<128 else{throw HouseError.message("Select a session; curves are limited to 128 checked points.")}
           let chosen=controls.compactMap{$0};_=try PhotoTriangulation.locate(chosen,house:house,segment:segment)
-          samples.append(chosen);controls=[nil,nil,nil];intervalsVisible=false
+          samples.append(chosen);controls=[nil,nil,nil];intervalsVisible=false;saved=""
         }catch{model.error=error.localizedDescription}
       }.disabled(controls.contains(where:{$0==nil}) || samples.count>=128)
       Text("\(samples.count) checked curve points · diameter and uncertainty unknown").font(.caption)
@@ -44,6 +48,7 @@ struct PhotoPointPage:View {
       Button("Undo curve point"){if !samples.isEmpty{samples.removeLast();intervalsVisible=false}}.disabled(samples.isEmpty)
       Toggle("Every joining interval is visible in the source photos",isOn:$intervalsVisible)
       Text("Finish one visible section before starting another. A crossing never creates a connection.").font(.caption)
+      if !saved.isEmpty {Text(saved).font(.footnote).foregroundStyle(.mint)}
       Button("Save photo-traced curve"){
         do {
           guard model.house?.id==house.id,model.house?.revision==house.revision,let segment=house.segments.first(where:{$0.id==segmentID}) else{throw HouseError.message("Project changed. Reopen this tool and repeat the selections.")}
@@ -51,7 +56,9 @@ struct PhotoPointPage:View {
           if model.edit(projectID:house.id,{$0.features.append(feature)}) {saved="Saved \(feature.name) with \(samples.count) independently checked source tracks.";samples=[];intervalsVisible=false}
         }catch{model.error=error.localizedDescription}
       }.disabled(samples.count<2 || !intervalsVisible || controls.contains(where:{$0 != nil}))
-    }else {Button("Check and save point"){
+    }else {
+      if !saved.isEmpty {Text(saved).font(.footnote).foregroundStyle(.mint)}
+      Button("Check and save point"){
       do {
         guard let segment=house.segments.first(where:{$0.id==segmentID}),controls.compactMap({$0}).count==3 else{throw HouseError.message("Select three photograph points first.")}
         guard model.house?.id==house.id,model.house?.revision==house.revision else{throw HouseError.message("Project changed. Reopen this tool and repeat the selections.")}
@@ -60,8 +67,7 @@ struct PhotoPointPage:View {
         if model.edit(projectID:house.id,{$0.features.append(feature)}) {saved="Saved \(feature.name) with three source photographs.";controls=[nil,nil,nil]}
       }catch{model.error=error.localizedDescription}
     }.disabled(controls.contains(where:{$0==nil}))}
-    if !saved.isEmpty {Text(saved).font(.footnote).foregroundStyle(.mint)}
-  }.navigationTitle("Photo point").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil];samples=[];intervalsVisible=false}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
+  }.navigationTitle(curveMode ? "Photo curve":"Photo point").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil];samples=[];intervalsVisible=false;saved=""}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
 }
 struct PhotoPointSurface:UIViewRepresentable {
   var url:URL

@@ -527,6 +527,7 @@ struct FeatureEditor: View {
   @State private var sourcePhoto: Observation?
   @State private var original:Feature?
   @State private var projectID:UUID?
+  @State private var service=ServiceDetails()
   var body: some View {
     NavigationStack {
       Form {
@@ -538,8 +539,13 @@ struct FeatureEditor: View {
         TextField("Notes", text: $feature.notes, axis: .vertical)
         Toggle("Reviewed by me", isOn: $feature.reviewed)
         Toggle("Hide from scene", isOn: $feature.hidden)
+        ServiceDetailsFields(details:$service,boundaries:(model.house?.boundaries ?? []).filter{boundary in
+          model.house?.segments.contains(where:{$0.id==boundary.segmentID && $0.roomID==feature.roomID && $0.stageID==feature.stageID}) ?? false
+        })
         Section("Evidence") {
           Text("\(feature.kind.rawValue) · \(feature.sourceIDs.count) linked observations")
+          if let coordinates=feature.importedCoordinates {Text("Imported coordinates: \(coordinates.unit.rawValue), \(coordinates.upright.rawValue). Owner-declared; placement is not independently calibrated.").font(.caption)}
+          else if feature.notes.hasPrefix("Imported PLY; units declared metres") {Text("This older PLY import assumed metres. It has no recorded unit or upright-axis confirmation; verify its source before using dimensions.").font(.caption)}
           if let sources=feature.annotationSources {Text("Traced on \(sources.count) source objects. Changes to their revisions or registration make this annotation stale.").font(.caption)}
           Text(
             "Geometry is approximate. Reviewed identity does not certify route continuity or placement."
@@ -573,12 +579,13 @@ struct FeatureEditor: View {
           ToolbarItem(placement: .confirmationAction) {
             Button("Save") {
               guard let original,let projectID else{return}
-              if model.saveFeatureEdit(feature,expected:original,projectID:projectID){dismiss()}
-            }.disabled(original==nil || projectID==nil)
+              var replacement=feature;replacement.service=service.isEmpty ? nil:service
+              if model.saveFeatureEdit(replacement,expected:original,projectID:projectID){dismiss()}
+            }.disabled(original==nil || projectID==nil || !service.valid)
           }
         }
-    }.onAppear{if original==nil{original=feature;projectID=model.house?.id}}
-      .interactiveDismissDisabled(original.map{feature != $0} ?? false)
+    }.onAppear{if original==nil{original=feature;projectID=model.house?.id;service=feature.service ?? ServiceDetails()}}
+      .interactiveDismissDisabled(original.map{feature != $0 || service != ($0.service ?? ServiceDetails())} ?? false)
   }
 }
 struct CapturePage: View {
@@ -740,6 +747,7 @@ struct EvidencePage: View {
   @State private var selection: Observation?
   @State private var feature: Feature?
   @State private var documentaryPhoto:DocumentaryPhoto?
+  @State private var batchClassification=false
   @State private var searchIndex:EvidenceSearch.Index?
   @State private var results=EvidenceSearch.Result()
   @State private var resultLimit=200
@@ -753,6 +761,7 @@ struct EvidencePage: View {
         Section {
           NavigationLink("Import existing photographs") { DocumentaryPhotosPage(house: house) }
           NavigationLink("Locate a point from three photos") { PhotoPointPage(house:house) }
+          Button("Classify objects"){batchClassification=true}.disabled(house.features.isEmpty)
         }
         Section("Original photographs") {
           if house.observations.isEmpty {
@@ -844,6 +853,7 @@ struct EvidencePage: View {
           FeatureEditor(feature: $0)
         }
         .sheet(item:$documentaryPhoto){DocumentaryPhotoDetail(photo:$0)}
+        .sheet(isPresented:$batchClassification){BatchServiceEditor(house:house)}
     }
   }
 }

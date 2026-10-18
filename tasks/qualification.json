@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T04:28:19.754297+00:00",
+  "updatedUTC": "2026-10-18T04:54:39.923509+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "67cc61c3d649081cc15e343cb993cde44405e2a2",
+  "currentImplementationCommit": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,19 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "f62af5fe6e22dac3cbb851e901cc748aa823b22a",
-    "passed": 129,
+    "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
+    "passed": 133,
     "failed": 0,
-    "artifact": 12124463114,
-    "sha256": "5c0cd19cac4bb0b88b053b598ca644e6efbe488c61f028018fdfaf2da461f9f4",
-    "searchP95Milliseconds": 54.14833333327351,
+    "artifact": 12124679724,
+    "sha256": "b6b6a3e0a353579dc773c51d71e03397d86014bcca04852deedde7aa95727e7d",
+    "searchP95Milliseconds": 49.58287500005554,
     "distinctPhotoNotes": 50000,
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "127/128 executed native checks and all six UI flows passed at 67cc61c3d6; the IFC timeout left three further native cases unexecuted. New photo/provenance paths passed. The next curve/IFC/stale-edit candidate requires 133 native, six expanded UI flows and 22 independent readers."
+      "remaining": "The 0e191bca22 integration passed 133 native checks, six UI flows, three process-kill recoveries and 22 readers. Validate the next 136-native/eight-UI service/import/reader-version candidate."
     },
     {
       "area": "finished localization",
@@ -39,7 +39,7 @@
     },
     {
       "area": "registration and thin services",
-      "remaining": "Manual photo-curve candidate preserves per-point independent views and shared visible intervals without background depth or diameter. Automatic curves/envelopes, calibrated uncertainty and whole-house registration/geometry qualification remain open."
+      "remaining": "Manual photo curves passed native, interface, independent GLB and offline WebGL checks at 0e191bca22. Pipe/duct envelopes, calibrated uncertainty and whole-house registration/geometry qualification remain open."
     },
     {
       "area": "persistence and interchange",
@@ -55,43 +55,38 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate the bounded IFC worker scheduling repair, visible photo-curve native/UI/GLB/offline path and stale object-edit preservation. Retain failed 384-pixel finished and depth-edge gates; full-house/protected and external qualification remain open.",
+  "nextAction": "Validate typed service details, atomic batch classification/undo, explicit PLY coordinate declarations and schema-2 backward reading/forward refusal. Preserve all unresolved spatial and external gates; no additional TestFlight upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "run": null,
-    "status": "pending visible-curve, IFC scheduling and stale-object edit candidate",
-    "nativeExpected": 133,
+    "status": "pending typed service, batch classification, declared PLY coordinates, project reader v2 and visible save-feedback candidate",
+    "nativeExpected": 136,
     "nativePassed": null,
     "nativeFailed": null,
-    "interfaceExpected": 6,
+    "interfaceExpected": 8,
     "interfacePassed": null,
     "processKillPassed": null,
     "independentReadersExpected": 22,
     "independentReadersPassed": null,
+    "localCommandAndReaderContractsPassed": 27,
+    "interfaceProcessBudgetSeconds": 1200,
     "physicalQualification": false
   },
   "previousIntegratedAttempt": {
-    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
-    "run": 39096349828,
-    "nativeExpected": 131,
-    "nativeExecuted": 128,
-    "nativePassed": 127,
-    "nativeFailed": 1,
-    "nativeUnexecuted": 3,
+    "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
+    "run": 39097334972,
+    "nativePassed": 133,
+    "nativeFailed": 0,
     "interfacePassed": 6,
+    "uiSeconds": 627.423,
     "processKillPassed": 3,
-    "independentReadersPassed": false,
-    "remainingFailure": "Existing IFC2x3 importer timed out; later IFC checks in that block were not executed",
-    "completeIntegratedPass": false,
-    "independentReaderReports": 19,
-    "independentReaderReportsExpected": 20,
-    "portableArchiveAndCommandAdaptersSkipped": true,
+    "independentReaderReportsPassed": 22,
+    "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12124609303,
-      "sha256": "04e14654d79c79e4d5453f28bf736249d5bf18babe6b88e4fe24b3c0efbf0c9c",
+      "id": 12125239332,
+      "sha256": "afa3be9b69e8bce29da708d756728060a456c5566776c1269ec052b01523d7a4",
       "sha256IndependentlyVerified": true
-    },
-    "executedReaderReportsPassed": 19
+    }
   },
   "signingAudit": {
     "run": 39084977296,
@@ -115,18 +110,24 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "f62af5fe6e22dac3cbb851e901cc748aa823b22a",
-    "run": 39095027951,
-    "nativePassed": 129,
-    "interfacePassed": 5,
+    "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
+    "run": 39097334972,
+    "nativePassed": 133,
+    "nativeFailed": 0,
+    "interfacePassed": 6,
+    "uiSeconds": 627.423,
     "processKillPassed": 3,
-    "independentReadersPassed": true,
-    "independentReaderReports": 20,
+    "independentReaderReportsPassed": 22,
+    "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12124464171,
-      "sha256": "600e495caed8004af80ac76d42a106ecc1cc4f961aade0faf8b043eee74a41ef",
+      "id": 12125239332,
+      "sha256": "afa3be9b69e8bce29da708d756728060a456c5566776c1269ec052b01523d7a4",
       "sha256IndependentlyVerified": true
-    }
+    },
+    "portableCasesPassed": 50,
+    "commandContractTestsPassed": 23,
+    "nativeTourCLIValidated": true,
+    "nativeReconstructionCLIValidated": true
   },
   "wholeHouseDevelopment": {
     "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
@@ -297,9 +298,11 @@
     "backgroundDepthUsed": false,
     "metricDiameterKnown": false,
     "calibratedUncertaintyKnown": false,
-    "nativeValidationPending": true,
-    "interfaceValidationPending": true,
-    "independentGLBAndViewerPending": true
+    "nativeValidationPending": false,
+    "interfaceValidationPending": false,
+    "independentGLBAndViewerPending": false,
+    "verifiedSource": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
+    "saveFeedbackLayoutRecheckPending": true
   },
   "ifcRecoveryCandidate": {
     "prepared": true,
@@ -307,6 +310,84 @@
     "publicSchedulingAPI": true,
     "deadlineSeconds": 60,
     "allowlistedPhaseDiagnostics": true,
-    "validationPending": true
+    "validationPending": false,
+    "verifiedSource": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
+    "allNativeIFCCasesPassed": true
+  },
+  "typedServiceDetails": {
+    "prepared": true,
+    "legacyUnknownsPreserved": true,
+    "maximumFieldUTF8Bytes": 4096,
+    "calendarDateValidated": true,
+    "boundaryScopeValidated": true,
+    "ownerConfirmedIdentityRequiresEvidence": true,
+    "geometryChangedByRecordedSize": false,
+    "indexedSearchFields": [
+      "service taxonomy",
+      "observed label",
+      "panel/circuit",
+      "cable category",
+      "endpoint/port",
+      "conduit/envelope description",
+      "installation date",
+      "boundary name",
+      "identity evidence",
+      "feature UUID",
+      "stage date"
+    ],
+    "archiveAndCSVAndGLBPrepared": true,
+    "batchClassificationWithAtomicStaleRefusal": true,
+    "singleRevisionUndoPrepared": true,
+    "nativeValidationPending": true,
+    "interfaceValidationPending": true
+  },
+  "declaredPointCloudImport": {
+    "prepared": true,
+    "originalRetainedBeforeParsing": true,
+    "unknownUnitsAllowedAsSourceOnly": true,
+    "explicitUnitsAndUprightRequiredForGeometry": true,
+    "unitAxisCombinations": 10,
+    "houseAlignmentInferred": false,
+    "separateDocumentaryFrame": true,
+    "sourceDeclarationFingerprint": true,
+    "nativeValidationPending": true,
+    "interfaceValidationPending": true
+  },
+  "projectReaderVersion": {
+    "current": 2,
+    "accepts": [
+      1,
+      2
+    ],
+    "legacyUpgrade": "in-memory; source bytes retained",
+    "olderSchema1AppRefusesNewSaves": true,
+    "futureSchemasRefused": true,
+    "archiveContainerVersion": 1,
+    "semanticCSVVersion": 1,
+    "nativeValidationPending": true,
+    "signedCrossVersionMatrixPassed": false
+  },
+  "previousFailedIntegration": {
+    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
+    "run": 39096349828,
+    "nativeExpected": 131,
+    "nativeExecuted": 128,
+    "nativePassed": 127,
+    "nativeFailed": 1,
+    "nativeUnexecuted": 3,
+    "interfacePassed": 6,
+    "processKillPassed": 3,
+    "independentReadersPassed": false,
+    "remainingFailure": "Existing IFC2x3 importer timed out; later IFC checks in that block were not executed",
+    "completeIntegratedPass": false,
+    "independentReaderReports": 19,
+    "independentReaderReportsExpected": 20,
+    "portableArchiveAndCommandAdaptersSkipped": true,
+    "fullArtifact": {
+      "id": 12124609303,
+      "sha256": "04e14654d79c79e4d5453f28bf736249d5bf18babe6b88e4fe24b3c0efbf0c9c",
+      "sha256IndependentlyVerified": true
+    },
+    "executedReaderReportsPassed": 19
   }
 }

@@ -338,7 +338,7 @@ final class Repository: EvidenceAssetReader {
 enum StoreMigrationDiagnostics {
   static func legacyFixture(at root:URL)throws->UUID {
     var repository:Repository?=try Repository(root:root)
-    let house=try SimulatedCapture.make(repo:repository!)
+    var house=try SimulatedCapture.make(repo:repository!);house.schema=1
     try repository!.save(house);repository=nil
     try setVersion(at:root,version:1,dropCaptureTable:true)
     return house.id
@@ -408,6 +408,8 @@ enum StoreMigrationDiagnostics {
     guard let repository else { return false }
     do {
       var h = house
+      guard (1...House.currentSchema).contains(h.schema) else{throw HouseError.message("This project needs a newer reader. Its original is preserved.")}
+      h.schema=House.currentSchema
       ReferenceRegistration.invalidateChangedInputs(&h)
       h.revision += 1
       try repository.save(h)
@@ -436,6 +438,22 @@ enum StoreMigrationDiagnostics {
       error="This object changed while its editor was open. Reopen it before saving your edits.";return false
     }
     var updated=replacement;updated.revision=expected.revision+1;house.features[index]=updated
+    return commit(house,select:false)
+  }
+  @discardableResult func classifyFeatures(_ expected:[Feature],classification:ServiceClass,trade:Trade,projectID:UUID)->Bool {
+    guard !expected.isEmpty,expected.count<=10000,Set(expected.map{$0.id}).count==expected.count,
+      var house=houses.first(where:{$0.id==projectID}) else{error="Choose at least one saved object.";return false}
+    let indices=Dictionary(uniqueKeysWithValues:house.features.enumerated().map{($0.element.id,$0.offset)})
+    guard expected.allSatisfy({item in
+      guard let index=indices[item.id] else{return false}
+      return house.features[index]==item && item.revision>=0 && item.revision<Int.max
+    }) else{error="A selected object changed. Reopen batch classification before saving.";return false}
+    for item in expected {
+      let index=indices[item.id]!;var details=item.service ?? ServiceDetails()
+      details.classification=classification == .unknown ? nil:classification
+      house.features[index].service=details.isEmpty ? nil:details
+      house.features[index].trade=trade;house.features[index].revision+=1
+    }
     return commit(house,select:false)
   }
   @discardableResult func acceptStagedCapture(_ observation:Observation,projectID:UUID)->Bool {

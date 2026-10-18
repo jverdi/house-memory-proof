@@ -41,6 +41,8 @@ def main():
         assert json.loads(row['source_ids_json']) == feature['sourceIDs']
         provenance = json.loads(row['provenance_json'])
         assert provenance['id'] == feature['id'] and provenance['notes'] == feature['notes']
+        assert provenance.get('service') == feature.get('service')
+        assert provenance['service']['port']=='P-24' and provenance['service']['installationDate']=='2024-02-29'
         sid = feature.get('segmentID')
         expected_frame = 'segment:' + sid if sid else 'house'
         assert row['coordinate_frame'] == expected_frame
@@ -77,7 +79,7 @@ def main():
               'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
               'separateFramesPreserved': True, 'registrationNotAppliedToSourceCoordinates': True,
               'unicodeMultilineAndQuotedTextPreserved': True, 'formulaTextEscaped': True,
-              'sourceRelationshipsPreserved': True, 'physicalPrecisionQualified': False}
+              'sourceRelationshipsPreserved': True, 'typedServiceDetailsPreserved':True, 'physicalPrecisionQualified': False}
     (root / 'semantic-csv-validation.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report))
     import subprocess

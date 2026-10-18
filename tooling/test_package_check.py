@@ -53,11 +53,46 @@ class PortablePackageContracts(unittest.TestCase):
         self.assertEqual(self.path.read_bytes(),before)
         self.assertEqual(list(Path(self.temp.name).iterdir()),[self.path])
 
+    def test_project_reader_versions_are_explicit_and_sources_remain_unchanged(self):
+        for schema in [1,2,0,3,999]:
+            self.house['schema']=schema;archive(self.path,self.house,self.parts);before=self.path.read_bytes()
+            if schema in [1,2]:self.assertTrue(check_package(self.path)['passed'])
+            else:
+                with self.assertRaisesRegex(InvalidPackage,'schema'):check_package(self.path)
+            self.assertEqual(self.path.read_bytes(),before)
+
     def test_changed_original_and_incomplete_manifest_fail(self):
         for mutate in [lambda p:p.__setitem__(next(iter(self.parts)),b'changed'),
                        lambda p:p.__setitem__('unlisted.txt',b'forgotten'),
                        lambda p:p.pop(next(iter(self.parts)))]:
             archive(self.path,self.house,self.parts,mutate)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
+
+    def test_service_details_dates_boundary_scope_and_confirmation_evidence(self):
+        boundary=str(uuid.uuid4())
+        self.house['boundaries']=[dict(id=boundary,segmentID=self.house['segments'][0]['id'])]
+        details=dict(classification='Low voltage',observedLabel='Café cable',port='P-24',installationDate='2024-02-29',boundaryID=boundary,confidence='Owner confirmed',identityEvidence='Synthetic continuity test')
+        self.house['features'][0]['service']=details
+        archive(self.path,self.house,self.parts);self.assertTrue(check_package(self.path)['passed'])
+
+        for key,value in [('installationDate','2025-02-29'),('installationDate','2024-2-29'),('installationDate','0000-01-01'),('observedLabel','é'*2049),('port','bad\0port'),('classification','invented'),('identityEvidence',' \n'),('boundaryID',str(uuid.uuid4()))]:
+            bad=copy.deepcopy(self.house);bad['features'][0]['service'][key]=value
+            archive(self.path,bad,self.parts)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
+        other=str(uuid.uuid4());self.house['stages'].append(dict(id=other));self.house['features'][0]['stageID']=other
+        archive(self.path,self.house,self.parts)
+        with self.assertRaisesRegex(InvalidPackage,'scope'):check_package(self.path)
+        self.house['features'][0]['service']={}
+        archive(self.path,self.house,self.parts);self.assertTrue(check_package(self.path)['passed'])
+
+    def test_declared_point_cloud_requires_original_source_and_known_coordinates(self):
+        raw=b'original synthetic PLY';key=hashlib.sha256(raw).hexdigest()+'.ply';drawing=str(uuid.uuid4())
+        self.parts['assets/'+key]=raw
+        self.house['drawings']=[dict(id=drawing,asset=key)]
+        feature=self.house['features'][0];feature['sourceDrawingID']=drawing;feature['importedCoordinates']=dict(unit='Millimetres',upright='Y up')
+        archive(self.path,self.house,self.parts);self.assertTrue(check_package(self.path)['passed'])
+        for change in [lambda f:f['importedCoordinates'].update(unit='Unknown'),lambda f:f['importedCoordinates'].update(upright='Z down'),lambda f:f.update(sourceDrawingID=str(uuid.uuid4())),lambda f:f.pop('segmentID')]:
+            bad=copy.deepcopy(self.house);change(bad['features'][0]);archive(self.path,bad,self.parts)
             with self.assertRaises(InvalidPackage):check_package(self.path)
 
     def test_point_provenance_requires_existing_same_session_originals(self):

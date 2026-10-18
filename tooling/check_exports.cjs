@@ -60,6 +60,7 @@ const a=route.accessors[primitive.attributes.POSITION],view=route.bufferViews[a.
 const offset=(view.byteOffset??0)+(a.byteOffset??0),expected=[[0,1.1,-1.4],[.3,1.3,-1.45],[.6,1.5,-1.4]];
 let maximum=0;for(let i=0;i<3;i++)for(let axis=0;axis<3;axis++)maximum=Math.max(maximum,Math.abs(binary.readFloatLE(offset+(i*3+axis)*4)-expected[i][axis]));
 assert(maximum<1e-6);const node=route.nodes.find(n=>n.mesh===0);assert.equal(node.extras.photoCurveSourceTracks.length,3);assert(node.extras.photoCurveSourceTracks.every(t=>t.controls.length===3));
+assert.deepEqual(node.extras.serviceDetails,{classification:'Low voltage',observedLabel:'=literal café label',port:'P-24',installationDate:'2024-02-29',confidence:'Unconfirmed'});
 const structure=inspect(routeBytes);
-fs.writeFileSync('build/evidence/photo-curve-gltf-validation.json',JSON.stringify({passed:true,reader:'Khronos glTF Validator plus independent fixed-frame line reader',points:3,sourceTracks:3,mode:'LINE_STRIP',metricDiameterInvented:false,maximumCoordinateErrorMetres:maximum,physicalQualification:false,...structure},null,2));
+fs.writeFileSync('build/evidence/photo-curve-gltf-validation.json',JSON.stringify({passed:true,reader:'Khronos glTF Validator plus independent fixed-frame line reader',points:3,sourceTracks:3,mode:'LINE_STRIP',metricDiameterInvented:false,typedServiceDetailsPreserved:true,maximumCoordinateErrorMetres:maximum,physicalQualification:false,...structure},null,2));
 })().catch(error=>{console.error(error);process.exitCode=1;});

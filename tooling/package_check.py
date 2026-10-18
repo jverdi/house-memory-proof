@@ -4,6 +4,7 @@ No extraction, rendering, network access or writes to the source package. This
 checks the reusable evidence contract; it does not certify captured accuracy.
 """
 import hashlib
+import datetime
 import json
 import math
 from pathlib import Path, PurePosixPath
@@ -53,6 +54,28 @@ def numeric(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
+def service_check(value):
+    if value is None:return
+    require(isinstance(value,dict),'Invalid service details')
+    fields='observedLabel circuitReference panelReference cableCategory endpoint port conduitSize pipeDuctEnvelope installationDate identityEvidence'.split()
+    for key in fields:
+        text=value.get(key)
+        require(text is None or (isinstance(text,str) and len(text.encode('utf-8'))<=4096 and '\0' not in text),'Invalid service text field')
+    require(value.get('classification') in [None,'Unknown','Structure / blocking','Electrical power','Low voltage','Plumbing supply','Plumbing drain','Plumbing vent','HVAC supply','HVAC return','HVAC exhaust','Insulation','Fire-stopping','Access point'],'Invalid service class')
+    require(value.get('confidence') in [None,'Unknown','Unconfirmed','Owner confirmed'],'Invalid identity confidence')
+    require(value.get('confidence')!='Owner confirmed' or bool((value.get('identityEvidence') or '').strip()),'Owner-confirmed identity lacks evidence')
+    if value.get('installationDate') is not None:
+        text=value['installationDate'];require(re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}',text) is not None,'Invalid installation date')
+        try:datetime.date.fromisoformat(text)
+        except ValueError:raise InvalidPackage('Invalid installation date') from None
+    if value.get('boundaryID') is not None:identity(value['boundaryID'])
+
+
+def coordinate_declaration_check(value):
+    if value is None:return
+    require(isinstance(value,dict) and value.get('unit') in ['Metres','Millimetres','Centimetres','Feet','Inches'] and value.get('upright') in ['Z up','Y up'],'Invalid imported coordinate declaration')
+
+
 def vector(value):
     return isinstance(value, dict) and all(numeric(value.get(k)) for k in ('x', 'y', 'z'))
 
@@ -91,12 +114,12 @@ def required_assets(house):
 
 
 def semantic_check(house):
-    require(type(house.get('schema')) is int and house['schema'] == 1, 'Unsupported house schema')
+    require(type(house.get('schema')) is int and house['schema'] in (1,2), 'Unsupported house schema')
     identity(house.get('id'))
     require(type(house.get('revision')) is int and house['revision'] >= 0, 'Invalid source revision')
     tables = {}
     limits = dict(rooms=100, features=10000, observations=50000, segments=50000,
-                  stages=10000, references=1000, documentaryPhotos=50000)
+                  stages=10000, references=1000, documentaryPhotos=50000, boundaries=1000, drawings=10000)
     for name, limit in limits.items():
         rows = house.get(name, [])
         require(isinstance(rows, list) and len(rows) <= limit, 'Metadata count limit: '+name)
@@ -118,6 +141,18 @@ def semantic_check(house):
     for feature in tables['features'].values():
         reference(feature, 'roomID', 'rooms'); reference(feature, 'stageID', 'stages')
         reference(feature, 'segmentID', 'segments', True)
+        service_check(feature.get('service'))
+        declared=feature.get('importedCoordinates')
+        if declared is not None:
+            coordinate_declaration_check(declared)
+            reference(feature,'sourceDrawingID','drawings');reference(feature,'segmentID','segments')
+            drawing=tables['drawings'][identity(feature['sourceDrawingID'])]
+            require(isinstance(drawing.get('asset'),str) and drawing['asset'].endswith('.ply'),'Imported coordinates require original PLY')
+        boundary_id=(feature.get('service') or {}).get('boundaryID')
+        if boundary_id is not None:
+            boundary=tables['boundaries'].get(identity(boundary_id));require(boundary is not None,'Missing service boundary')
+            segment=tables['segments'].get(identity(boundary.get('segmentID')));require(segment is not None,'Missing boundary session')
+            require(all(identity(segment[k])==identity(feature[k]) for k in ['roomID','stageID']),'Service boundary scope mismatch')
         mesh = feature.get('mesh', {})
         points, indices = mesh.get('vertices'), mesh.get('triangles')
         require(isinstance(points, list) and all(vector(p) for p in points), 'Invalid mesh vertices')

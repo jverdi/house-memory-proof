@@ -21,6 +21,8 @@ on:
       - HouseMemoryProof/VisualMapping.swift
       - HouseMemoryProof/EvidenceModels.swift
       - HouseMemoryProof/Domain.swift
+      - HouseMemoryProof/ServiceDetails.swift
+      - HouseMemoryProof/PointCloudImport.swift
       - HouseMemoryProof/PoseRefinement.swift
       - HouseMemoryProof/PoseGraph.swift
       - HouseMemoryProof/ReferenceRegistration.swift

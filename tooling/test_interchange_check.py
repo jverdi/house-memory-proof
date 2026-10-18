@@ -48,6 +48,15 @@ class InterchangeContracts(unittest.TestCase):
         self.rows[0]['provenance_json']=json.dumps(source);self.write()
         self.assertTrue(semantic_csv(self.path)['passed'])
 
+    def test_csv_validates_typed_service_provenance_without_inventing_unknowns(self):
+        source=json.loads(self.rows[0]['provenance_json'])
+        source['service']=dict(port='P-24',installationDate='2024-02-29')
+        self.rows[0]['provenance_json']=json.dumps(source);self.write()
+        self.assertTrue(semantic_csv(self.path)['passed'])
+        source['service']['installationDate']='2025-02-29'
+        self.rows[0]['provenance_json']=json.dumps(source);self.write()
+        with self.assertRaisesRegex(InvalidPackage,'date'):semantic_csv(self.path)
+
     def test_obj_external_material_refused_without_loading_a_reader(self):
         path=self.path.with_suffix('.obj');path.write_text('mtllib ../private.mtl\nv 0 0 0\n')
         with self.assertRaisesRegex(InvalidPackage,'External OBJ'):mesh(path)

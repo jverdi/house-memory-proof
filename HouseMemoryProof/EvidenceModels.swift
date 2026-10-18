@@ -245,7 +245,9 @@ enum EvidenceSearch {
     init(house:House)throws {
       houseID=house.id;revision=house.revision
       let rooms=Dictionary(house.rooms.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
-      let stages=Dictionary(house.stages.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
+      let dates=ISO8601DateFormatter()
+      let stages=Dictionary(house.stages.map{($0.id,EvidenceSearch.normalized($0.name+" "+dates.string(from:$0.date)))},uniquingKeysWith:{a,_ in a})
+      let boundaries=Dictionary(house.boundaries.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
       var groups:[String:Int]=[:],wordIDs:[String:Int]=[:]
       func group(_ text:String)->Int {
         if let existing=groups[text] {return existing}
@@ -270,7 +272,8 @@ enum EvidenceSearch {
       }
       for (index,f) in house.features.enumerated() {
         if index%256==0 {try Task.checkCancellation()}
-        let text=EvidenceSearch.normalized(f.name+" "+f.notes+" "+f.endpoint+" "+f.trade.rawValue+" "+f.kind.rawValue)+" "+(rooms[f.roomID] ?? "")+" "+(stages[f.stageID] ?? "")
+        let metadata=[f.name,f.notes,f.endpoint,f.trade.rawValue,f.kind.rawValue,f.id.uuidString,f.service?.searchableText ?? ""]
+        let text=EvidenceSearch.normalized(metadata.joined(separator:" "))+" "+(rooms[f.roomID] ?? "")+" "+(stages[f.stageID] ?? "")+" "+(f.service?.boundaryID.flatMap{boundaries[$0]} ?? "")
         let id=group(text);objectGroups.append(id);objects.append(f)
       }
       for (index,p) in house.documentaryPhotos.reversed().enumerated() {

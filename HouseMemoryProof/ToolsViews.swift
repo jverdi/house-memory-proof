@@ -6,6 +6,7 @@ struct ToolsPage: View {
   @EnvironmentObject var model: AppModel
   var house: House
   @State private var importing = false
+  @State private var pointCloudImport:PointCloudImport?
   @State private var mode: ViewMode = .rough
   @State private var ceilings = true
   @State private var duration = 20.0
@@ -191,7 +192,7 @@ struct ToolsPage: View {
         case .success(let urls): if let url = urls.first { importFile(url) }
         case .failure(let error): model.error = error.localizedDescription
         }
-      }
+      }.sheet(item:$pointCloudImport){PointCloudImportPage(candidate:$0)}
     }
   }
   func export(_ label: String, _ work: @escaping () throws -> URL) {
@@ -223,21 +224,20 @@ struct ToolsPage: View {
           return nil
         }
       } else if url.pathExtension.lowercased() == "ply" {
-        var h = house
         let data = try DurableFiles.read(url,limit:50_000_000)
-        let mesh = try PLYReader.read(data)
-        guard let r = h.rooms.first, let s = h.stages.first else { return }
         let asset = try repo.put(data, ext: "ply")
-        h.drawings.append(
-          Drawing(
-            name: url.lastPathComponent, asset: asset,
-            notes: "Original imported point cloud. Units assumed metres; verify before measuring."))
-        h.features.append(
-          Feature(
-            name: url.deletingPathExtension().lastPathComponent, trade: .unknown, roomID: r.id,
-            stageID: s.id, kind: .documentary, mesh: mesh,
-            notes: "Imported PLY; units declared metres, not independently calibrated."))
-        model.commit(h)
+        let drawing=Drawing(name:url.lastPathComponent,asset:asset,notes:"Original PLY retained. Units, upright axis and house alignment unknown until explicitly declared.")
+        let projectID=house.id
+        guard model.edit(projectID:projectID,{$0.drawings.append(drawing)}) else{return}
+        model.perform("Reading saved point cloud") {
+          do {
+            let mesh=try await LocalWorker.run{try PLYReader.read(data)}
+            try Task.checkCancellation()
+            pointCloudImport=PointCloudImport(projectID:projectID,drawing:drawing,mesh:mesh)
+          }catch is CancellationError{throw CancellationError()}
+          catch{throw HouseError.message("Original PLY saved in Drawings & design references. \(error.localizedDescription)")}
+          return nil
+        }
       } else {
         model.commit(try Exporter.restore(url, repo: repo))
       }
@@ -296,6 +296,7 @@ struct DrawingPage: View {
   @State private var metres = 1.0
   @State private var document: PDFDocument?
   @State private var selectedPage = 0
+  @State private var pointCloudImport:PointCloudImport?
   var body: some View {
     NavigationStack {
       VStack {
@@ -342,6 +343,17 @@ struct DrawingPage: View {
           Button("Share original") {
             if let url = try? model.repository?.assetURL(drawing.asset) { model.shareURL = url }
           }
+          if drawing.asset.hasSuffix(".ply") {
+            Button("Import this point cloud") {
+              guard let repo=model.repository,let house=model.house,let original=house.drawings.first(where:{$0.id==drawing.id}) else{return}
+              model.perform("Reading saved point cloud") {
+                let mesh=try await LocalWorker.run{try PLYReader.read(repo.read(original.asset,limit:50_000_000))}
+                try Task.checkCancellation()
+                pointCloudImport=PointCloudImport(projectID:house.id,drawing:original,mesh:mesh)
+                return nil
+              }
+            }.disabled(model.busy)
+          }
         }
         TextField("Source notes", text: $drawing.notes, axis: .vertical).padding()
       }.navigationTitle(drawing.name).navigationBarTitleDisplayMode(.inline).toolbar {
@@ -353,7 +365,7 @@ struct DrawingPage: View {
           }
           dismiss()
         }
-      }.task {
+      }.sheet(item:$pointCloudImport){PointCloudImportPage(candidate:$0)}.task {
         if let url = try? model.repository?.assetURL(drawing.asset) {
           if let pdf = PDFDocument(url: url) {
             document = pdf
@@ -514,7 +526,8 @@ enum PLYReader {
       throw HouseError.message("PLY counts or coordinate properties are invalid.")
     }
     var mesh = Mesh()
-    for line in lines[(end + 1)..<(end + 1 + count)] {
+    for (index,line) in lines[(end + 1)..<(end + 1 + count)].enumerated() {
+      if index%256==0{try Task.checkCancellation()}
       let tokens = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
       // Never discard an invalid token: doing so silently shifts x/y/z fields.
       let values = tokens.compactMap { Double($0) }
@@ -522,7 +535,8 @@ enum PLYReader {
         values.allSatisfy({ $0.isFinite }) else { throw HouseError.message("Invalid PLY vertex.") }
       mesh.vertices.append(V3(values[xi], values[yi], values[zi]))
     }
-    for line in lines[(end + 1 + count)..<(end + 1 + count + faceCount)] {
+    for (index,line) in lines[(end + 1 + count)..<(end + 1 + count + faceCount)].enumerated() {
+      if index%256==0{try Task.checkCancellation()}
       let tokens = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
       let p = tokens.compactMap { Int32($0) }
       guard p.count == tokens.count, let n = p.first, n >= 3, n <= 64,

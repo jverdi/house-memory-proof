@@ -29,6 +29,8 @@ on:
       - HouseMemoryProof/PoseGraph.swift
       - HouseMemoryProof/PhotoReconstruction.swift
       - HouseMemoryProof/Domain.swift
+      - HouseMemoryProof/ServiceDetails.swift
+      - HouseMemoryProof/PointCloudImport.swift
       - HouseMemoryProof/EvidenceModels.swift
   workflow_dispatch:
 permissions:

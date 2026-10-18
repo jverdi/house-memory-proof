@@ -78,6 +78,8 @@ enum GeometrySource:String,Codable {case capturedMesh,depthPoints,depthFusion,ph
 struct Feature:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var trade:Trade;var roomID:UUID;var stageID:UUID;var kind:EvidenceKind
     var mesh:Mesh;var route:[V3]=[];var sourceIDs:[UUID]=[];var notes="";var endpoint="";var reviewed=false
+    var service:ServiceDetails?=nil
+    var importedCoordinates:ImportedCoordinateDeclaration?=nil
     var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil;var sourceDrawingFingerprint:String?=nil;var sourceFingerprint:String?=nil;var photoControls:[PhotoControl]?=nil;var pointTracks:[PointTrack]?=nil;var annotationSources:[AnnotationDependency]?=nil;var captureClassification:String?=nil;var captureAnchorID:UUID?=nil;var geometrySource:GeometrySource?=nil
     var resolvedGeometrySource:GeometrySource? {
         if let geometrySource{return geometrySource}
@@ -156,7 +158,8 @@ struct Drawing:Codable,Identifiable,Equatable {
 }
 struct Bookmark:Codable,Identifiable,Equatable { var id=UUID();var name:String;var position:V3;var yaw:Double;var pitch:Double;var roomID:UUID;var segmentID:UUID?=nil }
 struct House:Codable,Identifiable,Equatable {
-    var schema=1;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
+    static let currentSchema=2
+    var schema=House.currentSchema;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
     var boundaries:[RevealBoundary]=[]
     var fieldChecks:[FieldCheck]=[]
@@ -172,11 +175,12 @@ struct House:Codable,Identifiable,Equatable {
         return Set(keys)
     }
     func validate() throws {
-        guard schema==1 else {throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
+        guard (1...Self.currentSchema).contains(schema) else {throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
         guard rooms.count<=100,features.count<=10000,observations.count<=50000 else{throw HouseError.message("Project exceeds this build's supported metadata limits.")}
         guard processingReports.count<=1000,processingReports.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid capture processing report.")}
         guard fieldChecks.count<=10000,Set(fieldChecks.map{$0.id}).count==fieldChecks.count,fieldChecks.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid field evidence records.")}
         let roomIDs=Set(rooms.map{$0.id}),stageIDs=Set(stages.map{$0.id})
+        guard drawings.count<=10000,Set(drawings.map{$0.id}).count==drawings.count else{throw HouseError.message("Invalid source drawing inventory.")}
         guard documentaryPhotos.count<=50000,Set(documentaryPhotos.map{$0.id}).count==documentaryPhotos.count else{throw HouseError.message("Invalid documentary photograph inventory.")}
         var markIDs=Set<UUID>(),markCount=0,markPoints=0
         for photo in documentaryPhotos {
@@ -188,11 +192,21 @@ struct House:Codable,Identifiable,Equatable {
         guard roomIDs.count==rooms.count,stageIDs.count==stages.count,Set(features.map{$0.id}).count==features.count else{throw HouseError.message("Duplicate identities in project.")}
         for r in rooms {guard r.origin.finite,r.size.finite,r.size.x>0,r.size.y>0,r.size.z>0 else{throw HouseError.message("Invalid room dimensions.")}}
         for f in features {guard f.mesh.valid,roomIDs.contains(f.roomID),stageIDs.contains(f.stageID),f.route.allSatisfy({$0.finite}) else{throw HouseError.message("Invalid geometry or source relationships.")}}
+        for feature in features where feature.importedCoordinates != nil {
+            guard feature.segmentID != nil,let source=feature.sourceDrawingID,drawings.contains(where:{$0.id==source && $0.asset.hasSuffix(".ply")}) else{throw HouseError.message("Declared point-cloud coordinates require their original PLY and a separate source frame.")}
+        }
         guard Set(segments.map{$0.id}).count==segments.count,Set(observations.map{$0.id}).count==observations.count else{throw HouseError.message("Duplicate capture identities.")}
         let segmentIDs=Set(segments.map{$0.id})
         guard Set(processingReports.map{$0.segmentID}).count==processingReports.count,processingReports.allSatisfy({segmentIDs.contains($0.segmentID)}) else{throw HouseError.message("Processing report references an absent or repeated capture.")}
         guard boundaries.count<=1000,Set(boundaries.map{$0.id}).count==boundaries.count,boundaries.allSatisfy({$0.valid && segmentIDs.contains($0.segmentID)}) else{throw HouseError.message("Invalid wall or ceiling boundary.")}
         let segmentByID=Dictionary(uniqueKeysWithValues:segments.map{($0.id,$0)})
+        let boundaryByID=Dictionary(uniqueKeysWithValues:boundaries.map{($0.id,$0)})
+        for feature in features {if let details=feature.service {
+            guard details.valid else{throw HouseError.message("Invalid service details: check dates, field sizes and identity evidence.")}
+            if let id=details.boundaryID {
+                guard let boundary=boundaryByID[id],let segment=segmentByID[boundary.segmentID],segment.roomID==feature.roomID,segment.stageID==feature.stageID else{throw HouseError.message("Service boundary must belong to this object's room and construction stage.")}
+            }
+        }}
         for f in features {if let sid=f.segmentID,!segmentIDs.contains(sid){throw HouseError.message("Feature references an absent capture session.")};if let uv=f.uv {guard uv.count==f.mesh.vertices.count,uv.allSatisfy({$0.u.isFinite && $0.v.isFinite}) else{throw HouseError.message("Invalid texture coordinates.")}}}
         for s in segments {guard roomIDs.contains(s.roomID),stageIDs.contains(s.stageID) else{throw HouseError.message("Capture session references an absent space or stage.")};if let t=s.registration, !t.valid {throw HouseError.message("Invalid segment registration.")}}
         for s in segments {if let solution=s.poseSolution {guard solution.cameras.count>=3,solution.cameras.count<=120,solution.maximumEdgeResidual.isFinite,solution.maximumEdgeResidual>=0,solution.cameras.allSatisfy({ key,value in observations.contains(where:{$0.id.uuidString==key && $0.segmentID==s.id}) && Rigid(values:value).valid }) else{throw HouseError.message("Invalid optimized camera provenance.")}}}
@@ -288,7 +302,11 @@ enum DemoFactory {
 extension House {
     init(from decoder:Decoder) throws {
         let c=try decoder.container(keyedBy:CodingKeys.self)
-        schema=try c.decode(Int.self,forKey:.schema)
+        let inputSchema=try c.decode(Int.self,forKey:.schema)
+        guard (1...Self.currentSchema).contains(inputSchema) else{throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
+        // Upgrade in memory only. Existing source files stay immutable; the
+        // schema-2 marker makes older schema-1 readers refuse later saves.
+        schema=Self.currentSchema
         id=try c.decode(UUID.self,forKey:.id)
         name=try c.decode(String.self,forKey:.name)
         created=try c.decode(Date.self,forKey:.created)

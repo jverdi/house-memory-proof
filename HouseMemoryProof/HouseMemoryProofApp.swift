@@ -14,6 +14,14 @@ import Darwin
         }
         #endif
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--point-cloud-demo"),let repo=model.repository {
+          do {
+            var h=House.empty("Point-cloud import fixture");h.isDemo=true;h.rooms[0].name="Source room"
+            let raw=Data("ply\nformat ascii 1.0\nelement vertex 1\nproperty double x\nproperty double y\nproperty double z\nend_header\n1 2 3\n".utf8)
+            h.drawings=[Drawing(name:"Source.ply",asset:try repo.put(raw,ext:"ply"),notes:"Synthetic PLY original; units and upright unknown")]
+            model.commit(h)
+          }catch{model.error=error.localizedDescription}
+        }
         if ProcessInfo.processInfo.arguments.contains("--documentary-demo"),let repo=model.repository {
           do {
             if let existing=model.houses.first(where:{$0.name=="Single-photo annotation fixture" && $0.isDemo}) {

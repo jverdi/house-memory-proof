@@ -1,0 +1,240 @@
+{
+  "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
+  "run": 39097334972,
+  "build": "197.1",
+  "platform": "iPhone simulator",
+  "nativePassed": 133,
+  "nativeFailed": 0,
+  "elapsedSeconds": 156.53453954166662,
+  "completeIntegratedPass": true,
+  "integrationStatus": "passed",
+  "precisionProfileEnabled": false,
+  "fieldAccuracyValidated": false,
+  "testflightUpload": false,
+  "artifact": {
+    "id": 12124679724,
+    "sha256": "b6b6a3e0a353579dc773c51d71e03397d86014bcca04852deedde7aa95727e7d",
+    "sha256IndependentlyVerified": true
+  },
+  "search": {
+    "defaultPageSize": 200,
+    "imageFilesRead": 0,
+    "indexBuildMilliseconds": 839.458250000007,
+    "limitations": "Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone.",
+    "passed": true,
+    "photographs": 50000,
+    "queries": 12,
+    "queryP95Milliseconds": 49.58287500005554,
+    "queryTimingsMilliseconds": [
+      {
+        "milliseconds": 27.786958333422263,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 21.813583333369024,
+        "query": "finished"
+      },
+      {
+        "milliseconds": 39.55337499996858,
+        "query": "electrical outlet"
+      },
+      {
+        "milliseconds": 8.118541666704004,
+        "query": "absent result"
+      },
+      {
+        "milliseconds": 49.58287500005554,
+        "query": "panel a"
+      },
+      {
+        "milliseconds": 42.99408333338306,
+        "query": "caf\u00e9 kitchen"
+      },
+      {
+        "milliseconds": 29.231999999979053,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 28.383083333324066,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 28.718041666706995,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 35.254375000022264,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 31.35599999995975,
+        "query": "cafe valve"
+      },
+      {
+        "milliseconds": 31.621999999970285,
+        "query": "cafe valve"
+      }
+    ],
+    "substringReferenceQueries": 18,
+    "test": "Fifty-thousand photograph metadata search",
+    "uniquePhotoMetadata": 50000
+  },
+  "movie": {
+    "decodedFrames": 300,
+    "durationSeconds": 10,
+    "height": 1080,
+    "passed": true,
+    "recoveredEncoderStalls": [],
+    "seconds": 64.09968595833334,
+    "test": "1080p30 MP4 encode, decode and verified chunk reuse",
+    "width": 1920
+  },
+  "photoCurve": {
+    "passed": true,
+    "seconds": 0.2134569583333814,
+    "test": "Photo-traced foreground curves ignore background depth and preserve independent source tracks"
+  },
+  "staleObjectEdit": {
+    "passed": true,
+    "seconds": 0.018174499999986438,
+    "test": "Object edits refuse stale metadata and rebuilt geometry without overwriting saved work"
+  },
+  "ifc": [
+    {
+      "passed": true,
+      "seconds": 0.00017283333329487505,
+      "test": "IFC total geometry budget and complete transaction boundary"
+    },
+    {
+      "extent": [
+        1,
+        2,
+        3
+      ],
+      "passed": true,
+      "phases": [
+        "created",
+        "initializing",
+        "source",
+        "parsing",
+        "geometry",
+        "complete"
+      ],
+      "test": "Bundled IFC2x3 conversion and axes"
+    },
+    {
+      "lower": [
+        9.5,
+        19,
+        30
+      ],
+      "passed": true,
+      "test": "IFC4 millimetres and nested placement",
+      "upper": [
+        10.5,
+        21,
+        33
+      ]
+    },
+    {
+      "passed": true,
+      "test": "IFC rotated nested placement preserves metric axes"
+    },
+    {
+      "passed": true,
+      "test": "IFC out-of-envelope coordinates refuse atomically and importer recovers"
+    }
+  ],
+  "fullArtifact": {
+    "id": 12125239332,
+    "sha256": "afa3be9b69e8bce29da708d756728060a456c5566776c1269ec052b01523d7a4",
+    "sha256IndependentlyVerified": true
+  },
+  "uiPassed": 6,
+  "uiSeconds": 627.423,
+  "uiStepSeconds": 750,
+  "processKillPassed": 3,
+  "portableCasesPassed": 50,
+  "independentReaderReportsPassed": 22,
+  "nativeTourCLI": {
+    "passed": true,
+    "command": "production native tour via CLI",
+    "shots": 12,
+    "frames": 150,
+    "previews": 8,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "nativeReconstructionCLI": {
+    "passed": true,
+    "command": "production native reconstruction via CLI",
+    "sessions": 1,
+    "originalsVerified": 19,
+    "vertices": 10956,
+    "independentArchivePassed": true,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "commandContractTests": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 23,
+    "seconds": 4.612091582999938,
+    "exitCode": 0
+  },
+  "curveGLB": {
+    "passed": true,
+    "reader": "Khronos glTF Validator plus independent fixed-frame line reader",
+    "points": 3,
+    "sourceTracks": 3,
+    "mode": "LINE_STRIP",
+    "metricDiameterInvented": false,
+    "maximumCoordinateErrorMetres": 4.768371586472142e-08,
+    "physicalQualification": false,
+    "nodes": 11,
+    "meshes": 1,
+    "levels": 1,
+    "tourClips": 6,
+    "hierarchyAndAnimationPassed": true
+  },
+  "curveOfflineViewer": {
+    "passed": true,
+    "objects": 1,
+    "lines": 1,
+    "shown": 1,
+    "coloredPixels": 383,
+    "webglError": 0,
+    "externalRequests": 0,
+    "rawSourcePublished": false,
+    "physicalQualification": false
+  },
+  "readerReports": {
+    "photo-curve-gltf-validation.json": true,
+    "points-gltf-validation.json": true,
+    "general-textured-usd-validation.json": true,
+    "general-points-usd-validation.json": true,
+    "test-usd-validation.json": true,
+    "offline-viewer-validation.json": true,
+    "general-glb-validation.json": true,
+    "mesh-interchange-validation.json": true,
+    "general-obj-validation.json": true,
+    "portable-package-validation.json": true,
+    "textured-usd-validation.json": true,
+    "general-semantic-validation.json": true,
+    "photo-curve-viewer-validation.json": true,
+    "points-usd-validation.json": true,
+    "semantic-csv-validation.json": true,
+    "archive-validation.json": true,
+    "general-test-usd-validation.json": true,
+    "chunked-snapshot-validation.json": true,
+    "test-gltf-validation.json": true,
+    "general-ply-validation.json": true,
+    "house-surface-gltf-validation.json": true,
+    "textured-gltf-validation.json": true
+  },
+  "visualInspection": {
+    "photoCurveSaved": true,
+    "singlePhotoMarkerRestored": true,
+    "remainingIssue": "Curve save message partially behind floating tab bar at capture; next candidate moves feedback before the save control and requires visible feedback in UI check."
+  }
+}

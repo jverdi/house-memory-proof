@@ -227,6 +227,58 @@ import simd
                 guard !isolated.beginCapture(first) else{return false}
                 isolated.busy=false;return !isolated.captureInProgress
             }
+            await check("Typed service evidence preserves unknowns, rejects invalid claims and survives search and archive restore") {
+                var h=House.empty("Service evidence contract")
+                let segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments=[segment]
+                let boundary=RevealBoundary(name:"North service wall",segmentID:segment.id,origin:V3(),horizontal:V3(1,0,0),vertical:V3(0,0,1),width:3,height:2,depth:0.2,finishOffset:0.02,sourceFingerprint:"synthetic service contract")
+                h.boundaries=[boundary]
+                var feature=Feature(name:"Unknown prewire",trade:.lowVoltage,roomID:segment.roomID,stageID:segment.stageID,kind:.synthetic,mesh:Mesh(vertices:[V3(1,1,1)],triangles:[]))
+                let legacy=try JSONEncoder().encode(feature)
+                guard try JSONDecoder().decode(Feature.self,from:legacy).service==nil else{return false}
+                var details=ServiceDetails();details.classification = .lowVoltage;details.observedLabel="AV café 12";details.panelReference="Rack A";details.circuitReference="Branch 7";details.cableCategory="CAT6A";details.endpoint="Living speaker";details.port="P-24";details.conduitSize="25 mm recorded";details.pipeDuctEnvelope="Unknown";details.installationDate="2024-02-29";details.boundaryID=boundary.id;details.confidence = .ownerConfirmed;details.identityEvidence="Synthetic continuity-test record"
+                feature.service=details;h.features=[feature];try h.validate()
+                let index=try EvidenceSearch.Index(house:h)
+                for query in ["CAT6A P-24","cafe rack","2024-02-29",feature.id.uuidString.lowercased(),"North service wall"] {
+                    guard try index.find(query).features.map({$0.id})==[feature.id] else{return false}
+                }
+                let package=try Exporter.archive(h,repo:repo),target=try Repository(root:folder.appendingPathComponent("service-restore"))
+                let restored=try Exporter.restore(package,repo:target)
+                guard restored.features==h.features,restored.boundaries==h.boundaries,restored.connections.isEmpty else{return false}
+                for value in ["2025-02-29","2024-02-30","2024-13-01","2024-1-01","0000-01-01","2024-02-29T00:00:00Z"] {
+                    var bad=h;bad.features[0].service!.installationDate=value
+                    do{try bad.validate();return false}catch{}
+                }
+                for fault in 0..<5 {
+                    var bad=h
+                    switch fault {
+                    case 0:bad.features[0].service!.identityEvidence=" \n"
+                    case 1:bad.features[0].service!.observedLabel=String(repeating:"é",count:2049)
+                    case 2:bad.features[0].service!.port="bad\0port"
+                    case 3:bad.features[0].service!.boundaryID=UUID()
+                    default:bad.segments[0].stageID=h.stages[1].id
+                    }
+                    do{try bad.validate();return false}catch{}
+                }
+                h.features[0].service=ServiceDetails();try h.validate()
+                return h.features[0].mesh==feature.mesh && h.connections.isEmpty
+            }
+            await check("Batch classification commits one reversible revision and refuses stale selected objects atomically") {
+                let isolated=AppModel(root:folder.appendingPathComponent("batch-classification"))
+                var h=House.empty("Batch classification contract")
+                let source=Feature(name:"A",trade:.unknown,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.synthetic,mesh:Mesh(vertices:[V3(1,2,3)],triangles:[]),route:[V3(),V3(1,0,0)])
+                var second=source;second.id=UUID();second.name="B";second.service=ServiceDetails(port:"P-24",confidence:.ownerConfirmed,identityEvidence:"Synthetic witnessed test")
+                var untouched=source;untouched.id=UUID();untouched.name="C"
+                h.features=[source,second,untouched];h.connections=[ServiceConnection(fromFeature:source.id,fromEnd:1,toFeature:second.id,toEnd:0,confirmed:true)]
+                guard isolated.commit(h),let before=isolated.house else{return false}
+                guard isolated.classifyFeatures([source,second],classification:.lowVoltage,trade:.lowVoltage,projectID:h.id),let saved=isolated.house else{return false}
+                guard saved.revision==before.revision+1,saved.features[2]==untouched,saved.connections==before.connections,
+                  saved.features[0].mesh==source.mesh,saved.features[0].route==source.route,saved.features[1].service?.port=="P-24",
+                  saved.features[1].service?.confidence == .ownerConfirmed,saved.features[0].revision==source.revision+1 else{return false}
+                guard !isolated.classifyFeatures([saved.features[0],second],classification:.power,trade:.electrical,projectID:h.id),isolated.house==saved else{return false}
+                isolated.undo()
+                guard isolated.house?.features==before.features,isolated.house?.connections==before.connections else{return false}
+                return try isolated.repository!.all().first(where:{$0.id==h.id})==isolated.house
+            }
             mark("Foreground fallback, resource cooldown and cancellation preserve saved work")
             do {
                 let isolated=AppModel(root:folder.appendingPathComponent("continued-fallback"))
@@ -1001,7 +1053,20 @@ import simd
                 return try StoreMigrationDiagnostics.state(at:root).0==999
             }
             #endif
-            await check("Additive schema migration preserves original identity"){let data=try JSONEncoder().encode(house);var json=try JSONSerialization.jsonObject(with:data) as! [String:Any];json.removeValue(forKey:"references");let old=try JSONSerialization.data(withJSONObject:json);let decoded=try JSONDecoder().decode(House.self,from:old);return decoded.id==house.id && decoded.references.isEmpty && decoded.features==house.features}
+            await check("Project reader upgrades legacy metadata without rewriting it and refuses unknown future schemas") {
+                let data=try JSONEncoder().encode(house);var json=try JSONSerialization.jsonObject(with:data) as! [String:Any]
+                json["schema"]=1;json.removeValue(forKey:"references")
+                let old=try JSONSerialization.data(withJSONObject:json),before=old
+                let decoded=try JSONDecoder().decode(House.self,from:old)
+                guard decoded.schema==2,decoded.id==house.id,decoded.references.isEmpty,decoded.features==house.features,old==before else{return false}
+                let upgraded=try JSONSerialization.jsonObject(with:JSONEncoder().encode(decoded)) as! [String:Any]
+                guard upgraded["schema"] as? Int==2 else{return false}
+                for version in [0,3,999] {
+                    json["schema"]=version
+                    do{_=try JSONDecoder().decode(House.self,from:JSONSerialization.data(withJSONObject:json));return false}catch{}
+                }
+                return true
+            }
             await check("Stage composition isolates unfinished and finished session frames"){
                 var h=House.empty("Stages");let a=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id),b=Segment(roomID:h.rooms[0].id,stageID:h.stages[1].id);h.segments=[a,b]
                 for segment in h.segments{h.features.append(Feature(name:"Surface",trade:.unknown,roomID:segment.roomID,stageID:segment.stageID,kind:.observed,mesh:.box(center:V3(),size:V3(1,1,1)),segmentID:segment.id))}
@@ -1128,6 +1193,33 @@ import simd
                 return true
             }
             await check("PLY native parser roundtrip"){let url=try Exporter.meshText(house,options:SceneOptions(),ply:true);let mesh=try PLYReader.read(Data(contentsOf:url));return mesh.valid && mesh.vertices.count==Exporter.canonicalFeatures(house,options:SceneOptions()).reduce(0){$0+$1.mesh.vertices.count}}
+            await check("PLY import requires explicit units and axes, preserves the original and never assumes house alignment") {
+                let raw=Data("ply\nformat ascii 1.0\nelement vertex 1\nproperty double x\nproperty double y\nproperty double z\nend_header\n1 2 3\n".utf8)
+                let key=try repo.put(raw,ext:"ply"),drawing=Drawing(name:"Source.ply",asset:key)
+                var original=House.empty("Declared source coordinates");original.drawings=[drawing];try repo.save(original)
+                let candidate=PointCloudImport(projectID:original.id,drawing:drawing,mesh:try PLYReader.read(raw)),room=original.rooms[0].id
+                let cases:[(ImportedUnit,V3)]=[(.metres,V3(1,2,3)),(.millimetres,V3(0.001,0.002,0.003)),(.centimetres,V3(0.01,0.02,0.03)),(.feet,V3(0.3048,0.6096,0.9144)),(.inches,V3(0.0254,0.0508,0.0762))]
+                for (unit,expected) in cases {for upright in ImportedAxis.allCases {
+                    let imported=try candidate.applying(unit:unit,upright:upright,roomID:room,to:original)
+                    let target=upright == .zUp ? expected:V3(expected.x,-expected.z,expected.y)
+                    guard imported.features.count==1,(imported.features[0].mesh.vertices[0]-target).length<1e-12,
+                      imported.segments.count==1,imported.segments[0].registration==nil,!imported.segments[0].approved,
+                      imported.stages.last?.kind == .documentary,imported.features[0].importedCoordinates==ImportedCoordinateDeclaration(unit:unit,upright:upright),
+                      imported.drawings==original.drawings,DerivedEvidence.currentIDs(imported).contains(imported.features[0].id) else{return false}
+                }}
+                for (unit,axis) in [(Optional<ImportedUnit>.none,Optional(ImportedAxis.zUp)),(Optional(ImportedUnit.metres),Optional<ImportedAxis>.none)] {
+                    do{_=try candidate.applying(unit:unit,upright:axis,roomID:room,to:original);return false}catch{}
+                }
+                var stale=original;stale.drawings[0].notes="Source changed"
+                do{_=try candidate.applying(unit:.metres,upright:.zUp,roomID:room,to:stale);return false}catch{}
+                let imported=try candidate.applying(unit:.millimetres,upright:.yUp,roomID:room,to:original)
+                do{_=try candidate.applying(unit:.millimetres,upright:.yUp,roomID:room,to:imported);return false}catch{}
+                let archive=try Exporter.archive(imported,repo:repo),target=try Repository(root:folder.appendingPathComponent("declared-ply-restore"))
+                let restored=try Exporter.restore(archive,repo:target)
+                var changed=imported;changed.features[0].importedCoordinates!.unit = .metres
+                guard !DerivedEvidence.currentIDs(changed).contains(changed.features[0].id) else{return false}
+                return try restored.features==imported.features && restored.segments==imported.segments && repo.read(key)==raw && target.integrity(restored)==1
+            }
             await check("PLY preserves fields and rejects malformed records without coordinate shifts") {
                 let header="ply\nformat ascii 1.0\nelement vertex 3\nproperty double x\nproperty double y\nproperty double z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n"
                 let body="0 0 0\n1 0 0\n0 2 0\n3 0 1 2\n"
@@ -1176,6 +1268,7 @@ import simd
                 fixture.segments=[registered,separate]
                 var a=Feature(id:UUID(uuidString:"11111111-1111-4111-8111-111111111111")!,name:"=1+1",trade:.plumbing,roomID:room,stageID:stage,kind:.synthetic,mesh:Mesh(),route:[V3(-1,2,3),V3(4,5,6)],notes:"Quoted \"valve\", next\r\nline",endpoint:"Sink, \"cold\"")
                 a.segmentID=registered.id;a.hidden=true;a.reviewed=true
+                a.service=ServiceDetails(classification:.supply,observedLabel:"=literal valve label",panelReference:"Panel, café",port:"P-24",pipeDuctEnvelope:"20 mm recorded",installationDate:"2024-02-29",confidence:.ownerConfirmed,identityEvidence:"Synthetic witnessed test, not field evidence")
                 var b=a;b.id=UUID(uuidString:"22222222-2222-4222-8222-222222222222")!;b.segmentID=separate.id;b.name="'literal";b.hidden=false
                 var c=a;c.id=UUID(uuidString:"33333333-3333-4333-8333-333333333333")!;c.segmentID=nil;c.name="House route";c.route=[V3(),V3(0,0,2)]
                 fixture.features=[a,b,c]
@@ -1456,7 +1549,8 @@ import simd
                         let o=fixture.observations[index];guard let uv=CameraProjection.project(point,through:o)?.0 else{throw HouseError.message("Curve fixture outside image")}
                         return PhotoControl(observationID:o.id,u:uv.u,v:uv.v)
                     }}
-                    let feature=try PhotoTriangulation.curve(tracks,house:curveHouse,segment:curveHouse.segments[0],name:"Foreground curve",trade:.lowVoltage,visibleIntervalsConfirmed:true)
+                    var feature=try PhotoTriangulation.curve(tracks,house:curveHouse,segment:curveHouse.segments[0],name:"Foreground curve",trade:.lowVoltage,visibleIntervalsConfirmed:true)
+                    feature.service=ServiceDetails(classification:.lowVoltage,observedLabel:"=literal café label",port:"P-24",installationDate:"2024-02-29",confidence:.unconfirmed)
                     guard feature.isPhotoCurve,feature.mesh.triangles.isEmpty,zip(feature.route,expected).allSatisfy({($0.0-$0.1).length<1e-8}),feature.pointTracks?.map({$0.controls})==tracks else{return false}
                     curveHouse.features=[feature];try curveHouse.validate()
                     let bytes=try JSONEncoder().encode(curveHouse)
