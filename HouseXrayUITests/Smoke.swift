@@ -22,6 +22,8 @@ final class HouseXraySmoke: XCTestCase {
     // Entering this screen does not start AR or request camera permission.
     // Both IDs must belong to the real house or the previous cover was blank.
     XCTAssertTrue(app.staticTexts["First room · Rough-in"].waitForExistence(timeout: 10))
+    XCTAssertEqual(app.staticTexts["capture-location"].label, "First room · Rough-in")
+    XCTAssertTrue(app.staticTexts["capture-instruction"].label.contains("Tap Start when you are ready"))
     XCTAssertTrue(app.buttons["Start"].exists); screenshot("40-homeowner-first-real-capture")
     app.buttons["Close"].tap()
     XCTAssertTrue(app.navigationBars["Capture"].waitForExistence(timeout: 5))
@@ -445,7 +447,14 @@ final class HouseXraySmoke: XCTestCase {
     screenshot("16-photo-curve-saved")
     mode.tap();XCTAssertTrue(app.navigationBars["Photo point"].waitForExistence(timeout:5))
     XCTAssertEqual(mode.label,"Trace a curve")
-    app.tabBars.buttons["Explore"].tap();app.buttons["Wall"].tap()
+    app.tabBars.buttons["Explore"].tap()
+    let freeFly=app.switches["Free fly"],notice=app.staticTexts["navigation-notice"]
+    XCTAssertTrue(freeFly.waitForExistence(timeout:10))
+    let automaticFreeFly=expectation(for:NSPredicate(format:"value == %@","1"),evaluatedWith:freeFly)
+    wait(for:[automaticFreeFly],timeout:5)
+    XCTAssertTrue(notice.waitForExistence(timeout:5));XCTAssertTrue(notice.label.contains("Walking needs a captured floor"))
+    screenshot("41-photo-capture-without-floor")
+    app.buttons["Wall"].tap()
     for point in [CGVector(dx:0.25,dy:0.29),CGVector(dx:0.65,dy:0.29),CGVector(dx:0.25,dy:0.42)] {app.coordinate(withNormalizedOffset:point).tap()}
     let define=app.buttons["Define wall or ceiling volume"]
     XCTAssertTrue(define.waitForExistence(timeout:5));define.tap()

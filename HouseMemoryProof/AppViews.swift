@@ -356,7 +356,7 @@ struct ExploreView: View {
             Text(house.isDemo ? "SYNTHETIC" : "APPROXIMATE").font(.caption.bold()).padding(8)
               .background(.black.opacity(0.6), in: Capsule())
             if !controller.navigationNotice.isEmpty {
-            Text(controller.navigationNotice).font(.caption).padding(8).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 10))
+            Text(controller.navigationNotice).font(.caption).padding(8).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 10)).accessibilityIdentifier("navigation-notice")
           }
           Spacer()
             if verticalSizeClass == .compact {
@@ -510,7 +510,7 @@ struct ExploreView: View {
                 Toggle("Step and snap-turn buttons",isOn:$buttonWalkControls)
                 Toggle("Orbit overview",isOn:Binding(get:{controller.orbit},set:{controller.setOrbit($0)}))
                 Text("Move 20 cm per tap and turn 15 degrees without animation. These controls are always available with VoiceOver. Walking still checks floors and obstacles.").font(.footnote)
-                Text("In Orbit overview, drag to rotate and pinch to zoom. Turn it off to return to the saved walking viewpoint.").font(.footnote)
+                Text("In Orbit overview, drag to rotate and pinch to zoom. Turn it off to return to the saved view from inside the house.").font(.footnote)
               }
               Section("Construction") {
                 Toggle("Show ceilings", isOn: $options.ceilings)
@@ -535,7 +535,7 @@ struct ExploreView: View {
                 }
               }
               Text(
-                "Walk mode stays near recorded camera positions in real captures; use Free fly to inspect beyond that path. Layer switches preserve coordinates. Unregistered capture segments are not merged; one unregistered segment is shown at a time. Hidden geometry does not prove an empty cavity."
+                "Walking needs a captured floor, a clear route and nearby recorded views. Use Free fly to inspect beyond that route. Layers change what is shown. Separate capture sessions that have not been aligned are shown one at a time. Hiding a surface does not prove that the space behind it is empty."
               ).font(.footnote)
             }.navigationTitle("Layers").toolbar { Button("Done") { layers = false } }
           }
@@ -770,18 +770,22 @@ struct CaptureSessionView: View {
     ZStack {
       CaptureSurface(controller: controller).ignoresSafeArea()
       VStack {
-        HStack {
-          Text("\(room.name) · \(stage.name)").font(.headline)
-          Spacer()
-          Button("Close") {
-            controller.stop()
-            if !controller.processing { dismiss() }
-          }.disabled(controller.processing)
-        }
-        Text(controller.tracking).font(.caption)
+        VStack(alignment: .leading, spacing: 8) {
+          HStack {
+            Text("\(room.name) · \(stage.name)").font(.headline)
+              .accessibilityIdentifier("capture-location")
+            Spacer()
+            Button("Close") {
+              controller.stop()
+              if !controller.processing { dismiss() }
+            }.disabled(controller.processing)
+          }
+          Text(controller.tracking).font(.caption)
+        }.padding().foregroundStyle(.white)
+          .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 18))
         Spacer()
         VStack(spacing: 12) {
-          Text(controller.message).font(.callout)
+          Text(controller.message).font(.callout).accessibilityIdentifier("capture-instruction")
           if model.busy {
             Text(model.status).font(.caption)
             ProgressView(value:model.progress)
@@ -813,7 +817,8 @@ struct CaptureSessionView: View {
               }.buttonStyle(.borderedProminent).disabled(controller.processing || model.busy)
             }
           }
-        }.padding().background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        }.padding().foregroundStyle(.white)
+          .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 18))
       }.padding()
     }.onChange(of: phase) { _, new in if new != .active { controller.stop(reason:"application-inactive") } }.onReceive(
       NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)

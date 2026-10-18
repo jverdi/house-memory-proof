@@ -93,6 +93,8 @@ jobs:
             build/evidence/drawing-benchmark-validation.json
             build/evidence/native-navigation-benchmark.json
             build/evidence/navigation-benchmark-validation.json
+            build/evidence/native-reconstructed-navigation.json
+            build/evidence/reconstructed-navigation-validation.json
             build/evidence/service-tour-validation.json
             build/evidence/command-tests.json
             build/evidence/cli-command-validation.json

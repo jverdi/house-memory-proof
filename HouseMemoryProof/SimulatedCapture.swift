@@ -4,6 +4,31 @@ import UIKit
 // Camera observations generated from a planar construction target. Ground truth is
 // retained only in this generator/evaluator; Reconstruction receives ordinary observations.
 enum SimulatedCapture {
+  // A bounded downward-looking depth capture. No generator mesh enters the
+  // candidate; navigation must consume SurfaceReconstruction's actual output.
+  static func navigationFloor(repo:Repository,missingStrip:Bool) throws -> House {
+    var h=try make(repo:repo)
+    h.name="Analytic reconstructed floor \(missingStrip ? "with gap":"without gap")"
+    h.notes="Synthetic floor fragment only; not whole-house or physical qualification."
+    h.features=[];h.rooms[0].name="Captured floor fragment"
+    h.rooms[0].origin=V3(-1,-1,0);h.rooms[0].size=V3(2,2,3)
+    h.segments[0].registration=Rigid()
+    for index in h.observations.indices {
+      let x=Double(index-4)*0.08
+      var depth=Data(),confidence=Data()
+      for v in 0..<144 {for u in 0..<192 {
+        let px=x+(Double(u)-96)*2/130,py=(Double(v)-72)*2/130
+        let supported=abs(px)<=0.8 && abs(py)<=0.6 && (!missingStrip || abs(px)>=0.1)
+        depth.float(supported ? Float(2+sin(Double(u*7+v*11+index*19))*0.001):0)
+        confidence.append(supported ? 2:0)
+      }}
+      h.observations[index].camera=[1,0,0,x,0,0,1,2,0,-1,0,0,0,0,0,1]
+      h.observations[index].depth=try repo.put(depth,ext:"depth32")
+      h.observations[index].confidence=try repo.put(confidence,ext:"confidence8")
+      h.observations[index].note="Synthetic downward capture of a bounded floor fragment; missing depth is unknown."
+    }
+    return h
+  }
   static func make(repo: Repository) throws -> House {
     var h = House.empty("Simulated capture laboratory")
     h.isDemo = true

@@ -1,3 +1,15 @@
+## Capture readability and floor-support repairs prepared
+
+The 223.1 screenshot review found white capture labels against a bright preview and an outdated opening instruction. The capture overlays now use dark contrast panels and show the selected location with a direct Start instruction; the existing first-real-capture workflow checks the location and message. Screenshot 40 must be inspected again.
+
+Runbook §12.2 / P6.2 requires missing floors to be refused as walking routes. The prepared code removes the camera-corridor fallback when floor support is absent. Planned/documentary geometry cannot supply floor support. Free fly remains available, and the viewer notice and homeowner guide explain the requirement.
+
+The connected diagnostic retains its 284-step room/stair trace and seven prior refusal/isolation cases, then adds five unsupported-floor variants in a ninth case. A separate diagnostic passes two bounded synthetic RGB-D fragments through production surface reconstruction and the actual walking controller. It checks classification, eight supported steps, three missing-depth refusals, explicit Free fly and return to a supported landing. Its independent reader scores retained output triangles; source packages stay private to the CI job.
+
+**52 local command/reader tests pass. Native validation is pending:** 172 native checks, 19 reader phases, 17 interface workflows and 36 validation reports are expected. Current execution bounds remain. `docs/evidence/navigation-floor-candidate.md` distinguishes the host geometry preflight and constructed trace from native walking validation. Latest complete integration remains **223.1**, and TestFlight remains **216.1** without an intermediate upload.
+
+This does not close whole-house reconstruction/navigation or physical acceptance. The audit also explicitly retains missing §12.1 comfort controls: adjustable movement acceleration, turn speed, bounded view width and eye height. Those controls have not yet been implemented.
+
 ## Homeowner guidance passes simulator integration — 223.1
 
 Source **2b8a9bb195282e91da8fdd026bb44d81213e972e**, run **39165628733**, passes Debug/Release compilation, **171/171 native checks**, all **18 reader phases**, **48 command contracts**, **17/17 UI workflows in 1367.054 seconds**, three process recoveries, 50 portable cases and **35/35 export reports**. Both artifacts are independently SHA-256 verified and all eight homeowner screenshots are inspected in `docs/evidence/native-2b8-summary.json`.

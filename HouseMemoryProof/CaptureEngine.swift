@@ -28,7 +28,7 @@ enum CaptureBuffers {
 @MainActor final class CaptureController: NSObject, ObservableObject, ARSessionDelegate {
   let view = ARSCNView(frame: .zero)
   @Published var running = false
-  @Published var message = "Choose a room and stage, then start."
+  @Published var message = "Tap Start when you are ready. Keep the room well lit and move slowly."
   @Published var count = 0
   @Published var tracking = "Not started"
   @Published var supported = ARWorldTrackingConfiguration.isSupported

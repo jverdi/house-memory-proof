@@ -1,0 +1,19 @@
+# Navigation floor support continuation
+
+Prepared after source `2b8a9bb195282e91da8fdd026bb44d81213e972e`, after homeowner integration 223.1 passed and its screenshots were reviewed. This is a pending candidate, not native acceptance evidence.
+
+Runbook §12.2 / P6.2 rejects missing floors as walking routes. Inspection found that a nonempty recorded camera corridor could enable walking even when no classified floor triangles existed. The correction requires supported floor geometry both when selecting Walk and during movement. Planned/documentary geometry cannot supply that support. Explicit Free fly remains available; the navigation notice and homeowner Explore guide explain the requirement.
+
+The version-2 connected navigation diagnostic retains its 284-step room/stair trace and seven existing refusal/isolation cases. A ninth case adds five variants: absent floor, floor points only, unclassified surface, planned floor and documentary floor. Each retains 149 camera positions, checks global/indexed refusal, initial and requested Walk fallback, movement refusal, usable Free fly and restored walking after the floor returns. The independent reader scores the retained positions and rejects missing variants or false success flags.
+
+A separate bounded diagnostic supplies nine downward-looking RGB-D observations for each of two floor fragments, without generator meshes. Production `SurfaceReconstruction.build` produces both surfaces. The actual walking controller must refuse the initially unclassified result, walk eight steps on the classified complete fragment, refuse three attempts across missing input depth, and allow explicit Free fly followed by a return to supported walking. The retained private package binds the exact output triangles and observations by SHA-256. An independent reader scores intermediate body footprints against those triangles and checks that no triangle bridges the missing-depth strip. Only aggregate validation and the public analytic movement trace enter the evidence artifact; source packages remain private to the CI job.
+
+Local command/reader contracts pass **52/52**. A host preflight using the production fusion core produces **105,336** complete-floor vertices and **87,552** gap-floor vertices. The independent geometry reader accepts a constructed expected trace on those outputs. This preflight does **not** execute the native walk controller and is not represented as native validation. Shell syntax and whitespace checks pass.
+
+The 223.1 screenshot review also found unreadable capture labels against the bright preview and an outdated instruction to choose a room again. Capture header and controls now have dark contrast panels; the initial message directs the user to Start. The first-real-capture workflow checks the chosen location and message, with screenshot 40 retained for renewed visual review.
+
+The existing photo-point interface workflow additionally requires Free fly and the floor-requirement notice when opening its unclassified captured wall. It retains screenshot 41 for visual review and then performs the original wall-boundary assertions. The workflow count stays seventeen.
+
+Expected follow-up integration: **172 native checks, 19 reader phases, 52 command contracts, 17 interface workflows, 36 export/validation reports**, three process recoveries and 50 portable cases. Native, startup, UI and whole-job time bounds remain those committed for 223.1. No intermediate TestFlight upload is requested.
+
+This is a two-fragment synthetic reconstruction/navigation check. It does not complete reconstructed whole-house topology, automatic floor classification, registration, sustained rendering, physical accuracy, protected evaluation or owner-device acceptance. The exhausted localization repair budget and existing failed qualification gates remain unchanged.

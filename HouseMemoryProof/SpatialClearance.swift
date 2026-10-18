@@ -70,7 +70,7 @@ struct SpatialClearance {
           let a = m.vertices[Int(m.triangles[i])]
           let b = m.vertices[Int(m.triangles[i + 1])]
           let c = m.vertices[Int(m.triangles[i + 2])]
-          if f.trade == .floor,floors.append(a,b,c) {continue}
+          if f.trade == .floor,f.kind != .planned,f.kind != .documentary,floors.append(a,b,c) {continue}
           items.append(
             Bounds(low: a, high: a).union(Bounds(low: b, high: b)).union(Bounds(low: c, high: c)))
         }
@@ -100,7 +100,8 @@ struct SpatialClearance {
           let a=mesh.vertices[Int(mesh.triangles[primitive*3])]
           let b=mesh.vertices[Int(mesh.triangles[primitive*3+1])]
           let c=mesh.vertices[Int(mesh.triangles[primitive*3+2])]
-          if index.features[tile.feature].trade == .floor,floors.append(a,b,c) {continue}
+          let feature=index.features[tile.feature]
+          if feature.trade == .floor,feature.kind != .planned,feature.kind != .documentary,floors.append(a,b,c) {continue}
           items.append(Bounds(low:a,high:a).union(Bounds(low:b,high:b)).union(Bounds(low:c,high:c)))
         }
       }
@@ -141,11 +142,11 @@ struct SpatialClearance {
   // Follow observed floor triangles without assuming the phone was held at
   // standing eye height. Preserve its actual height above the floor while
   // checking a 1.77 m upright body, a 24 cm step and head clearance throughout.
-  // Point clouds or regions with no classified floor keep the camera-corridor
-  // fallback. A floor hole in an otherwise observed floor is never bridged.
+  // Camera positions and point clouds cannot establish floor support. Both a
+  // completely missing floor and a hole in an observed floor refuse walking.
   func walkingDestination(from a:V3,toward b:V3,eyeHeight savedHeight:Double?=nil)->(position:V3,eyeHeight:Double)? {
     guard complete,a.finite,b.finite else{return nil}
-    guard !floors.isEmpty else{return isWalkClear(from:a,to:b) ? (b,1.6):nil}
+    guard !floors.isEmpty else{return nil}
     func support(at point:V3)->Double? {
       var heights:[Double]=[]
       for x in [-0.20,0,0.20] {for y in [-0.20,0,0.20] {

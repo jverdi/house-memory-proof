@@ -357,7 +357,7 @@ extension UIColor {
     guard !flying,!orbit,!preparingScene,let h=house else{return}
     let current=V3(ar:camera.simdPosition)
     func usable(_ point:V3)->Bool {
-      guard clearance.hasFloorSupport || !cameraCorridor.isEmpty,clearance.walkingDestination(from:point,toward:point) != nil else{return false}
+      guard clearance.hasFloorSupport,clearance.walkingDestination(from:point,toward:point) != nil else{return false}
       return h.isDemo && h.observations.isEmpty ? NavigationGeometry.allowed(point,house:h):NavigationGeometry.observed(point,positions:cameraCorridor)
     }
     guard !usable(current) else{return}
@@ -367,7 +367,7 @@ extension UIColor {
       navigationNotice="Moved to a checked viewpoint for this stage."
     } else {
       flying=true;move = .zero;vertical=0
-      navigationNotice="No checked walking viewpoint is available here. Free fly is enabled; choose a captured room to walk."
+      navigationNotice="No checked walking viewpoint is available here. Free fly is enabled. Walking needs a captured floor and a clear route."
     }
   }
   private func updateCollision(at position:V3) {
@@ -512,7 +512,7 @@ extension UIColor {
       camera.simdPosition = to
       return
     }
-    guard clearance.hasFloorSupport || !cameraCorridor.isEmpty else{return}
+    guard clearance.hasFloorSupport else{return}
     if let adjusted=NavigationGeometry.followedHeight(from:V3(ar:from),to:V3(ar:to),paths:recordedPaths) {to=adjusted.render}
     if let destination=clearance.walkingDestination(from:V3(ar:from),toward:V3(ar:to),eyeHeight:walkEyeHeight) {
       to=destination.position.render

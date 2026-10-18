@@ -1,5 +1,5 @@
 import unittest
-from check_navigation_benchmark import read_report, InvalidNavigation, NAMES
+from check_navigation_benchmark import read_report, InvalidNavigation, NAMES, SUPPORT_VARIANTS
 
 
 def fixture():
@@ -15,7 +15,11 @@ def fixture():
         positions=[dict(x=start+min(index+1,3)*0.2,y=2,z=1.6) for index in range(16)]
         case.update(movedSteps=3, refusedSteps=13, startX=start,positions=positions,finalX=start+0.6, maximumAllowedX=limit)
     cases[5].update(visibleFeatures=4, cameraPositions=20)
-    return dict(version=1, profile='analytic-connected-walk-v1', passed=True, sourceGeometryUnchanged=True,
+    cases[8]['variants'] = [dict(variant=name, passed=True, cameraPositions=149, initialFreeFly=True,
+        returnToWalkRefused=True, globalAndIndexedSupportRefused=True, sourceGeometryUnchanged=True,
+        restoredWalkEnabled=True, start=dict(x=-7,y=2,z=1.6), afterRefusedWalk=dict(x=-7,y=2,z=1.6),
+        afterFreeFly=dict(x=-6.8,y=2,z=1.6), afterRestoredWalk=dict(x=-6.8,y=2,z=1.6)) for name in SUPPORT_VARIANTS]
+    return dict(version=2, profile='analytic-connected-walk-v2', passed=True, sourceGeometryUnchanged=True,
                 rooms=9, levels=2, routeSpaces=7, doorways=4, stairTreads=16, horizontalRouteLengthMetres=56.8,
                 cases=cases, trace=trace, physicalQualification=False, reconstructionQualified=False, protectedBenchmark=False)
 
@@ -24,7 +28,8 @@ class NavigationTraceReader(unittest.TestCase):
     def test_complete_trace_has_no_physical_or_reconstruction_claim(self):
         report=read_report(fixture())
         self.assertEqual(report['tracedSteps'],284)
-        self.assertEqual(report['cases'],8)
+        self.assertEqual(report['cases'],9)
+        self.assertEqual(report['unsupportedFloorVariants'],5)
         self.assertFalse(report['physicalQualification'])
         self.assertFalse(report['reconstructionQualified'])
 
@@ -48,6 +53,19 @@ class NavigationTraceReader(unittest.TestCase):
         for field,value in [('physicalQualification',True),('reconstructionQualified',True),('sourceGeometryUnchanged',False),('passed',False)]:
             report=fixture();report[field]=value
             with self.subTest(field=field),self.assertRaises(InvalidNavigation):read_report(report)
+
+    def test_missing_floor_walk_and_broken_free_fly_or_restoration_refused(self):
+        for index in range(5):
+            for field in ('afterRefusedWalk', 'afterFreeFly', 'afterRestoredWalk'):
+                report=fixture();report['cases'][8]['variants'][index][field]['x']+=0.2
+                with self.subTest(index=index,field=field),self.assertRaises(InvalidNavigation):read_report(report)
+            for field in ('initialFreeFly', 'returnToWalkRefused', 'globalAndIndexedSupportRefused', 'sourceGeometryUnchanged', 'restoredWalkEnabled'):
+                report=fixture();report['cases'][8]['variants'][index][field]=False
+                with self.subTest(index=index,field=field),self.assertRaises(InvalidNavigation):read_report(report)
+        report=fixture();report['cases'][8]['variants'].pop()
+        with self.assertRaises(InvalidNavigation):read_report(report)
+        report=fixture();report['cases'][8]['variants'][0]['cameraPositions']=0
+        with self.assertRaises(InvalidNavigation):read_report(report)
 
 
 if __name__ == '__main__':

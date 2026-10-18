@@ -19,7 +19,9 @@ NAMES = [
     'unregistered repeated room remains a separate frame',
     'stacked floors without observed connections remain unavailable',
     'hidden layers preserve all walking obstacles',
+    'camera corridors without observed floor support cannot enable walking',
 ]
+SUPPORT_VARIANTS = ['missing floor', 'floor points only', 'unclassified surface', 'planned floor', 'documentary floor']
 
 
 def require(value, message):
@@ -45,14 +47,14 @@ def support_height(front):
 
 
 def read_report(report):
-    require(report.get('version') == 1 and report.get('profile') == 'analytic-connected-walk-v1', 'Unknown fixture profile')
+    require(report.get('version') == 2 and report.get('profile') == 'analytic-connected-walk-v2', 'Unknown fixture profile')
     require(report.get('passed') is True and report.get('sourceGeometryUnchanged') is True, 'Native movement or source preservation failed')
     for key in ('physicalQualification', 'reconstructionQualified', 'protectedBenchmark'):
         require(report.get(key) is False, 'Analytic evidence cannot grant qualification')
     for key, expected in dict(rooms=9, levels=2, routeSpaces=7, doorways=4, stairTreads=16, horizontalRouteLengthMetres=56.8).items():
         require(report.get(key) == expected, 'Fixture inventory changed: '+key)
     cases = report.get('cases', [])
-    require(len(cases) == 8 and [c.get('name') for c in cases] == NAMES, 'Missing or reordered topology cases')
+    require(len(cases) == 9 and [c.get('name') for c in cases] == NAMES, 'Missing or reordered topology cases')
     require(all(c.get('passed') is True for c in cases), 'A required topology case failed')
     trace = report.get('trace', [])
     require(len(trace) == 284, 'Incomplete forward/backward route')
@@ -90,8 +92,20 @@ def read_report(report):
         require(moved == case['movedSteps'] and abs(previous-case['finalX']) < 0.00001, 'Refusal counters differ from trace')
     require(type(cases[5].get('visibleFeatures')) is int and cases[5]['visibleFeatures'] > 0 and
             type(cases[5].get('cameraPositions')) is int and cases[5]['cameraPositions'] > 0, 'Separate frame was not exercised')
+    variants = cases[8].get('variants', [])
+    require([v.get('variant') for v in variants] == SUPPORT_VARIANTS, 'Missing unsupported-floor variants')
+    for variant in variants:
+        require(variant.get('cameraPositions') == 149, 'Recorded camera corridor was not retained')
+        for key in ('passed', 'initialFreeFly', 'returnToWalkRefused', 'globalAndIndexedSupportRefused',
+                    'sourceGeometryUnchanged', 'restoredWalkEnabled'):
+            require(variant.get(key) is True, 'Floor support or explicit Free fly failed: '+key)
+        for key, expected_x in [('start', -7), ('afterRefusedWalk', -7), ('afterFreeFly', -6.8), ('afterRestoredWalk', -6.8)]:
+            position = variant.get(key, {})
+            require(all(number(position.get(axis)) for axis in ('x', 'y', 'z')), 'Invalid unsupported-floor trace')
+            require(max(abs(position['x']-expected_x), abs(position['y']-2), abs(position['z']-1.6)) < 0.0001,
+                    'Unsupported movement or working fallback differs: '+key)
     return dict(passed=True, reader='Independent Python connected-walk trace scorer', profile=report['profile'],
-                cases=len(cases), tracedSteps=len(trace), horizontalRouteMetres=56.8, maximumCoordinateErrorMetres=worst,
+                cases=len(cases), unsupportedFloorVariants=len(variants), tracedSteps=len(trace), horizontalRouteMetres=56.8, maximumCoordinateErrorMetres=worst,
                 physicalQualification=False, reconstructionQualified=False, protectedBenchmark=False,
                 limitations='Analytic native-controller topology only; not reconstructed-house, field or sustained rendering qualification.')
 

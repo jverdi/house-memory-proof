@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T21:40:21.693215Z",
+  "updatedUTC": "2026-10-18T21:41:26.551628Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
@@ -28,7 +28,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "whole-house product qualification",
-      "remaining": "Source 223.1 passes 171 native checks, seventeen interface flows and all 35 export reports, including connected analytic navigation, homeowner guidance and sample-to-real-house capture. Reconstructed-house navigation/streaming, mixed-stage/closed-loop coverage, broad tour/route coverage and device workloads remain open."
+      "remaining": "223.1 passes 171 native checks and 17 interface workflows, including homeowner guidance. The floor-support repair and bounded production reconstructed-fragment check are prepared with 172 native checks expected. Reconstructed whole-house topology/streaming, mixed-stage/closed-loop coverage, broad tour coverage and device workloads remain open."
     },
     {
       "area": "finished localization",
@@ -53,6 +53,10 @@
     {
       "area": "homeowner onboarding and plain-language help",
       "remaining": "R19 implementation passes all 17 simulator interface flows at 223.1. Visual review requires capture-header contrast and opening-copy repairs. Actual owner-device VoiceOver, large-text/offline use and construction-task comprehension remain unverified."
+    },
+    {
+      "area": "viewer comfort controls",
+      "remaining": "Runbook 12.1 still requires adjustable movement acceleration, turning speed, bounded 45\u201390 degree field of view and adjustable eye height with a 1.7 metre default. Current movement/turn rates and camera field of view are fixed; walking preserves captured height. Implement and qualify these controls without weakening floor support or recorded-route constraints."
     }
   ],
   "externalAcceptanceOpen": [
@@ -60,46 +64,23 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Repair the capture header contrast and opening message found during screenshot review, then validate. Continue the remaining whole-house software qualification, preserving the failed localization gates and exhausted five-attempt detector budget. Obtain actual device/provider and independent field evidence under the prepared protocol. TestFlight 216.1 remains the requested available snapshot; intermediate uploads and accepted-release renewal remain disabled.",
+  "nextAction": "Recheck screenshot 40 for readable capture location/tracking and corrected opening instructions. Validate the prepared floor-support and reconstructed-fragment candidate, retaining the exact source, private-package hash and independent reader results. Continue the missing viewer comfort controls and broader reconstructed-house software work. Preserve the exhausted localization repair budget and all failed device/provider/field gates. TestFlight 216.1 remains available; no intermediate upload is requested.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "complete_integrated_pass",
-    "nativeExpected": 171,
+    "status": "prepared",
+    "nativeExpected": 172,
     "interfaceExpected": 17,
-    "nativeReaderPhasesExpected": 18,
-    "validationReportsExpected": 35,
-    "integrationComplete": true,
-    "precedingSource": "9cb41a0cb12d5d49c7dd9cc47a6a6b2670c63b67",
+    "nativeReaderPhasesExpected": 19,
+    "commandContractsExpected": 52,
+    "validationReportsExpected": 36,
+    "integrationComplete": false,
+    "precedingSource": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
     "uiRunnerBudgetSeconds": 1800,
     "uiStepTimeoutMinutes": 32,
     "nativeAppBudgetSeconds": 300,
     "wholeJobTimeoutMinutes": 60,
-    "source": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
-    "run": 39165628733,
-    "build": "223.1",
-    "evidencePending": false,
-    "debugCompilationPassed": true,
-    "unsignedReleaseCompilationPassed": true,
-    "nativePassed": 171,
-    "nativeFailed": 0,
-    "nativeSeconds": 199.17109170833328,
-    "nativeReaderPhasesPassed": 18,
-    "commandContractsPassed": 48,
-    "nativeArtifact": {
-      "id": 12150428025,
-      "sha256": "a9198527a498eb9d60b190b7f121fd1fb1a4d5318eb10d451654116e75ed62fd",
-      "sha256IndependentlyVerified": true
-    },
-    "evidence": "docs/evidence/native-2b8-summary.json",
-    "interfacePassed": 17,
-    "interfaceFailed": 0,
-    "interfaceSeconds": 1367.054,
-    "validationReportsPassed": 35,
-    "fullArtifact": {
-      "id": 12151955729,
-      "sha256": "eec4587078a326c856280905e396ee8a9d9240fe665b768be8eab27d3b56b12c",
-      "sha256IndependentlyVerified": true
-    }
+    "evidencePending": true,
+    "appleUploadRequested": false
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1101,7 +1082,7 @@
   },
   "homeownerGuidance": {
     "requirement": "R19 / architecture-runbook \u00a71.4",
-    "status": "simulator_pass_visual_followup_pending",
+    "status": "capture_visual_repair_pending_validation",
     "requestedDate": "2026-10-18",
     "onboardingSteps": 5,
     "startingGoals": 3,
@@ -1181,7 +1162,9 @@
       "Capture header contrast on bright preview",
       "Capture initial message after location selection"
     ],
-    "evidence": "docs/evidence/native-2b8-summary.json"
+    "evidence": "docs/evidence/native-2b8-summary.json",
+    "captureContrastRepairPrepared": true,
+    "captureOpeningCopyRepairPrepared": true
   },
   "lastCompletedValidation": {
     "status": "complete_integrated_pass",
@@ -1221,5 +1204,26 @@
       "sha256": "eec4587078a326c856280905e396ee8a9d9240fe665b768be8eab27d3b56b12c",
       "sha256IndependentlyVerified": true
     }
+  },
+  "navigationFloorSupportContinuation": {
+    "status": "prepared_native_validation_pending",
+    "baseSource": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
+    "requirement": "Runbook 12.2 / P6.2",
+    "connectedProfile": "analytic-connected-walk-v2",
+    "connectedCases": 9,
+    "unsupportedFloorVariants": 5,
+    "reconstructedProfile": "analytic-reconstructed-floor-v1",
+    "reconstructedFragments": 2,
+    "generatorMeshesSupplied": 0,
+    "localCommandContractsPassed": 52,
+    "nativeExpected": 172,
+    "nativeReaderPhasesExpected": 19,
+    "interfaceExpected": 17,
+    "validationReportsExpected": 36,
+    "nativeValidationPending": true,
+    "reconstructedWholeHouseQualified": false,
+    "automaticFloorClassificationQualified": false,
+    "physicalQualification": false,
+    "evidence": "docs/evidence/navigation-floor-candidate.md"
   }
 }
