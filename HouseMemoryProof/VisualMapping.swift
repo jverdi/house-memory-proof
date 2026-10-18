@@ -29,7 +29,7 @@ enum VisualMapping {
   struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
   struct Pose {var transform:Rigid;var inliers:Int;var rms:Double;var sources:[UUID]}
-  struct Signature:Codable {var algorithm="visual-v16-bounded-capture-depth";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
+  struct Signature:Codable {var algorithm="visual-v17-tracking-and-depth-time";var observations:[Observation];var segment:Segment;var references:[ReferenceBoard]}
   static func fingerprint(house:House,segment:Segment)throws->String {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
     let data=try encoder.encode(Signature(observations:house.observations.filter{$0.segmentID==segment.id},segment:segment,references:house.references))
@@ -73,7 +73,7 @@ enum VisualMapping {
     return (0..<count).map{ordered[$0*(ordered.count-1)/(count-1)]}
   }
   static func build(house:House,segment:Segment,repo:any EvidenceAssetReader,maximumViews:Int=12)throws->VisualMap {
-    let all=house.observations.filter{$0.segmentID==segment.id && $0.depth != nil && $0.confidence != nil && !$0.documentary}
+    let all=house.observations.filter{$0.segmentID==segment.id && $0.metricDepthEligible}
     let selected=PoseRefinement.selected(all,segment:segment,house:house).0.filter{$0.sharpness>=0.02}
     guard selected.count>=2 else{throw HouseError.message("Capture at least two overlapping, sharp views with confident depth of this stage first.")}
     var map=VisualMap(segmentID:segment.id,roomID:segment.roomID,stageID:segment.stageID,frameID:segment.registration==nil ? segment.id:nil,fingerprint:try fingerprint(house:house,segment:segment),points:[],descriptors:Data(),views:[])

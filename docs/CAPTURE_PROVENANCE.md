@@ -63,3 +63,28 @@ API references checked October 18, 2026:
 - [ARCamera image resolution](https://developer.apple.com/documentation/arkit/arcamera/imageresolution)
 - [ARDepthData](https://developer.apple.com/documentation/arkit/ardepthdata)
 - [ARCamera exposure duration](https://developer.apple.com/documentation/arkit/arcamera/exposureduration)
+
+## Known clock mismatch and limited tracking
+
+The v17 candidate refuses a depth sample whose explicitly recorded acquisition
+time differs from its photograph's time. No motion/time correction is available
+to associate that depth with the camera pose. The image, depth, confidence and
+receipt remain immutable originals. RGB-only processing may still use a good
+pose, but depth fusion, visual depth maps, surface generation, texture visibility
+and coverage receive no votes from the incompatible depth.
+
+Poses explicitly recorded as limited or unavailable tracking are also excluded
+from spatial processing and coded-map source estimation. The evidence list shows
+a revisit explanation. Older records and ARKit sceneDepth receipts with no
+independent depth timestamp retain that explicit unknown state; their timing is
+not newly certified by this change. No real camera timing claim is made.
+
+The derived-evidence fingerprint changes to v17, invalidating earlier camera
+solutions, maps and dependent products. Coded handoff fingerprints also change
+to v3 so an older registration cannot outlive the new tracking admission rules.
+Live legacy-reference and mesh-anchor collection requires normal tracking. A new native scenario covers known
+33 ms offset, limited tracking and unavailable tracking across four processing
+paths, coverage and original-asset integrity, with a synchronized positive
+control. It is pending exact-source CI validation. The independent sensor audit
+adds four analytic non-nominal profiles; their original spatial failures remain
+reported, and the clock-offset profile specifically requires abstention.

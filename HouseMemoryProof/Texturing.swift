@@ -12,7 +12,7 @@ enum TextureBuilder {
 
   static func visible(_ uv: UV, z: Double, camera: Camera) -> Bool {
     let o = camera.observation
-    guard let depth = camera.depth,let confidence=camera.confidence,o.depthWidth>0,o.depthHeight>0,o.depthWidth<=1_000_000/o.depthHeight,
+    guard o.spatialPoseEligible,o.depthTimingCompatible,let depth = camera.depth,let confidence=camera.confidence,o.depthWidth>0,o.depthHeight>0,o.depthWidth<=1_000_000/o.depthHeight,
       depth.count==o.depthWidth*o.depthHeight*4,confidence.count==o.depthWidth*o.depthHeight,
       uv.u.isFinite,uv.v.isFinite,(0...1).contains(uv.u),(0...1).contains(uv.v),z.isFinite else { return false }
     let x = min(o.depthWidth - 1, Int(uv.u * Double(o.depthWidth)))
@@ -24,7 +24,7 @@ enum TextureBuilder {
   }
   static func build(house: House, segment: Segment, repo: Repository) throws -> [Feature] {
     let raw = house.observations.filter {
-      $0.segmentID == segment.id && $0.depth != nil && $0.confidence != nil && !$0.documentary
+      $0.segmentID == segment.id && $0.metricDepthEligible
     }.sorted { $0.sharpness > $1.sharpness }
     let current=DerivedEvidence.currentIDs(house)
     let eligible=house.features.filter{$0.segmentID==segment.id && current.contains($0.id) && !$0.mesh.triangles.isEmpty}

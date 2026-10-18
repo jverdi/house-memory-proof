@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        profile: [clock-interruptions]
+        profile: [clock-interruptions, dim-blurred, depth-edges, calibration-drift]
     runs-on: macos-26
     timeout-minutes: 45
     steps:

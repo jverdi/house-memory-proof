@@ -1,6 +1,14 @@
 # Implementation ledger
 
-## Snapshot ancestry, evaluator metrics and latest integration
+## Clock and tracking admission candidate; integration checkpoint 192.1
+
+Source **0a4d59c875**, build **192.1**, passed **126 native checks**, **five UI flows**, **three process-kill recoveries**, **50 portable cases** and **12 independent reader reports**. Both artifacts were downloaded and SHA-256 verified. Search p95 was **71.228 ms**. The new concurrent snapshot ancestry and independent branch-restore regression passed. Evidence: `docs/evidence/native-0a4d-summary.json`.
+
+The v17 candidate excludes explicitly limited/unavailable camera poses and explicitly mismatched depth/photo timestamps from spatial processing while retaining all original files. RGB-only processing can still use healthy poses; joint refinement also excludes the mismatched depth constraint. Live reference/mesh collection requires normal tracking. Versioned fingerprints invalidate prior maps, derived geometry and coded registrations. A synchronized positive control and three faults cover point/surface/map/texture processing, joint depth constraints and coverage; **127 native checks** are expected, not yet passed. The exact sensor baseline built all four maps in both stages despite recorded 33 ms timing mismatch; its required refusal failed and is retained in `docs/evidence/clock-admission-before-summary.json`. Four fault profiles will evaluate the repaired production estimator.
+
+The three-layout 768-pixel comparison completed: all six stage cases pass, **172/176** nominal queries accepted and **0/352** wrong-room/floor accepts. Finished p95 is **2.688 / 2.315 / 3.126 mm**. This additional sampling condition does not replace the original 384-pixel failures or establish a qualified operating envelope. The original 384-pixel replay at 0a4d repeats all three finished accuracy failures; new rotation/visible-surface diagnostics are retained in `docs/evidence/whole-house-0a4d-summary.json`. The protected full-house runner remains unlaunched.
+
+## Historical snapshot ancestry checkpoint
 
 The complete simulator integration at **14eabc7281**, build **191.1**, passed **125 native checks**, **five UI flows**, **three process-kill recoveries**, **50 portable cases** and **12 independent readers**. Both artifacts were downloaded and SHA-256 verified. Search p95 was **77.595 ms**; its 300 ms limit is unchanged. Evidence: `docs/evidence/native-14ea-summary.json`.
 

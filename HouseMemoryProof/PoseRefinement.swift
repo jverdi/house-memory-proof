@@ -21,7 +21,7 @@ enum PoseRefinement {
   static func refine(
     _ o: Observation, segment: Segment, house: House, maximumCorrection: Double = 0.25
   ) -> Result? {
-    guard let camera = matrix(o.camera), let seen = o.referenceObservations else { return nil }
+    guard o.spatialPoseEligible,let camera = matrix(o.camera), let seen = o.referenceObservations else { return nil }
     let valid = Set(house.references.filter { $0.valid }.map { $0.id })
     var candidates: [(UUID, simd_double4x4)] = []
     for observation in seen where valid.contains(observation.boardID) {
@@ -80,12 +80,13 @@ enum PoseRefinement {
     return Result(observation: observation, boards: candidates.map { $0.0 }, maxDisagreement: worst)
   }
   static func selectedForHouse(_ house:House)->[Observation] {
-    let grouped=Dictionary(grouping:house.observations.filter{!$0.documentary},by:{$0.segmentID})
+    let grouped=Dictionary(grouping:house.observations.filter{$0.spatialPoseEligible},by:{$0.segmentID})
     return house.segments.flatMap{selected(grouped[$0.id] ?? [],segment:$0,house:house).0}
   }
-  static func selected(_ observations: [Observation], segment: Segment, house: House) -> (
+  static func selected(_ input: [Observation], segment: Segment, house: House) -> (
     [Observation], Bool
   ) {
+    let observations=input.filter{$0.spatialPoseEligible}
     if let optimized = PoseGraph.selected(observations, segment: segment, house: house) {
       return (optimized, true)
     }

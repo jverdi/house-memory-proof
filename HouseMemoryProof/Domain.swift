@@ -98,6 +98,25 @@ struct Observation:Codable,Identifiable,Equatable {
     var tracking:String;var light:Double;var sharpness:Double;var note="";var documentary=false;var imageOrientation:Int?=nil;var referenceObservations:[ReferencePose]?=nil;var codedDetections:[CodedDetection]?=nil
     var captureMetadata:CaptureMetadata?=nil
     var resolvedKind:ObservationKind {documentary ? .imageUnregistered:depth==nil ? .rgbPosed:.rgbdPosed}
+    var spatialPoseEligible:Bool {
+        let state=tracking.lowercased()
+        return !documentary && !state.contains("limited") && !state.contains("unavailable") && !state.contains("notavailable")
+    }
+    var depthTimingCompatible:Bool {
+        // A known different acquisition time needs a calibrated motion/time
+        // adapter, which this pipeline does not have. Retain the bytes but do
+        // not attach them to this RGB camera pose. Nil remains explicitly
+        // unknown for legacy records and ARKit's same-frame sceneDepth API.
+        guard let metadata=captureMetadata,let time=metadata.depthTimestamp else{return true}
+        return time.isFinite && time==timestamp && metadata.frameTimestamp==timestamp
+    }
+    var metricDepthEligible:Bool {spatialPoseEligible && depth != nil && confidence != nil && depthTimingCompatible}
+    var spatialProcessingIssue:String? {
+        if documentary {return nil}
+        if !spatialPoseEligible {return "Tracking was limited or unavailable. Original photo retained; revisit this area for spatial processing."}
+        if !depthTimingCompatible {return "Depth and photo timestamps differ. Original evidence retained; this depth is excluded from spatial processing."}
+        return nil
+    }
     var assets:Set<String> {Set([image,depth,confidence,captureMetadata?.exifAsset].compactMap{$0})}
     // Native camera transform is row-major, ARKit right/up/back. No pretend calibration.
 }

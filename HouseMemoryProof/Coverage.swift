@@ -23,7 +23,7 @@ enum CoverageAnalyzer {
     // Captured meshes and these raw camera poses share the original session
     // frame. Optimized camera-only corrections must not move the mesh frame.
     let observations=VisualMapping.keyframes(house.observations.filter {
-      $0.segmentID == segment.id && !$0.documentary
+      $0.segmentID == segment.id && $0.spatialPoseEligible
     },limit:120)
     var report = CoverageReport(
       segmentID: segment.id, revision: house.revision, sampledPatches: 0, supportedPatches: 0,
@@ -57,7 +57,7 @@ enum CoverageAnalyzer {
       try Task.checkCancellation()
       if patches.allSatisfy({$0.supported}) {break}
       let w=o.depthWidth,h=o.depthHeight
-      let dimensionsValid=w>0 && h>0 && w<=1_000_000/h
+      let dimensionsValid=o.metricDepthEligible && w>0 && h>0 && w<=1_000_000/h
       let count=dimensionsValid ? w*h:0
       let depth:Data?,confidence:Data?
       if dimensionsValid {

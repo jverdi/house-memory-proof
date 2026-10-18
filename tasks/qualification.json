@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T02:45:36.059553+00:00",
+  "updatedUTC": "2026-10-18T03:07:52.175809+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "14eabc7281e4c712350e8b367ca44252bd9bb612",
+  "currentImplementationCommit": "0a4d59c875e1df41b90dae12675b17a20f284a6f",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,19 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "14eabc7281e4c712350e8b367ca44252bd9bb612",
-    "passed": 125,
+    "source": "0a4d59c875e1df41b90dae12675b17a20f284a6f",
+    "passed": 126,
     "failed": 0,
-    "artifact": 12121324929,
-    "sha256": "9c9445cfcaf80d416d30af7574b0d1d5c877bed8015a4cad832fbc7a612dc707",
-    "searchP95Milliseconds": 77.5952916666256,
+    "artifact": 12122567897,
+    "sha256": "4a36d232b8f164b5524c683de5065fc6f5753c7d956a472f9176dbbc783bdb02",
+    "searchP95Milliseconds": 71.22812500000464,
     "distinctPhotoNotes": 50000,
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "14eabc7281 passed 125 native, five UI, three process-kill, 50 portable and twelve reader checks. New snapshot branch ancestry and evaluator metrics require exact-source validation."
+      "remaining": "0a4d59c875 passed 126 native, five UI, three process-kill, 50 portable and twelve reader checks. The v17 clock/tracking admission candidate requires exact-source validation."
     },
     {
       "area": "finished localization",
@@ -55,19 +55,19 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate snapshot ancestry/restore branches and new pose/overlay metrics. Finish the three-house 768-pixel comparison. AKAZE coordinate refinement failed both 384-pixel development cases and was not adopted; those failures remain open.",
-  "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts.",
+  "nextAction": "Validate v17 clock/tracking refusal across native pipelines and four declared sensor profiles; keep original 384-pixel localization failures open. Complete remaining command interfaces and house-scale acceptance work.",
+  "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "run": null,
-    "status": "pending snapshot branch-history candidate",
-    "nativeExpected": 126,
+    "status": "pending v17 clock and tracking admission",
+    "nativeExpected": 127,
     "nativePassed": null,
     "nativeFailed": null,
     "interfaceExpected": 5,
-    "physicalQualification": false,
     "interfacePassed": null,
     "processKillPassed": null,
-    "independentReadersPassed": null
+    "independentReadersPassed": null,
+    "physicalQualification": false
   },
   "previousIntegratedAttempt": {
     "source": "6045475e6192601687279df064d349a5686a0385",
@@ -102,21 +102,21 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "14eabc7281e4c712350e8b367ca44252bd9bb612",
-    "run": 39089565505,
-    "nativePassed": 125,
+    "source": "0a4d59c875e1df41b90dae12675b17a20f284a6f",
+    "run": 39091313973,
+    "nativePassed": 126,
     "interfacePassed": 5,
     "processKillPassed": 3,
     "independentReadersPassed": true,
     "fullArtifact": {
-      "id": 12122731979,
-      "sha256": "02c5dce69c188b2bf4de0504ff5ebce7328dc8f1f85966b68d5abeb0a3e278da",
+      "id": 12122958990,
+      "sha256": "e8732fd7e9365513f83333275f5c19dfc60d155060fb2593413454a110090dc4",
       "sha256IndependentlyVerified": true
     }
   },
   "wholeHouseDevelopment": {
-    "source": "14eabc7281e4c712350e8b367ca44252bd9bb612",
-    "run": 39089565494,
+    "source": "0a4d59c875e1df41b90dae12675b17a20f284a6f",
+    "run": 39091313974,
     "houses": 3,
     "rooms": [
       4,
@@ -148,5 +148,26 @@
     "adopted": false,
     "finished384Passed": 0,
     "finished384Cases": 2
+  },
+  "samplingComparison": {
+    "source": "1ed180fd27d67818aa902671605168cb2855636b",
+    "run": 39090577284,
+    "width": 768,
+    "stageCases": 6,
+    "stageCasesPassed": 6,
+    "nominalAccepted": 172,
+    "nominalAttempts": 176,
+    "criticalFalseAccepts": 0,
+    "criticalAttempts": 352,
+    "original384FailuresRetained": true,
+    "qualifiedEnvelope": false
+  },
+  "clockAdmissionBaseline": {
+    "source": "bf0c0b9be853101d3366dd63669352d35e360a9b",
+    "run": 39091821814,
+    "declaredOffsetSeconds": 0.033,
+    "requiredRefusalPassed": false,
+    "stages": 2,
+    "mapsBuiltPerStage": 4
   }
 }

@@ -4,7 +4,7 @@ enum SurfaceReconstruction {
   static func build(
     house: House, segment: Segment, repo: Repository, progress: @escaping @MainActor (Double) -> Void
   ) async throws -> Feature {
-    let raw = house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && $0.confidence != nil && !$0.documentary }
+    let raw = house.observations.filter { $0.segmentID == segment.id && $0.metricDepthEligible }
     let (observations, referenceSupported) = PoseRefinement.selected(
       raw, segment: segment, house: house)
     let fingerprint="surface-v3-explicit-confidence|" + (try VisualMapping.fingerprint(house:house,segment:segment))

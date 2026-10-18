@@ -1,0 +1,135 @@
+{
+  "cases": [
+    {
+      "stage": "rough",
+      "complete": true,
+      "passed": true,
+      "rooms": 4,
+      "levels": 1,
+      "width": 768,
+      "inputArchiveCheckPassed": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "positiveQueries": 16,
+      "positiveAccepted": 16,
+      "negativeQueries": 32,
+      "falseAccepts": 0,
+      "expectedMapCount": 4,
+      "mapCount": 4,
+      "mapViews": 28,
+      "optimizedCameraCount": 28,
+      "p95Metres": 0.0014248005482308307,
+      "worstAcceptedPositionErrorMetres": 0.0014248005482308307,
+      "maximumOptimizedCameraPositionErrorMetres": 0.001392382312829222,
+      "rotationErrorDegrees": {
+        "count": 16,
+        "p50": 0.019905336311996414,
+        "p95": 0.030920838211752757,
+        "maximum": 0.030920838211752757
+      },
+      "visibleSurfaceOverlay": {
+        "scoredAcceptedQueries": 16,
+        "samples": 768,
+        "behindCamera": 0,
+        "worldMetres": {
+          "count": 768,
+          "p50": 0.0003746363668308198,
+          "p95": 0.0007253622458365446,
+          "maximum": 0.000919772914492896
+        },
+        "reprojectionPixels": {
+          "count": 768,
+          "p50": 0.05493745641982477,
+          "p95": 0.1052775142483505,
+          "maximum": 0.14689768283047233
+        },
+        "diagnosticOnly": true,
+        "alignmentToTruth": false
+      }
+    },
+    {
+      "stage": "finished",
+      "complete": true,
+      "passed": true,
+      "rooms": 4,
+      "levels": 1,
+      "width": 768,
+      "inputArchiveCheckPassed": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "positiveQueries": 16,
+      "positiveAccepted": 16,
+      "negativeQueries": 32,
+      "falseAccepts": 0,
+      "expectedMapCount": 4,
+      "mapCount": 4,
+      "mapViews": 28,
+      "optimizedCameraCount": 28,
+      "p95Metres": 0.0024057969508724355,
+      "worstAcceptedPositionErrorMetres": 0.0024057969508724355,
+      "maximumOptimizedCameraPositionErrorMetres": 0.00224742683258368,
+      "rotationErrorDegrees": {
+        "count": 16,
+        "p50": 0.020569871455417214,
+        "p95": 0.05049897108203119,
+        "maximum": 0.05049897108203119
+      },
+      "visibleSurfaceOverlay": {
+        "scoredAcceptedQueries": 16,
+        "samples": 768,
+        "behindCamera": 0,
+        "worldMetres": {
+          "count": 768,
+          "p50": 0.0004744348421705107,
+          "p95": 0.0010837195243303293,
+          "maximum": 0.0016707098425824123
+        },
+        "reprojectionPixels": {
+          "count": 768,
+          "p50": 0.06356249036776465,
+          "p95": 0.14669847764611493,
+          "maximum": 0.24387145248879424
+        },
+        "diagnosticOnly": true,
+        "alignmentToTruth": false
+      }
+    }
+  ],
+  "complete": true,
+  "passed": true,
+  "rawEvidencePublished": false,
+  "physicalQualification": false,
+  "source": "bf0c0b9be853101d3366dd63669352d35e360a9b",
+  "candidateSHA256": "fefcd25a7fc02af16c5c4280cf604be91b3a8b44d0d28e03b7102319b60a5402",
+  "profile": "clock-interruptions",
+  "behaviorCases": [
+    {
+      "stage": "rough",
+      "complete": true,
+      "behaviorPassed": false,
+      "originalSpatialGatePassed": true,
+      "expectedBehavior": "Refuse depth maps with known asynchronous capture times"
+    },
+    {
+      "stage": "finished",
+      "complete": true,
+      "behaviorPassed": false,
+      "originalSpatialGatePassed": true,
+      "expectedBehavior": "Refuse depth maps with known asynchronous capture times"
+    }
+  ],
+  "auditComplete": true,
+  "auditPassed": false,
+  "limitations": [
+    "Declared non-nominal analytic fault conditions, not measured iPhone sensors",
+    "Clock mismatch is an intentional refusal test; no nominal gate is changed",
+    "Four-room partial capture only; no protected qualification or physical precision claim"
+  ],
+  "run": 39091821814,
+  "artifact": {
+    "id": 12122729443,
+    "sha256": "b5e7cb48d6fc970696fa45b064e7a81a956f27f31f6d357af43f3b504e5a3dd3",
+    "sha256IndependentlyVerified": true
+  },
+  "interpretation": "Both observed stages built four maps despite explicitly asynchronous depth receipts. The original geometric gate passed, but the required clock-admission refusal failed. The current generator changes timing receipts without rendering an independently shifted depth exposure, so these small geometry errors do not establish tolerance of physical timing errors."
+}

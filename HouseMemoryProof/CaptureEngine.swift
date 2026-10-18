@@ -575,7 +575,7 @@ enum CaptureBuffers {
     for a in anchors { meshes.removeValue(forKey: a.identifier) }
   }
   private func references(_ anchors: [ARAnchor]) {
-    guard running else { return }
+    guard running,let frame=view.session.currentFrame,case .normal=frame.camera.trackingState else { return }
     for item in anchors {
       guard let anchor = item as? ARImageAnchor, anchor.isTracked,
         let name = anchor.referenceImage.name, let id = UUID(uuidString: name),
@@ -589,7 +589,7 @@ enum CaptureBuffers {
         currentReferencePoses[id] = ReferencePose(boardID: id, matrix: values)
       }
     }
-    if reveal, let s = segment, let h = model?.house, let frame = view.session.currentFrame {
+    if reveal, let s = segment, let h = model?.house {
       let recent = currentReferencePoses.values.filter {
         Date().timeIntervalSince($0.observed) < 1.5
       }
@@ -600,7 +600,7 @@ enum CaptureBuffers {
         let input = Observation(
           roomID: s.roomID, stageID: s.stageID, segmentID: s.id, timestamp: frame.timestamp,
           image: "alignment", width: 1, height: 1, camera: camera,
-          intrinsics: [1, 0, 0, 0, 1, 0, 0, 0, 1], tracking: "live", light: 0, sharpness: 0,
+          intrinsics: [1, 0, 0, 0, 1, 0, 0, 0, 1], tracking: String(describing:frame.camera.trackingState), light: 0, sharpness: 0,
           referenceObservations: Array(recent))
         if let result = PoseRefinement.refine(
           input, segment: s, house: h, maximumCorrection: .infinity),
@@ -623,7 +623,7 @@ enum CaptureBuffers {
     }
   }
   private func collect(_ anchors: [ARAnchor]) {
-    guard running, !reveal, let segment else { return }
+    guard running, !reveal, let segment,let frame=view.session.currentFrame,case .normal=frame.camera.trackingState else { return }
     for anchor in anchors {
       guard let a = anchor as? ARMeshAnchor, a.geometry.vertices.count < 30000 else { continue }
       let g = a.geometry

@@ -776,6 +776,7 @@ struct EvidencePage: View {
                   Text(o.documentary ? "Documentary detail" : "Posed capture · uncalibrated").font(
                     .caption2
                   ).foregroundStyle(.secondary)
+                  if let issue=o.spatialProcessingIssue {Text(issue).font(.caption2).foregroundStyle(.orange)}
                 }
               }
             }

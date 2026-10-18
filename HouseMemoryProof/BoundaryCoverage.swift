@@ -18,7 +18,7 @@ enum BoundaryCoverage {
         guard let a=source.registration.flatMap({PoseRefinement.matrix($0.values)}),let b=segment.registration.flatMap({PoseRefinement.matrix($0.values)}) else{continue}
         conversion=simd_inverse(adapter)*simd_inverse(a)*b*adapter
       }
-      let raw=house.observations.filter{$0.segmentID==segment.id && !$0.documentary && $0.depth != nil}
+      let raw=house.observations.filter{$0.segmentID==segment.id && $0.metricDepthEligible}
       observations += PoseRefinement.selected(raw,segment:segment,house:house).0.map{o in var changed=o;changed.camera=PoseRefinement.array(conversion*PoseRefinement.matrix(o.camera)!);return changed}
     }
     let selected=VisualMapping.keyframes(observations,limit:120)

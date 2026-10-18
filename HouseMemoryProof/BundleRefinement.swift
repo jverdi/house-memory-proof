@@ -46,7 +46,7 @@ enum BundleRefinement {
     for (camera,o) in observations.enumerated() {
       try Task.checkCancellation()
       let w=o.depthWidth,h=o.depthHeight
-      guard !depthInputs[camera].isEmpty,w>=3,h>=3,w<=1000000/h,let depthKey=o.depth,let confidenceKey=o.confidence else{continue}
+      guard o.metricDepthEligible,!depthInputs[camera].isEmpty,w>=3,h>=3,w<=1000000/h,let depthKey=o.depth,let confidenceKey=o.confidence else{continue}
       let depth=try repo.read(depthKey,limit:w*h*4),confidence=try repo.read(confidenceKey,limit:w*h)
       for input in depthInputs[camera] {
         if input.evidence%256==0 {try Task.checkCancellation()}
@@ -75,7 +75,7 @@ enum BundleRefinement {
   }
   static func measuredDepth(_ control:PhotoControl,point:V3,observation o:Observation,data:Data?,confidence:Data?)->Double {
     let w=o.depthWidth,h=o.depthHeight
-    guard w>=3,h>=3,w<=1000000/h,let data,data.count==w*h*4,let confidence,confidence.count==w*h else{return 0}
+    guard o.spatialPoseEligible,o.depthTimingCompatible,w>=3,h>=3,w<=1000000/h,let data,data.count==w*h*4,let confidence,confidence.count==w*h else{return 0}
     let px=control.u*Double(w),py=control.v*Double(h),x=Int(px),y=Int(py)
     guard x>0,y>0,x<w-1,y<h-1 else{return 0}
     var values:[Double]=[]

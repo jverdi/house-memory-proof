@@ -13,13 +13,13 @@ enum ReferenceRegistration {
     let codes=Set(boards.filter{$0.tagID != nil}.map{$0.id})
     func corners(_ segment:Segment)throws->String? {
       guard !codes.isEmpty else{return nil}
-      let inputs=house.observations.filter{$0.segmentID==segment.id && !$0.documentary}.sorted{$0.id.uuidString<$1.id.uuidString}.compactMap{o->CornerInput? in
+      let inputs=house.observations.filter{$0.segmentID==segment.id && $0.spatialPoseEligible}.sorted{$0.id.uuidString<$1.id.uuidString}.compactMap{o->CornerInput? in
         let detections=(o.codedDetections ?? []).filter{codes.contains($0.boardID)}.sorted{$0.boardID.uuidString<$1.boardID.uuidString}
         return detections.isEmpty ? nil:CornerInput(id:o.id,camera:o.camera,intrinsics:o.intrinsics,width:o.width,height:o.height,detections:detections)
       }
       return SHA256.hash(data:try encoder.encode(inputs)).map{String(format:"%02x",$0)}.joined()
     }
-    let data=try encoder.encode(Inputs(anchor:anchor.id,registration:anchor.registration,anchorPoses:anchor.referencePoses,sourcePoses:source.referencePoses,boards:boards,anchorCorners:try corners(anchor),sourceCorners:try corners(source),codedAlgorithm:codes.isEmpty ? nil:"rigid-board-v2-integer-pixel-centres"))
+    let data=try encoder.encode(Inputs(anchor:anchor.id,registration:anchor.registration,anchorPoses:anchor.referencePoses,sourcePoses:source.referencePoses,boards:boards,anchorCorners:try corners(anchor),sourceCorners:try corners(source),codedAlgorithm:codes.isEmpty ? nil:"rigid-board-v3-tracking-admission"))
     return SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
   }
   static func currentPoses(segment:Segment,house:House)->[ReferencePose] {

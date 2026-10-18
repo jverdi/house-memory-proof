@@ -10,7 +10,7 @@ struct PhotoPointPage:View {
   @State private var name="Photo-located point"
   @State private var trade:Trade = .unknown
   @State private var saved=""
-  var observations:[Observation]{house.observations.filter{$0.segmentID==segmentID && !$0.documentary}}
+  var observations:[Observation]{house.observations.filter{$0.segmentID==segmentID && $0.spatialPoseEligible}}
   var body:some View {Form{
     Text("Locate a small visible feature without trusting background LiDAR depth. Select the same point in three translated photographs. The first two fit the point; the third independently checks it. Results remain approximate. Photographs use their original sensor orientation.").font(.footnote)
     Picker("Capture segment",selection:$segmentID){Text("Choose").tag(UUID?.none);ForEach(house.segments){s in Text(s.started.formatted()).accessibilityIdentifier("point-segment-choice").tag(Optional(s.id))}}

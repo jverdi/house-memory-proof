@@ -109,7 +109,7 @@ enum CodedReferences {
   }
   static func build(house:House,segment:Segment)->Map {
     let known=house.references.filter{$0.valid && $0.tagID != nil}
-    let captures=house.observations.filter{$0.segmentID==segment.id && !$0.documentary && $0.codedDetections?.isEmpty==false}
+    let captures=house.observations.filter{$0.segmentID==segment.id && $0.spatialPoseEligible && $0.codedDetections?.isEmpty==false}
     var boards:[Board]=[]
     for board in known {
       if Task.isCancelled {return Map(boards:[],known:known)}

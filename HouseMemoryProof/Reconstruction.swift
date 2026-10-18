@@ -5,11 +5,11 @@ enum Reconstruction {
   static func fuse(
     house: House, segment: Segment, repo: Repository, progress: @escaping @MainActor (Double) -> Void
   ) async throws -> Feature {
-    let raw = house.observations.filter { $0.segmentID == segment.id && $0.depth != nil && $0.confidence != nil && !$0.documentary }
+    let raw = house.observations.filter { $0.segmentID == segment.id && $0.metricDepthEligible }
     let (observations, referenceSupported) = PoseRefinement.selected(
       raw, segment: segment, house: house)
     guard !observations.isEmpty else {
-      throw HouseError.message("This segment has no saved depth observations with recorded confidence.")
+      throw HouseError.message("This segment has no usable depth with recorded confidence, available tracking and compatible recorded timing. Originals remain intact.")
     }
     guard let core = hx_create(0.02, 100000) else {
       throw HouseError.message("Could not allocate bounded depth fusion.")
@@ -83,7 +83,7 @@ enum Reconstruction {
 // in the report; cancellation never publishes a partially rebuilt project.
 enum CaptureProcessing {
   static func build(house:House,segmentID:UUID,repo:Repository,checkpoint:((String)throws->Void)?=nil,progress:@escaping @MainActor (String,Double)->Void)async throws->House {
-    guard let index=house.segments.firstIndex(where:{$0.id==segmentID}),house.observations.filter({$0.segmentID==segmentID && $0.depth != nil && $0.confidence != nil && !$0.documentary}).count>=3 else{throw HouseError.message("Save at least three overlapping depth photographs with recorded confidence before processing this capture.")}
+    guard let index=house.segments.firstIndex(where:{$0.id==segmentID}),house.observations.filter({$0.segmentID==segmentID && $0.metricDepthEligible}).count>=3 else{throw HouseError.message("Save at least three overlapping depth photographs with recorded confidence, available tracking and compatible timing before processing this capture.")}
     let started=ProcessInfo.processInfo.systemUptime
     var candidate=house,steps:[CaptureProcessingStep]=[]
     func note(_ name:String,_ passed:Bool,_ detail:String){steps.append(CaptureProcessingStep(name:name,passed:passed,detail:detail))}
@@ -212,7 +212,7 @@ extension AppModel {
   }
   func processCapture(projectID:UUID,segmentID:UUID,automatic:Bool=false) {
     guard let source=houses.first(where:{$0.id==projectID}) else{return}
-    if source.observations.filter({$0.segmentID==segmentID && $0.depth != nil && !$0.documentary}).count<3 {
+    if source.observations.filter({$0.segmentID==segmentID && $0.metricDepthEligible}).count<3 {
       if !automatic {error="Save at least three overlapping depth photographs before processing."};return
     }
     do {

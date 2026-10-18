@@ -32,7 +32,15 @@ def summarize(folder):
             overlay=report.get('visibleSurfaceOverlay',{})
             case['visibleSurfaceOverlay']=dict(scoredAcceptedQueries=number(overlay.get('scoredAcceptedQueries')),samples=number(overlay.get('samples')),behindCamera=number(overlay.get('behindCamera')),
                 worldMetres=distribution(overlay.get('worldMetres',{})),reprojectionPixels=distribution(overlay.get('reprojectionPixels',{})),diagnosticOnly=True,alignmentToTruth=False)
-            if any(case[k] is None for k in COUNTS+SCALARS):case.update(passed=False,complete=False)
+            expected=case.get('positiveQueries'),case.get('negativeQueries')
+            if any(case[k] is None for k in COUNTS) or any(type(n) is not int for n in expected) or len(report.get('queries',[]))!=sum(expected):
+                case.update(passed=False,complete=False)
+            # A complete refusal legitimately has no accepted-pose percentile
+            # or optimized source pose. That absence is not a missing query.
+            # It can never manufacture a passing nominal spatial result.
+            if any(case[k] is None for k in SCALARS):case['passed']=False
+            if case.get('positiveAccepted',0)>0 and case['p95Metres'] is None:case['complete']=False
+            if case.get('optimizedCameraCount',0)>0 and case['maximumOptimizedCameraPositionErrorMetres'] is None:case['complete']=False
         except Exception as error:case.update(complete=False,passed=False,errorClass=type(error).__name__)
         cases.append(case)
     return dict(cases=cases,complete=all(c['complete'] for c in cases),passed=all(c['passed'] for c in cases),rawEvidencePublished=False,physicalQualification=False)

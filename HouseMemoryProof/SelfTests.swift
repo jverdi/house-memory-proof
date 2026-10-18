@@ -147,6 +147,49 @@ import simd
                 guard refused==10,try isolated.integrity(capture)==verified else{throw HouseError.message("Depth admission accepted an invalid input or changed original evidence.")}
                 results.append(["test":"Depth fusion refuses unknown confidence and malformed buffers","passed":true,"refusedInputs":refused,"originalAssetsVerified":verified,"physicalDeviceQualified":false])
             }catch{results.append(["test":"Depth fusion refuses unknown confidence and malformed buffers","passed":false,"error":error.localizedDescription])}
+            mark("Capture tracking and clock admission")
+            do {
+                let isolated=try Repository(root:folder.appendingPathComponent("capture-clock-admission"))
+                let original=try SimulatedCapture.make(repo:isolated),segment=original.segments[0],verified=try isolated.integrity(original)
+                var synchronized=original
+                for i in synchronized.observations.indices {
+                    let o=synchronized.observations[i]
+                    synchronized.observations[i].captureMetadata=CaptureMetadata(source:"analytic-replay",kind:.rgbdPosed,mode:"synthetic-frame",deviceModel:"Analytic fixture",systemVersion:"Synthetic",frameTimestamp:o.timestamp,receivedUTC:o.date,receiptUptimeBeforeUTC:10+o.timestamp,receiptUptimeAfterUTC:10.001+o.timestamp,calibrationWidth:o.width,calibrationHeight:o.height,imagePixelFormat:0,depthEncoding:"float32-le-metres-optical-axis",confidenceEncoding:"uint8-arkit-0-low-1-medium-2-high",depthTimestamp:o.timestamp,unavailable:["frameToUTC":"Not calibrated","motionTimestamp":"No independent motion samples","distortion":"No distortion calibration","exif":"Rendered fixture","pixelFormat":"Analytic array"])
+                }
+                try synchronized.validate()
+                let positive=try await Reconstruction.fuse(house:synchronized,segment:segment,repo:isolated,progress:{_ in})
+                guard !positive.mesh.vertices.isEmpty else{throw HouseError.message("Synchronized depth control was rejected.")}
+                let synchronizedFirst=synchronized.observations[0]
+                let centerControl=PhotoControl(observationID:synchronizedFirst.id,u:0.5,v:0.5)
+                let centerPoint=V3(synchronizedFirst.camera[3],2,synchronizedFirst.camera[7])
+                let centerDepth=try isolated.read(synchronizedFirst.depth!),centerConfidence=try isolated.read(synchronizedFirst.confidence!)
+                guard BundleRefinement.measuredDepth(centerControl,point:centerPoint,observation:synchronizedFirst,data:centerDepth,confidence:centerConfidence)>1.99 else{throw HouseError.message("Synchronized joint-refinement depth control was rejected.")}
+                var refused=0
+                for fault in 0..<3 {
+                    var changed=synchronized
+                    for i in changed.observations.indices {
+                        if fault==0 {changed.observations[i].captureMetadata!.depthTimestamp=changed.observations[i].timestamp+0.033}
+                        else {changed.observations[i].tracking=fault==1 ? "limited(excessiveMotion)":"notAvailable"}
+                    }
+                    try changed.validate() // Retain valid raw records even when processing abstains.
+                    do{_=try await Reconstruction.fuse(house:changed,segment:segment,repo:isolated,progress:{_ in})}catch{refused+=1}
+                    do{_=try await SurfaceReconstruction.build(house:changed,segment:segment,repo:isolated,progress:{_ in})}catch{refused+=1}
+                    do{_=try VisualMapping.build(house:changed,segment:segment,repo:isolated)}catch{refused+=1}
+                    do{_=try TextureBuilder.build(house:changed,segment:segment,repo:isolated)}catch{refused+=1}
+                    let first=changed.observations[0]
+                    guard BundleRefinement.measuredDepth(centerControl,point:centerPoint,observation:first,data:centerDepth,confidence:centerConfidence)==0 else{throw HouseError.message("Joint refinement reused incompatible depth.")}
+                    let camera=TextureBuilder.Camera(observation:first,depth:try isolated.read(first.depth!),confidence:try isolated.read(first.confidence!))
+                    guard !TextureBuilder.visible(UV(u:0.5,v:0.5),z:2,camera:camera) else{throw HouseError.message("Incompatible depth was admitted by texture visibility.")}
+                    let selected=PoseRefinement.selected(changed.observations,segment:segment,house:changed).0
+                    guard selected.count==(fault==0 ? original.observations.count:0),changed.observations.allSatisfy({$0.spatialProcessingIssue != nil}),
+                        try CoverageAnalyzer.analyze(house:changed,segment:segment,repo:isolated).supportedPatches==0 else{throw HouseError.message("Incompatible capture evidence contributed spatial support.")}
+                    let boundary=RevealBoundary(name:"Clock check",segmentID:segment.id,origin:V3(-0.2,1.8,1.6),horizontal:V3(1,0,0),vertical:V3(0,0,-1),width:0.4,height:0.4,depth:0.2,finishOffset:0.01,sourceFingerprint:try VisualMapping.fingerprint(house:changed,segment:segment))
+                    let coverage=try BoundaryCoverage.analyze(house:changed,boundary:boundary,repo:isolated)
+                    guard coverage.supported==0,coverage.cameraCount==0,try isolated.integrity(changed)==verified else{throw HouseError.message("Clock/tracking fault was marked complete or changed an original.")}
+                }
+                guard refused==12,try isolated.integrity(original)==verified else{throw HouseError.message("Spatial processing accepted incompatible clock or tracking evidence.")}
+                results.append(["test":"Known depth clock mismatch and limited tracking abstain without discarding originals","passed":true,"refusedPipelines":refused,"faultConditions":3,"originalAssetsVerified":verified,"synchronizedControlPassed":true,"physicalDeviceQualified":false])
+            }catch{results.append(["test":"Known depth clock mismatch and limited tracking abstain without discarding originals","passed":false,"error":error.localizedDescription])}
             mark("Coded reference image-to-pose integration")
             do {results.append(try codedReferenceReport(repo:Repository(root:folder.appendingPathComponent("coded-references")),outputRoot:mainRepo.root))}
             catch {results.append(["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":false,"error":error.localizedDescription])}
@@ -1853,6 +1896,12 @@ extension SelfTests {
         linked.segments[1].registration=handoff;linked.segments[1].registrationLink=link
         ReferenceRegistration.invalidateChangedInputs(&linked)
         guard linked.segments[1].registration != nil else{throw HouseError.message("Unchanged coded handoff invalidated itself.")}
+        var trackingFault=linked
+        for i in trackingFault.observations.indices where trackingFault.observations[i].segmentID==other.id {trackingFault.observations[i].tracking="limited(excessiveMotion)"}
+        guard CodedReferences.build(house:trackingFault,segment:trackingFault.segments[1]).boards.isEmpty else{throw HouseError.message("Limited tracking retained coded source geometry.")}
+        ReferenceRegistration.invalidateChangedInputs(&trackingFault)
+        guard trackingFault.segments[1].registration==nil else{throw HouseError.message("Changed tracking admission retained a stale coded handoff.")}
+        diagnostics["limitedTrackingSourcesRefused"]=true
         let last=linked.observations.count-1
         linked.observations[last].codedDetections![0].corners[0].u+=0.01
         ReferenceRegistration.invalidateChangedInputs(&linked)
