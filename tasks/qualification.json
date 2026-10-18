@@ -66,7 +66,23 @@
     "interfaceExpected": 13,
     "nativeReaderPhasesExpected": 18,
     "integrationComplete": false,
-    "status": "queued"
+    "status": "failed_photo_curve_switch",
+    "nativePassed": 171,
+    "nativeReaderPhasesPassed": 18,
+    "commandContractsPassed": 48,
+    "nativeSeconds": 164.02193212500015,
+    "nativeArtifact": 12146452724,
+    "nativeArtifactSHA256": "17f2b74223f97bdb2f955bf0a70e58bbb7d9fa00c679635bcdfc797b2181a53d",
+    "observedInterfaceFailure": "testPhotoPointWorkflow: curve mode switch did not reach value 1",
+    "interfacePassed": 12,
+    "interfaceFailed": 1,
+    "interfaceSeconds": 821.669,
+    "validationReportsPassed": 35,
+    "fullArtifact": {
+      "id": 12146518254,
+      "sha256": "13a27fd44176890ab91fefe0b14e9c0415aecc4d5738862864cdfc85fd8c6ea5",
+      "sha256IndependentlyVerified": true
+    }
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -921,9 +937,9 @@
   },
   "ownerDeviceProtocol": "docs/DEVICE_ACCEPTANCE.md",
   "latestHostReplay": {
-    "source": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
+    "source": "8d2a1d28de265d2491345c37cf664293434a6b14",
     "artifactsSHA256Verified": 12,
-    "evidence": "docs/evidence/host-11ad-summary.json",
+    "evidence": "docs/evidence/host-8d2-summary.json",
     "hostBinaryUnchanged": true,
     "originalFailuresRetained": true,
     "protectedDraw": false,
@@ -978,12 +994,18 @@
     "expectedValueNotReached": true,
     "keyboardVisibleAfterFailure": true,
     "repair": "Add one focus-scoped Done control in the batch filter keyboard toolbar, following the validated object-editor pattern. Keep keyboard-dismissal, both switch-state and saved-classification assertions.",
-    "nativeValidationPending": true,
-    "interfaceValidationPending": true,
+    "nativeValidationPending": false,
+    "interfaceValidationPending": false,
     "submitOnlyRepairFailed": true,
     "failedSubmitSource": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
     "failedSubmitRun": 39151470099,
-    "explicitKeyboardToolbarPrepared": true
+    "explicitKeyboardToolbarPrepared": true,
+    "validatedSource": "8d2a1d28de265d2491345c37cf664293434a6b14",
+    "validatedRun": 39153443322,
+    "interfacePassed": true,
+    "interfaceSeconds": 87.44,
+    "completeIntegrationPending": true,
+    "evidenceStatus": "Batch workflow and native checks passed in SHA-verified 219.1 artifacts; separate photo-mode UI failure prevents complete integration"
   },
   "previousIntegratedPass": {
     "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
@@ -1033,5 +1055,15 @@
     "nativeSeconds": 190.86271375,
     "nativeArtifact": 12144944730,
     "nativeArtifactSHA256": "7a41f7c4107241770b4511be5b6ef4a8cf2bb0738ff5af0bf34d3c53b819b3df"
+  },
+  "photoModeRecovery": {
+    "failedSource": "8d2a1d28de265d2491345c37cf664293434a6b14",
+    "failedRun": 39153443322,
+    "failedBuild": "219.1",
+    "fullArtifact": 12146518254,
+    "fullArtifactSHA256": "13a27fd44176890ab91fefe0b14e9c0415aecc4d5738862864cdfc85fd8c6ea5",
+    "inspection": "Recorded tap did not change the curve switch; screen recording shows it near the navigation bar despite the reported frame farther down the page. Root cause is not established on a physical device.",
+    "preparedRepair": "Persistent toolbar action changes point/curve mode without scrolling to the form header; root-level mode change resets the same draft selections. UI preserves explicit mode assertion, two independently checked tracks, saved curve and return-to-point assertions.",
+    "validationPending": true
   }
 }

@@ -1,3 +1,9 @@
+## Retained 219.1 photo-mode failure; persistent mode action prepared
+
+Source **8d2a1d28de265d2491345c37cf664293434a6b14**, run **39153443322**, passes 171 native checks, 18 reader phases, 48 command contracts, three process recoveries, 50 portable cases and all 35 export reports. **12/13 UI cases pass in 821.669 seconds**. The explicit batch-filter Done flow passes in 87.440 seconds and its screenshot is inspected. The photo-point case fails when the curve switch remains off after a recorded tap. Both artifacts are SHA-verified in `docs/evidence/native-8d2-summary.json`; this is a failed integration and no upload was requested.
+
+The photo screen, photo workflow and switch helper are byte-identical to the passing 216.1 source. The failure recording shows the control near the navigation bar while accessibility reports a lower frame. A persistent toolbar action is prepared so mode changes remain available after scrolling through three photographs. Mode reset logic moves to the form root; the UI flow retains an explicit mode assertion, two independent curve tracks, saved-curve verification and return-to-point behavior. Native/interface validation is pending. TestFlight 216.1 remains verified available.
+
 ## Explicit batch-filter keyboard control prepared
 
 Follow-up 218.1 retains **171/171 native checks and all 18 reader phases**, but its batch UI case fails at the new keyboard-dismissal assertion: submitting the text field did not dismiss the keyboard within five seconds (57.293-second failed case). The next repair adds one focus-scoped keyboard-toolbar **Done** button, using the existing validated object-editor pattern. The UI test taps that explicit control and retains the same keyboard, two-object selection and saved-classification assertions. Validation is pending; no timeout or acceptance threshold changes. TestFlight **216.1 remains verified available**.

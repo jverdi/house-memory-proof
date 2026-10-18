@@ -16,11 +16,7 @@ struct PhotoPointPage:View {
   var observations:[Observation]{house.observations.filter{$0.segmentID==segmentID && $0.spatialPoseEligible}}
   var body:some View {Form{
     Text("Locate a small visible feature without trusting background LiDAR depth. Select the same point in three translated photographs. The first two fit the point; the third independently checks it. Results remain approximate. Photographs use their original sensor orientation.").font(.footnote)
-    Toggle("Trace a visible curve",isOn:$curveMode).onChange(of:curveMode){_,_ in
-      samples=[];controls=[nil,nil,nil];intervalsVisible=false;saved=""
-      if curveMode && name=="Photo-located point"{name="Photo-traced curve"}
-      if !curveMode && name=="Photo-traced curve"{name="Photo-located point"}
-    }
+    Toggle("Trace a visible curve",isOn:$curveMode)
     Picker("Capture segment",selection:$segmentID){Text("Choose").tag(UUID?.none);ForEach(house.segments){s in Text(s.started.formatted()).accessibilityIdentifier("point-segment-choice").tag(Optional(s.id))}}
     .accessibilityIdentifier("point-segment-picker")
     ForEach(0..<3,id:\.self){index in
@@ -67,7 +63,19 @@ struct PhotoPointPage:View {
         if model.edit(projectID:house.id,{$0.features.append(feature)}) {saved="Saved \(feature.name) with three source photographs.";controls=[nil,nil,nil]}
       }catch{model.error=error.localizedDescription}
     }.disabled(controls.contains(where:{$0==nil}))}
-  }.navigationTitle(curveMode ? "Photo curve":"Photo point").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil];samples=[];intervalsVisible=false;saved=""}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
+  }.navigationTitle(curveMode ? "Photo curve":"Photo point")
+    .toolbar {
+      ToolbarItem(placement:.topBarTrailing) {
+        Button(curveMode ? "Locate a point":"Trace a curve"){curveMode.toggle()}
+          .accessibilityIdentifier("photo-mode-action")
+      }
+    }
+    .onChange(of:curveMode){_,_ in
+      samples=[];controls=[nil,nil,nil];intervalsVisible=false;saved=""
+      if curveMode && name=="Photo-located point"{name="Photo-traced curve"}
+      if !curveMode && name=="Photo-traced curve"{name="Photo-located point"}
+    }
+    .onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil];samples=[];intervalsVisible=false;saved=""}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
 }
 struct PhotoPointSurface:UIViewRepresentable {
   var url:URL

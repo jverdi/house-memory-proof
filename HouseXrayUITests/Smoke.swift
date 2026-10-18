@@ -274,8 +274,11 @@ final class HouseXraySmoke: XCTestCase {
     let save=app.buttons["Check and save point"];reveal(save);XCTAssertTrue(save.isEnabled);save.tap()
     let saved=app.staticTexts["Saved Photo-located point with three source photographs."]
     XCTAssertTrue(saved.waitForExistence(timeout:10));reveal(saved);screenshot("08-photo-point-saved")
-    let curve=app.switches["Trace a visible curve"]
-    reveal(curve);setSwitch(curve,to:true)
+    let mode=app.buttons["photo-mode-action"]
+    XCTAssertTrue(mode.waitForExistence(timeout:5));XCTAssertTrue(mode.isHittable);mode.tap()
+    let curveEnabled=expectation(for:NSPredicate(format:"label == %@","Locate a point"),evaluatedWith:mode)
+    wait(for:[curveEnabled],timeout:5)
+    XCTAssertTrue(app.navigationBars["Photo curve"].exists)
     for offset in [-0.0677083333,0.0677083333] {
       let first=app.descendants(matching:.any)["point-image-0"].firstMatch
       reveal(first)
@@ -292,6 +295,8 @@ final class HouseXraySmoke: XCTestCase {
     let savedCurve=app.staticTexts["Saved Photo-traced curve with 2 independently checked source tracks."]
     XCTAssertTrue(savedCurve.waitForExistence(timeout:10));reveal(savedCurve)
     screenshot("16-photo-curve-saved")
+    mode.tap();XCTAssertTrue(app.navigationBars["Photo point"].waitForExistence(timeout:5))
+    XCTAssertEqual(mode.label,"Trace a curve")
     app.tabBars.buttons["Explore"].tap();app.buttons["Wall"].tap()
     for point in [CGVector(dx:0.25,dy:0.29),CGVector(dx:0.65,dy:0.29),CGVector(dx:0.25,dy:0.42)] {app.coordinate(withNormalizedOffset:point).tap()}
     let define=app.buttons["Define wall or ceiling volume"]
