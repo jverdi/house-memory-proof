@@ -1513,7 +1513,7 @@ import simd
                 guard plan.shots.count==2,plan.shots.reduce(0,{$0+Int(($1.duration*30).rounded())})==300,
                   plan.shots.allSatisfy({$0.subject?.featureID==target.id && $0.reveal?.finishes.map{$0.featureID}==[finish.id] && $0.endPosition==nil}) else{return false}
                 let bytes=try JSONEncoder().encode(plan),decoded=try JSONDecoder().decode(TourPlan.self,from:bytes)
-                guard decoded.shots.map{$0.reveal}==plan.shots.map{$0.reveal} else{return false}
+                guard decoded.shots.map({$0.reveal})==plan.shots.map({$0.reveal}) else{return false}
                 let first=plan.shots[0],event=first.reveal!,camera=TourDirector.camera(first,phase:0)
                 let scene=try TourReveal.scene(fixture,shot:first,options:SceneOptions())
                 guard let surface=scene.rootNode.childNode(withName:finish.id.uuidString,recursively:false),let exposed=scene.rootNode.childNode(withName:target.id.uuidString,recursively:false) else{return false}
