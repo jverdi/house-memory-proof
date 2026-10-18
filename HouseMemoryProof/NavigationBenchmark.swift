@@ -135,6 +135,34 @@ import simd
       "limitations":"Two bounded synthetic depth fragments through production reconstruction and walking. Explicit floor classification is supplied by the diagnostic. This does not qualify automatic floor recognition, whole-house registration/navigation, sustained rendering or physical accuracy."]
   }
 
+  static func comfortWalk()throws->Bool {
+    let sourceFixture=fixture(),house=sourceFixture.house
+    for height in [0.8,1.7] {
+      let walk=prepared(house,V3(-7,2,1.6));defer{walk.stop()}
+      var settings=ViewerComfort();settings.eyeHeight=height;walk.applyComfort(settings)
+      guard !walk.flying else{throw HouseError.message("Comfort height \(height) did not establish supported walking.")}
+      for direction in [1.0,-1.0] {for _ in 0..<142 {
+        let before=V3(ar:walk.camera.simdPosition);walk.stepMove(SIMD2(Float(direction),0))
+        let after=V3(ar:walk.camera.simdPosition),requested=before.x+direction*0.2
+        let low=floorHeight(after.x+0.2-0.0001)+height,high=floorHeight(after.x+0.2+0.0001)+height
+        guard abs(after.x-requested)<0.0001,abs(after.y-2)<0.0001,after.z>=low-0.0001,after.z<=high+0.0001 else {
+          throw HouseError.message("Comfort height \(height) failed its connected room/stair route at \(requested).")
+        }
+      }}
+      guard walk.house==house else{throw HouseError.message("Viewer preferences changed captured records.")}
+    }
+    let tall=prepared(house,V3(-5.4,2,1.6));defer{tall.stop()}
+    var settings=ViewerComfort();settings.eyeHeight=2.2;tall.applyComfort(settings)
+    guard !tall.flying else{return false}
+    var moved=0,refused=0
+    for _ in 0..<16 {
+      let before=tall.camera.simdPosition;tall.stepMove(SIMD2(1,0))
+      if simd_length(tall.camera.simdPosition-before)<0.00001 {refused+=1}else{moved+=1}
+      guard V3(ar:tall.camera.simdPosition).x <= -4.25 else{return false}
+    }
+    return moved>0 && refused>0 && tall.house==house
+  }
+
   static func run()throws->[String:Any] {
     let original=fixture();try original.house.validate()
     let h=original.house

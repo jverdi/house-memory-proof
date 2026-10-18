@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T22:27:00.582668Z",
+  "updatedUTC": "2026-10-18T22:27:59.565311Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "3883931263a2861a28cd354f190bbc3d8d71f178",
@@ -56,7 +56,7 @@
     },
     {
       "area": "viewer comfort controls",
-      "remaining": "Runbook 12.1 still requires adjustable movement acceleration, turning speed, bounded 45\u201390 degree field of view and adjustable eye height with a 1.7 metre default. Current movement/turn rates and camera field of view are fixed; walking preserves captured height. Implement and qualify these controls without weakening floor support or recorded-route constraints."
+      "remaining": "Remembered movement/view settings, bounded eye height, input recovery, handedness and room reset are implemented alongside the scoped room map. Combined 178-native/19-UI integration and screenshot review remain pending. Owner-device comfort, sustained rendering, hardware-controller and VoiceOver use remain unverified."
     }
   ],
   "externalAcceptanceOpen": [
@@ -64,43 +64,23 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Integrate and validate the prepared viewer comfort controls, then continue the remaining reconstructed-house software acceptance. Preserve localization failures and the exhausted five-attempt detector budget. Owner-device/provider and independent field evidence remain required. TestFlight 216.1 remains available; no intermediate upload is requested.",
+  "nextAction": "Validate the combined movement/settings and room-map candidate with all 19 interface workflows and 178 native checks. Inspect screenshots 34/38/40\u201346. Then continue broader software acceptance while retaining localization failures, the exhausted detector budget and all device/provider/field gates. TestFlight remains 216.1 without an intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "complete_integrated_pass",
-    "nativeExpected": 172,
-    "interfaceExpected": 17,
+    "status": "prepared",
+    "precedingSource": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "nativeExpected": 178,
+    "interfaceExpected": 19,
     "nativeReaderPhasesExpected": 19,
     "commandContractsExpected": 52,
     "validationReportsExpected": 36,
-    "integrationComplete": true,
-    "precedingSource": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
-    "uiRunnerBudgetSeconds": 1800,
-    "uiStepTimeoutMinutes": 32,
-    "nativeAppBudgetSeconds": 300,
-    "wholeJobTimeoutMinutes": 60,
-    "evidencePending": false,
+    "integrationComplete": false,
+    "evidencePending": true,
     "appleUploadRequested": false,
-    "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
-    "run": 39169002149,
-    "build": "224.1",
-    "simulatorJob": 117797935478,
-    "nativePassed": 172,
-    "nativeReaderPhasesPassed": 19,
-    "commandContractsPassed": 52,
-    "debugCompilationPassed": true,
-    "unsignedReleaseCompilationPassed": true,
-    "nativePhaseConclusion": "success",
-    "evidence": "docs/evidence/native-388-summary.json",
-    "interfacePassed": 17,
-    "interfaceFailed": 0,
-    "interfaceSeconds": 1404.559,
-    "validationReportsPassed": 36,
-    "fullArtifact": {
-      "id": 12152882550,
-      "sha256": "ab8ed38e953f0de57fa3ae8ebeb9b8ee3819da04536dd80432979091a16d2091",
-      "sha256IndependentlyVerified": true
-    }
+    "uiRunnerBudgetSeconds": 2100,
+    "uiStepTimeoutMinutes": 37,
+    "nativeAppBudgetSeconds": 300,
+    "wholeJobTimeoutMinutes": 60
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1249,5 +1229,36 @@
     "interfacePassed": 17,
     "screenshotsInspected": true,
     "privatePackageSHA256": "c4eafd41f768dad3ed23deed9b9f9e07259c2ddd0489fc546cac1fb41793c2b2"
+  },
+  "viewerComfortContinuation": {
+    "status": "prepared_native_validation_pending",
+    "baseSource": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "nativeExpected": 178,
+    "interfaceExpected": 19,
+    "sourceDataModified": false,
+    "ownerDeviceValidated": false,
+    "combinedCandidate": true,
+    "requirement": "Runbook 12.1 / P6.1",
+    "defaultEyeHeightMetres": 1.7,
+    "defaultFieldOfViewDegrees": 60,
+    "fieldOfViewRangeDegrees": [
+      45,
+      90
+    ],
+    "evidence": "docs/evidence/viewer-comfort-candidate.md"
+  },
+  "roomMapContinuation": {
+    "status": "prepared_native_validation_pending",
+    "baseSource": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "nativeExpected": 178,
+    "interfaceExpected": 19,
+    "sourceDataModified": false,
+    "ownerDeviceValidated": false,
+    "combinedCandidate": true,
+    "requirement": "Runbook 12.3 / P6.3",
+    "maximumDisplayedPhotoPositions": 256,
+    "maximumDisplayedBookmarks": 100,
+    "coverageQualified": false,
+    "evidence": "docs/evidence/room-map-candidate.md"
   }
 }

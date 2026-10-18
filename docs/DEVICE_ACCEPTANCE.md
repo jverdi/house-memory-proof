@@ -18,6 +18,18 @@ With networking off, use the guide for one real homeowner task: identify the cor
 
 With the iPhone's larger accessibility text, landscape orientation and VoiceOver, read the introduction and a long guide. Confirm headings and actions are understandable, selection state is spoken, content scrolls, and Back, Skip, Done and the next action remain reachable. Retain screenshots or a recording of failures. Simulator screenshots do not substitute for this owner-device check.
 
+## Movement comfort and room map
+
+Run these checks only on a build that includes Movement & view and, for the map checks, Room map. TestFlight 216.1 does not contain these additions. Use the sample or a separate test house first.
+
+- Open Explore → Layers → Movement & view. Start with slow movement and turning. Change the view width and eye height, then let go of the movement control. Confirm movement stops immediately and the view feels usable. Eye height must not allow passage through a low ceiling or across a missing floor.
+- Enable Left-handed layout and rotate the phone. Confirm movement and looking controls remain reachable. Leave and reopen the app, then verify your choices are remembered. Reset movement and view should restore the defaults while keeping all house records and saved viewpoints.
+- Interrupt a drag by switching apps, and disconnect a controller while moving if you use one. Reopen Explore and confirm no movement continues on its own. Record which interruptions actually occurred. Try Reset view to this room; if no checked walking location exists, the app should explain why Free fly is enabled.
+- In Layers → Room map, turn on Show mini-map in the 3D view. Save a viewpoint through Jump, return to it from the map, and select rooms on different levels. Check the room, level and arrow against the displayed view, including Orbit overview and landscape. Dots indicate recorded photo positions; they must not be mistaken for proof that the whole area was captured. Unaligned visits must remain separate.
+- Reopen the app and confirm the mini-map preference persists. Turn it off and confirm it disappears. With larger text and VoiceOver, check that room names, level, direction, selected settings and actions remain understandable. Record any controls or scene details obscured by the map. A room scope should explain how to return to All spaces.
+
+Keep a screenshot or recording of any confusing or failed step, along with the build and phone details. Passing these usability checks does not establish whole-house geometry, complete coverage or physical accuracy.
+
 ## Thirty-minute visit
 
 Use several short capture segments in a disposable real project. Record the start/end times and what happened at each interruption. The report records ten-second resource samples; it does not record a video of the interaction.

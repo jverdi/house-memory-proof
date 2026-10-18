@@ -1,0 +1,21 @@
+# Room map candidate
+
+Current validation combines this work with the comfort controls: **178 native checks and 19 UI workflows** are expected. The preparation notes below do not claim an executed run; see the combined allocation at the end.
+
+Prepared locally after the viewer-comfort continuation of source `3883931263a2861a28cd354f190bbc3d8d71f178`. This candidate has not been compiled or executed on Apple platforms.
+
+Runbook §12.3 and plan P6.3 require an orientation aid. Explore → Layers → Room map shows the current room, floor and direction, saved viewpoints, eligible recorded photo positions and a link to the existing capture-coverage review. A remembered switch enables a small map in the 3D view. The mini-map becomes shorter in landscape and is hidden while picking measurement, route or wall points. Its arrow follows the actual displayed camera, including Orbit overview.
+
+The map respects the selected room and construction stage. It applies the same pose selection and registered transforms as the viewer. An unaligned visit is kept in its own coordinate frame: unrelated room origins, other visits and global bookmarks are excluded. Approximate room reference bounds are dashed; photo-position dots never certify complete surface coverage. The mini-map explicitly says “Coverage unknown.” Direction follows the record's axes, not compass north. Users can select a floor, jump to an eligible room or return to a saved viewpoint. A scoped map explains how to select All spaces in Layers.
+
+Snapshot work runs away from the main actor and checks cancellation before publication. Drawing is limited to at most 256 evenly sampled photo positions and 100 saved viewpoints, with complete eligible-photo counts retained for each room and an explanation when bookmarks are limited. Empty maps retain finite bounds. Display coordinates use the same 100,000-metre absolute bound as mesh vertices; oversized drawing inputs refuse the map without changing the record, and an out-of-range live viewpoint cannot overflow its bounds. House records and original camera calibration are not changed.
+
+Two native checks cover registered transforms, stacked floors, stage and room scope, excluded documentary photos, heading, unaligned-visit isolation, bookmark isolation, sampling bounds and source immutability. One interface workflow saves and returns to a viewpoint, jumps to rooms on two floors, verifies mini-map persistence after relaunch, checks landscape placement, and turns the map off. Screenshots 44, 45 and 46 require visual review. Expected integration after the comfort candidate is 178 native checks, 19 native reader phases, 52 command contracts, 19 UI workflows, three process recoveries, 50 portable cases and 36 validation reports. Existing checks and execution bounds are retained.
+
+This orientation aid does not establish whole-house reconstruction or navigation qualification, complete coverage, physical floor alignment, sustained device performance or homeowner comprehension. Those acceptance requirements remain open. TestFlight remains 216.1 and no intermediate upload is requested.
+
+The 224.1 screenshot review exposed a long navigation notice squeezing the Layers button. The continuation moves that notice below the header and uses dark Layers lettering. The mini-map occupies the remaining space between the header and movement controls, with a compact text fallback when the full map will not fit; it cannot cover those controls. Capture's count explanation also uses plain language with brighter text. Screenshot 41 must be rechecked with the other combined-candidate screenshots.
+
+## Combined validation allocation
+
+The comfort and room-map continuations are integrated together, with 178 native checks and 19 UI workflows expected. No separate comfort-only integration has run. The complete 17-workflow 224.1 run took 1404.559 seconds. Two additional workflows exercise settings persistence/reset/left-handed layout and map/bookmark/floor/persistence/landscape behavior. Their combined runner allocation is 35 minutes (37-minute enclosing step), with native/startup 300-second and whole-job 60-minute bounds unchanged. No assertions, product performance thresholds or accuracy gates are removed or relaxed. Screenshots 34/38/40–46 require review. This remains pending native/interface validation.

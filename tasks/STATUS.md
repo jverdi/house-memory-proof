@@ -1,3 +1,11 @@
+## Movement settings and room map prepared for combined validation
+
+Explore → Layers now has prepared Movement & view settings and a scoped Room map with a remembered mini-map. Preferences include speed, acceleration, sensitivity, turn rate, bounded view width, eye height, invert-Y, handedness and reset. The map shows room/floor/direction, recorded photo positions and saved viewpoints while keeping unaligned visits separate and coverage explicitly unknown. Cancelled drags clear movement; bright action buttons use dark lettering. Long walking notices have their own full-width row, the mini-map fits between header and controls, and capture-count guidance is clearer. House records and source camera calibration remain unchanged.
+
+Six added native checks and two interface workflows bring the expected totals to **178 native checks and 19 UI workflows**. The 19 reader phases, 52 command contracts and 36 validation reports remain. Screenshots 34/38/40–46 require review. The complete 17-workflow 224.1 run took 1404.559 seconds. Two additional workflows exercise settings persistence/reset/left-handed layout and map/bookmark/floor/persistence/landscape behavior. Their combined runner allocation is 35 minutes (37-minute enclosing step), with native/startup 300-second and whole-job 60-minute bounds unchanged. No assertions, product performance thresholds or accuracy gates are removed or relaxed.
+
+Both continuations are checked together on one source; the separately proposed 176-native/18-UI comfort-only run is not executed. Latest complete integration remains **224.1**. TestFlight remains **216.1**, without homeowner guidance or these additions. No intermediate upload is requested. Whole-house, owner-device/provider and independent field acceptance remain open.
+
 ## Capture-header readability and bounded reconstructed navigation pass — 224.1
 
 Source **3883931263a2861a28cd354f190bbc3d8d71f178**, run **39169002149**, passes Debug/Release compilation, **172/172 native checks**, **19 reader phases**, **52 command contracts**, **17/17 UI workflows in 1404.559 seconds**, three process recoveries, 50 portable cases and **36/36 validation reports**. Both artifacts are independently SHA-256 verified in `docs/evidence/native-388-summary.json`.

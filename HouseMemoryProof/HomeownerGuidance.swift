@@ -100,12 +100,12 @@ struct HomeownerIntroduction: View {
               .accessibilityIdentifier("introduction-heading")
             pageContent
             if page == 4 {
-              Button("Get started") { guidance.finishIntroduction() }
+              Button { guidance.finishIntroduction() } label: {Text("Get started").foregroundStyle(.black)}
                 .buttonStyle(.borderedProminent).accessibilityIdentifier("introduction-finish")
               Text("Your starting guide will be on the House tab. You can always open Help & getting started, or restart this introduction in Help settings.")
                 .foregroundStyle(.secondary)
             } else {
-              Button("Continue") { page = min(titles.count - 1, page + 1); proxy.scrollTo("intro-top", anchor: .top) }
+              Button { page = min(titles.count - 1, page + 1); proxy.scrollTo("intro-top", anchor: .top) } label: {Text("Continue").foregroundStyle(.black)}
                 .buttonStyle(.borderedProminent).accessibilityIdentifier("introduction-next")
             }
             if page > 0 {

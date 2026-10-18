@@ -1,6 +1,92 @@
 import XCTest
 
 final class HouseXraySmoke: XCTestCase {
+  @MainActor func testRoomMapShowsFloorsBookmarksAndRestoresMiniMap() throws {
+    continueAfterFailure=false;XCUIDevice.shared.orientation = .portrait
+    let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
+    defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
+    func openMap() {
+      XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
+      app.buttons["Layers"].tap();let map=app.buttons["viewer-room-map"]
+      guidanceReveal(map,in:app,horizontal:0.97);map.tap()
+      XCTAssertTrue(app.navigationBars["Room map"].waitForExistence(timeout:10))
+    }
+    XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
+    app.buttons["Jump"].tap();app.buttons["Save viewpoint"].tap();openMap()
+    let show=app.switches["show-mini-map"];setSwitch(show,to:true)
+    let saved=app.buttons.matching(NSPredicate(format:"label MATCHES %@","View [0-9]+")).firstMatch
+    guidanceReveal(saved,in:app,horizontal:0.97);XCTAssertTrue(saved.isEnabled);saved.tap()
+    let mini=app.descendants(matching:.any)["mini-room-map"].firstMatch
+    XCTAssertTrue(mini.waitForExistence(timeout:10));screenshot("44-mini-map-saved-viewpoint")
+    openMap()
+    let kitchen=app.buttons.matching(NSPredicate(format:"label BEGINSWITH %@","Kitchen")).firstMatch
+    guidanceReveal(kitchen,in:app,horizontal:0.97);XCTAssertTrue(kitchen.isEnabled);kitchen.tap()
+    XCTAssertTrue(mini.waitForExistence(timeout:10))
+    XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@","Kitchen"),object:mini)],timeout:10),.completed)
+    app.terminate();app.launch()
+    XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
+    XCTAssertTrue(mini.waitForExistence(timeout:10));openMap()
+    let office=app.buttons.matching(NSPredicate(format:"label BEGINSWITH %@","Office")).firstMatch
+    guidanceReveal(office,in:app,horizontal:0.97);screenshot("45-room-map-records");office.tap()
+    XCTAssertTrue(mini.waitForExistence(timeout:10))
+    XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@ AND label CONTAINS %@","Office","Level 1"),object:mini)],timeout:10),.completed)
+    XCUIDevice.shared.orientation = .landscapeLeft
+    XCTAssertTrue(app.frame.contains(mini.frame));XCTAssertFalse(mini.frame.intersects(app.buttons["Jump"].frame))
+    XCTAssertTrue(app.buttons["Layers"].isHittable);screenshot("46-mini-map-landscape")
+    XCUIDevice.shared.orientation = .portrait;openMap();setSwitch(show,to:false)
+    app.navigationBars.buttons["Layers"].tap();app.buttons["Done"].tap()
+    XCTAssertFalse(mini.exists)
+  }
+
+  @MainActor func testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout() throws {
+    continueAfterFailure=false;XCUIDevice.shared.orientation = .portrait
+    let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
+    defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
+    func openSettings() {
+      XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
+      app.buttons["Layers"].tap();let settings=app.buttons["viewer-comfort-settings"]
+      guidanceReveal(settings,in:app,horizontal:0.97);settings.tap()
+    }
+    func closeSettings() {
+      app.navigationBars.buttons["Layers"].tap();app.buttons["Done"].tap()
+    }
+    openSettings()
+    let reset=app.buttons["viewer-reset-settings"];guidanceReveal(reset,in:app,horizontal:0.97);reset.tap();closeSettings()
+    app.buttons["Layers"].tap();setSwitch(app.switches["Step and snap-turn buttons"],to:true)
+    app.buttons["viewer-comfort-settings"].tap()
+    for id in ["viewer-speed","viewer-acceleration","viewer-turn-speed","viewer-sensitivity"] {
+      let slider=app.sliders[id];guidanceReveal(slider,in:app,horizontal:0.97)
+      slider.adjust(toNormalizedSliderPosition:id=="viewer-sensitivity" ? 1:0)
+    }
+    let invert=app.switches["viewer-invert-y"],left=app.switches["viewer-left-handed"]
+    guidanceReveal(invert,in:app,horizontal:0.97);setSwitch(invert,to:true)
+    guidanceReveal(left,in:app,horizontal:0.97);setSwitch(left,to:true)
+    for id in ["viewer-field-of-view","viewer-eye-height"] {
+      let slider=app.sliders[id];guidanceReveal(slider,in:app,horizontal:0.97);slider.adjust(toNormalizedSliderPosition:0)
+    }
+    XCTAssertTrue(app.staticTexts["Eye height: 0.8 m"].exists);screenshot("42-viewer-comfort-settings")
+    closeSettings();XCUIDevice.shared.orientation = .landscapeLeft
+    let forward=app.buttons["Step forward"],jump=app.buttons["Jump"]
+    XCTAssertTrue(forward.waitForExistence(timeout:5));XCTAssertTrue(forward.isHittable)
+    XCTAssertGreaterThan(forward.frame.midX,jump.frame.midX);forward.tap();screenshot("43-left-handed-viewer")
+    XCUIDevice.shared.orientation = .portrait;app.terminate();app.launch();openSettings()
+    XCTAssertTrue(app.staticTexts["Walking speed: 0.2 m/s"].waitForExistence(timeout:5))
+    guidanceReveal(invert,in:app,horizontal:0.97);XCTAssertEqual(invert.value as? String,"1")
+    guidanceReveal(left,in:app,horizontal:0.97);XCTAssertEqual(left.value as? String,"1")
+    let width=app.sliders["viewer-field-of-view"];guidanceReveal(width,in:app,horizontal:0.97)
+    XCTAssertTrue(app.staticTexts["View width: 45 °"].exists)
+    guidanceReveal(reset,in:app,horizontal:0.97);reset.tap();closeSettings();openSettings()
+    XCTAssertTrue(app.staticTexts["Walking speed: 1.3 m/s"].waitForExistence(timeout:5))
+    guidanceReveal(invert,in:app,horizontal:0.97);XCTAssertEqual(invert.value as? String,"0")
+    guidanceReveal(left,in:app,horizontal:0.97);XCTAssertEqual(left.value as? String,"0")
+    let height=app.sliders["viewer-eye-height"];guidanceReveal(height,in:app,horizontal:0.97)
+    XCTAssertTrue(app.staticTexts["Eye height: 1.7 m"].exists)
+    closeSettings();app.buttons["Layers"].tap()
+    let resetRoom=app.buttons["viewer-reset-room"];guidanceReveal(resetRoom,in:app,horizontal:0.97);resetRoom.tap()
+    XCTAssertTrue(app.buttons["Step forward"].waitForExistence(timeout:5));XCTAssertTrue(app.buttons["Step forward"].isEnabled)
+    app.buttons["Layers"].tap();setSwitch(app.switches["Step and snap-turn buttons"],to:false);app.buttons["Done"].tap()
+  }
+
   @MainActor func testHomeownerSampleToRealHouseUsesNewCaptureLocation() throws {
     continueAfterFailure = false
     XCUIDevice.shared.orientation = .portrait
@@ -128,7 +214,7 @@ final class HouseXraySmoke: XCTestCase {
     let help = app.buttons["Help & getting started"]; guidanceReveal(help, in: app); help.tap()
     XCTAssertTrue(app.buttons["help-settings"].waitForExistence(timeout: 10))
   }
-  @MainActor private func guidanceReveal(_ element: XCUIElement, in app: XCUIApplication) {
+  @MainActor private func guidanceReveal(_ element: XCUIElement, in app: XCUIApplication, horizontal: CGFloat = 0.5) {
     for _ in 0..<32 {
       let window = app.frame
       let top = max(window.minY + 44, app.navigationBars.allElementsBoundByIndex.last?.frame.maxY ?? window.minY + 44) + 8
@@ -143,8 +229,8 @@ final class HouseXraySmoke: XCTestCase {
       let toY = top + available * (moveDown ? 0.8 : 0.25)
       // XCTest's app.swipeUp produced horizontal events after rotation in 221.1.
       // Use the same explicit viewport-coordinate drag as the existing editors.
-      let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (fromY - window.minY) / window.height))
-      let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (toY - window.minY) / window.height))
+      let start = app.coordinate(withNormalizedOffset: CGVector(dx: horizontal, dy: (fromY - window.minY) / window.height))
+      let end = app.coordinate(withNormalizedOffset: CGVector(dx: horizontal, dy: (toY - window.minY) / window.height))
       start.press(forDuration: 0.05, thenDragTo: end)
     }
     screenshot("guidance-control-unreachable")

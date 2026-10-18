@@ -335,6 +335,8 @@ struct ExploreView: View {
   @Environment(\.verticalSizeClass) private var verticalSizeClass
   @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
   @AppStorage("button-walk-controls") private var buttonWalkControls=false
+  @AppStorage("viewer-comfort-v1") private var savedViewerComfort=""
+  @AppStorage("show-room-mini-map") private var showMiniMap=false
   @EnvironmentObject var model: AppModel
   var house: House
   @StateObject private var controller = WalkController()
@@ -346,18 +348,66 @@ struct ExploreView: View {
   @State private var saveRoute = false
   @State private var boundarySegment:Segment?
   @State private var routeTrade: Trade = .lowVoltage
+  private var viewerComfort:ViewerComfort {ViewerComfort.decode(savedViewerComfort)}
+  private var viewerComfortBinding:Binding<ViewerComfort> {
+    Binding(get:{viewerComfort},set:{savedViewerComfort=$0.encoded})
+  }
+  private var movementControls:some View {
+    Group {
+      if buttonWalkControls || voiceOver {StepMovementControls(controller:controller)}
+      else {Joystick {controller.move=$0}.disabled(controller.orbit)}
+    }
+  }
+  private var viewpointControls:some View {
+    VStack {
+      Menu {
+        ForEach(house.rooms) { r in
+          Button(r.name) {
+            options.room = r.id
+            controller.jump(r)
+          }
+        }
+        Divider()
+        ForEach(
+          house.bookmarks.filter {
+            $0.segmentID == SceneBuilder.activeUnregisteredSegment(house, options: options)
+          }
+        ) { b in Button(b.name) { controller.bookmark(b) } }
+        Button("Save viewpoint") {
+          if let r = house.rooms.first {
+            model.edit {
+              $0.bookmarks.append(
+                Bookmark(
+                  name: "View \($0.bookmarks.count+1)",
+                  position: V3(ar: controller.camera.simdPosition),
+                  yaw: Double(controller.yaw), pitch: Double(controller.pitch),
+                  roomID: options.room ?? r.id,
+                  segmentID: SceneBuilder.activeUnregisteredSegment(house, options: options)
+                ))
+            }
+          }
+        }
+      } label: {
+        Label("Jump", systemImage: "location")
+      }.buttonStyle(.bordered)
+      Toggle("Free fly", isOn: Binding(get:{controller.flying},set:{controller.setFlying($0)})).font(.caption).fixedSize().disabled(controller.orbit)
+      if controller.flying {
+        HStack {
+          Button("↑") { controller.camera.position.y += 0.3 }.accessibilityLabel("Move up")
+          Button("↓") { controller.camera.position.y -= 0.3 }.accessibilityLabel("Move down")
+        }.buttonStyle(.bordered)
+      }
+    }.padding(10).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
+  }
   var body: some View {
     NavigationStack {
       ZStack(alignment: .bottom) {
-        WalkSurface(controller: controller, house: house, options: options).ignoresSafeArea(
+        WalkSurface(controller: controller, house: house, options: options, comfort: viewerComfort).ignoresSafeArea(
           edges: .top)
         VStack(spacing: 12) {
           HStack {
             Text(house.isDemo ? "SYNTHETIC" : "APPROXIMATE").font(.caption.bold()).padding(8)
               .background(.black.opacity(0.6), in: Capsule())
-            if !controller.navigationNotice.isEmpty {
-            Text(controller.navigationNotice).font(.caption).padding(8).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 10)).accessibilityIdentifier("navigation-notice")
-          }
           Spacer()
             if verticalSizeClass == .compact {
               Menu {
@@ -374,10 +424,16 @@ struct ExploreView: View {
             Button {
               layers = true
             } label: {
-              Label("Layers", systemImage: "square.3.layers.3d")
-            }.buttonStyle(.borderedProminent)
+              Label("Layers", systemImage: "square.3.layers.3d").foregroundStyle(.black)
+            }.buttonStyle(.borderedProminent).fixedSize(horizontal:true,vertical:false)
             HomeHelpButton(topic: .explore, title: "Help with the 3D view").labelStyle(.iconOnly)
               .buttonStyle(.bordered).accessibilityIdentifier("explore-help")
+          }
+          if !controller.navigationNotice.isEmpty {
+            Text(controller.navigationNotice).font(.caption).fixedSize(horizontal:false,vertical:true)
+              .frame(maxWidth:.infinity,alignment:.leading).padding(8)
+              .background(ink.opacity(0.94),in:RoundedRectangle(cornerRadius:10)).foregroundStyle(.white)
+              .accessibilityIdentifier("navigation-notice")
           }
           if verticalSizeClass != .compact {HStack {
             Picker("View", selection: $options.mode) {
@@ -385,7 +441,11 @@ struct ExploreView: View {
             }.pickerStyle(.segmented).padding(4).background(
               ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
           }}
-          Spacer()
+          Color.clear.overlay(alignment:.topLeading) {
+            if showMiniMap,controller.tool=="Inspect" {
+              MiniRoomMap(house:house,options:options,controller:controller).allowsHitTesting(false)
+            }
+          }.clipped().allowsHitTesting(false)
           if let id = controller.selection, let f = house.features.first(where: { $0.id == id }) {
             Button {
               selectedFeature = f
@@ -445,48 +505,9 @@ struct ExploreView: View {
             }.padding(10).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
           }
           HStack(alignment: .bottom) {
-            if buttonWalkControls || voiceOver {StepMovementControls(controller:controller)}
-            else {Joystick { controller.move = $0 }.disabled(controller.orbit)}
+            if viewerComfort.leftHanded {viewpointControls} else {movementControls}
             Spacer()
-            VStack {
-              Menu {
-                ForEach(house.rooms) { r in
-                  Button(r.name) {
-                    options.room = r.id
-                    controller.jump(r)
-                  }
-                }
-                Divider()
-                ForEach(
-                  house.bookmarks.filter {
-                    $0.segmentID == SceneBuilder.activeUnregisteredSegment(house, options: options)
-                  }
-                ) { b in Button(b.name) { controller.bookmark(b) } }
-                Button("Save viewpoint") {
-                  if let r = house.rooms.first {
-                    model.edit {
-                      $0.bookmarks.append(
-                        Bookmark(
-                          name: "View \($0.bookmarks.count+1)",
-                          position: V3(ar: controller.camera.simdPosition),
-                          yaw: Double(controller.yaw), pitch: Double(controller.pitch),
-                          roomID: options.room ?? r.id,
-                          segmentID: SceneBuilder.activeUnregisteredSegment(house, options: options)
-                        ))
-                    }
-                  }
-                }
-              } label: {
-                Label("Jump", systemImage: "location")
-              }.buttonStyle(.bordered)
-              Toggle("Free fly", isOn: Binding(get:{controller.flying},set:{controller.setFlying($0)})).font(.caption).fixedSize().disabled(controller.orbit)
-              if controller.flying {
-                HStack {
-                  Button("↑") { controller.camera.position.y += 0.3 }.accessibilityLabel("Move up")
-                  Button("↓") { controller.camera.position.y -= 0.3 }.accessibilityLabel("Move down")
-                }.buttonStyle(.bordered)
-              }
-            }.padding(10).background(ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
+            if viewerComfort.leftHanded {movementControls} else {viewpointControls}
           }
           if verticalSizeClass != .compact {Picker("Tool", selection: $controller.tool) {
             Text("Inspect").tag("Inspect")
@@ -509,6 +530,13 @@ struct ExploreView: View {
               Section("Navigation") {
                 Toggle("Step and snap-turn buttons",isOn:$buttonWalkControls)
                 Toggle("Orbit overview",isOn:Binding(get:{controller.orbit},set:{controller.setOrbit($0)}))
+                NavigationLink("Movement & view") {ViewerComfortSettings(settings:viewerComfortBinding)}.accessibilityIdentifier("viewer-comfort-settings")
+                NavigationLink("Room map") {
+                  RoomMapPage(house:house,options:options,controller:controller,showMiniMap:$showMiniMap,
+                    jump:{room in options.room=room.id;controller.setOrbit(false);controller.jump(room);layers=false},
+                    bookmark:{mark in controller.setOrbit(false);controller.bookmark(mark);layers=false})
+                }.accessibilityIdentifier("viewer-room-map")
+                Button("Reset view to this room") {controller.resetView();layers=false}.accessibilityIdentifier("viewer-reset-room")
                 Text("Move 20 cm per tap and turn 15 degrees without animation. These controls are always available with VoiceOver. Walking still checks floors and obstacles.").font(.footnote)
                 Text("In Orbit overview, drag to rotate and pinch to zoom. Turn it off to return to the saved view from inside the house.").font(.footnote)
               }
@@ -801,8 +829,7 @@ struct CaptureSessionView: View {
           if prior == nil {
             Text("\(controller.count) photos · \(controller.coverageCells) camera positions").font(
               .caption)
-            Text("Position count is not surface completeness.").font(.caption2).foregroundStyle(
-              .secondary)
+            Text("These counts do not mean every surface was recorded.").font(.caption2).foregroundStyle(.white.opacity(0.8))
             if !controller.referenceGuidance.isEmpty {Text(controller.referenceGuidance).font(.caption)}
           }
           HStack {
@@ -810,11 +837,12 @@ struct CaptureSessionView: View {
               if prior == nil {
                 Button("Detail photo") { controller.detail() }.buttonStyle(.bordered)
               }
-              Button("Save & stop") { controller.stop() }.buttonStyle(.borderedProminent)
+              Button { controller.stop() } label: {Text("Save & stop").foregroundStyle(.black)}.buttonStyle(.borderedProminent)
             } else {
-              Button(controller.processing ? "Saving…" : "Start") {
+              Button {
                 controller.start(room: room, stage: stage, prior: prior, reveal: prior != nil, boundary:boundaries.first(where:{$0.id==boundaryID}))
-              }.buttonStyle(.borderedProminent).disabled(controller.processing || model.busy)
+              } label: {Text(controller.processing ? "Saving…" : "Start").foregroundStyle(.black)}
+                .buttonStyle(.borderedProminent).disabled(controller.processing || model.busy)
             }
           }
         }.padding().foregroundStyle(.white)

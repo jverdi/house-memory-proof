@@ -232,6 +232,10 @@ extension UIColor {
   private var cameraCorridor: [V3] = []
   private var recordedPaths:[NavigationGeometry.PathEdge]=[]
   private var walkEyeHeight:Double?
+  // Low-level callers may retain captured height. The app supplies its saved
+  // viewer preferences before loading a house, including the 1.7 m default.
+  private var comfort:ViewerComfort?
+  private(set) var motionVelocity=SIMD3<Float>.zero
   @Published var navigationNotice = ""
   var house: House?
   var options = SceneOptions()
@@ -243,6 +247,7 @@ extension UIColor {
   private var timer: CADisplayLink?
   private var lastTime: CFTimeInterval = 0
   private var panStart = CGPoint.zero
+  private var panTime:CFTimeInterval=0
   private var hadController = false
   var camera = SceneBuilder.camera(at: V3(3, 2, 1.6))
   override init() {
@@ -262,24 +267,35 @@ extension UIColor {
     t.add(to: .main, forMode: .common)
     timer = t
   }
+  func applyComfort(_ value:ViewerComfort) {
+    let next=value.bounded
+    guard comfort != next else{return}
+    let changedHeight=comfort?.eyeHeight != next.eyeHeight
+    comfort=next;camera.camera?.fieldOfView=CGFloat(next.fieldOfView)
+    view.pointOfView?.camera?.fieldOfView=CGFloat(next.fieldOfView)
+    clearMovement()
+    if changedHeight {walkEyeHeight=nil;validateWalkPosition()}
+  }
+  private func clearMovement() {
+    move = .zero;vertical=0;motionVelocity = .zero
+  }
   func stop() {
     view.isPlaying=false
     timer?.invalidate()
     timer = nil
-    move = .zero
-    vertical = 0
+    clearMovement()
     lastTime = 0
     collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
     if sceneTask != nil {resumeScene=true}
     sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID()
   }
   func setOrbit(_ enabled:Bool) {
-    move = .zero;vertical=0;orbit=enabled
+    clearMovement();orbit=enabled
     view.allowsCameraControl=enabled
     if !enabled {view.pointOfView=camera;validateWalkPosition()}
   }
   func setFlying(_ enabled:Bool) {
-    move = .zero;vertical=0;flying=enabled
+    clearMovement();flying=enabled
     if !enabled {validateWalkPosition()}
   }
   func load(_ h: House, _ o: SceneOptions) {
@@ -293,7 +309,7 @@ extension UIColor {
     house = h
     options = o
     revision = h.revision
-    walkEyeHeight=nil
+    walkEyeHeight=nil;clearMovement()
     collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
     sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID();resumeScene=false
     stream=nil;navigationIndex=nil
@@ -356,19 +372,46 @@ extension UIColor {
   private func validateWalkPosition() {
     guard !flying,!orbit,!preparingScene,let h=house else{return}
     let current=V3(ar:camera.simdPosition)
-    func usable(_ point:V3)->Bool {
-      guard clearance.hasFloorSupport,clearance.walkingDestination(from:point,toward:point) != nil else{return false}
-      return h.isDemo && h.observations.isEmpty ? NavigationGeometry.allowed(point,house:h):NavigationGeometry.observed(point,positions:cameraCorridor)
+    func usable(_ point:V3)->V3? {
+      let adjusted:V3?
+      if let comfort {adjusted=clearance.standingPosition(from:point,eyeHeight:comfort.eyeHeight)}
+      else {adjusted=clearance.walkingDestination(from:point,toward:point)?.position}
+      guard let adjusted,withinWalkingRecord(adjusted,house:h) else{return nil}
+      return adjusted
     }
-    guard !usable(current) else{return}
+    if let adjusted=usable(current) {
+      camera.simdPosition=adjusted.render;walkEyeHeight=comfort?.eyeHeight
+      if navigationNotice.hasPrefix("No checked walking viewpoint") {navigationNotice=""}
+      return
+    }
     let candidates=h.isDemo && h.observations.isEmpty ? h.rooms.filter{options.room==nil || $0.id==options.room}.map{$0.origin+V3($0.size.x/2,$0.size.y/2,1.6)}:cameraCorridor
-    if let safe=candidates.sorted(by:{($0-current).length<($1-current).length}).first(where:usable) {
-      camera.simdPosition=safe.render;walkEyeHeight=nil;move = .zero;vertical=0
+    if let safe=candidates.sorted(by:{($0-current).length<($1-current).length}).lazy.compactMap(usable).first {
+      camera.simdPosition=safe.render;walkEyeHeight=comfort?.eyeHeight;clearMovement()
       navigationNotice="Moved to a checked viewpoint for this stage."
     } else {
-      flying=true;move = .zero;vertical=0
+      flying=true;clearMovement()
       navigationNotice="No checked walking viewpoint is available here. Free fly is enabled. Walking needs a captured floor and a clear route."
     }
+  }
+  private func withinWalkingRecord(_ point:V3,house:House)->Bool {
+    guard comfort != nil else {
+      return house.isDemo && house.observations.isEmpty ? NavigationGeometry.allowed(point,house:house):NavigationGeometry.observed(point,positions:cameraCorridor)
+    }
+    guard let floor=clearance.walkingFloorHeight(at:point) else{return false}
+    if house.isDemo && house.observations.isEmpty {
+      return NavigationGeometry.allowed(V3(point.x,point.y,floor+1.6),house:house)
+    }
+    // Compare floor levels, not phone-holding heights. The original horizontal
+    // corridor and level tolerance stay bounded; stacked floors cannot connect.
+    return cameraCorridor.contains { recorded in
+      guard hypot(point.x-recorded.x,point.y-recorded.y)<0.65,
+        let recordedFloor=clearance.walkingFloorHeight(at:recorded) else{return false}
+      return abs(floor-recordedFloor)<0.4
+    }
+  }
+  func resetView() {
+    guard let h=house,let room=h.rooms.first(where:{$0.id==options.room}) ?? h.rooms.first else{return}
+    setOrbit(false);flying=false;jump(room);validateWalkPosition()
   }
   private func updateCollision(at position:V3) {
     guard let stream,let index=navigationIndex,collisionTask==nil,
@@ -388,7 +431,7 @@ extension UIColor {
     }
   }
   func jump(_ room: Room) {
-    walkEyeHeight=nil
+    walkEyeHeight=nil;clearMovement()
     var p = room.origin + V3(room.size.x / 2, room.size.y / 2, 1.6)
     var direction = V3(0.55, 1, -0.08)
     if let h = house,
@@ -412,7 +455,7 @@ extension UIColor {
     yaw = Float(atan2(-direction.x, direction.y))
     pitch = Float(asin(max(-1, min(1, direction.normalized.z))))
     camera.eulerAngles = SCNVector3(pitch, yaw, 0)
-    move = .zero
+    validateWalkPosition()
   }
   func bookmark(_ b: Bookmark) {
     walkEyeHeight=nil
@@ -420,17 +463,25 @@ extension UIColor {
     yaw = Float(b.yaw)
     pitch = Float(b.pitch)
     camera.eulerAngles = SCNVector3(pitch, yaw, 0)
-    move = .zero;vertical=0
+    clearMovement()
     validateWalkPosition()
   }
   @objc func pan(_ g: UIPanGestureRecognizer) {
     guard !orbit else { return }
     let p = g.translation(in: view)
-    if g.state == .began { panStart = p }
-    yaw -= Float(p.x - panStart.x) * 0.004
-    pitch = max(-1.35, min(1.35, pitch - Float(p.y - panStart.y) * 0.004))
-    panStart = p
-    camera.eulerAngles = SCNVector3(pitch, yaw, 0)
+    let now=CACurrentMediaTime()
+    if g.state == .began {panStart=p;panTime=now;return}
+    dragLook(dx:Float(p.x-panStart.x),dy:Float(p.y-panStart.y),seconds:Float(now-panTime))
+    panStart=p;panTime=now
+  }
+  func dragLook(dx:Float,dy:Float,seconds:Float) {
+    guard !orbit,dx.isFinite,dy.isFinite,seconds.isFinite,seconds>0 else{return}
+    let settings=comfort ?? ViewerComfort(),limit=Float(settings.turnDegreesPerSecond * .pi/180)*min(0.05,seconds)
+    let scale=Float(settings.sensitivity)*0.004,verticalSign:Float=settings.invertY ? 1:-1
+    let requested=SIMD2(-dx*scale,dy*scale*verticalSign)
+    let bounded=requested*min(1,limit/max(0.000001,simd_length(requested)))
+    yaw+=bounded.x;pitch=max(-1.35,min(1.35,pitch+bounded.y))
+    camera.eulerAngles=SCNVector3(pitch,yaw,0)
   }
   @objc func tap(_ g: UITapGestureRecognizer) {
     let p = g.location(in: view)
@@ -468,29 +519,48 @@ extension UIColor {
     view.scene?.rootNode.addChildNode(group)
   }
   @objc func tick(_ link: CADisplayLink) {
-    let dt = Float(lastTime == 0 ? 0 : min(0.05, link.timestamp - lastTime))
+    let dt = Float(lastTime == 0 ? 0 : max(0,min(0.05,link.timestamp-lastTime)))
     lastTime = link.timestamp
+    var look=SIMD2<Float>.zero
     if let pad = GCController.current?.extendedGamepad {
       hadController = true
       move = SIMD2(pad.leftThumbstick.xAxis.value, pad.leftThumbstick.yAxis.value)
-      yaw -= pad.rightThumbstick.xAxis.value * dt * 1.8
-      pitch = max(-1.35, min(1.35, pitch + pad.rightThumbstick.yAxis.value * dt * 1.2))
-      camera.eulerAngles = SCNVector3(pitch, yaw, 0)
+      look=SIMD2(pad.rightThumbstick.xAxis.value,pad.rightThumbstick.yAxis.value)
     } else if hadController {
-      move = .zero
+      clearMovement()
       hadController = false
     }
     let displayed=view.pointOfView?.presentation.simdWorldPosition ?? camera.simdPosition
     stream?.update(camera:V3(ar:displayed),time:link.timestamp)
     updateCollision(at:V3(ar:camera.simdPosition))
-    guard !orbit,!preparingScene else { return }
+    advance(seconds:dt,look:look)
+  }
+  // Shared by the display link and native diagnostics. Frame stalls cannot
+  // create long jumps; diagonal input cannot exceed the selected speed.
+  func advance(seconds:Float,look:SIMD2<Float> = .zero) {
+    guard !orbit,!preparingScene,seconds.isFinite,seconds>0 else{motionVelocity = .zero;return}
+    let dt=min(0.05,seconds),settings=comfort ?? ViewerComfort()
+    if look.x.isFinite,look.y.isFinite {
+      let bounded=look/max(1,simd_length(look)),rate=Float(settings.turnDegreesPerSecond * .pi/180)
+      yaw-=bounded.x*rate*dt
+      pitch=max(-1.35,min(1.35,pitch+bounded.y*rate*dt*(settings.invertY ? -1:1)))
+      camera.eulerAngles=SCNVector3(pitch,yaw,0)
+    }
+    guard move.x.isFinite,move.y.isFinite,vertical.isFinite else{clearMovement();return}
     let forward = SIMD3<Float>(-sin(yaw), 0, -cos(yaw))
     let right = SIMD3<Float>(cos(yaw), 0, -sin(yaw))
-    let delta = (forward * move.y + right * move.x + SIMD3(0, vertical, 0)) * dt * 1.3
-    attemptMove(delta)
+    let raw=forward*max(-1,min(1,move.y))+right*max(-1,min(1,move.x))+SIMD3(0,flying ? max(-1,min(1,vertical)):0,0)
+    guard simd_length(raw)>0.001 else{motionVelocity = .zero;return}
+    let target=raw/max(1,simd_length(raw))*Float(settings.speed)
+    if simd_dot(motionVelocity,target)<=0 {motionVelocity = .zero}
+    let difference=target-motionVelocity,change=Float(settings.acceleration)*dt
+    motionVelocity+=difference*min(1,change/max(0.000001,simd_length(difference)))
+    let before=camera.simdPosition
+    attemptMove(motionVelocity*dt)
+    if simd_length(camera.simdPosition-before)<0.000001 {motionVelocity = .zero}
   }
   func stepMove(_ input: SIMD2<Float>) {
-    move = .zero;vertical = 0
+    clearMovement()
     guard input.x.isFinite,input.y.isFinite else{return}
     let bounded=input / max(1,simd_length(input))
     let forward=SIMD3<Float>(-sin(yaw),0,-cos(yaw)),right=SIMD3<Float>(cos(yaw),0,-sin(yaw))
@@ -498,7 +568,7 @@ extension UIColor {
   }
   func stepLook(yaw deltaYaw:Float=0,pitch deltaPitch:Float=0) {
     guard !orbit,deltaYaw.isFinite,deltaPitch.isFinite else{return}
-    move = .zero;vertical = 0
+    clearMovement()
     yaw += max(-Float.pi/4,min(Float.pi/4,deltaYaw))
     pitch=max(-1.35,min(1.35,pitch+max(-Float.pi/4,min(Float.pi/4,deltaPitch))))
     camera.eulerAngles=SCNVector3(pitch,yaw,0)
@@ -513,15 +583,11 @@ extension UIColor {
       return
     }
     guard clearance.hasFloorSupport else{return}
-    if let adjusted=NavigationGeometry.followedHeight(from:V3(ar:from),to:V3(ar:to),paths:recordedPaths) {to=adjusted.render}
+    if comfort == nil,let adjusted=NavigationGeometry.followedHeight(from:V3(ar:from),to:V3(ar:to),paths:recordedPaths) {to=adjusted.render}
     if let destination=clearance.walkingDestination(from:V3(ar:from),toward:V3(ar:to),eyeHeight:walkEyeHeight) {
       to=destination.position.render
       if let h = house {
-        if h.isDemo && h.observations.isEmpty {
-          guard NavigationGeometry.allowed(V3(ar: to), house: h) else { return }
-        } else {
-          guard NavigationGeometry.observed(V3(ar: to), positions: cameraCorridor) else { return }
-        }
+        guard withinWalkingRecord(V3(ar:to),house:h) else{return}
       }
       camera.simdPosition = to
       walkEyeHeight=destination.eyeHeight
@@ -532,12 +598,15 @@ struct WalkSurface: UIViewRepresentable {
   @ObservedObject var controller: WalkController
   var house: House
   var options: SceneOptions
+  var comfort: ViewerComfort
   func makeUIView(context: Context) -> SCNView {
+    controller.applyComfort(comfort)
     controller.load(house, options)
     controller.start()
     return controller.view
   }
   func updateUIView(_ uiView: SCNView, context: Context) {
+    controller.applyComfort(comfort)
     controller.load(house, options)
     uiView.allowsCameraControl = controller.orbit
   }
@@ -546,12 +615,13 @@ struct WalkSurface: UIViewRepresentable {
 struct Joystick: View {
   var action: (SIMD2<Float>) -> Void
   @State private var offset = CGSize.zero
+  @GestureState private var dragging=false
   var body: some View {
     Circle().fill(.black.opacity(0.5)).overlay(Circle().stroke(.white.opacity(0.3))).frame(
       width: 112, height: 112
     ).overlay(Circle().fill(.white.opacity(0.7)).frame(width: 42, height: 42).offset(offset))
       .gesture(
-        DragGesture(minimumDistance: 0).onChanged { v in
+        DragGesture(minimumDistance: 0).updating($dragging) { _,active,_ in active=true }.onChanged { v in
           let x = max(-35, min(35, v.translation.width))
           let y = max(-35, min(35, v.translation.height))
           offset = CGSize(width: x, height: y)
@@ -562,6 +632,9 @@ struct Joystick: View {
         }
       ).accessibilityLabel("Move joystick").accessibilityHint(
         "Drag to walk. Drag the scene to look.")
+      // GestureState also resets when the system cancels a drag without
+      // delivering onEnded (for example, an interruption or gesture takeover).
+      .onChange(of:dragging) {_,active in if !active {offset = .zero;action(.zero)}}
       .onDisappear {offset = .zero;action(.zero)}
   }
 }

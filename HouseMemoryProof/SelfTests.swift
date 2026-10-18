@@ -1861,6 +1861,159 @@ import simd
                   && !local.isWalkClear(from:a,to:V3(1.5,0,1.6))
                   && !local.isWalkClear(from:a,to:V3(Double.nan,0,1.6))
             }
+            await check("Room map preserves registered coordinates, floor identity, stage scope and heading") {
+                var h=House.empty("Map frame fixture")
+                h.rooms=[Room(name:"Ground A",level:0,origin:V3(),size:V3(4,4,3)),
+                  Room(name:"Ground B",level:0,origin:V3(4,0,0),size:V3(4,4,3)),
+                  Room(name:"Upper A",level:1,origin:V3(0,0,3.2),size:V3(4,4,3))]
+                let rough=h.stages[0].id,finished=h.stages[1].id
+                var shifted=Rigid(),upper=Rigid();shifted.values[3]=4;upper.values[11]=3.2
+                h.segments=[Segment(roomID:h.rooms[0].id,stageID:rough,registration:Rigid()),
+                  Segment(roomID:h.rooms[1].id,stageID:rough,registration:shifted),
+                  Segment(roomID:h.rooms[2].id,stageID:rough,registration:upper),
+                  Segment(roomID:h.rooms[0].id,stageID:finished,registration:Rigid())]
+                for (i,segment) in h.segments.enumerated() {
+                  var camera=Rigid().values;camera[3]=2;camera[7]=1.4;camera[11] = -2
+                  h.observations.append(Observation(roomID:segment.roomID,stageID:segment.stageID,segmentID:segment.id,
+                    timestamp:Double(i),image:"analytic-map.jpg",width:64,height:64,camera:camera,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))
+                }
+                var detail=h.observations[0];detail.id=UUID();detail.documentary=true;h.observations.append(detail)
+                h.bookmarks=[Bookmark(name:"Lower",position:V3(2,2,1.7),yaw:0,pitch:0,roomID:h.rooms[0].id),
+                  Bookmark(name:"Upper",position:V3(2,2,4.9),yaw:0,pitch:0,roomID:h.rooms[2].id)]
+                try h.validate();let original=h,map=try RoomMapSnapshot.build(house:h,options:SceneOptions())
+                guard map.separateVisit==nil,map.levels==[0,1],map.visits.count==3,map.bookmarks.count==2,
+                  map.viewCounts.values.reduce(0,+)==3,
+                  map.visits.contains(where:{$0.roomID==h.rooms[1].id && ($0.position-V3(6,2,1.4)).length<1e-9}),
+                  map.visits.contains(where:{$0.roomID==h.rooms[2].id && ($0.position-V3(2,2,4.6)).length<1e-9}),
+                  map.room(at:V3(6,2,1.7))?.id==h.rooms[1].id,map.level(at:V3(2,2,4.9))==1,
+                  map.room(at:V3(6,2,4.9))==nil,map.room(at:V3(.nan,0,0))==nil else{return false}
+                var scope=SceneOptions();scope.room=h.rooms[1].id
+                let room=try RoomMapSnapshot.build(house:h,options:scope)
+                scope=SceneOptions();scope.mode = .finished;let finish=try RoomMapSnapshot.build(house:h,options:scope)
+                let bounds=map.bounds(level:0,position:V3(2,2,1.7))
+                return room.rooms.count==1 && room.visits.count==1 && room.bookmarks.isEmpty && finish.visits.count==1
+                  && bounds.low.x<0 && bounds.high.x>8 && bounds.low.finite && bounds.high.finite
+                  && RoomMapSnapshot.heading(0)=="Facing up on the map"
+                  && RoomMapSnapshot.heading(.pi/2)=="Facing left on the map"
+                  && RoomMapSnapshot.heading(-.pi/2)=="Facing right on the map"
+                  && RoomMapSnapshot.heading(.nan)=="Direction unavailable" && h==original
+            }
+            await check("Room map keeps unaligned visits separate and bounds drawing work without inventing coverage") {
+                var h=House.empty("Map isolation fixture")
+                h.rooms=[Room(name:"Other visit",level:0,origin:V3(),size:V3(4,4,3)),
+                  Room(name:"Unaligned visit",level:1,origin:V3(1000,1000,50),size:V3(4,4,3))]
+                let stage=h.stages[0].id
+                h.segments=h.rooms.map{Segment(roomID:$0.id,stageID:stage)}
+                for i in 0..<501 {
+                  let segment=h.segments[i==0 ? 0:1];var camera=Rigid().values
+                  camera[3]=Double(i)*0.001;camera[7]=1.4;camera[11] = -2
+                  h.observations.append(Observation(roomID:segment.roomID,stageID:stage,segmentID:segment.id,
+                    timestamp:Double(i),image:"analytic-map.jpg",width:64,height:64,camera:camera,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))
+                }
+                h.bookmarks=(0..<120).map{Bookmark(name:"Visit point \($0)",position:V3(3,3,1.4),yaw:0,pitch:0,roomID:h.rooms[1].id,segmentID:h.segments[1].id)}
+                h.bookmarks.append(Bookmark(name:"Different frame",position:V3(2000,2000,1.4),yaw:0,pitch:0,roomID:h.rooms[1].id))
+                try h.validate();let original=h,map=try RoomMapSnapshot.build(house:h,options:SceneOptions())
+                let bounds=map.bounds(level:1,position:V3(1,2,1.4))
+                guard map.separateVisit==h.segments[1].id,map.rooms.count==1,map.rooms[0].id==h.rooms[1].id,
+                  map.viewCounts[h.rooms[1].id]==500,map.visits.count==250,map.visits.allSatisfy{$0.roomID==h.rooms[1].id && $0.position.x<1},
+                  map.bookmarks.count==100,map.limitedBookmarks,map.bookmarks.allSatisfy{$0.segmentID==h.segments[1].id},
+                  bounds.high.x<5,bounds.high.y<5 else{return false}
+                var empty=h;empty.observations=[];empty.bookmarks=[]
+                let noViews=try RoomMapSnapshot.build(house:empty,options:SceneOptions())
+                let emptyBounds=noViews.bounds(level:1,position:V3(Double.greatestFiniteMagnitude,0,0))
+                var oversized=House.empty("Map range refusal")
+                oversized.rooms[0].origin=V3(Double.greatestFiniteMagnitude,0,0)
+                do {_ = try RoomMapSnapshot.build(house:oversized,options:SceneOptions());return false}catch {}
+                return noViews.visits.isEmpty && noViews.viewCounts.isEmpty && emptyBounds.low.finite
+                  && emptyBounds.high.finite && emptyBounds.high.x-emptyBounds.low.x>=2 && h==original
+            }
+            await check("Viewer preferences bound invalid input and round-trip without changing defaults") {
+                let defaults=ViewerComfort()
+                guard defaults.eyeHeight==1.7,defaults.fieldOfView==60,ViewerComfort.decode("invalid")==defaults else{return false}
+                var bad=defaults;bad.speed = .infinity;bad.acceleration = -3;bad.turnDegreesPerSecond=999
+                bad.sensitivity = .nan;bad.fieldOfView=300;bad.eyeHeight = -2;bad.invertY=true;bad.leftHanded=true
+                let bounded=bad.bounded
+                guard bounded.speed==1.3,bounded.acceleration==0.2,bounded.turnDegreesPerSecond==180,
+                  bounded.sensitivity==1,bounded.fieldOfView==90,bounded.eyeHeight==0.8,
+                  ViewerComfort.decode(bad.encoded)==bounded else{return false}
+                bad.fieldOfView = -1;bad.eyeHeight = .nan
+                return bad.bounded.fieldOfView==45 && bad.bounded.eyeHeight==1.7
+            }
+            await check("Viewer acceleration, input normalization, frame bounds, look limits and immediate stopping use the live controller") {
+                var h=House.empty("Viewer movement fixture");h.isDemo=true;h.rooms[0].size=V3(20,20,3)
+                let room=h.rooms[0].id,stage=h.stages[0].id
+                h.features=[Feature(name:"Captured floor",trade:.floor,roomID:room,stageID:stage,kind:.synthetic,
+                  mesh:.box(center:V3(10,10,-0.1),size:V3(20,20,0.2)))]
+                let original=h,walk=WalkController();defer{walk.stop()}
+                var settings=ViewerComfort();settings.speed=1;settings.acceleration=0.5
+                walk.applyComfort(settings);walk.load(h,SceneOptions())
+                walk.bookmark(Bookmark(name:"Start",position:V3(10,10,1.7),yaw:0,pitch:0,roomID:room))
+                guard !walk.flying,abs(V3(ar:walk.camera.simdPosition).z-1.7)<1e-6,walk.camera.camera?.fieldOfView==60 else{return false}
+                walk.move=SIMD2(1,0)
+                for _ in 0..<10 {walk.advance(seconds:0.05)}
+                guard abs(V3(ar:walk.camera.simdPosition).x-10.06875)<0.00003,abs(walk.motionVelocity.x-0.25)<0.00001 else{return false}
+                let beforeStall=walk.camera.simdPosition;walk.advance(seconds:100)
+                guard abs(simd_length(walk.camera.simdPosition-beforeStall)-0.01375)<0.00003 else{return false}
+                let beforeRelease=walk.camera.simdPosition;walk.move = .zero;walk.advance(seconds:0.05)
+                guard walk.camera.simdPosition==beforeRelease,walk.motionVelocity == .zero else{return false}
+                settings.acceleration=4;walk.applyComfort(settings);walk.move=SIMD2(10,10)
+                for _ in 0..<10 {walk.advance(seconds:0.05)}
+                guard abs(simd_length(walk.motionVelocity)-1)<0.00001 else{return false}
+                walk.move=SIMD2(Float.nan,0);let beforeInvalid=walk.camera.simdPosition;walk.advance(seconds:0.05)
+                guard walk.motionVelocity == .zero,walk.camera.simdPosition==beforeInvalid else{return false}
+                walk.yaw=0;walk.pitch=0;walk.dragLook(dx:10000,dy:0,seconds:0.05)
+                guard abs(walk.yaw + Float.pi/40)<0.00001 else{return false}
+                walk.yaw=0;walk.pitch=0;walk.dragLook(dx:0,dy:2,seconds:0.05)
+                let ordinaryPitch=walk.pitch;settings.invertY=true;settings.fieldOfView=90;walk.applyComfort(settings);walk.pitch=0
+                walk.dragLook(dx:0,dy:2,seconds:0.05)
+                guard ordinaryPitch<0,abs(walk.pitch+ordinaryPitch)<0.000001,walk.camera.camera?.fieldOfView==90 else{return false}
+                walk.move = .zero;walk.yaw=0;walk.pitch=0;walk.advance(seconds:0.05,look:SIMD2(0,1))
+                guard abs(walk.pitch + Float.pi/40)<0.00001 else{return false}
+                walk.move=SIMD2(1,0);walk.advance(seconds:0.05);walk.setOrbit(true)
+                let orbitPosition=walk.camera.simdPosition,orbitYaw=walk.yaw
+                walk.advance(seconds:0.05,look:SIMD2(1,1))
+                guard walk.motionVelocity == .zero,walk.camera.simdPosition==orbitPosition,walk.yaw==orbitYaw else{return false}
+                walk.setOrbit(false);walk.move=SIMD2(1,0);walk.advance(seconds:0.05);walk.stop()
+                return walk.motionVelocity == .zero && walk.move == .zero && walk.house==original
+            }
+            await check("Comfort eye heights preserve connected rooms and stairs while tall views refuse low doorways") {
+                try NavigationBenchmark.comfortWalk()
+            }
+            await check("Viewer eye height follows the captured floor without connecting levels or bypassing headroom") {
+                var h=House.empty("Viewer height fixture");h.rooms[0].origin=V3(-3,-3,0);h.rooms[0].size=V3(6,6,6)
+                let room=h.rooms[0].id,stage=h.stages[0].id,segment=Segment(roomID:room,stageID:stage,registration:Rigid())
+                h.segments=[segment]
+                func floor(_ height:Double)->Feature {
+                    Feature(name:"Floor",trade:.floor,roomID:room,stageID:stage,kind:.synthetic,
+                      mesh:.box(center:V3(0,0,height-0.05),size:V3(6,6,0.1)),segmentID:segment.id)
+                }
+                h.features=[floor(0),floor(3.2)]
+                var matrix=Rigid().values;matrix[7]=1.1
+                h.observations=[Observation(roomID:room,stageID:stage,segmentID:segment.id,timestamp:0,
+                  image:"analytic-viewer.jpg",width:64,height:64,camera:matrix,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1)]
+                let original=h,walk=WalkController();defer{walk.stop()};var settings=ViewerComfort()
+                walk.applyComfort(settings);walk.load(h,SceneOptions())
+                guard !walk.flying,abs(V3(ar:walk.camera.simdPosition).z-1.7)<1e-6 else{return false}
+                walk.yaw=0;walk.stepMove(SIMD2(1,0))
+                guard abs(V3(ar:walk.camera.simdPosition).x-0.2)<1e-5 else{return false}
+                settings.eyeHeight=2.2;walk.applyComfort(settings)
+                guard !walk.flying,abs(V3(ar:walk.camera.simdPosition).z-2.2)<1e-5 else{return false}
+                walk.bookmark(Bookmark(name:"Unobserved upper floor",position:V3(0,0,4.9),yaw:0,pitch:0,roomID:room))
+                guard !walk.flying,V3(ar:walk.camera.simdPosition).z<3 else{return false}
+                let ceiling=Feature(name:"Low ceiling",trade:.ceiling,roomID:room,stageID:stage,kind:.synthetic,
+                  mesh:.box(center:V3(0,0,2.05),size:V3(6,6,0.1)),segmentID:segment.id)
+                var low=h;low.features.append(ceiling);low.revision+=1;walk.load(low,SceneOptions())
+                guard walk.flying,walk.navigationNotice.contains("No checked walking viewpoint") else{return false}
+                settings.eyeHeight=1.7;walk.applyComfort(settings);walk.setFlying(false)
+                guard !walk.flying,abs(V3(ar:walk.camera.simdPosition).z-1.7)<1e-5 else{return false}
+                var missing=h;missing.features=[];missing.revision+=2;walk.load(missing,SceneOptions())
+                let position=walk.camera.simdPosition;settings.eyeHeight=1.2;walk.applyComfort(settings)
+                guard walk.flying,walk.camera.simdPosition==position else{return false}
+                let clearance=SpatialClearance(features:h.features+[ceiling])
+                return clearance.standingPosition(from:V3(0,0,1.1),eyeHeight:2.2)==nil
+                  && clearance.standingPosition(from:V3(0,0,1.1),eyeHeight:1.7) != nil
+                  && h==original && walk.house==missing
+            }
             await check("Step navigation shares floor and wall collision, clamps input, snaps look and clears continuous movement") {
                 var h=House.empty("Step controls");h.isDemo=true
                 h.rooms[0].origin=V3();h.rooms[0].size=V3(6,6,3)

@@ -244,10 +244,10 @@ if [ "$mode" = recovery ]; then exit 0; fi
 
 set +e
 # Seventeen workflows include the thirteen existing construction-record flows and
-# four homeowner guidance flows. Run 222.1 exhausted the former 25-minute
-# allocation during its seventeenth case. Allow 30 minutes for the expanded UI
-# suite; native diagnostics and the 60-minute job keep their existing bounds.
-python3 ci/run_bounded.py 1800 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
+# four homeowner guidance flows. The complete 17-flow 224.1 run took 1404.559s.
+# Two added comfort/map workflows raise the suite to 19 flows; allow 35 minutes.
+# Native diagnostics and the 60-minute job keep their existing bounds.
+python3 ci/run_bounded.py 2100 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \

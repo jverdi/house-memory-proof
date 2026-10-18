@@ -139,6 +139,25 @@ struct SpatialClearance {
   func isWalkClear(from a:V3,to b:V3)->Bool {
     sweptClear(from:a,to:b,below:1.55,above:0.22,radius:0.20)
   }
+  // The full footprint must lie on observed support. Use the current camera
+  // height to select the floor; changing eye height cannot select another level.
+  func walkingFloorHeight(at point:V3)->Double? {
+    guard complete,point.finite,!floors.isEmpty else{return nil}
+    var heights:[Double]=[]
+    for x in [-0.20,0,0.20] {for y in [-0.20,0,0.20] {
+      guard let height=floors.height(at:point+V3(x,y,0)) else{return nil};heights.append(height)
+    }}
+    guard let high=heights.max(),let low=heights.min(),high-low<=0.48 else{return nil}
+    return high
+  }
+  func standingPosition(from point:V3,eyeHeight:Double)->V3? {
+    guard eyeHeight.isFinite,eyeHeight>=0.4,eyeHeight<=2.2,
+      let floor=walkingFloorHeight(at:point) else{return nil}
+    let adjusted=V3(point.x,point.y,floor+eyeHeight)
+    guard sweptClear(from:adjusted,to:adjusted,below:eyeHeight-0.03,
+      above:max(0.22,1.80-eyeHeight),radius:0.20) else{return nil}
+    return adjusted
+  }
   // Follow observed floor triangles without assuming the phone was held at
   // standing eye height. Preserve its actual height above the floor while
   // checking a 1.77 m upright body, a 24 cm step and head clearance throughout.
@@ -147,15 +166,7 @@ struct SpatialClearance {
   func walkingDestination(from a:V3,toward b:V3,eyeHeight savedHeight:Double?=nil)->(position:V3,eyeHeight:Double)? {
     guard complete,a.finite,b.finite else{return nil}
     guard !floors.isEmpty else{return nil}
-    func support(at point:V3)->Double? {
-      var heights:[Double]=[]
-      for x in [-0.20,0,0.20] {for y in [-0.20,0,0.20] {
-        guard let height=floors.height(at:point+V3(x,y,0)) else{return nil};heights.append(height)
-      }}
-      guard let high=heights.max(),let low=heights.min(),high-low<=0.48 else{return nil}
-      return high
-    }
-    guard let start=support(at:a) else{return nil}
+    guard let start=walkingFloorHeight(at:a) else{return nil}
     let eyeHeight=savedHeight ?? (a.z-start),horizontal=hypot(b.x-a.x,b.y-a.y)
     guard eyeHeight.isFinite,eyeHeight>=0.4,eyeHeight<=2.2 else{return nil}
     guard horizontal<=2 else{return nil}
@@ -164,7 +175,7 @@ struct SpatialClearance {
     for step in 1...steps {
       let fraction=Double(step)/Double(steps)
       var next=a+(b-a)*fraction;next.z=previousFloor+eyeHeight
-      guard let floor=support(at:next),abs(floor-previousFloor)<=0.24 else{return nil}
+      guard let floor=walkingFloorHeight(at:next),abs(floor-previousFloor)<=0.24 else{return nil}
       next.z=floor+eyeHeight
       let high=max(floor,previousFloor),raisedFrom=V3(previous.x,previous.y,high+eyeHeight),raisedTo=V3(next.x,next.y,high+eyeHeight)
       let below=eyeHeight-0.03,above=max(0.22,1.80-eyeHeight)
