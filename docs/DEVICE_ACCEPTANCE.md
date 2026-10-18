@@ -12,6 +12,8 @@ After installing the new TestFlight build, open Tools → Run synthetic self-tes
 
 On a build that includes R19, open Help & getting started → Help settings → Restart introduction. Complete it once, relaunch, and confirm it stays dismissed. Skip it once, enable Show introduction next time, fully close/relaunch, and confirm it returns. Verify that the same houses, photos and notes remain intact. This guide reset must not behave like a project reset.
 
+If you first explored the sample, create your own house and confirm Capture shows that house's room and stage. Switching houses must not carry over the previous house's room selections.
+
 With networking off, use the guide for one real homeowner task: identify the correct house, room and date; record or import a photograph; find it again; and save a complete backup. Use the unfamiliar-word search and the unavailable-camera/overlay alternatives. Record any step whose wording or named control is unclear; successful navigation alone does not establish that the instructions are understandable.
 
 With the iPhone's larger accessibility text, landscape orientation and VoiceOver, read the introduction and a long guide. Confirm headings and actions are understandable, selection state is spoken, content scrolls, and Back, Skip, Done and the next action remain reachable. Retain screenshots or a recording of failures. Simulator screenshots do not substitute for this owner-device check.

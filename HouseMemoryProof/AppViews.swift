@@ -13,20 +13,30 @@ struct RootView: View {
   @State private var guidanceRoutes: [Int: UUID] = [:]
   @State private var newProject = false
   @State private var name = "My house"
+  private struct TabIdentity: Hashable {
+    let tab: Int
+    let house: UUID
+    let route: UUID?
+  }
+  private func identity(_ index: Int, house: House) -> TabIdentity {
+    // House-local picks and navigation must not carry sample-room IDs into a
+    // new project. Revisions deliberately do not reset an editor mid-save.
+    TabIdentity(tab: index, house: house.id, route: guidanceRoutes[index])
+  }
   var body: some View {
     Group {
       if let house = model.house {
         TabView(selection: $tab) {
-          OverviewView(house: house, openExplore: { tab = 1 }, openCapture: { tab = 2 }).id(guidanceRoutes[0]).tabItem {
+          OverviewView(house: house, openExplore: { tab = 1 }, openCapture: { tab = 2 }).id(identity(0, house: house)).tabItem {
             Label("House", systemImage: "house")
           }.tag(0)
-          ExploreView(house: house).id(guidanceRoutes[1]).tabItem { Label("Explore", systemImage: "cube.transparent") }
+          ExploreView(house: house).id(identity(1, house: house)).tabItem { Label("Explore", systemImage: "cube.transparent") }
             .tag(1)
-          CapturePage(house: house).id(guidanceRoutes[2]).tabItem { Label("Capture", systemImage: "camera.viewfinder") }
+          CapturePage(house: house).id(identity(2, house: house)).tabItem { Label("Capture", systemImage: "camera.viewfinder") }
             .tag(2)
-          EvidencePage(house: house).id(guidanceRoutes[3]).tabItem { Label("Evidence", systemImage: "photo.stack") }.tag(
+          EvidencePage(house: house).id(identity(3, house: house)).tabItem { Label("Evidence", systemImage: "photo.stack") }.tag(
             3)
-          ToolsPage(house: house).id(guidanceRoutes[4]).tabItem { Label("Tools", systemImage: "slider.horizontal.3") }
+          ToolsPage(house: house).id(identity(4, house: house)).tabItem { Label("Tools", systemImage: "slider.horizontal.3") }
             .tag(4)
         }
       } else {
@@ -815,19 +825,22 @@ struct EvidencePage: View {
   @State private var resultLimit=200
   @State private var searching=true
   @State private var searchRequest=UUID()
+  private var hasSearch: Bool { !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
   private var datasetKey:String {"\(house.id)-\(house.revision)"}
   private var searchKey:String {"\(datasetKey)-\(searchIndex?.id.uuidString ?? "none")-\(resultLimit)-\(search)"}
   var body: some View {
     NavigationStack {
       List {
-        Section {
+        if !hasSearch { Section {
           HomeHelpButton(topic: .find, title: "Help finding and organizing records")
           NavigationLink("Import existing photographs") { DocumentaryPhotosPage(house: house) }
           NavigationLink("Locate a point from three photos") { PhotoPointPage(house:house) }
           Button("Classify objects"){batchClassification=true}.disabled(house.features.isEmpty)
-        }
-        Section("Original photographs") {
-          if house.observations.isEmpty {
+        } }
+        // Keep matching records above the keyboard while searching. Setup/help
+        // actions and an empty-photo explanation are useful in the unfiltered view.
+        if !hasSearch || searching || !results.observations.isEmpty { Section("Original photographs") {
+          if house.observations.isEmpty && !hasSearch {
             Text("No captured photographs yet. Use Capture for a new visit, or Import existing photographs for photos you already have.")
               .foregroundStyle(.secondary)
           }
@@ -851,7 +864,7 @@ struct EvidencePage: View {
               }
             }
           }
-        }
+        } }
         if !house.documentaryPhotos.isEmpty {Section("Imported photographs") {
           ForEach(results.documentaryPhotos) { p in
             Button {documentaryPhoto=p} label:{

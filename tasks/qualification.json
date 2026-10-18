@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T19:33:29.364967Z",
+  "updatedUTC": "2026-10-18T20:05:49.523244Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "51bc6ba347b892039fc9606a04b638b3b6819586",
@@ -52,7 +52,7 @@
     },
     {
       "area": "homeowner onboarding and plain-language help",
-      "remaining": "R19 / \u00a71.4 implemented locally; native/Release compilation, 16-flow integration and visual accessibility review pending. Owner-device usability remains separate."
+      "remaining": "R19 initial source 221.1 passes native/Release and all export checks but only 12/16 UI flows. Four failure recordings are retained and inspected. Targeted search-layout, scrolling/orientation and sample-to-real-house repairs require a 17-flow integration. Owner-device usability remains separate."
     }
   ],
   "externalAcceptanceOpen": [
@@ -60,34 +60,16 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Publish and validate the R19 homeowner onboarding and fourteen offline task guides, including all sixteen interface flows. Continue independent software/full-house acceptance without relaxing original failed localization gates or its exhausted repair budget. TestFlight216.1 remains available; device/provider and independent field results remain required.",
+  "nextAction": "Publish and validate the targeted R19 follow-up through all seventeen interface workflows; retain 221.1 as a failed integration. Continue independent software/full-house acceptance without changing the failed localization gates or exhausted repair budget. TestFlight 216.1 remains available; device/provider and independent field results remain required.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "51bc6ba347b892039fc9606a04b638b3b6819586",
-    "run": 39156497915,
-    "build": "220.1",
+    "status": "prepared_pending_publication",
     "nativeExpected": 171,
-    "interfaceExpected": 13,
+    "interfaceExpected": 17,
     "nativeReaderPhasesExpected": 18,
     "validationReportsExpected": 35,
-    "integrationComplete": true,
-    "status": "complete_integrated_pass",
-    "nativePassed": 171,
-    "nativeReaderPhasesPassed": 18,
-    "commandContractsPassed": 48,
-    "nativeArtifact": {
-      "id": 12147965356,
-      "sha256": "bf63956e4cb92aa6a116b284014dc085b46bb6bdad8ff3628bea8f39e5f912a9",
-      "sha256IndependentlyVerified": true
-    },
-    "interfacePassed": 13,
-    "interfaceSeconds": 970.917,
-    "validationReportsPassed": 35,
-    "fullArtifact": {
-      "id": 12147493172,
-      "sha256": "3f63711146010aafe7f5753fc15e609d5e482a1b9990476de3c4f553496e8700",
-      "sha256IndependentlyVerified": true
-    }
+    "integrationComplete": false,
+    "precedingSource": "b46d612c9c274b275d4a9b9e083116c8affc837f"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1091,7 +1073,7 @@
   },
   "homeownerGuidance": {
     "requirement": "R19 / architecture-runbook \u00a71.4",
-    "status": "implemented_pending_validation",
+    "status": "repair_prepared_pending_validation",
     "requestedDate": "2026-10-18",
     "onboardingSteps": 5,
     "startingGoals": 3,
@@ -1108,12 +1090,70 @@
       "Tools"
     ],
     "houseDataUnchangedByGuidance": true,
-    "expectedUIFlows": 16,
+    "expectedUIFlows": 17,
     "nativeExpected": 171,
     "nativeCompilationValidated": false,
     "interfaceValidated": false,
     "screenshotsInspected": false,
     "ownerDeviceUsabilityVerified": false,
-    "testflightDelivered": false
+    "testflightDelivered": false,
+    "implementationSource": "b46d612c9c274b275d4a9b9e083116c8affc837f",
+    "validationRun": 39159360261,
+    "validationBuild": "221.1",
+    "debugCompilationPassed": false,
+    "unsignedReleaseCompilationPassed": false,
+    "houseSwitchRepair": {
+      "status": "prepared_pending_native_validation",
+      "reason": "House-local room/stage selections could retain the previous house IDs and present a blank capture cover.",
+      "change": "Key tab state by house identity and explicit guide-route reset, excluding ordinary house revisions.",
+      "interfaceCheck": "Visit sample Capture, create a real house, open its First room / Rough-in capture screen without starting AR, then return to the sample.",
+      "nextExpectedUIFlows": 17
+    },
+    "failedValidation": {
+      "source": "b46d612c9c274b275d4a9b9e083116c8affc837f",
+      "run": 39159360261,
+      "build": "221.1",
+      "debugCompilationPassed": true,
+      "unsignedReleaseCompilationPassed": true,
+      "nativePassed": 171,
+      "interfacePassed": 12,
+      "interfaceFailed": 4,
+      "screenshotsAndRecordingsInspected": true,
+      "evidence": "docs/evidence/native-b46-summary.json"
+    },
+    "repairs": [
+      "House-local tab identity includes tab and house IDs but excludes ordinary revisions.",
+      "Evidence search prioritizes matching records above the keyboard.",
+      "Guidance tests scroll before accessing lazy rows, use explicit viewport-coordinate drags, and reset orientation while the app is running."
+    ]
+  },
+  "lastCompletedValidation": {
+    "source": "b46d612c9c274b275d4a9b9e083116c8affc837f",
+    "run": 39159360261,
+    "build": "221.1",
+    "nativeExpected": 171,
+    "interfaceExpected": 16,
+    "nativeReaderPhasesExpected": 18,
+    "validationReportsExpected": 35,
+    "integrationComplete": false,
+    "status": "failed_interface",
+    "nativePassed": 171,
+    "nativeReaderPhasesPassed": 18,
+    "commandContractsPassed": 48,
+    "nativeArtifact": {
+      "id": 12148512328,
+      "sha256": "d3898b04a69c6bf22f020f5758ca70493bc693aa27e70e020aed6e936ceb4be4",
+      "sha256IndependentlyVerified": true
+    },
+    "interfacePassed": 12,
+    "interfaceFailed": 4,
+    "interfaceSeconds": 837.015,
+    "validationReportsPassed": 35,
+    "fullArtifact": {
+      "id": 12148728245,
+      "sha256": "0b10f8f3461a0ad649003f067779d3a7cc51c5a83465507831d8dd50a49de13c",
+      "sha256IndependentlyVerified": true
+    },
+    "evidence": "docs/evidence/native-b46-summary.json"
   }
 }

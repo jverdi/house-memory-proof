@@ -242,8 +242,8 @@ fi
 if [ "$mode" = recovery ]; then exit 0; fi
 
 set +e
-# Sixteen workflows include the thirteen existing construction-record flows and
-# three homeowner guidance flows. Keep the existing 25-minute UI execution bound;
+# Seventeen workflows include the thirteen existing construction-record flows and
+# four homeowner guidance flows. Keep the existing 25-minute UI execution bound;
 # actual completed totals and failures are retained in the XCTest artifact.
 python3 ci/run_bounded.py 1500 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \

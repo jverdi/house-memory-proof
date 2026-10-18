@@ -1,11 +1,42 @@
 import XCTest
 
 final class HouseXraySmoke: XCTestCase {
+  @MainActor func testHomeownerSampleToRealHouseUsesNewCaptureLocation() throws {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+    defer { app.terminate() }
+    XCTAssertTrue(app.tabBars.buttons["Capture"].waitForExistence(timeout: 20))
+    app.tabBars.buttons["Capture"].tap()
+    let start = app.buttons["Start capture"]; guidanceReveal(start, in: app)
+    XCTAssertFalse(start.isEnabled)
+    app.tabBars.buttons["House"].tap()
+    let choose = app.buttons["Choose house"]; XCTAssertTrue(choose.waitForExistence(timeout: 5)); choose.tap()
+    app.buttons["New house"].tap()
+    let create = app.alerts["New house"]; XCTAssertTrue(create.waitForExistence(timeout: 5))
+    create.textFields.firstMatch.tap(); create.textFields.firstMatch.typeText("First-use construction record")
+    create.buttons["Create"].tap()
+    XCTAssertTrue(app.staticTexts["First-use construction record"].waitForExistence(timeout: 10))
+    app.tabBars.buttons["Capture"].tap(); guidanceReveal(start, in: app)
+    XCTAssertTrue(start.isEnabled); start.tap()
+    // Entering this screen does not start AR or request camera permission.
+    // Both IDs must belong to the real house or the previous cover was blank.
+    XCTAssertTrue(app.staticTexts["First room · Rough-in"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["Start"].exists); screenshot("40-homeowner-first-real-capture")
+    app.buttons["Close"].tap()
+    XCTAssertTrue(app.navigationBars["Capture"].waitForExistence(timeout: 5))
+    app.tabBars.buttons["House"].tap(); choose.tap(); app.buttons["The sample house"].tap()
+    XCTAssertTrue(app.staticTexts["The sample house"].waitForExistence(timeout: 5))
+    app.tabBars.buttons["Capture"].tap(); guidanceReveal(start, in: app)
+    XCTAssertFalse(start.isEnabled)
+  }
+
   @MainActor func testHomeownerIntroductionCompletionRestartAndPersistence() throws {
     continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
     let app = XCUIApplication()
     app.launchArguments = ["--demo", "--guidance-ui", "--guidance-reset"]
-    app.launch(); defer { app.terminate(); XCUIDevice.shared.orientation = .portrait }
+    app.launch(); defer { XCUIDevice.shared.orientation = .portrait; app.terminate() }
     let progress = app.staticTexts["introduction-progress"]
     XCTAssertTrue(progress.waitForExistence(timeout: 20)); XCTAssertEqual(progress.label, "Step 1 of 5")
     let goal = app.buttons["introduction-goal-progress"]; guidanceReveal(goal, in: app); goal.tap()
@@ -42,6 +73,7 @@ final class HouseXraySmoke: XCTestCase {
 
   @MainActor func testHomeownerSkipReplaySearchAndTaskNavigation() throws {
     continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
     let app = XCUIApplication(); app.launchArguments = ["--demo", "--guidance-ui", "--guidance-reset"]; app.launch()
     defer { app.terminate() }
     let skip = app.buttons["introduction-skip"]; XCTAssertTrue(skip.waitForExistence(timeout: 20)); skip.tap()
@@ -52,11 +84,12 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(skip.waitForExistence(timeout: 20)); skip.tap()
     app.terminate(); app.launch()
     XCTAssertTrue(app.tabBars.buttons["House"].waitForExistence(timeout: 20)); XCTAssertFalse(skip.exists)
-    app.tabBars.buttons["Tools"].tap(); app.buttons["Drawings & design references"].tap()
+    app.tabBars.buttons["Tools"].tap()
+    let drawings = app.buttons["Drawings & design references"]; guidanceReveal(drawings, in: app); drawings.tap()
     XCTAssertTrue(app.navigationBars["Drawings"].waitForExistence(timeout: 5))
     openHomeHelp(app)
     let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("backup")
-    let backup = app.buttons["help-guide-backup"]; XCTAssertTrue(backup.waitForExistence(timeout: 5)); guidanceReveal(backup, in: app); backup.tap()
+    let backup = app.buttons["help-guide-backup"]; guidanceReveal(backup, in: app); XCTAssertTrue(backup.isHittable); backup.tap()
     XCTAssertTrue(app.navigationBars["Back up and restore your house"].waitForExistence(timeout: 5))
     screenshot("36-homeowner-backup-guide")
     let open = app.buttons["guide-open-task"]; guidanceReveal(open, in: app); XCTAssertEqual(open.label, "Open Tools"); open.tap()
@@ -65,11 +98,12 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("zzzznomatchingguide")
     XCTAssertTrue(app.staticTexts["No guide found"].waitForExistence(timeout: 5)); screenshot("37-homeowner-search-empty")
     app.buttons["Show all guides"].tap()
-    XCTAssertTrue(app.buttons["help-guide-setup"].waitForExistence(timeout: 5))
+    let setup = app.buttons["help-guide-setup"]; guidanceReveal(setup, in: app); XCTAssertTrue(setup.isHittable)
   }
 
   @MainActor func testHomeownerHelpBeforeCreatingHouseAtLargeText() throws {
     continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
     let app = XCUIApplication()
     app.launchArguments = ["--guidance-ui", "--guidance-reset", "--guidance-empty", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
     app.launch(); defer { app.terminate() }
@@ -77,7 +111,8 @@ final class HouseXraySmoke: XCTestCase {
     let next = app.buttons["introduction-next"]; guidanceReveal(next, in: app); XCTAssertTrue(next.isHittable)
     screenshot("38-homeowner-large-text"); skip.tap()
     let help = app.buttons["Help & getting started"]; guidanceReveal(help, in: app); help.tap()
-    let setup = app.buttons["help-guide-setup"]; XCTAssertTrue(setup.waitForExistence(timeout: 10)); guidanceReveal(setup, in: app); setup.tap()
+    XCTAssertTrue(app.navigationBars["Help & getting started"].waitForExistence(timeout: 10))
+    let setup = app.buttons["help-guide-setup"]; guidanceReveal(setup, in: app); XCTAssertTrue(setup.isHittable); setup.tap()
     XCTAssertTrue(app.navigationBars["Set up your house"].waitForExistence(timeout: 5))
     let create = app.buttons["guide-create-house"]; guidanceReveal(create, in: app)
     screenshot("39-homeowner-guide-next-action"); create.tap()
@@ -93,9 +128,24 @@ final class HouseXraySmoke: XCTestCase {
   }
   @MainActor private func guidanceReveal(_ element: XCUIElement, in app: XCUIApplication) {
     for _ in 0..<32 {
-      if element.exists && element.isHittable && element.frame.minY > 85 && element.frame.maxY < app.frame.maxY - 45 { return }
-      app.swipeUp()
+      let window = app.frame
+      let top = max(window.minY + 44, app.navigationBars.allElementsBoundByIndex.last?.frame.maxY ?? window.minY + 44) + 8
+      var bottom = window.maxY - 45
+      if app.keyboards.firstMatch.exists { bottom = min(bottom, app.keyboards.firstMatch.frame.minY - 8) }
+      if app.tabBars.firstMatch.exists && app.tabBars.firstMatch.isHittable { bottom = min(bottom, app.tabBars.firstMatch.frame.minY - 8) }
+      let frame = element.exists ? element.frame : .zero
+      if element.exists && element.isHittable && frame.midY > top && frame.midY < bottom { return }
+      let moveDown = element.exists && frame.maxY > 0 && frame.midY < top
+      let available = max(80, bottom - top)
+      let fromY = top + available * (moveDown ? 0.25 : 0.8)
+      let toY = top + available * (moveDown ? 0.8 : 0.25)
+      // XCTest's app.swipeUp produced horizontal events after rotation in 221.1.
+      // Use the same explicit viewport-coordinate drag as the existing editors.
+      let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (fromY - window.minY) / window.height))
+      let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: (toY - window.minY) / window.height))
+      start.press(forDuration: 0.05, thenDragTo: end)
     }
+    screenshot("guidance-control-unreachable")
     XCTAssertTrue(element.exists && element.isHittable, "Guidance control should remain reachable by scrolling")
   }
 
