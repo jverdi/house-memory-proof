@@ -1,0 +1,52 @@
+name: Check higher sampling on retained house layouts
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/whole-house-sampling-audit.yml
+      - experiments/whole-house-sampling/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: whole-house-sampling-audit
+  cancel-in-progress: true
+jobs:
+  replay:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        seed: [85838, 77919, 70000]
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Compile the unchanged production estimator
+        run: bash tooling/opencv/build-host.sh
+      - name: Test both observed stages with the unchanged spatial gates
+        run: |
+          python3 -m venv build/sampling-env
+          build/sampling-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+          build/sampling-env/bin/python experiments/whole-house-sampling/run.py --seed ${{ matrix.seed }} --executable build/vision-replay --output build/sampling-reports
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: house-sampling-aggregate-${{ matrix.seed }}
+          path: build/sampling-reports/
+          retention-days: 30
