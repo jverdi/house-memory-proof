@@ -59,7 +59,10 @@ import simd
                 recorder.endAcquisition()
                 let incompleteURL=try CaptureRuntimeRecorder.export(repository:isolated)
                 let incomplete=try JSONDecoder().decode([CaptureRuntimeReport].self,from:Data(contentsOf:incompleteURL))
-                guard incomplete.count==1,incomplete[0].endedUTC==nil,incomplete[0].physicalQualification==false else{return false}
+                guard incomplete.count==1,incomplete[0].endedUTC==nil,incomplete[0].physicalQualification==false,
+                    let endedAcquisition=incomplete[0].acquisitionEndSeconds,
+                    endedAcquisition==recorder.report.acquisitionEndSeconds,
+                    endedAcquisition==incomplete[0].samples.last?.elapsedSeconds else{return false}
                 recorder.finish(reason:"self-test")
                 let report=recorder.report
                 guard errors.isEmpty,report.valid,let last=report.samples.last,last.deliveredCameraFrames==2,last.normalTrackingFrames==1,last.renderedCallbacks==1,last.savedImages==1,last.saveFailures==1,last.pendingSaves==0,last.maximumPendingSaves==1,last.completedSaveSeconds==0.75,last.maximumSaveSeconds==0.5,report.acquisitionEndSeconds != nil,report.endedUTC != nil else{return false}

@@ -139,6 +139,9 @@ struct CaptureRuntimeReport:Codable {
   func endAcquisition() {
     guard !finished,report.acquisitionEndSeconds==nil else{return}
     sample();report.acquisitionEndSeconds=report.samples.last?.elapsedSeconds
+    // Preserve the stop boundary even if final saving is interrupted before
+    // another timed sample or finish() can write the report.
+    persist()
   }
   func finish(reason:String) {
     guard !finished else{return}

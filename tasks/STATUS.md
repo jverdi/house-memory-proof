@@ -1,3 +1,11 @@
+## Capture-stop durability repair and retained spatial evidence
+
+Review found a precise interruption window in the new workload report: `endAcquisition()` sampled and persisted before assigning the stop marker. A force-quit before finalization could therefore leave the disk report without the acquisition boundary. The repair persists the marker immediately; the existing native test now checks its presence in the exported **incomplete** report, before `finish()`. This does not alter original capture storage or accuracy gates. The owner snapshot target advances to this repaired continuation; 170 native checks and 13 interface flows remain required.
+
+The complete failed **211.1** integration is retained: Debug/Release compile, 166/167 native, 12/12 UI in 1068.916 seconds, three process recoveries and the export workflow. Its ZIP64 diagnostic failure correctly prevented upload (`docs/evidence/native-da549-summary.json`). All twelve host artifacts for da549f2bf1 are SHA-verified. Original finished-384, rough-to-finished and finished depth-edge failures persist; intentional clock refusal, dim/blurred and calibration-drift behavior pass (`docs/evidence/host-da549-summary.json`). No sixth detector attempt or protected draw occurred.
+
+`docs/DEVICE_ACCEPTANCE.md` now gives the concrete 30-minute visit, signed update, movie/export, Files/iCloud and independent field execution protocol. It is a prepared protocol, not evidence those physical actions ran.
+
 ## Replacement snapshot after ZIP64 diagnostic repair
 
 Source **5b4d6017b7 / 213.1** passes Debug and Release compilation and **169/170 native checks** in 269.721 seconds. The single failure is in the new compatibility diagnostic: `StoredZip.read` is the older ZIP32-only helper, while both the genuine 161.1 archive and current exporter are ZIP64. The repair uses the bounded production `StreamingArchive.index/read` before retaining the same exact metadata/original, re-export and future-schema refusal assertions. The frozen archive bytes and expected hashes are unchanged. Native reader phases were correctly skipped after failure. Evidence: `docs/evidence/native-5b4-summary.json`.

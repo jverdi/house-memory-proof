@@ -1,0 +1,72 @@
+{
+  "source": "da549f2bf1fa4c34a3796f5fcd5b56dbd1bafbb5",
+  "run": 39143448196,
+  "build": "211.1",
+  "nativeChecks": 167,
+  "nativePassed": 166,
+  "nativeFailures": [
+    {
+      "error": "Unsupported, truncated or compressed archive. Import a House Xray archive created by this app.",
+      "passed": false,
+      "seconds": 0.027548625000008542,
+      "test": "Authentic earlier TestFlight-source archive restores and reexports without losing geometry or originals"
+    }
+  ],
+  "nativeSeconds": 191.58196216666659,
+  "nativeArtifact": {
+    "id": 12142991893,
+    "sha256": "fb38748e4ca786ee8478dd6664c68ae812f7443930146f8e83713f2f9c0def6e",
+    "sha256IndependentlyVerified": true
+  },
+  "fullArtifact": {
+    "id": 12143403153,
+    "sha256": "f0404320f85ed95f98500be0d4c5cd69f30272a7f4982c7657b5708e67c2f6f2",
+    "sha256IndependentlyVerified": true
+  },
+  "interfacePassed": 12,
+  "interfaceFailures": 0,
+  "interfaceSeconds": 1068.916,
+  "processRecoveries": {
+    "process-recovery-capture-row.json": {
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3,
+      "powerLossQualified": false,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "passed": true
+    },
+    "process-recovery-journal.json": {
+      "passed": true,
+      "verifiedAssets": 3,
+      "recoveredExactlyOnce": true,
+      "powerLossQualified": false,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit"
+    },
+    "process-recovery-migration.json": {
+      "passed": true,
+      "fault": "SIGKILL inside schema transaction before COMMIT",
+      "verifiedAssets": 19,
+      "powerLossQualified": false
+    }
+  },
+  "boundarySource": {
+    "analyticOnly": true,
+    "finalSupportedPatches": 16,
+    "finalViews": 9,
+    "initialSupportedPatches": 0,
+    "initialViews": 1,
+    "legacyBoundaryPolicyPreserved": true,
+    "oracleIsolatedQualification": false,
+    "passed": true,
+    "physicalQualification": false,
+    "sourceRecordsPublished": false,
+    "staleInputRefusals": 7,
+    "totalPatches": 16
+  },
+  "debugAndReleaseCompiled": true,
+  "nativeReaderPhasesSkippedAfterFailure": true,
+  "exportWorkflowPassed": true,
+  "workflowConclusion": "failure",
+  "appleUploadSkipped": true,
+  "physicalQualification": false,
+  "repair": "Use the production ZIP64 reader in the authentic-archive diagnostic; original restore/re-export/future-schema assertions and frozen bytes retained."
+}

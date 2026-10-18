@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T16:44:08.067747Z",
+  "updatedUTC": "2026-10-18T16:54:17.227217Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
@@ -714,7 +714,7 @@
     "interfaceFlowSeconds": 50.902
   },
   "requestedSnapshot": {
-    "status": "replacement_requested_after_native_zip64_diagnostic_failure",
+    "status": "capture_stop_marker_repair_prepared",
     "implementationSource": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
     "validatedRun": 39138960576,
     "ownerRequest": "Also please trigger a new TestFlight",
@@ -749,10 +749,23 @@
       "nativeArtifact": 12142991893,
       "nativeArtifactSHA256": "fb38748e4ca786ee8478dd6664c68ae812f7443930146f8e83713f2f9c0def6e",
       "failedCheck": "Authentic earlier-writer diagnostic calls ZIP32 reader on ZIP64 archive",
-      "appleUploadVerified": false
+      "appleUploadVerified": false,
+      "interfacePassed": 12,
+      "interfaceSeconds": 1068.916,
+      "fullArtifact": 12143403153,
+      "fullArtifactSHA256": "f0404320f85ed95f98500be0d4c5cd69f30272a7f4982c7657b5708e67c2f6f2",
+      "workflowConclusion": "failure",
+      "uploadSkipped": true
     },
     "latestImplementationSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
-    "latestRepair": "Use production ZIP64 inspection in the compatibility diagnostic; no changed fixture or restore assertions"
+    "latestRepair": "Use production ZIP64 inspection in the compatibility diagnostic; no changed fixture or restore assertions",
+    "zip64Attempt": {
+      "source": "13631e9f3b48c42d9ae7c30224acda635d7feb69",
+      "run": 39146400007,
+      "build": "214.1",
+      "status": "validating; to be superseded by capture-stop durability repair",
+      "appleUploadVerified": false
+    }
   },
   "pendingContinuation": {
     "scope": [
@@ -796,7 +809,13 @@
     "expectedNativeChecks": 169,
     "localCommandContractsPassed": 44,
     "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
-    "independentReaderPending": true
+    "independentReaderPending": true,
+    "stopMarkerDurabilityRepair": {
+      "prepared": true,
+      "problem": "Acquisition stop marker assigned after the last durable sample; force-quit before finalization could lose this diagnostic boundary",
+      "repair": "Persist immediately and require the boundary in the exported incomplete report",
+      "nativeValidationPending": true
+    }
   },
   "drawingBenchmarkCandidate": {
     "prepared": true,
@@ -835,5 +854,13 @@
     "expectedNativeChecks": 170,
     "expectedUIFlows": 13,
     "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b"
+  },
+  "ownerDeviceProtocol": "docs/DEVICE_ACCEPTANCE.md",
+  "latestHostReplay": {
+    "source": "da549f2bf1fa4c34a3796f5fcd5b56dbd1bafbb5",
+    "artifactsSHA256Verified": 12,
+    "evidence": "docs/evidence/host-da549-summary.json",
+    "originalFailuresRetained": true,
+    "protectedDraw": false
   }
 }

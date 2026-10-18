@@ -1,6 +1,6 @@
 # Mobile use and recovery
 
-The app is local. Deleting it can remove the only copy of construction evidence. Keep complete archives in Files or iCloud Drive and verify a restore before depending on a backup.
+The app is local. Deleting it can remove the only copy of construction evidence. Keep complete archives in Files or iCloud Drive and verify a restore before depending on a backup. The [owner-device acceptance protocol](DEVICE_ACCEPTANCE.md) describes the remaining phone, recovery, provider and field checks and the reports to return.
 
 - **New project:** House → create a house. Add rooms with design dimensions; these are not measured dimensions.
 - **Construction stages:** Tools → Construction stages sets explicit rough/finished/other categories and capture dates. Names do not determine category once it is explicitly set.
