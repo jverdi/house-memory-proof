@@ -1,3 +1,11 @@
+## 225.1 failures inspected; mini-map startup and orientation repair prepared
+
+225.1 / bf0a75c353 passes 178 native checks, 19 reader phases, 52 command contracts, 36 export reports, three process recoveries and 50 portable cases. **12/19 interface workflows pass; seven fail.** All four homeowner workflows and the comfort workflow pass. Both artifacts are SHA-verified in `docs/evidence/native-bf0-summary.json`.
+
+All seven failure recordings are inspected. Landscape Layers needs scrolling to Construction. That failed case leaves five subsequent workflows in landscape. The map case is independently portrait with Inspect selected, but the mini-map is absent. Its nil-snapshot Group has no concrete child to start loading. The repair supplies a concrete loading container and readable failure guidance, moves orientation cleanup into XCTest lifecycle teardown, waits for actual window geometry, and scrolls before asserting the same Layers control. Screenshot 47 is added; all 19 cases and existing bounds remain.
+
+Screenshots 34/38/40/42/43 are inspected: improved action contrast, capture guidance and left-handed settings/layout are readable. 41/44/45/46 were not reached and remain pending. This source repair still needs native/interface validation. Latest complete integration remains **224.1**, TestFlight **216.1**, and the overall plan remains in progress.
+
 ## Combined viewer native checkpoint passes — interface review pending
 
 Source **bf0a75c353953233c6a517fca7a71693cae37f1e**, run **39172396220 / 225.1**, passes Debug/Release compilation, **178/178 native checks in 231.073 seconds**, all **19 reader phases** and **52 command contracts**. Native artifact **12153477442** is independently SHA-256 verified in `docs/evidence/native-bf0-summary.json`.

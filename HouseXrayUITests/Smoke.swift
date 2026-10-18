@@ -1,10 +1,20 @@
 import XCTest
 
 final class HouseXraySmoke: XCTestCase {
+  @MainActor override func setUp() async throws {
+    try await super.setUp()
+    continueAfterFailure=false
+    XCUIDevice.shared.orientation = .portrait
+  }
+  @MainActor override func tearDown() async throws {
+    // XCTest invokes lifecycle cleanup after assertion failures, including
+    // cases that stop immediately with continueAfterFailure=false.
+    finishInPortrait(XCUIApplication())
+    try await super.tearDown()
+  }
   @MainActor func testRoomMapShowsFloorsBookmarksAndRestoresMiniMap() throws {
     continueAfterFailure=false;XCUIDevice.shared.orientation = .portrait
     let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
-    defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
     func openMap() {
       XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
       app.buttons["Layers"].tap();let map=app.buttons["viewer-room-map"]
@@ -30,10 +40,10 @@ final class HouseXraySmoke: XCTestCase {
     guidanceReveal(office,in:app,horizontal:0.97);screenshot("45-room-map-records");office.tap()
     XCTAssertTrue(mini.waitForExistence(timeout:10))
     XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"label CONTAINS %@ AND label CONTAINS %@","Office","Level 1"),object:mini)],timeout:10),.completed)
-    XCUIDevice.shared.orientation = .landscapeLeft
+    XCTAssertTrue(settleOrientation(.landscapeLeft,in:app))
     XCTAssertTrue(app.frame.contains(mini.frame));XCTAssertFalse(mini.frame.intersects(app.buttons["Jump"].frame))
     XCTAssertTrue(app.buttons["Layers"].isHittable);screenshot("46-mini-map-landscape")
-    XCUIDevice.shared.orientation = .portrait;openMap();setSwitch(show,to:false)
+    XCTAssertTrue(settleOrientation(.portrait,in:app));openMap();setSwitch(show,to:false)
     app.navigationBars.buttons["Layers"].tap();app.buttons["Done"].tap()
     XCTAssertFalse(mini.exists)
   }
@@ -41,7 +51,6 @@ final class HouseXraySmoke: XCTestCase {
   @MainActor func testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout() throws {
     continueAfterFailure=false;XCUIDevice.shared.orientation = .portrait
     let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
-    defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
     func openSettings() {
       XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
       app.buttons["Layers"].tap();let settings=app.buttons["viewer-comfort-settings"]
@@ -65,11 +74,11 @@ final class HouseXraySmoke: XCTestCase {
       let slider=app.sliders[id];guidanceReveal(slider,in:app,horizontal:0.97);slider.adjust(toNormalizedSliderPosition:0)
     }
     XCTAssertTrue(app.staticTexts["Eye height: 0.8 m"].exists);screenshot("42-viewer-comfort-settings")
-    closeSettings();XCUIDevice.shared.orientation = .landscapeLeft
+    closeSettings();XCTAssertTrue(settleOrientation(.landscapeLeft,in:app))
     let forward=app.buttons["Step forward"],jump=app.buttons["Jump"]
     XCTAssertTrue(forward.waitForExistence(timeout:5));XCTAssertTrue(forward.isHittable)
     XCTAssertGreaterThan(forward.frame.midX,jump.frame.midX);forward.tap();screenshot("43-left-handed-viewer")
-    XCUIDevice.shared.orientation = .portrait;app.terminate();app.launch();openSettings()
+    finishInPortrait(app);app.launch();openSettings()
     XCTAssertTrue(app.staticTexts["Walking speed: 0.2 m/s"].waitForExistence(timeout:5))
     guidanceReveal(invert,in:app,horizontal:0.97);XCTAssertEqual(invert.value as? String,"1")
     guidanceReveal(left,in:app,horizontal:0.97);XCTAssertEqual(left.value as? String,"1")
@@ -124,16 +133,16 @@ final class HouseXraySmoke: XCTestCase {
     XCUIDevice.shared.orientation = .portrait
     let app = XCUIApplication()
     app.launchArguments = ["--demo", "--guidance-ui", "--guidance-reset"]
-    app.launch(); defer { XCUIDevice.shared.orientation = .portrait; app.terminate() }
+    app.launch()
     let progress = app.staticTexts["introduction-progress"]
     XCTAssertTrue(progress.waitForExistence(timeout: 20)); XCTAssertEqual(progress.label, "Step 1 of 5")
     let goal = app.buttons["introduction-goal-progress"]; guidanceReveal(goal, in: app); goal.tap()
     XCTAssertEqual(goal.value as? String, "Selected"); screenshot("33-homeowner-first-use")
-    XCUIDevice.shared.orientation = .landscapeLeft
+    XCTAssertTrue(settleOrientation(.landscapeLeft,in:app))
     let next = app.buttons["introduction-next"]; guidanceReveal(next, in: app)
     XCTAssertTrue(next.isHittable); screenshot("34-homeowner-landscape")
     next.tap(); XCTAssertEqual(progress.label, "Step 2 of 5")
-    XCUIDevice.shared.orientation = .portrait
+    XCTAssertTrue(settleOrientation(.portrait,in:app))
     let back = app.buttons["introduction-back"]; guidanceReveal(back, in: app); back.tap()
     XCTAssertEqual(progress.label, "Step 1 of 5")
     guidanceReveal(goal, in: app); XCTAssertEqual(goal.value as? String, "Selected")
@@ -209,6 +218,25 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertFalse(app.tabBars.buttons["House"].exists)
   }
 
+  @MainActor private func settleOrientation(_ orientation: UIDeviceOrientation, in app: XCUIApplication) -> Bool {
+    XCUIDevice.shared.orientation=orientation
+    guard app.state == .runningForeground else{return true}
+    let landscape=orientation.isLandscape
+    let ready=NSPredicate { object,_ in
+      guard let target=object as? XCUIApplication else{return false}
+      let frame=target.frame
+      return frame.width>0 && frame.height>0 && (landscape ? frame.width>frame.height:frame.height>frame.width)
+    }
+    return XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:ready,object:app)],timeout:10) == .completed
+  }
+  @MainActor private func finishInPortrait(_ app: XCUIApplication) {
+    // A rotation request is asynchronous. Retain a failed cleanup as a failure,
+    // and terminate only after checking the actual foreground window geometry.
+    let settled=settleOrientation(.portrait,in:app)
+    if !settled {screenshot("orientation-cleanup-failed")}
+    app.terminate()
+    XCTAssertTrue(settled,"Portrait rotation must finish before terminating an orientation workflow")
+  }
   @MainActor private func openHomeHelp(_ app: XCUIApplication) {
     XCTAssertTrue(app.tabBars.buttons["House"].waitForExistence(timeout: 20)); app.tabBars.buttons["House"].tap()
     let help = app.buttons["Help & getting started"]; guidanceReveal(help, in: app); help.tap()
@@ -553,8 +581,8 @@ final class HouseXraySmoke: XCTestCase {
     continueAfterFailure=false
     let app=XCUIApplication();app.launchArguments=["--demo"]
     XCUIDevice.shared.orientation = .landscapeLeft
-    defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
     app.launch()
+    XCTAssertTrue(settleOrientation(.landscapeLeft,in:app))
     XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20))
     app.tabBars.buttons["Explore"].tap()
     let viewMode=app.buttons["View mode"],tool=app.buttons["Inspection tool"],layers=app.buttons["Layers"]
@@ -567,8 +595,13 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(app.staticTexts["Tap two surface points"].waitForExistence(timeout:5))
     screenshot("10-landscape-measure")
     layers.tap()
-    XCTAssertTrue(app.switches["Show ceilings"].waitForExistence(timeout:5));app.buttons["Done"].tap()
-    XCUIDevice.shared.orientation = .portrait
+    XCTAssertTrue(app.navigationBars["Layers"].waitForExistence(timeout:5))
+    let ceilings=app.switches["Show ceilings"]
+    guidanceReveal(ceilings,in:app)
+    XCTAssertTrue(ceilings.waitForExistence(timeout:5));XCTAssertTrue(ceilings.isHittable)
+    screenshot("47-landscape-layers")
+    app.buttons["Done"].tap()
+    XCTAssertTrue(settleOrientation(.portrait,in:app))
     XCTAssertTrue(app.buttons["Trace route"].waitForExistence(timeout:10))
     XCTAssertTrue(app.buttons["Finished"].isSelected)
     screenshot("11-portrait-after-rotation")
@@ -622,7 +655,6 @@ final class HouseXraySmoke: XCTestCase {
   @MainActor func testStepNavigationControlsInBothOrientations() throws {
     continueAfterFailure=false
     let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
-    defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
     XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
     app.buttons["Layers"].tap()
     setSwitch(app.switches["Step and snap-turn buttons"],to:true)
@@ -630,7 +662,7 @@ final class HouseXraySmoke: XCTestCase {
     screenshot("13-portrait-step-navigation")
     let names=["Step left","Step forward","Step backward","Step right","Turn left 15 degrees","Look up 15 degrees","Look down 15 degrees","Turn right 15 degrees"]
     for orientation in [UIDeviceOrientation.portrait,.landscapeLeft] {
-      XCUIDevice.shared.orientation=orientation
+      XCTAssertTrue(settleOrientation(orientation,in:app))
       for name in names {
         let button=app.buttons[name];XCTAssertTrue(button.waitForExistence(timeout:5));XCTAssertTrue(button.isHittable)
         XCTAssertGreaterThanOrEqual(button.frame.width,44);XCTAssertGreaterThanOrEqual(button.frame.height,44)

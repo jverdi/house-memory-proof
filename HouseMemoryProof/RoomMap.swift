@@ -194,9 +194,13 @@ struct MiniRoomMap:View {
   var options:SceneOptions
   @ObservedObject var controller:WalkController
   @State private var snapshot:RoomMapSnapshot?
+  @State private var failed=false
   private var sourceKey:String {"\(house.id)-\(house.revision)-\(options.room?.uuidString ?? "all")-\(options.stage?.uuidString ?? "all")-\(options.mode.rawValue)"}
   var body:some View {
-    Group {
+    // Keep a concrete container alive while the snapshot is absent. A Group
+    // containing only a nil conditional has no child to start its task.
+    ZStack(alignment:.topLeading) {
+      Color.clear
       if let snapshot {
         TimelineView(.periodic(from:.now,by:0.25)) { _ in
           let pose=controller.roomMapPose,position=pose.position
@@ -218,12 +222,17 @@ struct MiniRoomMap:View {
             .accessibilityElement(children:.ignore).accessibilityLabel(location).accessibilityIdentifier("mini-room-map")
             .accessibilityValue(RoomMapSnapshot.heading(pose.yaw)+". Dots are photo positions; coverage is unknown.")
         }
+      }else {
+        Text(failed ? "Map unavailable. Open Layers → Room map for help.":"Preparing room map…")
+          .font(.caption).foregroundStyle(.white).padding(8)
+          .background(Color.black.opacity(0.85),in:RoundedRectangle(cornerRadius:12))
+          .accessibilityIdentifier("mini-room-map-status")
       }
     }.task(id:sourceKey) {
-      snapshot=nil
+      snapshot=nil;failed=false
       do {let prepared=try await LocalWorker.run{try RoomMapSnapshot.build(house:house,options:options)}
         try Task.checkCancellation();snapshot=prepared
-      }catch {snapshot=nil}
+      }catch is CancellationError {}catch {failed=true}
     }
   }
 }

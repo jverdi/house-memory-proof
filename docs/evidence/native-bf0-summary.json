@@ -128,7 +128,7 @@
   "readerPhasesExpected": 19,
   "validationReportsExpected": 36,
   "interfaceExpected": 19,
-  "interfaceStatus": "pending",
+  "interfaceStatus": "failed or incomplete",
   "appleUploadVerified": false,
   "boundarySource": {
     "analyticOnly": true,
@@ -460,5 +460,350 @@
     "unclassifiedRefused": true,
     "version": 1,
     "wholeHouseQualified": false
+  },
+  "interfaceRunnerTimedOut": false,
+  "interfaceCompletionTotalsAvailable": true,
+  "interfaceStartedCases": 19,
+  "interfaceCompletedCases": 19,
+  "interfaceUnfinishedCases": [],
+  "interfaceCompletedCaseSeconds": 1418.103,
+  "fullArtifact": {
+    "id": 12154571148,
+    "sha256": "c9cfac93721e9080fc584d83c0ebdaef80d3e30a61565c367be0e0aaafeb35ef",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 19,
+  "interfacePassed": 12,
+  "interfaceFailures": 7,
+  "interfaceElapsedSeconds": 1418.103,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "result": "passed",
+      "seconds": 88.758
+    },
+    {
+      "name": "testClosureReviewKeepsMissingStageEvidenceExplicit",
+      "result": "passed",
+      "seconds": 31.601
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "result": "passed",
+      "seconds": 64.06
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "result": "passed",
+      "seconds": 72.442
+    },
+    {
+      "name": "testHomeownerHelpBeforeCreatingHouseAtLargeText",
+      "result": "passed",
+      "seconds": 132.923
+    },
+    {
+      "name": "testHomeownerIntroductionCompletionRestartAndPersistence",
+      "result": "passed",
+      "seconds": 93.371
+    },
+    {
+      "name": "testHomeownerSampleToRealHouseUsesNewCaptureLocation",
+      "result": "passed",
+      "seconds": 45.66
+    },
+    {
+      "name": "testHomeownerSkipReplaySearchAndTaskNavigation",
+      "result": "passed",
+      "seconds": 80.332
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "result": "failed",
+      "seconds": 30.382
+    },
+    {
+      "name": "testMeasuredEnvelopeSaveAndRelaunch",
+      "result": "failed",
+      "seconds": 20.102
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "result": "failed",
+      "seconds": 12.569
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "result": "failed",
+      "seconds": 93.077
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "result": "failed",
+      "seconds": 13.151
+    },
+    {
+      "name": "testReviewedServiceTourPreviewAndTradeScope",
+      "result": "failed",
+      "seconds": 81.554
+    },
+    {
+      "name": "testRoomMapShowsFloorsBookmarksAndRestoresMiniMap",
+      "result": "failed",
+      "seconds": 104.183
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "result": "passed",
+      "seconds": 51.625
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "result": "passed",
+      "seconds": 52.514
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "result": "passed",
+      "seconds": 110.525
+    },
+    {
+      "name": "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout",
+      "result": "passed",
+      "seconds": 239.274
+    }
+  ],
+  "processRecoveries": {
+    "process-recovery-capture-row.json": {
+      "passed": true,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3,
+      "powerLossQualified": false
+    },
+    "process-recovery-journal.json": {
+      "powerLossQualified": false,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "passed": true,
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3
+    },
+    "process-recovery-migration.json": {
+      "powerLossQualified": false,
+      "passed": true,
+      "verifiedAssets": 19,
+      "fault": "SIGKILL inside schema transaction before COMMIT"
+    }
+  },
+  "portableChecks": 50,
+  "portablePassed": true,
+  "validationReports": {
+    "archive-validation.json": true,
+    "capture-runtime-validation.json": true,
+    "chunked-snapshot-validation.json": true,
+    "cli-command-validation.json": true,
+    "cli-reconstruction-validation.json": true,
+    "drawing-benchmark-validation.json": true,
+    "drawing-marks-validation.json": true,
+    "general-glb-validation.json": true,
+    "general-obj-validation.json": true,
+    "general-ply-validation.json": true,
+    "general-points-usd-validation.json": true,
+    "general-semantic-validation.json": true,
+    "general-test-usd-validation.json": true,
+    "general-textured-usd-validation.json": true,
+    "house-surface-gltf-validation.json": true,
+    "ifc-properties-validation.json": true,
+    "ifc-source-gltf-validation.json": true,
+    "ifc-source-validation.json": true,
+    "mesh-interchange-validation.json": true,
+    "navigation-benchmark-validation.json": true,
+    "offline-viewer-validation.json": true,
+    "photo-curve-gltf-validation.json": true,
+    "photo-curve-viewer-validation.json": true,
+    "points-gltf-validation.json": true,
+    "points-usd-validation.json": true,
+    "portable-package-validation.json": true,
+    "reconstructed-navigation-validation.json": true,
+    "semantic-csv-validation.json": true,
+    "service-envelope-gltf-validation.json": true,
+    "service-envelope-validation.json": true,
+    "service-tour-validation.json": true,
+    "test-gltf-validation.json": true,
+    "test-usd-validation.json": true,
+    "textured-gltf-validation.json": true,
+    "textured-usd-validation.json": true,
+    "tour-reveal-validation.json": true
+  },
+  "validationReportsPassed": true,
+  "recordedAssertionsComplete": false,
+  "simulatorJobConclusion": "failure",
+  "visualReview": {
+    "screenshots": [
+      {
+        "number": 38,
+        "test": "HouseXraySmoke/testHomeownerHelpBeforeCreatingHouseAtLargeText()",
+        "source": "ui-attachments/67EFB730-84B9-428F-8E75-5AC9EB011013.png",
+        "name": "38-homeowner-large-text_0_2E385BA5-FA98-41DA-9D33-99C4F22AC2FC.png",
+        "sha256": "efbe52f9e8d610784f99e8e3c50c74219f980bb12dc2fccf3251ed4f258989ce",
+        "inspected": true,
+        "notes": "Largest test text wraps in the scroll view and Continue remains reachable. Standard navigation title truncates, but the complete onboarding content is in the scroll view."
+      },
+      {
+        "number": 34,
+        "test": "HouseXraySmoke/testHomeownerIntroductionCompletionRestartAndPersistence()",
+        "source": "ui-attachments/ECB6D18E-AB0E-4E37-B521-0E4BD6ADB319.png",
+        "name": "34-homeowner-landscape_0_D6898EEB-A8F4-4034-8ECA-C5C523C00383.png",
+        "sha256": "e15202e048f5e8c8ff76c29cfdf2ae364a1b0aabb5cbc51de95756277bd77c9f",
+        "inspected": true,
+        "notes": "Landscape introduction scrolls to a readable black-on-mint Continue button; replay guidance remains visible."
+      },
+      {
+        "number": 40,
+        "test": "HouseXraySmoke/testHomeownerSampleToRealHouseUsesNewCaptureLocation()",
+        "source": "ui-attachments/DF957324-736C-4D0F-B187-8E1DDA001CDB.png",
+        "name": "40-homeowner-first-real-capture_0_F2DF1F28-2CC8-4B4E-BC02-767EDE8EEFBA.png",
+        "sha256": "c414874a3a1cbbaba318fbd9e869a803daebf32be3d14ab6c9f82d9c86fc932f",
+        "inspected": true,
+        "notes": "Real-house capture location, opening instructions, photo/camera-position counts and black-on-mint Start are readable."
+      },
+      {
+        "number": 43,
+        "test": "HouseXraySmoke/testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout()",
+        "source": "ui-attachments/82F565D7-7C20-448D-9ECD-7A03FA5BDB06.png",
+        "name": "43-left-handed-viewer_0_5F123BDF-CA78-4F79-AD59-C1B6700DED4A.png",
+        "sha256": "7a2811440d24c31eae6a4ea7988dee095bb7ca6c3372eeb3228fe681005b2549",
+        "inspected": true,
+        "notes": "Left-handed movement buttons are at right, Jump at left, and the Layers label fits."
+      },
+      {
+        "number": 42,
+        "test": "HouseXraySmoke/testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout()",
+        "source": "ui-attachments/48962113-7658-47D4-873A-E86F194CFC36.png",
+        "name": "42-viewer-comfort-settings_0_AA70B27A-B744-4424-9519-5BDD9C38CC8C.png",
+        "sha256": "5097578fb5af1d62f16f7c69b5a3d0f236be492ba0179b3674826668ee54b784",
+        "inspected": true,
+        "notes": "Movement preferences and explanations remain readable and scrollable; lower explanatory text continues below this screenshot."
+      }
+    ],
+    "missingRequiredScreenshots": [
+      41,
+      44,
+      45,
+      46
+    ],
+    "complete": false,
+    "remainingVisualFollowUp": [
+      "photo-only walking notice screenshot 41",
+      "room-map screenshots 44\u201346 after startup repair",
+      "landscape Layers screenshot 47 after scroll repair"
+    ]
+  },
+  "failureReview": {
+    "allSevenRecordingsInspected": true,
+    "attachments": [
+      {
+        "test": "testLandscapeControlsAndRotation",
+        "name": "App UI hierarchy for com.example_0_3112CB62-945B-44DF-A3C8-ECC18656B0E9.HouseMemoryProof",
+        "source": "ui-attachments/84B742E9-AB53-45D9-91C3-93B90E0D7447.txt",
+        "bytes": 32096,
+        "sha256": "09360d5da3a50110f7789b25f8067a74b0b8c53961f31e01dd6e550b5d495516",
+        "failureAssociated": false
+      },
+      {
+        "test": "testLandscapeControlsAndRotation",
+        "name": "Screen Recording 2026-10-18 at 10.58.37 PM.mp4",
+        "source": "ui-attachments/04191897-3D9A-4C45-9A85-304A8B880A62.mp4",
+        "bytes": 11693159,
+        "sha256": "bceb04baa3faff6a3668247612c4e398df9cda9f47dfd2a5e9cf0fef9fc9a9f7",
+        "failureAssociated": false
+      },
+      {
+        "test": "testMeasuredEnvelopeSaveAndRelaunch",
+        "name": "App UI hierarchy for com.example_0_0178BD34-826F-4603-91D4-009C92BF8626.HouseMemoryProof",
+        "source": "ui-attachments/89DDE22F-FA62-43EE-BA13-0FA22060F27A.txt",
+        "bytes": 18131,
+        "sha256": "5dc4d3085e6df7188c7280a7b93a74d0ca9f6d05791d6cfbb9c4bbdfd1e1e249",
+        "failureAssociated": false
+      },
+      {
+        "test": "testMeasuredEnvelopeSaveAndRelaunch",
+        "name": "Screen Recording 2026-10-18 at 10.59.08 PM.mp4",
+        "source": "ui-attachments/A9CE2DEE-EA74-49C9-B0E3-C6761C4095BC.mp4",
+        "bytes": 4507885,
+        "sha256": "141e714e0ba615e69d268a01ebfc641e3d3770e0a01555d4a61983b94f6979eb",
+        "failureAssociated": false
+      },
+      {
+        "test": "testPersonalHouseWorkflow",
+        "name": "Screen Recording 2026-10-18 at 10.59.28 PM.mp4",
+        "source": "ui-attachments/B889C405-D7E6-41CA-A0AF-8A0B04092077.mp4",
+        "bytes": 5860582,
+        "sha256": "7f82618aded3500fc67bfbc7fb0594d11429ad8a8aeb49caa2ea9b0b0deba082",
+        "failureAssociated": false
+      },
+      {
+        "test": "testPersonalHouseWorkflow",
+        "name": "App UI hierarchy for com.example_0_7D0436C9-0691-46CA-9DA9-33A6C26E518B.HouseMemoryProof",
+        "source": "ui-attachments/25E39A85-CF48-4F9C-81DF-4425A1B00476.txt",
+        "bytes": 52416,
+        "sha256": "3bd519ff80d87b2061bfbbd0c28202ce522bd205bf42a4c448904ccc209c1369",
+        "failureAssociated": true
+      },
+      {
+        "test": "testPhotoPointWorkflow",
+        "name": "Screen Recording 2026-10-18 at 10.59.40 PM.mp4",
+        "source": "ui-attachments/7B1DA9AF-CCD2-435A-8303-F93723AD72DA.mp4",
+        "bytes": 48012131,
+        "sha256": "ae7f40bf09b8b142d6874896a28486e5be6210a004fb4d8b7e97226f307d00e5",
+        "failureAssociated": false
+      },
+      {
+        "test": "testPointCloudDeclarationWorkflow",
+        "name": "Screen Recording 2026-10-18 at 11.01.13 PM.mp4",
+        "source": "ui-attachments/C07B549A-B579-461A-A9FB-E88E8A4E1011.mp4",
+        "bytes": 4317308,
+        "sha256": "9fed9040412633436f22d2f9e7dc28c9c01600295bd060b239778e74e2339a8b",
+        "failureAssociated": false
+      },
+      {
+        "test": "testPointCloudDeclarationWorkflow",
+        "name": "App UI hierarchy for com.example_0_8115550B-8320-439F-A022-E11BB5D6784B.HouseMemoryProof",
+        "source": "ui-attachments/E93D281E-4E5A-43D3-8AAB-7562037E6549.txt",
+        "bytes": 18515,
+        "sha256": "07837727e2af8ec2c17967e98c6a7d494c8845b8578d2918dd93537fea6d40c6",
+        "failureAssociated": true
+      },
+      {
+        "test": "testReviewedServiceTourPreviewAndTradeScope",
+        "name": "Screen Recording 2026-10-18 at 11.01.27 PM.mp4",
+        "source": "ui-attachments/EDD152A1-D1BB-4D52-BD52-40CCB7315CB7.mp4",
+        "bytes": 35488806,
+        "sha256": "0cde3b9eca8e4513e2861dc77ed0900304920055f43d39ee464c851df2b34467",
+        "failureAssociated": false
+      },
+      {
+        "test": "testRoomMapShowsFloorsBookmarksAndRestoresMiniMap",
+        "name": "App UI hierarchy for com.example_0_A6122F75-D396-43CC-818C-38F35497572B.HouseMemoryProof",
+        "source": "ui-attachments/81391965-67BD-4C4A-B0B2-B9EC9E5CAD32.txt",
+        "bytes": 52950,
+        "sha256": "03a5579416db37dcf46912baa2c936fa4603cd7364db44b64fda9f4e3fc1964a",
+        "failureAssociated": false
+      },
+      {
+        "test": "testRoomMapShowsFloorsBookmarksAndRestoresMiniMap",
+        "name": "Screen Recording 2026-10-18 at 11.02.48 PM.mp4",
+        "source": "ui-attachments/989F62CE-269E-4EEF-B2FB-0A354043F14A.mp4",
+        "bytes": 30816027,
+        "sha256": "520ae01f65c624481e5768781e183b0c3641bcc961694d3ced032bc423439c5e",
+        "failureAssociated": false
+      }
+    ],
+    "findings": [
+      "Landscape Layers is open but Construction/Show ceilings is below the initial viewport after the new Navigation rows.",
+      "The following five failed workflows show landscape UI despite assuming portrait. Immediate failure bypassed the function cleanup; the suite lacked lifecycle orientation cleanup.",
+      "The map workflow is portrait and Inspect is selected, but no mini-map is drawn or present in accessibility. The nil-snapshot Group has no concrete child to start the loading task."
+    ],
+    "repairValidationPending": true
   }
 }
