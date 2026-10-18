@@ -203,6 +203,7 @@ struct CaptureWork:Codable,Identifiable,Equatable {
 extension AppModel {
   func setProcessingForeground(_ active:Bool) {
     foreground=active
+    if !active {resourceRetryTask?.cancel();resourceRetryTask=nil}
     if !active,busy,!continuedProcessing.granted {cancelOperation(reason:.waitingForForeground)}
     if active {resumeCaptureQueue()}
   }
@@ -234,13 +235,27 @@ extension AppModel {
     work.state = .paused;work.detail="Paused by owner";work.updated=Date()
     do{try storeCaptureWork(work)}catch{self.error=error.localizedDescription}
   }
+  func scheduleResourceRetry() {
+    guard foreground,resourceRetryTask==nil else{return}
+    let remaining=resourceRetryAfter-ProcessInfo.processInfo.systemUptime
+    let delay=remaining>0 ? max(0.05,remaining):30
+    resourceRetryTask=Task { @MainActor [weak self] in
+      do {try await Task.sleep(nanoseconds:UInt64(min(delay,3600)*1_000_000_000))}
+      catch {return}
+      guard !Task.isCancelled,let self else{return}
+      self.resourceRetryTask=nil
+      self.resumeCaptureQueue()
+    }
+  }
   func resumeCaptureQueue() {
     guard foreground,!busy,!captureInProgress,activeCaptureJob==nil,let repo=repository,
       var work=captureJobs.filter({$0.resumable}).sorted(by:{$0.created<$1.created}).first else{return}
     guard ProcessInfo.processInfo.systemUptime>=resourceRetryAfter,ProcessInfo.processInfo.thermalState != .serious,ProcessInfo.processInfo.thermalState != .critical,repo.freeBytes()>750_000_000 else {
       if work.state != .waitingForResources {work.state = .waitingForResources;work.detail="Keep the app open after freeing storage or cooling the phone.";try? storeCaptureWork(work)}
+      scheduleResourceRetry()
       return
     }
+    resourceRetryTask?.cancel();resourceRetryTask=nil
     guard let source=houses.first(where:{$0.id==work.projectID}) else{return}
     do {
       // Always bind a restarted attempt to the current saved inputs. Publication

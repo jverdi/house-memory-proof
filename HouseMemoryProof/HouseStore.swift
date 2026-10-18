@@ -370,6 +370,7 @@ enum StoreMigrationDiagnostics {
   let continuedProcessing=ContinuedProcessing()
   var userStartedCaptureJobs=Set<UUID>()
   var resourceRetryAfter:TimeInterval=0
+  var resourceRetryTask:Task<Void,Never>?
   private var operationTask: Task<Void, Never>?
   private var captureOwner:UUID?
   let repository: Repository?

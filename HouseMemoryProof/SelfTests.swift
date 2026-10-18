@@ -69,6 +69,14 @@ import Darwin
                 for _ in 0..<50 {if !isolated.busy {break};try await Task.sleep(nanoseconds:20_000_000)}
                 guard !isolated.busy,isolated.processingPause == .waitingForResources,isolated.resourceRetryAfter>ProcessInfo.processInfo.systemUptime,
                   isolated.status.contains("Waiting for resources"),isolated.house==original else{throw HouseError.message("Resource pause did not retain its cooldown or originals.")}
+                isolated.scheduleResourceRetry()
+                guard isolated.resourceRetryTask != nil else{throw HouseError.message("Foreground resource retry was not scheduled.")}
+                isolated.setProcessingForeground(false)
+                guard isolated.resourceRetryTask==nil else{throw HouseError.message("Background transition retained a foreground retry timer.")}
+                isolated.setProcessingForeground(true);isolated.resourceRetryAfter=ProcessInfo.processInfo.systemUptime+0.05
+                isolated.scheduleResourceRetry()
+                for _ in 0..<50 {if isolated.resourceRetryTask==nil {break};try await Task.sleep(nanoseconds:20_000_000)}
+                guard isolated.resourceRetryTask==nil,!isolated.busy,isolated.house==original else{throw HouseError.message("Resource retry did not recheck the idle queue after cooldown.")}
                 results.append(["test":"Foreground fallback, resource cooldown and cancellation preserve saved work","passed":true,"backgroundGPUAvailable":ContinuedProcessing.backgroundGPUAvailable,"physicalBackgroundExecutionQualified":false])
             }catch {results.append(["test":"Foreground fallback, resource cooldown and cancellation preserve saved work","passed":false,"error":error.localizedDescription])}
             await check("Durable capture rows recover without rewriting the project and survive a stale checkpoint") {
