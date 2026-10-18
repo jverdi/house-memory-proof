@@ -14,6 +14,7 @@ struct IFCPropertiesPage:View {
       Section {
         Text("Documentary source values in original units. Geometry and owner-history graphs remain in the original IFC. These properties do not identify observed construction.").font(.caption)
         Text(reference.summary.description).font(.caption)
+        Text("Fields marked derived follow the IFC schema’s calculation rules. Their original parser values remain visible.").font(.caption)
       }
       if !error.isEmpty {Text(error).foregroundStyle(.red)}
       Section("\(matching.count) matching records · showing up to 200") {

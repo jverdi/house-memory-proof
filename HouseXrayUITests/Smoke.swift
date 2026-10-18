@@ -1,6 +1,64 @@
 import XCTest
 
 final class HouseXraySmoke: XCTestCase {
+  @MainActor func testMeasuredEnvelopeSaveAndRelaunch() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--envelope-demo","--envelope-demo-reset"];app.launch()
+    defer{app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:20));app.tabBars.buttons["Evidence"].tap()
+    let source=app.staticTexts["Visible centerline"];XCTAssertTrue(source.waitForExistence(timeout:10));source.tap()
+    let open=app.buttons["Record a service envelope"]
+    for _ in 0..<20 {if open.exists && open.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(open.isHittable);open.tap()
+    let width=app.textFields["envelope-width"];XCTAssertTrue(width.waitForExistence(timeout:10));width.tap();width.typeText("50")
+    app.buttons["envelope-keyboard-done"].tap()
+    let evidence=app.descendants(matching:.any).matching(identifier:"envelope-evidence").firstMatch
+    for _ in 0..<8 {if evidence.exists && evidence.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(evidence.isHittable);evidence.tap();evidence.typeText("Synthetic 50 mm outer measurement");app.buttons["envelope-keyboard-done"].tap()
+    let confirm=app.switches["envelope-confirm"]
+    for _ in 0..<8 {if confirm.exists && confirm.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(confirm.isHittable);setSwitch(confirm,to:true)
+    let save=app.buttons["envelope-save"]
+    for _ in 0..<8 {if save.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(save.isEnabled);screenshot("26-measured-envelope");save.tap()
+    XCTAssertTrue(app.navigationBars["Object details"].waitForExistence(timeout:10));app.navigationBars["Object details"].buttons["Cancel"].tap()
+    app.terminate();app.launchArguments=["--envelope-demo"];app.launch()
+    XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:20));app.tabBars.buttons["Evidence"].tap()
+    let envelope=app.staticTexts["Visible centerline · measured envelope"];XCTAssertTrue(envelope.waitForExistence(timeout:10));envelope.tap()
+    let size=app.staticTexts["service-envelope-size"]
+    for _ in 0..<20 {if size.exists && size.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(size.isHittable);XCTAssertTrue(size.label.contains("50 mm"))
+    XCTAssertEqual(app.staticTexts["service-envelope-evidence"].label,"Synthetic 50 mm outer measurement");screenshot("27-measured-envelope-relaunched")
+  }
+  @MainActor func testDrawingSuggestionReviewAndRelaunch() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--drawing-demo","--drawing-demo-reset"];app.launch()
+    defer{app.terminate()}
+    func openMarks() {
+      XCTAssertTrue(app.tabBars.buttons["Tools"].waitForExistence(timeout:20));app.tabBars.buttons["Tools"].tap()
+      app.buttons["Drawings & design references"].tap();app.staticTexts["Plan.pdf"].tap()
+      let open=app.buttons["Labels and boundary suggestions"];XCTAssertTrue(open.waitForExistence(timeout:10));open.tap()
+      XCTAssertTrue(app.buttons["drawing-find-suggestions"].waitForExistence(timeout:10))
+    }
+    openMarks()
+    let detect=app.buttons["drawing-find-suggestions"]
+    for _ in 0..<5 {if detect.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(detect.isHittable);detect.tap()
+    let status=app.staticTexts["drawing-suggestion-status"];XCTAssertTrue(status.waitForExistence(timeout:40))
+    let keep=app.buttons["Keep ROOM A"]
+    for _ in 0..<8 {if keep.exists && keep.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(keep.isHittable);keep.tap()
+    let review=app.buttons["drawing-review-ROOM A"]
+    for _ in 0..<12 {if review.exists && review.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(review.isHittable);XCTAssertEqual(review.label,"Mark reviewed");review.tap()
+    XCTAssertEqual(review.label,"Unreview");screenshot("24-drawing-suggestion-review")
+    app.buttons["drawing-save-marks"].tap()
+    XCTAssertTrue(app.navigationBars["Plan.pdf"].waitForExistence(timeout:10));app.navigationBars["Plan.pdf"].buttons["Save"].tap()
+    app.terminate();app.launchArguments=["--drawing-demo"];app.launch();openMarks()
+    for _ in 0..<12 {if review.exists && review.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(review.isHittable);XCTAssertEqual(review.label,"Unreview")
+    XCTAssertTrue(app.staticTexts["drawing-mark-count"].label.contains("1 reviewed"));screenshot("25-drawing-review-relaunched")
+  }
   @MainActor func testSavedIFCSourceWorkflow() throws {
     continueAfterFailure=false
     let app=XCUIApplication();app.launchArguments=["--ifc-demo"];app.launch()

@@ -81,6 +81,7 @@ struct Feature:Codable,Identifiable,Equatable {
     var service:ServiceDetails?=nil
     var importedCoordinates:ImportedCoordinateDeclaration?=nil
     var ifcObject:IFCObjectReference?=nil
+    var envelope:ServiceEnvelope?=nil
     var segmentID:UUID?=nil;var hidden=false;var revision=1;var texture:String?=nil;var uv:[UV]?=nil;var artifactValid:Bool?=nil;var sourceDrawingID:UUID?=nil;var sourceDrawingFingerprint:String?=nil;var sourceFingerprint:String?=nil;var photoControls:[PhotoControl]?=nil;var pointTracks:[PointTrack]?=nil;var annotationSources:[AnnotationDependency]?=nil;var captureClassification:String?=nil;var captureAnchorID:UUID?=nil;var geometrySource:GeometrySource?=nil
     var resolvedGeometrySource:GeometrySource? {
         if let geometrySource{return geometrySource}
@@ -173,11 +174,11 @@ struct IFCCoordinateReference:Codable,Equatable {
     var summary:String {rebased ? "Large source coordinates were rebased locally; the reversible project offset is retained." : "Source project coordinates retained without a local offset."}
 }
 struct Drawing:Codable,Identifiable,Equatable {
-    var id=UUID();var name:String;var asset:String;var page:Int=0;var metresPerPoint:Double?;var roomID:UUID?;var notes="Design reference; not surveyed as-built geometry.";var alignment:DrawingAlignment?=nil;var ifcCoordinates:IFCCoordinateReference?=nil;var ifcProperties:IFCPropertyReference?=nil
+    var id=UUID();var name:String;var asset:String;var page:Int=0;var metresPerPoint:Double?;var roomID:UUID?;var notes="Design reference; not surveyed as-built geometry.";var alignment:DrawingAlignment?=nil;var ifcCoordinates:IFCCoordinateReference?=nil;var ifcProperties:IFCPropertyReference?=nil;var marks:[DrawingMark]?=nil
 }
 struct Bookmark:Codable,Identifiable,Equatable { var id=UUID();var name:String;var position:V3;var yaw:Double;var pitch:Double;var roomID:UUID;var segmentID:UUID?=nil }
 struct House:Codable,Identifiable,Equatable {
-    static let currentSchema=4
+    static let currentSchema=5
     var schema=House.currentSchema;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
     var boundaries:[RevealBoundary]=[]
@@ -192,6 +193,7 @@ struct House:Codable,Identifiable,Equatable {
         keys+=visualMaps.map{$0.asset}
         keys+=drawings.map{$0.asset};keys+=segments.compactMap{$0.worldMap};keys+=references.flatMap{[$0.image,$0.pdf]};keys+=features.compactMap{$0.texture};keys+=documentaryPhotos.map{$0.image}
         keys+=drawings.compactMap{$0.ifcProperties?.asset}
+        keys+=drawings.flatMap{($0.marks ?? []).map{$0.sourceAsset}}
         return Set(keys)
     }
     func validate() throws {
@@ -201,6 +203,15 @@ struct House:Codable,Identifiable,Equatable {
         guard fieldChecks.count<=10000,Set(fieldChecks.map{$0.id}).count==fieldChecks.count,fieldChecks.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid field evidence records.")}
         let roomIDs=Set(rooms.map{$0.id}),stageIDs=Set(stages.map{$0.id})
         guard drawings.count<=10000,Set(drawings.map{$0.id}).count==drawings.count else{throw HouseError.message("Invalid source drawing inventory.")}
+        var drawingMarkIDs=Set<UUID>(),drawingMarkCount=0,drawingMarkPoints=0
+        for drawing in drawings {
+            let marks=drawing.marks ?? [];drawingMarkCount+=marks.count
+            guard marks.count<=1000,drawingMarkCount<=50000 else{throw HouseError.message("Too many drawing marks.")}
+            for mark in marks {
+                drawingMarkPoints+=mark.points.count+(mark.originalPoints?.count ?? 0)
+                guard mark.valid,drawingMarkIDs.insert(mark.id).inserted,drawingMarkPoints<=1_000_000 else{throw HouseError.message("Invalid drawing mark or suggestion provenance.")}
+            }
+        }
         for drawing in drawings {if let reference=drawing.ifcCoordinates {guard drawing.asset.hasSuffix(".ifc"),reference.valid else{throw HouseError.message("Invalid IFC source coordinates.")}}}
         for drawing in drawings {if let properties=drawing.ifcProperties {guard drawing.asset.hasSuffix(".ifc"),properties.valid,drawing.asset==properties.sourceSHA256+".ifc",drawing.ifcCoordinates != nil else{throw HouseError.message("IFC properties must identify their original source and coordinate frame.")}}}
         guard documentaryPhotos.count<=50000,Set(documentaryPhotos.map{$0.id}).count==documentaryPhotos.count else{throw HouseError.message("Invalid documentary photograph inventory.")}
@@ -253,6 +264,11 @@ struct House:Codable,Identifiable,Equatable {
                       && observationByID[c.observationID] != nil && observationByID[c.observationID]?.segmentID==f.segmentID
                 }
             }) else{throw HouseError.message("Invalid photograph point provenance: every control must identify an original photograph in the feature's capture session.")}
+        }}
+        for feature in features {if let envelope=feature.envelope {
+            guard envelope.valid,[EvidenceKind.observed,.synthetic].contains(feature.kind),feature.route.count==2,
+              let dependencies=feature.annotationSources,dependencies.count==1,dependencies[0].featureID==envelope.sourceFeatureID,dependencies[0].revision==envelope.sourceRevision,
+              try envelope.mesh(along:feature.route)==feature.mesh else{throw HouseError.message("Invalid measured service envelope or source dependency.")}
         }}
         for f in features {if let sources=f.annotationSources {guard !sources.isEmpty,sources.count<=64,Set(sources.map{$0.featureID}).count==sources.count,sources.allSatisfy({$0.featureID != f.id && $0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid annotation source relationships.")}}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)),d.sourceGeometry==nil || (!d.sourceGeometry!.isEmpty && d.sourceGeometry!.count<=64 && d.sourceGeometry!.allSatisfy{$0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid measurement reference.")}}
@@ -331,6 +347,7 @@ extension House {
         let inputSchema=try c.decode(Int.self,forKey:.schema)
         guard (1...Self.currentSchema).contains(inputSchema) else{throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
         // Upgrade in memory only. Existing source files stay immutable; the
+        // Schema 5 preserves drawing marks, suggestion provenance and measured envelopes.
         // Schema 4 prevents older writers from losing IFC property sidecars;
         // schema 3 introduced the reversible source origin.
         schema=Self.currentSchema

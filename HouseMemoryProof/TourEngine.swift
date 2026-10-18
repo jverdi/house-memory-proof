@@ -32,6 +32,7 @@ struct TourPlan: Codable {
   var fps = 30
   var width = 1920
   var height = 1080
+  var motionProfile:String?="camera-motion-v1"
 }
 enum TourDirector {
   static func plan(_ h: House, duration: Double = 20, options: SceneOptions = SceneOptions(),preset:TourPreset = .overview)
@@ -61,7 +62,8 @@ enum TourDirector {
       if shots.count>frames {excluded.append("Tour duration omitted \(shots.count-frames) shots.");shots=Array(shots.prefix(frames))}
       let count=max(1,shots.count),base=frames/count,remainder=frames%count
       for i in shots.indices {shots[i].duration=Double(base+(i<remainder ? 1:0))/30}
-      return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(shots),excluded:excluded)
+      let bounded=boundedMotion(shots);if bounded.cuts>0 {excluded.append("\(bounded.cuts) movements replaced by viewpoint cuts to keep camera motion within the requested duration.")}
+      return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(bounded.shots),excluded:excluded)
     }
     let observations=PoseRefinement.selectedForHouse(h)
     var shots: [TourShot] = []
@@ -72,10 +74,15 @@ enum TourDirector {
       guard !SceneBuilder.features(h,options:scope).isEmpty else{excluded.append(r.name+": no geometry in selected layers");continue}
       let stages = SceneBuilder.eligibleStages(h, options: scope)
       let unregistered = SceneBuilder.activeUnregisteredSegment(h, options: scope)
+      let clearance = SpatialClearance(features: NavigationGeometry.collisionFeatures(h, options: scope))
       if h.isDemo && h.observations.isEmpty {
+        let position=r.origin + V3(r.size.x / 2, r.size.y / 2, 1.6)
+        guard clearance.isClear(from:position,to:position,radius:0.15) else {
+          excluded.append(r.name+": synthetic entry viewpoint intersects observed geometry");continue
+        }
         shots.append(
           TourShot(
-            roomID: r.id, position: r.origin + V3(r.size.x / 2, r.size.y / 2, 1.6), yaw: 0,
+            roomID: r.id, position: position, yaw: 0,
             pitch: 0.08, caption: r.name + " · SYNTHETIC DEMONSTRATION", duration: 5))
       } else if let obs = observations.last(where: {
         $0.roomID == r.id && !$0.documentary && stages.contains($0.stageID)
@@ -84,7 +91,6 @@ enum TourDirector {
         let samples = observations.filter {
           $0.roomID == r.id && $0.segmentID == obs.segmentID && !$0.documentary
         }.sorted { $0.timestamp < $1.timestamp }
-        let clearance = SpatialClearance(features: NavigationGeometry.collisionFeatures(h, options: scope))
         let positions=NavigationGeometry.positions(house:h,options:scope)
         var moves: [TourShot] = []
         if samples.count >= 2 {
@@ -109,7 +115,13 @@ enum TourDirector {
           let count = min(3, moves.count)
           for i in 0..<count { shots.append(moves[i * moves.count / count]) }
         } else {
-          let p = pose(obs, house: h)
+          // A rejected move must not fall back to a camera embedded in the
+          // same obstacle. Reuse a clear recorded pose or omit this room.
+          guard let stationary=samples.reversed().first(where:{sample in
+            let p=pose(sample,house:h).0
+            return clearance.isClear(from:p,to:p,radius:0.15)
+          }) else {excluded.append(r.name+": no captured viewpoint has camera clearance");continue}
+          let p = pose(stationary, house: h)
           shots.append(
             TourShot(
               roomID: r.id, position: p.0, yaw: p.1, pitch: p.2,
@@ -123,7 +135,29 @@ enum TourDirector {
     if shots.count>frames {excluded.append("Tour duration omitted \(shots.count-frames) shots.");shots=Array(shots.prefix(frames))}
     let count=max(1,shots.count),base=frames/count,remainder=frames%count
     for i in shots.indices {shots[i].duration=Double(base+(i<remainder ? 1:0))/30}
-    return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(shots),excluded:excluded)
+    let bounded=boundedMotion(shots);if bounded.cuts>0 {excluded.append("\(bounded.cuts) movements replaced by viewpoint cuts to keep camera motion within the requested duration.")}
+    return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(bounded.shots),excluded:excluded)
+  }
+  // Cubic smoothstep reaches 1.5*d/T speed and 6*d/T² acceleration.
+  // Limits apply within a shot; disconnected shots remain explicit cuts.
+  static func boundedMotion(_ input:[TourShot])->(shots:[TourShot],cuts:Int) {
+    var cuts=0
+    let shots=input.map { source->TourShot in
+      guard let end=source.endPosition else{return source}
+      let duration=source.duration/max(1e-12,source.endPhase-source.startPhase)
+      let distance=(end-source.position).length
+      let yaw=atan2(sin((source.endYaw ?? source.yaw)-source.yaw),cos((source.endYaw ?? source.yaw)-source.yaw))
+      let angle=hypot(yaw,(source.endPitch ?? source.pitch)-source.pitch)
+      guard duration.isFinite,duration>0,distance.isFinite,angle.isFinite,
+        1.5*distance/duration<=1,6*distance/(duration*duration)<=1,
+        1.5*angle/duration<=0.6,6*angle/(duration*duration)<=1.2 else {
+        var shot=source;let p=camera(source,phase:source.startPhase)
+        shot.position=p.0;shot.yaw=p.1;shot.pitch=p.2;shot.endPosition=nil;shot.endYaw=nil;shot.endPitch=nil
+        shot.startPhase=0;shot.endPhase=1;shot.caption += " · viewpoint cut to fit duration";cuts+=1;return shot
+      }
+      return source
+    }
+    return (shots,cuts)
   }
   static func chunk(_ shots:[TourShot])->[TourShot] {
     var chunks: [TourShot] = []
@@ -172,7 +206,9 @@ enum TourDirector {
     let t = max(0, min(1, phase))
     let smooth = t * t * (3 - 2 * t)
     guard let end = shot.endPosition else {
-      return (shot.position, shot.yaw + sin(t * Double.pi) * 0.65, shot.pitch)
+      let duration=max(0,shot.duration/max(1e-12,shot.endPhase-shot.startPhase))
+      let amplitude=min(0.65,min(0.6*duration/Double.pi,1.2*duration*duration/(Double.pi*Double.pi)))
+      return (shot.position, shot.yaw + sin(t * Double.pi) * amplitude, shot.pitch)
     }
     let delta = atan2(
       sin((shot.endYaw ?? shot.yaw) - shot.yaw), cos((shot.endYaw ?? shot.yaw) - shot.yaw))
@@ -201,7 +237,7 @@ struct MovieEncoderTimeout: LocalizedError {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v13-rgba8-caption-quad", options.mode.rawValue,
+      "renderer-v14-bounded-camera-motion", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")

@@ -874,6 +874,102 @@ import simd
                 }
                 return true
             }
+            await check("Measured service sections retain centerlines reject invented sizes and invalidate with their source") {
+                var h=House.empty("Envelope geometry");h.isDemo=true
+                let session=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments=[session]
+                let line=[V3(0,0,1),V3(1,0,1)]
+                let source=Feature(name:"Visible centerline",trade:.plumbing,roomID:session.roomID,stageID:session.stageID,kind:.synthetic,mesh:Mesh(vertices:line,triangles:[]),route:line,segmentID:session.id)
+                h.features=[source]
+                let round=try ServiceEnvelope.feature(source:source,interval:0,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:0.001,evidence:"Synthetic outer diameter measurement",house:h)
+                let rectangle=try ServiceEnvelope.feature(source:source,interval:0,section:.rectangular,width:0.2,height:0.1,widthAxis:V3(0,1,0),tolerance:nil,evidence:"Synthetic width and height measurement",house:h)
+                guard round.mesh.vertices.count==130,round.mesh.triangles.count==768,rectangle.mesh.vertices.count==10,rectangle.mesh.triangles.count==48,round.route==line,round.sourceIDs==source.sourceIDs else{return false}
+                for vertex in round.mesh.vertices.prefix(128) {guard abs(hypot(vertex.y,vertex.z-1)-0.025)<1e-12 else{return false}}
+                guard rectangle.mesh.vertices.map({$0.y}).max()==0.1,abs((rectangle.mesh.vertices.map{$0.z}.max() ?? 0)-1.05)<1e-12 else{return false}
+                h.features += [round,rectangle];try h.validate()
+                guard h.features[0]==source,DerivedEvidence.currentIDs(h).count==3 else{return false}
+                var changed=h;changed.features[0].revision += 1
+                guard DerivedEvidence.currentIDs(changed)==Set([source.id]) else{return false}
+                changed=h;var moved=Rigid();moved.values[3]=1;changed.segments[0].registration=moved
+                guard DerivedEvidence.currentIDs(changed)==Set([source.id]) else{return false}
+                changed=h;changed.features[1].mesh.vertices[0].y += 0.01
+                do{try changed.validate();return false}catch{}
+                for width in [0,-1,Double.nan,4.1] {
+                    do{_=try ServiceEnvelope.feature(source:source,interval:0,section:.round,width:width,height:nil,widthAxis:nil,tolerance:nil,evidence:"Recorded",house:h);return false}catch{}
+                }
+                do{_=try ServiceEnvelope.feature(source:source,interval:0,section:.rectangular,width:0.2,height:0.1,widthAxis:V3(1,0,0),tolerance:nil,evidence:"Recorded",house:h);return false}catch{}
+                do{_=try ServiceEnvelope.feature(source:source,interval:0,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:nil,evidence:" ",house:h);return false}catch{}
+                return true
+            }
+            await check("Measured envelope metadata geometry and source links survive archive GLB and CSV handoff") {
+                var h=House.empty("Envelope interchange");h.isDemo=true
+                let line=[V3(0,0,1),V3(1,0,1)]
+                let source=Feature(name:"Visible centerline",trade:.plumbing,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.synthetic,mesh:Mesh(vertices:line,triangles:[]),route:line)
+                h.features=[source]
+                let round=try ServiceEnvelope.feature(source:source,interval:0,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:0.001,evidence:"=literal synthetic dimension evidence",house:h)
+                let rectangle=try ServiceEnvelope.feature(source:source,interval:0,section:.rectangular,width:0.2,height:0.1,widthAxis:V3(0,1,0),tolerance:nil,evidence:"Synthetic duct section",house:h)
+                h.features += [round,rectangle];try repo.save(h)
+                let archive=try Exporter.archive(h,repo:repo),target=try Repository(root:folder.appendingPathComponent("envelope-restore")),restored=try Exporter.restore(archive,repo:target)
+                guard restored.features==h.features,restored.rooms==h.rooms else{return false}
+                try Data(contentsOf:archive).write(to:mainRepo.root.appendingPathComponent("service-envelopes.hxray"))
+                try Data(contentsOf:Exporter.glb(h,options:SceneOptions())).write(to:mainRepo.root.appendingPathComponent("service-envelopes.glb"))
+                try Data(contentsOf:Exporter.semanticCSV(h)).write(to:mainRepo.root.appendingPathComponent("service-envelopes.csv"))
+                return true
+            }
+            await check("Drawing marks preserve suggestion provenance and refuse crossed boundaries or stale edits") {
+                let raw=DrawingMarkTestFixture.pdf(),key=try repo.put(raw,ext:"pdf")
+                var drawing=Drawing(name:"Plan.pdf",asset:key)
+                let points=[UV(u:0.1,v:0.2),UV(u:0.5,v:0.4)]
+                var mark=DrawingMark(sourceAsset:key,page:0,kind:.roomName,points:points,label:"Detected label",method:.visionText,originalPoints:points,originalLabel:"Detected label",profileHash:DrawingMark.profileHash,runtime:"Synthetic contract",rawScore:0.8)
+                mark.label="Owner correction";mark.reviewed=true;drawing.marks=[mark]
+                var source=House.empty("Drawing edits");source.drawings=[drawing]
+                try source.validate()
+                var current=source;current.drawings[0].notes="A concurrent source note"
+                let saved=try DrawingMarkEdits.saving([mark],source:drawing,to:current)
+                guard saved.drawings[0].notes==current.drawings[0].notes,saved.drawings[0].marks==[mark],saved.features==source.features,saved.rooms==source.rooms else{return false}
+                for fault in 0..<5 {
+                    var bad=mark
+                    switch fault {
+                    case 0:bad.page = -1
+                    case 1:bad.profileHash=String(repeating:"0",count:64)
+                    case 2:bad.rawScore = .infinity
+                    case 3:bad.originalPoints=nil
+                    default:bad.label=String(repeating:"é",count:2049)
+                    }
+                    guard !bad.valid else{return false}
+                }
+                let crossed=DrawingMark(sourceAsset:key,page:0,kind:.boundary,points:[UV(u:0,v:0),UV(u:1,v:1),UV(u:0,v:1),UV(u:0.8,v:0)],label:"Crossed")
+                guard !crossed.valid else{return false}
+                current.drawings[0].marks?[0].label="Another edit"
+                do{_=try DrawingMarkEdits.saving([],source:drawing,to:current);return false}catch{}
+                current=source;current.drawings[0].asset=try repo.put(Data("New source".utf8),ext:"pdf")
+                guard !mark.current(for:current.drawings[0]),current.assets.contains(key) else{return false}
+                do{_=try DrawingMarkEdits.saving([],source:drawing,to:current);return false}catch{}
+                return true
+            }
+            await check("Native drawing OCR and rectangle proposals remain unreviewed and survive archive restore") {
+                let raw=DrawingMarkTestFixture.pdf(),key=try repo.put(raw,ext:"pdf")
+                guard let page=PDFDocument(data:raw)?.page(at:0),let image=try DrawingTexture.normalizedThumbnail(page).cgImage else{return false}
+                let proposals=try DrawingSuggestions.detect(image,sourceAsset:key,page:0)
+                let names=proposals.filter{$0.kind == .roomName},boundaries=proposals.filter{$0.kind == .boundary}
+                guard names.contains(where:{$0.label.uppercased().contains("ROOM A")}),names.contains(where:{$0.label.uppercased().contains("ROOM B")}),boundaries.count>=2,
+                  proposals.allSatisfy({$0.valid && !$0.reviewed && $0.originalPoints==$0.points && $0.originalLabel==$0.label}) else{throw HouseError.message("Drawing fixture missed required labels or two outlines: \(names.count) text candidates, \(boundaries.count) outlines.")}
+                var source=House.empty("Drawing proposal fixture");source.drawings=[Drawing(name:"Plan.pdf",asset:key,marks:proposals)]
+                try source.validate();try repo.save(source)
+                let archive=try Exporter.archive(source,repo:repo),target=try Repository(root:folder.appendingPathComponent("drawing-mark-restore"))
+                let restored=try Exporter.restore(archive,repo:target)
+                guard restored.drawings==source.drawings,restored.rooms==source.rooms,restored.features.isEmpty,try target.read(key)==raw else{return false}
+                let output=mainRepo.root.appendingPathComponent("drawing-marks.hxray")
+                try? FileManager.default.removeItem(at:output);try FileManager.default.copyItem(at:archive,to:output)
+                return try target.integrity(restored)==1
+            }
+            await check("Blank drawing proposals abstain without creating rooms or boundaries") {
+                let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
+                let image=UIGraphicsImageRenderer(size:CGSize(width:600,height:400),format:format).image{context in
+                    UIColor.white.setFill();context.cgContext.fill(CGRect(x:0,y:0,width:600,height:400))
+                }
+                guard let cg=image.cgImage else{return false}
+                return try DrawingSuggestions.detect(cg,sourceAsset:String(repeating:"0",count:64)+".pdf",page:0).isEmpty
+            }
             await check("Visual pose converts canonical saved frame into live AR frame"){
                 var live=Rigid();live.values[3]=5;live.values[7]=6;live.values[11]=7
                 let saved=Rigid(values:[1,0,0,2, 0,0,-1,-4, 0,1,0,3, 0,0,0,1])
@@ -1505,6 +1601,43 @@ import simd
                 h.features=[Feature(name:"Blocking wall",trade:.structure,roomID:r.id,stageID:stage.id,kind:.synthetic,mesh:.box(center:V3(0.25,0,1.6),size:V3(0.1,2,2)),segmentID:segment.id)]
                 return !TourDirector.clearPath(a,b,house:h,options:options,clearance:SpatialClearance(features:Exporter.canonicalFeatures(h,options:options))) && TourDirector.plan(h).shots.allSatisfy{$0.endPosition==nil}
             }
+            await check("Stationary tour fallback selects a clear captured pose or explicitly omits the room") {
+                var h=House.empty("Stationary clearance");let r=h.rooms[0],stage=h.stages[0],segment=Segment(roomID:r.id,stageID:stage.id);h.segments=[segment]
+                for i in 0..<2 {var m=Rigid().values;m[3]=Double(i)*0.5;m[7]=1.6;h.observations.append(Observation(roomID:r.id,stageID:stage.id,segmentID:segment.id,timestamp:Double(i),image:"camera.jpg",width:64,height:64,camera:m,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic",light:1000,sharpness:0.1))}
+                func obstruction(_ x:Double)->Feature {Feature(name:"Recorded obstruction",trade:.structure,roomID:r.id,stageID:stage.id,kind:.synthetic,mesh:.box(center:V3(x,0,1.6),size:V3(0.1,2,2)),segmentID:segment.id)}
+                h.features=[obstruction(0.5)]
+                let fallback=TourDirector.plan(h,duration:5)
+                guard !fallback.shots.isEmpty,fallback.shots.allSatisfy({$0.position==V3(0,0,1.6) && $0.endPosition==nil}) else{return false}
+                h.features.append(obstruction(0))
+                let omitted=TourDirector.plan(h,duration:5)
+                guard omitted.shots.isEmpty,omitted.excluded.count==1,omitted.excluded[0].contains("camera clearance") else{return false}
+                h.isDemo=true;h.observations=[];h.features=[Feature(name:"Blocked demo entry",trade:.structure,roomID:r.id,stageID:stage.id,kind:.synthetic,mesh:.box(center:r.origin+V3(r.size.x/2,r.size.y/2,1.6),size:V3(0.1,2,2)))]
+                let demo=TourDirector.plan(h,duration:5)
+                return demo.shots.isEmpty && demo.excluded.count==1
+            }
+            await check("Tour duration preserves frame totals while bounding within-shot speed acceleration and rotation") {
+                let fast=TourShot(roomID:UUID(),position:V3(),yaw:0,pitch:0,caption:"Observed path",duration:0.2,endPosition:V3(1,0,0),endYaw:0,endPitch:0)
+                let cut=TourDirector.boundedMotion([fast])
+                guard cut.cuts==1,cut.shots[0].duration==fast.duration,cut.shots[0].endPosition==nil,cut.shots[0].position==fast.position else{return false}
+                var slow=fast;slow.duration=3;slow.endYaw=0.3
+                guard TourDirector.boundedMotion([slow]).cuts==0 else{return false}
+                var spin=slow;spin.endYaw=Double.pi
+                guard TourDirector.boundedMotion([spin]).cuts==1 else{return false}
+                for duration in [1.0/30,0.5,2,5] {
+                    let still=TourShot(roomID:UUID(),position:V3(),yaw:0,pitch:0,caption:"Stationary",duration:duration)
+                    let dt=duration/200
+                    let angles=(0...200).map{TourDirector.camera(still,phase:Double($0)/200).1}
+                    let rates=(1...200).map{(angles[$0]-angles[$0-1])/dt}
+                    guard rates.allSatisfy({abs($0)<=0.600001}),
+                      (1..<rates.count).allSatisfy({abs((rates[$0]-rates[$0-1])/dt)<=1.200001}) else{return false}
+                }
+                let chunks=TourDirector.chunk([slow])
+                guard abs(chunks.reduce(0){$0+$1.duration}-slow.duration)<1e-12 else{return false}
+                var plan=TourPlan(sourceRevision:1,synthetic:true,shots:[slow],excluded:[])
+                guard plan.motionProfile=="camera-motion-v1" else{return false}
+                plan.motionProfile=nil
+                return try JSONDecoder().decode(TourPlan.self,from:JSONEncoder().encode(plan)).motionProfile==nil
+            }
             await check("Moving tour uses short-angle interpolation and endpoint continuity"){
                 let shot=TourShot(roomID:UUID(),position:V3(),yaw:179*Double.pi/180,pitch:0,caption:"test",duration:5,endPosition:V3(1,0,0),endYaw: -179*Double.pi/180,endPitch:0.2)
                 let a=TourDirector.camera(shot,phase:0),m=TourDirector.camera(shot,phase:0.5),b=TourDirector.camera(shot,phase:1)
@@ -1629,7 +1762,7 @@ import simd
                 let storeys=document["storeys"] as! [[String:Any]]
                 results.append(["test":"Pinned IFC properties preserve raw units storeys relationships and source object identity","passed":graph.summary.products==2 && graph.summary.convertedProducts==1 && graph.summary.representedProducts==1 && graph.summary.storeys==1 && graph.matches(propertyFeatures) && rawDiameter?["value"] as? Double==25 && storeys.first?["elevation"] as? Double==3000 && records.contains{$0["expressID"] as? Int==41} && records.contains{$0["expressID"] as? Int==45} && propertyFeatures.allSatisfy{$0.ifcObject?.expressID==22}])
                 await check("IFC property boundary refuses forged summaries references identities and byte budgets") {
-                    for fault in 0..<6 {
+                    for fault in 0..<9 {
                         var bad=document
                         if fault==0 {var summary=bad["summary"] as! [String:Any];summary["convertedProducts"]=99;bad["summary"]=summary}
                         if fault==1 {var rows=bad["records"] as! [[String:Any]];rows.append(rows[0]);bad["records"]=rows}
@@ -1637,6 +1770,14 @@ import simd
                         if fault==3 {var products=bad["products"] as! [[String:Any]];products[0]["guidStatus"]="duplicate";bad["products"]=products}
                         if fault==4 {var rows=bad["records"] as! [[String:Any]];rows[0]["fields"]=["Missing":["type":5,"value":99999]];bad["records"]=rows}
                         if fault==5 {bad["extra"]=String(repeating:"é",count:2049)}
+                        if fault>=6 {
+                            var rows=bad["records"] as! [[String:Any]]
+                            let index=rows.firstIndex{$0["expressID"] as? Int==11}!
+                            if fault==6 {rows[index]["derivedFields"]=[] as [String]}
+                            if fault==7 {var fields=rows[index]["fields"] as! [String:Any];fields["Dimensions"]=["type":5,"value":99999];rows[index]["fields"]=fields}
+                            if fault==8 {rows[index]["typeName"]="IfcOtherType"}
+                            bad["records"]=rows
+                        }
                         do{_=try IFCProperties.decode(bad,sourceSHA256:graph.sourceSHA256);return false}catch{}
                     }
                     var changed=propertyFeatures;changed[0].ifcObject?.expressID=40

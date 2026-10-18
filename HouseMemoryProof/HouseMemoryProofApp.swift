@@ -14,6 +14,29 @@ import Darwin
         }
         #endif
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--envelope-demo"),model.repository != nil {
+          if let existing=model.houses.first(where:{$0.name=="Service envelope fixture" && $0.isDemo}) {
+            model.selected=existing.id
+            if ProcessInfo.processInfo.arguments.contains("--envelope-demo-reset") {model.edit{$0.features.removeAll{$0.envelope != nil}}}
+          }else {
+            var house=House.empty("Service envelope fixture");house.isDemo=true
+            let line=[V3(0,0,1),V3(1,0,1)]
+            house.features=[Feature(name:"Visible centerline",trade:.plumbing,roomID:house.rooms[0].id,stageID:house.stages[0].id,kind:.synthetic,mesh:Mesh(vertices:line,triangles:[]),route:line)]
+            model.commit(house)
+          }
+        }
+        if ProcessInfo.processInfo.arguments.contains("--drawing-demo"),let repo=model.repository {
+          do {
+            if let existing=model.houses.first(where:{$0.name=="Drawing marks fixture" && $0.isDemo}) {
+              model.selected=existing.id
+              if ProcessInfo.processInfo.arguments.contains("--drawing-demo-reset") {model.edit{$0.drawings[0].marks=nil}}
+            }else {
+              var house=House.empty("Drawing marks fixture");house.isDemo=true
+              house.drawings=[Drawing(name:"Plan.pdf",asset:try repo.put(DrawingMarkTestFixture.pdf(),ext:"pdf"))]
+              model.commit(house)
+            }
+          }catch{model.error=error.localizedDescription}
+        }
         if ProcessInfo.processInfo.arguments.contains("--ifc-demo"),let repo=model.repository {
           do {
             guard let path=Bundle.main.url(forResource:"IFC",withExtension:nil)?.appendingPathComponent("test-block.ifc") else{throw HouseError.message("IFC fixture missing.")}

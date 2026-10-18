@@ -13,7 +13,7 @@ from pathlib import Path, PurePosixPath
 import stat
 import struct
 import zipfile
-from package_check import require, identity, json_bytes, rigid, service_check, coordinate_declaration_check, ifc_coordinates_check
+from package_check import require, identity, json_bytes, rigid, service_check, coordinate_declaration_check, ifc_coordinates_check, envelope_check
 import ifc_properties_check
 
 MAX_MODEL=512*1024*1024
@@ -156,6 +156,7 @@ def semantic_csv(path):
                 require(bool(row['segment_id'])==(provenance.get('segmentID') is not None),'CSV provenance coordinate frame differs')
         if kind=='feature':
             service_check(provenance.get('service'))
+            envelope_check(provenance.get('envelope'))
             coordinate_declaration_check(provenance.get('importedCoordinates'))
             ifc_coordinates_check(provenance.get('ifcSourceCoordinates'))
             if provenance.get('ifcSourceCoordinates') is not None:

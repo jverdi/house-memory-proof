@@ -5,6 +5,18 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"AE934A62C0F173ED9F308088" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "ServiceEnvelopePage.swift"; "sourceTree" = "<group>"; };
+		"9563383F800CDEE6ABAC26D4" = { "isa" = "PBXBuildFile"; "fileRef" = "AE934A62C0F173ED9F308088"; };
+
+		"C00A015EABDD8B5B8E5D933A" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "ServiceEnvelope.swift"; "sourceTree" = "<group>"; };
+		"6B5C9F71E742416D03E5423B" = { "isa" = "PBXBuildFile"; "fileRef" = "C00A015EABDD8B5B8E5D933A"; };
+
+		"EF93DA5BB993449087B42B2A" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "DrawingMarksPage.swift"; "sourceTree" = "<group>"; };
+		"CF14CC5AF3EAA43E61DEF7A2" = { "isa" = "PBXBuildFile"; "fileRef" = "EF93DA5BB993449087B42B2A"; };
+
+		"3B74A7FD9D68C8D1461B3C86" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "DrawingMarks.swift"; "sourceTree" = "<group>"; };
+		"FE5D52828E60351C766EF41A" = { "isa" = "PBXBuildFile"; "fileRef" = "3B74A7FD9D68C8D1461B3C86"; };
+
 		"7378E17D9D858A47996E0687" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "IFCPropertiesPage.swift"; "sourceTree" = "<group>"; };
 		"522C7BACA6E6260C4A2E56F6" = { "isa" = "PBXBuildFile"; "fileRef" = "7378E17D9D858A47996E0687"; };
 
@@ -249,6 +261,10 @@
 			"buildActionMask" = 2147483647;
 			"files" = (
 				"534A5F435ADDB25DA9F43232",
+				"9563383F800CDEE6ABAC26D4",
+				"6B5C9F71E742416D03E5423B",
+				"CF14CC5AF3EAA43E61DEF7A2",
+				"FE5D52828E60351C766EF41A",
 				"522C7BACA6E6260C4A2E56F6",
 				"CADB9856C45D02663699E12D",
 				"F329ECAA415FCBD9E49084C6",
@@ -325,6 +341,10 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"A33603BF79F74B056172D43B",
+				"AE934A62C0F173ED9F308088",
+				"C00A015EABDD8B5B8E5D933A",
+				"EF93DA5BB993449087B42B2A",
+				"3B74A7FD9D68C8D1461B3C86",
 				"7378E17D9D858A47996E0687",
 				"01C88593635A150C53DA68CB",
 				"B63401F3FC4499E31FCC8A4F",

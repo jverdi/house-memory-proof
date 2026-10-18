@@ -15,7 +15,7 @@ assert.equal(result.records.find(r=>r.expressID===4).fields.PlacementRelTo.value
 assert.deepEqual(plain(prepare(api,0,types).finish().records),result.records);assert.equal(JSON.stringify(lines),untouched);
 assert.throws(()=>worker.markConverted(999));
 result=plain(prepare(api,0,types).finish());assert.equal(result.summary.unconvertedRepresentedProducts,1);
-for(const value of ['','4J$yPqHBD2TuLf$X2etp$1','1J$yPqHBD2TuLf$X2etp$!','short'])assert.equal(guidOK(value),false);
+for(const value of ['','4J$yPqHBD2TuLf$X2etp$1','1J$yPqHBD2TuLf$X2etp$!','short','1J$yPqHBD2TuLf$X2etp$1\n'])assert.equal(guidOK(value),false);
 assert(guidOK('3t3TDZl_D9NOIWB0BSjzJI'));
 lines[2].GlobalId=string('1J$yPqHBD2TuLf$X2etp$1');assert.equal(prepare(api,0,types).finish().summary.duplicateGUIDs,2);
 lines[2].GlobalId=string('bad');assert.equal(prepare(api,0,types).finish().summary.malformedGUIDs,1);
@@ -29,4 +29,14 @@ lines[9].NominalValue=string('good');
 const chain={...lines};chain[4]={...lines[4],Next:ref(501)};for(let i=501;i<=2500;i++)chain[i]={expressID:i,type:110,Next:i===2500?ref(501):ref(i+1)};
 assert.equal(prepare({...api,GetLine:(_,id)=>chain[id]},0,types).finish().records.length,2010);
 for(let i=501;i<=2500;i++)chain[i].Label=string('x'.repeat(4096));assert.throws(()=>prepare({...api,GetLine:(_,id)=>chain[id]},0,types));
+// Match the pinned parser's prototype scalar getter and derived SI dimensions.
+class Length {constructor(){this.type=4;this._internalValue='25.';this._representationValue=25}get value(){return this._representationValue}}
+lines[9].NominalValue=new Length();
+let scalarGraph=prepare(api,0,types).finish();assert.equal(scalarGraph.records.find(r=>r.expressID===9).fields.NominalValue.value,25);
+assert.equal(scalarGraph.records.find(r=>r.expressID===9).fields.NominalValue._internalValue,'25.');
+lines[6].Dimensions=ref(0);
+const typed={...api,GetNameFromTypeCode:t=>t===105?'IfcSIUnit':'TYPE_'+t};
+let derivedGraph=prepare(typed,0,types).finish();assert.deepEqual(plain(derivedGraph.records.find(r=>r.expressID===6).derivedFields),['Dimensions']);
+assert.throws(()=>prepare(api,0,types));lines[6].Other=ref(0);assert.throws(()=>prepare(typed,0,types));delete lines[6].Other;
+lines[6].Dimensions=ref(999);assert.throws(()=>prepare(typed,0,types));delete lines[6].Dimensions;
 console.log('IFC property contracts passed: raw units/properties/links, cycles, incomplete geometry, GUIDs, missing references and bounds');

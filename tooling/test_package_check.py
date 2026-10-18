@@ -54,9 +54,9 @@ class PortablePackageContracts(unittest.TestCase):
         self.assertEqual(list(Path(self.temp.name).iterdir()),[self.path])
 
     def test_project_reader_versions_are_explicit_and_sources_remain_unchanged(self):
-        for schema in [1,2,3,4,0,5,999]:
+        for schema in [1,2,3,4,5,0,6,999]:
             self.house['schema']=schema;archive(self.path,self.house,self.parts);before=self.path.read_bytes()
-            if schema in [1,2,3,4]:self.assertTrue(check_package(self.path)['passed'])
+            if schema in [1,2,3,4,5]:self.assertTrue(check_package(self.path)['passed'])
             else:
                 with self.assertRaisesRegex(InvalidPackage,'schema'):check_package(self.path)
             self.assertEqual(self.path.read_bytes(),before)
@@ -73,7 +73,7 @@ class PortablePackageContracts(unittest.TestCase):
 
     def test_ifc_property_graph_archive_links_raw_units_and_forgery_refusal(self):
         raw=b'Original IFC retained verbatim';source_hash=hashlib.sha256(raw).hexdigest();source_key=source_hash+'.ifc'
-        summary=dict(products=2,representedProducts=1,convertedProducts=1,unconvertedRepresentedProducts=0,storeys=1,records=3,malformedGUIDs=0,missingGUIDs=0,duplicateGUIDs=0)
+        summary=dict(products=2,representedProducts=1,convertedProducts=1,unconvertedRepresentedProducts=0,storeys=1,records=4,malformedGUIDs=0,missingGUIDs=0,duplicateGUIDs=0)
         obj=dict(expressID=22,typeName='IFCBUILDINGELEMENTPROXY',guid='1J$yPqHBD2TuLf$X2etp$1',guidStatus='valid')
         storey=dict(expressID=40,typeName='IFCBUILDINGSTOREY',guid='2J$yPqHBD2TuLf$X2etp$2',guidStatus='valid')
         value=lambda text:dict(type=1,value=text)
@@ -81,9 +81,10 @@ class PortablePackageContracts(unittest.TestCase):
         graph=dict(version=1,converter='web-ifc-0.0.72',sourceSchema='IFC4',sourceSHA256=source_hash,rawSourceValues=True,excludedForwardFields=['OwnerHistory','Representation','RepresentationMaps'],summary=summary,
             products=[dict(**obj,represented=True,converted=True),dict(**storey,represented=False,converted=False)],
             storeys=[dict(expressID=40,name='Upper floor',elevation=3000)],records=[
-                dict(expressID=22,typeName=obj['typeName'],fields=dict(GlobalId=value(obj['guid']),Representation=ref(21),OwnerHistory=ref(5))),
+                dict(expressID=22,typeName=obj['typeName'],fields=dict(GlobalId=value(obj['guid']),Representation=ref(21),OwnerHistory=ref(5),Unit=ref(12))),
                 dict(expressID=40,typeName=storey['typeName'],fields=dict(GlobalId=value(storey['guid']),Name=value('Upper floor'),Elevation=dict(type=4,value=3000))),
-                dict(expressID=41,typeName='IFCRELCONTAINEDINSPATIALSTRUCTURE',fields=dict(RelatedElements=[ref(22)],RelatingStructure=ref(40)))])
+                dict(expressID=41,typeName='IFCRELCONTAINEDINSPATIALSTRUCTURE',fields=dict(RelatedElements=[ref(22)],RelatingStructure=ref(40))),
+                dict(expressID=12,typeName='IfcSIUnit',fields=dict(Dimensions=ref(0)),derivedFields=['Dimensions'])])
         self.parts['assets/'+source_key]=raw;drawing_id=str(uuid.uuid4())
         self.house['schema']=4
         self.house['drawings']=[dict(id=drawing_id,asset=source_key,ifcCoordinates=dict(version=1,converter='web-ifc-0.0.72',sourceSchema='IFC4',sourceLengthUnit='MILLI METRE',originMetres=dict(x=0,y=0,z=0),mapConversions=[]))]
@@ -99,11 +100,50 @@ class PortablePackageContracts(unittest.TestCase):
             lambda g:g['products'][0].update(guidStatus='missing'),
             lambda g:g.update(sourceSHA256='0'*64),lambda g:g.update(version=True),
             lambda g:g['records'][0]['fields'].update(Text='é'*2049),
-            lambda g:g['storeys'][0].update(elevation=3)]
+            lambda g:g['storeys'][0].update(elevation=3),lambda g:g['records'][3].update(derivedFields=[]),lambda g:g['records'][3].update(typeName='IfcOtherType'),lambda g:g['records'][3]['fields'].update(Dimensions=ref(999))]
         for mutate in mutations:
             candidate=copy.deepcopy(graph);mutate(candidate);write(candidate)
             with self.assertRaises(InvalidPackage):check_package(self.path)
         self.house['features'][0]['ifcObject']=storey;write(graph)
+        with self.assertRaises(InvalidPackage):check_package(self.path)
+
+    def test_measured_envelope_mesh_and_provenance_are_checked_independently(self):
+        source=self.house['features'][0];source['route']=[dict(x=0,y=0,z=0),dict(x=1,y=0,z=0)]
+        envelope=copy.deepcopy(source);envelope.update(id=str(uuid.uuid4()),kind='synthetic',annotationSources=[dict(featureID=source['id'],revision=1,segmentID=source['segmentID'])])
+        envelope['envelope']=dict(version=1,sourceFeatureID=source['id'],sourceRevision=1,sourceInterval=0,section='Rectangular',widthMetres=.2,heightMetres=.1,widthAxis=dict(x=0,y=1,z=0),evidence='Synthetic measured size',recorded=0)
+        vertices=[dict(x=x,y=y,z=z) for x in [0,1] for y,z in [(-.1,-.05),(.1,-.05),(.1,.05),(-.1,.05)]]+source['route']
+        triangles=[]
+        for i in range(4):j=(i+1)%4;triangles += [i,j,i+4,j,j+4,i+4,8,j,i,9,i+4,j+4]
+        envelope['mesh']=dict(vertices=vertices,triangles=triangles);self.house['features'].append(envelope);self.house['schema']=5
+        archive(self.path,self.house,self.parts);self.assertTrue(check_package(self.path)['passed'])
+        for field,value in [('widthMetres',0),('heightMetres',True),('widthAxis',dict(x=1,y=0,z=0)),('dimensionToleranceMetres',.2),('evidence',''),('sourceRevision',2),('version',True)]:
+            bad=copy.deepcopy(self.house);bad['features'][1]['envelope'][field]=value;archive(self.path,bad,self.parts)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
+        for field in ['vertices','triangles']:
+            bad=copy.deepcopy(self.house)
+            if field=='vertices':bad['features'][1]['mesh'][field][0]['y']+=.01
+            else:bad['features'][1]['mesh'][field][0]=3
+            archive(self.path,bad,self.parts)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
+
+    def test_drawing_marks_keep_original_proposals_and_old_sources_without_geometry(self):
+        raw=b'%PDF synthetic source';old=hashlib.sha256(raw).hexdigest()+'.pdf'
+        self.parts['assets/'+old]=raw
+        points=[dict(u=.1,v=.2),dict(u=.6,v=.4)]
+        mark=dict(id=str(uuid.uuid4()),sourceAsset=old,page=0,kind='Room name',points=points,label='Owner correction',reviewed=True,method='visionText',originalPoints=points,originalLabel='ROOM A',profileHash='9f858468f850556e2d7799d6389e839e53bf6c16ef58e5af5d3c92e85893dc36',runtime='Synthetic contract',rawScore=.7)
+        current=b'%PDF revised';key=hashlib.sha256(current).hexdigest()+'.pdf';self.parts['assets/'+key]=current
+        self.house.update(schema=5,drawings=[dict(id=str(uuid.uuid4()),asset=key,marks=[mark])])
+        archive(self.path,self.house,self.parts);before=self.path.read_bytes()
+        self.assertTrue(check_package(self.path)['passed']);self.assertEqual(self.path.read_bytes(),before)
+        for field,value in [('page',True),('page',-1),('reviewed',1),('profileHash','0'*64),('rawScore',True),('originalPoints',None),('method','manual'),('label','bad\0label')]:
+            bad=copy.deepcopy(self.house);bad['drawings'][0]['marks'][0][field]=value;archive(self.path,bad,self.parts)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
+        bad=copy.deepcopy(self.house);bad['drawings'][0]['marks']*=2;archive(self.path,bad,self.parts)
+        with self.assertRaises(InvalidPackage):check_package(self.path)
+        parts=dict(self.parts);parts.pop('assets/'+old);archive(self.path,self.house,parts)
+        with self.assertRaises(InvalidPackage):check_package(self.path)
+        polygon=dict(id=str(uuid.uuid4()),sourceAsset=key,page=1,kind='Possible boundary',points=[dict(u=0,v=0),dict(u=1,v=1),dict(u=0,v=1),dict(u=.8,v=0)],label='Crossed boundary',reviewed=False,method='manual')
+        self.house['drawings'][0]['marks']=[polygon];archive(self.path,self.house,self.parts)
         with self.assertRaises(InvalidPackage):check_package(self.path)
 
     def test_changed_original_and_incomplete_manifest_fail(self):

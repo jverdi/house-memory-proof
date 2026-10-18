@@ -61,7 +61,10 @@ def validate(data,reference,source_asset,features):
     for row in root['records']:
         key=identifier(row.get('expressID'));need(key not in rows and isinstance(row.get('fields'),dict) and isinstance(row.get('typeName'),str) and row['typeName'],'invalid record');rows[key]=row
     for row in rows.values():
-        pending=[v for k,v in row['fields'].items() if k not in EXCLUDED]
+        dimensions=row['fields'].get('Dimensions')
+        expected=['Dimensions'] if row['typeName'].upper()=='IFCSIUNIT' and isinstance(dimensions,dict) and type(dimensions.get('type')) is int and dimensions['type']==5 and type(dimensions.get('value')) is int and dimensions['value']==0 else []
+        derived=row.get('derivedFields',[]);need(derived==expected,'invalid derived-field declaration')
+        pending=[v for k,v in row['fields'].items() if k not in EXCLUDED and k not in derived]
         while pending:
             value=pending.pop()
             if isinstance(value,dict):

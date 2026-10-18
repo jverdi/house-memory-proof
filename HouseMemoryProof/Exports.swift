@@ -175,7 +175,7 @@ enum Exporter {
       if !textGeometry {
         // JSON control-character escaping can expand one UTF-8 byte to six;
         // include simultaneous encoder/container copies before admitting GLB.
-        let fields=[feature.name,feature.notes,feature.endpoint]+(feature.service?.textValues ?? [])+(feature.ifcObject.map{[$0.guid,$0.typeName]} ?? [])
+        let fields=[feature.name,feature.notes,feature.endpoint]+(feature.service?.textValues ?? [])+(feature.ifcObject.map{[$0.guid,$0.typeName]} ?? [])+(feature.envelope.map{[$0.evidence]} ?? [])
         estimate += fields.reduce(Int64(0)){$0+Int64($1.utf8.count)}*24
         estimate += Int64(feature.sourceIDs.count)*192+Int64(feature.annotationSources?.count ?? 0)*1024
       }
@@ -330,6 +330,7 @@ enum Exporter {
           "importedCoordinates": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.importedCoordinates),options:.fragmentsAllowed),
           "sourceDrawing": f.sourceDrawingID?.uuidString ?? "",
           "sourceDrawingFingerprint": f.sourceDrawingFingerprint ?? "",
+          "serviceEnvelope":try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.envelope),options:.fragmentsAllowed),
           "ifcObject":try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.ifcObject),options:.fragmentsAllowed),
           "sourceSegment":f.segmentID?.uuidString ?? "",
           "exportCoordinateFrame":exportedFrame,

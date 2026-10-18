@@ -9,6 +9,7 @@ if [ "$mode" = all ] || [ "$mode" = prepare ]; then
 python3 tooling/project.py
 git diff --exit-code -- HouseMemoryProof.xcodeproj/project.pbxproj
 bash tooling/prepare-ifc.sh
+node tooling/ifc/test_runtime.cjs
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
 bash tooling/solver/build.sh ios
@@ -117,7 +118,7 @@ cp "$app_root/test.glb" build/evidence/test.glb
 cp "$app_root/test.usdz" build/evidence/test.usdz
 cp "$app_root/test-render.png" build/evidence/test-render.png
 mkdir -p build/command-private
-for name in ifc-source.glb ifc-registered.glb ifc-source.csv ifc-source.json ifc-properties.hxray ifc-properties.glb ifc-properties.csv; do
+for name in ifc-source.glb ifc-registered.glb ifc-source.csv ifc-source.json ifc-properties.hxray ifc-properties.glb ifc-properties.csv drawing-marks.hxray service-envelopes.hxray service-envelopes.glb service-envelopes.csv; do
   if [ -f "$app_root/$name" ]; then cp "$app_root/$name" "build/command-private/$name"; fi
 done
 if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build/command-private/photo-curve.glb; fi
@@ -142,6 +143,8 @@ if [ "$native_failed" -eq 0 ]; then
   node tooling/ifc/test_properties.cjs || native_failed=1
   python3 tooling/ifc/check_source.py build/command-private build/evidence || native_failed=1
   python3 tooling/ifc/check_properties.py build/command-private build/evidence || native_failed=1
+  python3 tooling/check_drawing_marks.py build/command-private/drawing-marks.hxray build/evidence/drawing-marks-validation.json || native_failed=1
+  python3 tooling/check_service_envelopes.py build/command-private build/evidence/service-envelope-validation.json || native_failed=1
   python3 tooling/hm export-check --package build/evidence/test.hxray --output build/evidence/portable-package-validation.json || native_failed=1
   python3 tooling/hm test --suite commands --output build/evidence/command-tests.json || native_failed=1
   python3 tooling/hm tour --scene build/evidence/test.hxray --preset before-after --duration 5 --simulator "$device_id" --output build/command-private/tour > build/command-private/tour-result.json || native_failed=1
@@ -203,10 +206,11 @@ fi
 if [ "$mode" = recovery ]; then exit 0; fi
 
 set +e
-# Nine workflows include photo persistence, multi-view curve selection,
-# service edits/batches, explicit PLY declarations and saved IFC conversion. The prior six-flow step
-# took 750 seconds including setup; cap the expanded process at 20 minutes.
-python3 ci/run_bounded.py 1200 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
+# Eleven workflows include photo persistence, multi-view curve selection,
+# service edits/batches, PLY/IFC import, drawing review and measured envelopes.
+# Nine flows took 913 seconds plus setup in build 202.1. Allow 25 minutes for
+# eleven flows; this changes the CI wall-clock budget, not app performance gates.
+python3 ci/run_bounded.py 1500 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \

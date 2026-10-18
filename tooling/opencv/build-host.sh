@@ -30,7 +30,7 @@ clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -I build/ceres/host
 clang++ -std=c++17 -O2 -arch arm64 -mmacosx-version-min=14.0 -F build/opencv-host -I build/ceres/host/include -c packages/reference-core/hx_reference_pose.cpp -o build/reference-pose.o
 swiftc -O -swift-version 5 -parse-as-library -target arm64-apple-macos14.0 \
   -import-objc-header packages/visual-core/hx_replay.h \
-  HouseMemoryProof/Domain.swift HouseMemoryProof/EvidenceModels.swift HouseMemoryProof/ServiceDetails.swift HouseMemoryProof/PointCloudImport.swift HouseMemoryProof/IFCProperties.swift \
+  HouseMemoryProof/Domain.swift HouseMemoryProof/EvidenceModels.swift HouseMemoryProof/ServiceDetails.swift HouseMemoryProof/PointCloudImport.swift HouseMemoryProof/IFCProperties.swift HouseMemoryProof/DrawingMarks.swift HouseMemoryProof/ServiceEnvelope.swift \
   HouseMemoryProof/PoseRefinement.swift HouseMemoryProof/VisualMapping.swift HouseMemoryProof/PoseGraph.swift HouseMemoryProof/ReferenceRegistration.swift HouseMemoryProof/PhotoReconstruction.swift HouseMemoryProof/BundleRefinement.swift HouseMemoryProof/CodedReferences.swift \
   tooling/simulation/VisionReplay.swift build/vision-core.o build/vision-core-test.o build/graph-core.o build/bundle-core.o build/reference-pose.o build/reference-tags.o build/apriltag/host/lib/libapriltag.a build/ceres/host/lib/libceres.a \
   -F build/opencv-host -framework opencv2 -framework Accelerate -framework OpenCL \

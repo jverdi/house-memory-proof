@@ -2,7 +2,7 @@
 (function(root){
   'use strict';
   const LIMIT={products:10000,storeys:100,records:20000,values:150000,bytes:4000000};
-  const guidOK=s=>typeof s==='string'&&/^[0-3][0-9A-Za-z_$]{21}$/.test(s);
+  const guidOK=s=>typeof s==='string'&&s.length===22&&/^[0-3][0-9A-Za-z_$]{21}$/.test(s);
   const raw=v=>v&&typeof v==='object'&&Object.hasOwn(v,'value')?v.value:v;
   function prepare(api,model,types){
     let bytes=0,values=0;
@@ -20,6 +20,9 @@
       if(typeof value!=='object')throw Error('Unsupported IFC property value');
       const result=Object.create(null);
       for(const key of Object.keys(value).sort()){if(value[key]!==undefined)result[text(key)]=copy(value[key],depth+1)}
+      // Numeric IFC wrappers expose value through a prototype getter. Retain
+      // their original lexical fields and materialize that public scalar too.
+      if(!Object.hasOwn(result,'value')&&'value' in value)result.value=copy(value.value,depth+1);
       return result;
     }
     function ids(type,limit){if(typeof type!=='number')return [];const rows=api.GetLineIDsWithType(model,type,true);if(rows.size()>limit)throw Error('IFC property inventory exceeds its limit');const result=Array.from({length:rows.size()},(_,i)=>numberID(rows.get(i)));if(new Set(result).size!==result.length)throw Error('Repeated IFC metadata identity');return result.sort((a,b)=>a-b)}
@@ -36,10 +39,15 @@
         const line=api.GetLine(model,id,false);if(!line||line.expressID!==id)throw Error('IFC property reference is missing');
         const fields=Object.create(null);for(const key of Object.keys(line).sort()){if(!['expressID','type'].includes(key)&&line[key]!==undefined)fields[key]=copy(line[key])}
         const typeName=text(api.GetNameFromTypeCode(line.type));
-        records.set(id,{expressID:id,typeName,fields});
+        // web-ifc 0.0.72 represents IFCSIUNIT's derived Dimensions (*) as a
+        // Handle(0). Preserve that parser value and identify the derived field;
+        // it is not an EXPRESS reference to resolve. No other zero handle is
+        // exempt from the normal missing-reference refusal.
+        const derivedFields=typeName.toUpperCase()==='IFCSIUNIT'&&fields.Dimensions?.type===types.REF&&fields.Dimensions.value===0?['Dimensions']:[];
+        records.set(id,{expressID:id,typeName,fields,...(derivedFields.length?{derivedFields}: {})});
         // Geometry and ownership graphs stay in the immutable original IFC.
         // Iterate rather than recursively following arbitrary imported chains.
-        for(const [key,value] of Object.entries(fields))if(!omitted.has(key))for(const ref of references(value))if(!records.has(ref))pending.push(ref);
+        for(const [key,value] of Object.entries(fields))if(!omitted.has(key)&&!derivedFields.includes(key))for(const ref of references(value))if(!records.has(ref))pending.push(ref);
       }
     }
     const productIDs=ids(types.IFCPRODUCT,LIMIT.products),storeyIDs=ids(types.IFCBUILDINGSTOREY,LIMIT.storeys),projectIDs=ids(types.IFCPROJECT,100);

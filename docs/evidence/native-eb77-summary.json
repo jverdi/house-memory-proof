@@ -1,0 +1,151 @@
+{
+  "build": "202.1",
+  "date": "2026-10-18T12:01:36Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 174.40823958333328,
+  "fieldAccuracyValidated": false,
+  "passed": false,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1481785344,
+    "physicalFootprintBytes": 65348224,
+    "residentBytes": 284491776
+  },
+  "sourceRevision": "eb77e6e2c4",
+  "systemVersion": "26.5",
+  "source": "eb77e6e2c492e10acf941ee94e9ef6d7ca40d6ea",
+  "run": 39124873045,
+  "nativeChecks": 135,
+  "nativePassed": 134,
+  "nativeFailures": [
+    {
+      "error": "IFC: Invalid IFC metadata identity",
+      "passed": false,
+      "test": "Bundled IFC2x3 conversion and axes"
+    }
+  ],
+  "artifact": {
+    "id": 12136390919,
+    "sha256": "556dce4e8703bab1561c79d40a86df2b9a9c062191f5465a7bd95585a0b0231a",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": false,
+  "interfaceExpected": 9,
+  "interfaceStatus": "completed with known IFC import failure",
+  "additionalTestFlightUpload": false,
+  "physicalQualification": false,
+  "failureExplanation": "The pinned parser emits IFCSIUNIT derived Dimensions as Handle(0). The new graph traversal incorrectly attempted to resolve that sentinel as an EXPRESS identity. Later IFC cases did not execute.",
+  "fullArtifact": {
+    "id": 12136178851,
+    "sha256": "036d359c16aad47e160f8372e02d26fcaf8cb57691d8c05a12376c21c4aa1071",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 9,
+  "interfacePassed": 8,
+  "interfaceSeconds": 913.087,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "passed": true,
+      "seconds": 128.367
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "passed": true,
+      "seconds": 81.853
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "passed": true,
+      "seconds": 39.161
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "passed": true,
+      "seconds": 59.913
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "passed": true,
+      "seconds": 259.724
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "passed": true,
+      "seconds": 62.035
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "passed": false,
+      "seconds": 97.756
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "passed": true,
+      "seconds": 56.211
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "passed": true,
+      "seconds": 128.067
+    }
+  ],
+  "interfaceFailure": "Saved IFC import failed before objects were created; native traversal refused the same SI-unit derived field. Service keyboard ownership, label and port edit/save/relaunch/search all passed.",
+  "processRecovery": [
+    {
+      "passed": true,
+      "verifiedAssets": 3,
+      "recoveredExactlyOnce": true,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "powerLossQualified": false
+    },
+    {
+      "verifiedAssets": 3,
+      "powerLossQualified": false,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "passed": true,
+      "recoveredExactlyOnce": true
+    },
+    {
+      "passed": true,
+      "fault": "SIGKILL inside schema transaction before COMMIT",
+      "verifiedAssets": 19,
+      "powerLossQualified": false
+    }
+  ],
+  "portableCases": 50,
+  "commandReaderContracts": null,
+  "commandReaderStatus": "Skipped because native diagnostics failed",
+  "independentReaders": {
+    "general-semantic-validation": {
+      "passed": true
+    },
+    "textured-gltf-validation": {
+      "passed": true
+    },
+    "points-gltf-validation": {
+      "passed": true
+    },
+    "house-surface-gltf-validation": {
+      "passed": true
+    },
+    "test-gltf-validation": {
+      "passed": true
+    },
+    "chunked-snapshot-validation": {
+      "passed": true
+    },
+    "semantic-csv-validation": {
+      "passed": true
+    }
+  },
+  "readerCount": 7,
+  "readerStatus": "Seven reports passed before the IFC GLB reader stopped on missing ifc-properties.glb; remaining readers did not execute.",
+  "cliStatus": "Native tour and reconstruction CLI checks skipped because native diagnostics failed",
+  "visualInspection": {
+    "singleServiceKeyboardDoneVisible": true,
+    "serviceLabelAndPortRestored": true
+  }
+}

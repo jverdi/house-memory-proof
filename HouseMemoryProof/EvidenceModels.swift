@@ -272,7 +272,7 @@ enum EvidenceSearch {
       }
       for (index,f) in house.features.enumerated() {
         if index%256==0 {try Task.checkCancellation()}
-        let metadata=[f.name,f.notes,f.endpoint,f.trade.rawValue,f.kind.rawValue,f.id.uuidString,f.service?.searchableText ?? ""]
+        let metadata=[f.name,f.notes,f.endpoint,f.trade.rawValue,f.kind.rawValue,f.id.uuidString,f.service?.searchableText ?? "",f.envelope?.evidence ?? ""]
         let text=EvidenceSearch.normalized(metadata.joined(separator:" "))+" "+(rooms[f.roomID] ?? "")+" "+(stages[f.stageID] ?? "")+" "+(f.service?.boundaryID.flatMap{boundaries[$0]} ?? "")
         let id=group(text);objectGroups.append(id);objects.append(f)
       }

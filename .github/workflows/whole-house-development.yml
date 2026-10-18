@@ -30,6 +30,8 @@ on:
       - HouseMemoryProof/PhotoReconstruction.swift
       - HouseMemoryProof/Domain.swift
       - HouseMemoryProof/IFCProperties.swift
+      - HouseMemoryProof/DrawingMarks.swift
+      - HouseMemoryProof/ServiceEnvelope.swift
       - HouseMemoryProof/ServiceDetails.swift
       - HouseMemoryProof/PointCloudImport.swift
       - HouseMemoryProof/EvidenceModels.swift

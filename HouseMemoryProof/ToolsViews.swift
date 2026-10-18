@@ -340,6 +340,7 @@ struct DrawingPage: View {
           if let scale = drawing.metresPerPoint {
             Text("Scale: \(scale.formatted()) m / PDF point · design scale only").font(.caption)
           }
+          NavigationLink("Labels and boundary suggestions") {DrawingMarksPage(drawing:drawing,document:document,didSave:{drawing.marks=$0})}
           NavigationLink("Align sheet to house") {
             DrawingAlignmentPage(drawing: $drawing, document: document)
           }
@@ -402,7 +403,7 @@ struct DrawingPage: View {
         Button("Save") {
           model.edit {
             if let i = $0.drawings.firstIndex(where: { $0.id == drawing.id }) {
-              var saved=drawing;saved.ifcCoordinates=$0.drawings[i].ifcCoordinates;saved.ifcProperties=$0.drawings[i].ifcProperties
+              var saved=drawing;saved.ifcCoordinates=$0.drawings[i].ifcCoordinates;saved.ifcProperties=$0.drawings[i].ifcProperties;saved.marks=$0.drawings[i].marks
               $0.drawings[i] = saved
             }
           }

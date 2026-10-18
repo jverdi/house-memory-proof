@@ -1,5 +1,15 @@
 # Implementation ledger
 
+## Continued candidate: drawing review, measured sections and IFC parser repair
+
+The property/keyboard source **eb77e6e2c4** is committed directly to main. Its SHA-verified native checkpoint has **134/135 passing checks**; IFC traversal rejected the real parser’s derived SI-unit zero handle before the remaining IFC cases. Eight of nine UI flows pass in 913.087 seconds, including the service keyboard/edit/save/relaunch/search repair. The IFC source flow fails on the same import regression. Three process recoveries, 50 portable cases and seven reader reports pass; later readers stop on the missing IFC property export, and native CLI/command phases are skipped. Both integration artifacts are SHA-verified. The repair now passes seven real pinned WASM cases, including raw properties/storeys, duplicate/malformed/missing GUIDs, omitted geometry and feet/inches, plus independent property validation. Prototype numeric getters are retained with their lexical fields. No broad missing-reference exception was added.
+
+The next candidate prepares local drawing-label/rectangle proposals with source/revision provenance, manual correction, explicit review and undo; and typed measured round/rectangular envelopes on one straight source route interval. Old source pages remain archive assets, reviewed marks are never overwritten by reruns, and source geometry/registration changes invalidate envelope derivatives. Schema 5 protects these records from older writers. **31 command/reader contracts pass locally; 153 native checks, 11 UI flows and new independent readers await validation.** Drawing suggestion precision/recall, variable-section/curved envelopes and calibrated uncertainty remain unqualified.
+
+Tour fallback now selects a clear recorded viewpoint or explicitly omits the room. Requested durations retain exact frame totals; movements exceeding 1 m/s or 1 m/s², or 0.6 rad/s or 1.2 rad/s², become explicit viewpoint cuts. Stationary pans use the same angular bounds. Two native regressions and independent sampled GLB motion checks are prepared; eleven UI flows receive a 1,500-second CI budget after nine took 913 seconds plus setup; the renderer cache version changes with this motion profile. Full target framing, reconstructed-house route coverage and closed-loop navigation remain open.
+
+All eleven current host artifacts are independently SHA-verified. Original localization failures persist, precision remains off, and the five detector iterations remain exhausted. No additional TestFlight upload or protected draw occurred.
+
 ## IFC coordinates verified; property sidecars and keyboard-toolbar repair
 
 Source **fa9785efe79**, build **201.1**, passed **140/140 native checks** in

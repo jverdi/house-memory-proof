@@ -86,7 +86,7 @@ jobs:
         run: bash ci/simulator.sh recovery
       - name: Exercise the iPhone interface workflows
         if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/simulator-result.json') != ''
-        timeout-minutes: 22
+        timeout-minutes: 27
         run: bash ci/simulator.sh ui
       - name: Verify portable core and independent export readers
         if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/test.glb') != ''

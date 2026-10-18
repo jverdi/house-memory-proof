@@ -87,7 +87,7 @@ struct BatchServiceEditor:View {
   private var matches:[Feature] {
     let terms=EvidenceSearch.normalized(query).split(whereSeparator:{$0.isWhitespace})
     return house.features.filter{feature in
-      let text=EvidenceSearch.normalized([feature.name,feature.notes,feature.endpoint,feature.trade.rawValue,feature.id.uuidString,feature.service?.searchableText ?? ""].joined(separator:" "))
+      let text=EvidenceSearch.normalized([feature.name,feature.notes,feature.endpoint,feature.trade.rawValue,feature.id.uuidString,feature.service?.searchableText ?? "",feature.envelope?.evidence ?? ""].joined(separator:" "))
       return terms.allSatisfy{text.contains($0)}
     }
   }

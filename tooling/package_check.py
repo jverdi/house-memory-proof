@@ -131,11 +131,88 @@ def required_assets(house):
                 add(item.get(key))
     for drawing in house.get('drawings',[]):
         add((drawing.get('ifcProperties') or {}).get('asset'))
+        for mark in drawing.get('marks') or []:add(mark.get('sourceAsset'))
     return assets
 
 
+def drawing_mark_check(mark):
+    require(isinstance(mark,dict),'Invalid drawing mark')
+    require(type(mark.get('page')) is int and 0<=mark['page']<10000,'Invalid drawing page')
+    require(isinstance(mark.get('sourceAsset'),str) and len(mark['sourceAsset'])<=100 and ASSET.fullmatch(mark['sourceAsset']),'Invalid drawing original')
+    require(type(mark.get('reviewed')) is bool,'Invalid drawing review state')
+    kind=mark.get('kind');require(kind in ['Room name','Possible boundary'],'Invalid drawing mark type')
+    def text(value):return isinstance(value,str) and len(value.encode('utf-8'))<=4096 and '\0' not in value
+    require(text(mark.get('label')),'Invalid drawing label')
+    def shape(points):
+        require(isinstance(points,list) and len(points)<=128 and all(isinstance(p,dict) and all(numeric(p.get(k)) and 0<=p[k]<=1 for k in ['u','v']) for p in points),'Invalid drawing coordinates')
+        xy=[(p['u'],p['v']) for p in points]
+        if kind=='Room name':
+            require(len(xy)==2 and all(abs(xy[0][i]-xy[1][i])>1e-6 for i in [0,1]),'Invalid room label box');return
+        require(len(xy)>=3 and len(set(xy))==len(xy) and abs(sum(a[0]*b[1]-b[0]*a[1] for a,b in zip(xy,xy[1:]+xy[:1])))>1e-8,'Invalid boundary polygon')
+        def turn(a,b,c):return (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])
+        def on(a,b,p):return abs(turn(a,b,p))<1e-12 and all(min(a[i],b[i])-1e-12<=p[i]<=max(a[i],b[i])+1e-12 for i in [0,1])
+        for i,a in enumerate(xy):
+            b=xy[(i+1)%len(xy)]
+            for j in range(i+2,len(xy)):
+                if i==0 and j==len(xy)-1:continue
+                c,d=xy[j],xy[(j+1)%len(xy)]
+                require(not (turn(a,b,c)*turn(a,b,d)<0 and turn(c,d,a)*turn(c,d,b)<0) and not any([on(a,b,c),on(a,b,d),on(c,d,a),on(c,d,b)]),'Crossed boundary polygon')
+    shape(mark.get('points'));method=mark.get('method')
+    provenance=['originalPoints','originalLabel','profileHash','runtime','rawScore']
+    if method=='manual':require(all(mark.get(k) is None for k in provenance),'Manual drawing mark has detector provenance');return
+    require(method in ['visionText','visionRectangle'] and ((method=='visionText')==(kind=='Room name')),'Invalid drawing detector')
+    shape(mark.get('originalPoints'))
+    require(text(mark.get('originalLabel')) and text(mark.get('runtime')) and bool(mark['runtime']),'Missing drawing suggestion provenance')
+    require(mark.get('profileHash')=='9f858468f850556e2d7799d6389e839e53bf6c16ef58e5af5d3c92e85893dc36','Unknown drawing suggestion profile')
+    require(numeric(mark.get('rawScore')) and 0<=mark['rawScore']<=1,'Invalid drawing detector score')
+
+
+def envelope_check(value,feature=None):
+    if value is None:return
+    require(isinstance(value,dict) and type(value.get('version')) is int and value['version']==1,'Invalid envelope version')
+    source=identity(value.get('sourceFeatureID'))
+    require(type(value.get('sourceRevision')) is int and value['sourceRevision']>0 and type(value.get('sourceInterval')) is int and 0<=value['sourceInterval']<127,'Invalid envelope dependency')
+    width=value.get('widthMetres');height=value.get('heightMetres');axis=value.get('widthAxis');section=value.get('section')
+    require(numeric(width) and .001<=width<=4,'Invalid measured outer width')
+    if section=='Round':require(height is None and axis is None,'Round envelope has rectangular metadata')
+    else:
+        require(section=='Rectangular' and numeric(height) and .001<=height<=4 and vector(axis),'Invalid measured cross section')
+        require(abs(math.sqrt(sum(axis[k]**2 for k in ['x','y','z']))-1)<1e-6,'Invalid width axis')
+    tolerance=value.get('dimensionToleranceMetres')
+    require(tolerance is None or (numeric(tolerance) and 0<tolerance<min(width,height or width)/2),'Invalid size tolerance')
+    evidence=value.get('evidence');require(isinstance(evidence,str) and bool(evidence.strip()) and len(evidence.encode('utf-8'))<=4096 and '\0' not in evidence,'Missing envelope measurement evidence')
+    require(numeric(value.get('recorded')),'Invalid measurement date')
+    if feature is None:return
+    require(feature.get('kind') in ['observed','synthetic'] and source!=identity(feature['id']),'Invalid envelope evidence kind or self-reference')
+    dependencies=feature.get('annotationSources')
+    require(isinstance(dependencies,list) and len(dependencies)==1 and identity(dependencies[0].get('featureID'))==source and type(dependencies[0].get('revision')) is int and dependencies[0]['revision']==value['sourceRevision'],'Envelope dependency differs')
+    route=feature.get('route');require(isinstance(route,list) and len(route)==2 and all(vector(p) for p in route),'Invalid envelope centerline')
+    # Independently inspect the cross section, cap placement and mesh topology.
+    xyz=lambda p:[p[k] for k in ['x','y','z']]
+    dot=lambda a,b:sum(x*y for x,y in zip(a,b))
+    sub=lambda a,b:[x-y for x,y in zip(a,b)]
+    a,b=map(xyz,route);delta=sub(b,a);length=math.sqrt(dot(delta,delta));require(length>1e-5,'Zero envelope interval')
+    t=[v/length for v in delta];reference=xyz(axis) if axis else ([0,0,1] if abs(t[2])<.9 else [0,1,0])
+    w=sub(reference,[v*dot(reference,t) for v in t]);magnitude=math.sqrt(dot(w,w));require(magnitude>=.1,'Parallel envelope width')
+    w=[v/magnitude for v in w];h=[t[1]*w[2]-t[2]*w[1],t[2]*w[0]-t[0]*w[2],t[0]*w[1]-t[1]*w[0]]
+    n=64 if section=='Round' else 4;vertices=feature['mesh']['vertices'];indices=feature['mesh']['triangles']
+    require(len(vertices)==2*n+2 and len(indices)==12*n,'Envelope mesh dimensions differ')
+    expected=[]
+    for center in [a,b]:
+        for i in range(n):
+            if section=='Round':x,y=math.cos(2*math.pi*i/n)*width/2,math.sin(2*math.pi*i/n)*width/2
+            else:
+                signs=[(-1,-1),(1,-1),(1,1),(-1,1)];x,y=signs[i][0]*width/2,signs[i][1]*height/2
+            expected.append([center[k]+w[k]*x+h[k]*y for k in range(3)])
+    expected+=[a,b]
+    require(all(max(abs(x-y) for x,y in zip(xyz(actual),target))<1e-8 for actual,target in zip(vertices,expected)),'Envelope mesh disagrees with recorded dimensions')
+    topology=[]
+    for i in range(n):j=(i+1)%n;topology += [i,j,i+n,j,j+n,i+n,2*n,j,i,2*n+1,i+n,j+n]
+    require(indices==topology,'Envelope cap or side topology differs')
+
+
 def semantic_check(house):
-    require(type(house.get('schema')) is int and house['schema'] in (1,2,3,4), 'Unsupported house schema')
+    require(type(house.get('schema')) is int and house['schema'] in (1,2,3,4,5), 'Unsupported house schema')
     identity(house.get('id'))
     require(type(house.get('revision')) is int and house['revision'] >= 0, 'Invalid source revision')
     tables = {}
@@ -147,7 +224,15 @@ def semantic_check(house):
         ids = [identity(item.get('id')) for item in rows]
         require(len(set(ids)) == len(ids), 'Duplicate '+name+' identity')
         tables[name] = dict(zip(ids, rows))
+    mark_ids=set();mark_points=0
     for drawing in tables['drawings'].values():
+        marks=drawing.get('marks') or []
+        require(isinstance(marks,list) and len(marks)<=1000,'Invalid drawing mark count')
+        for mark in marks:
+            drawing_mark_check(mark)
+            key=identity(mark.get('id'));require(key not in mark_ids,'Repeated drawing mark identity');mark_ids.add(key)
+            mark_points+=len(mark['points'])+len(mark.get('originalPoints') or [])
+        require(len(mark_ids)<=50000 and mark_points<=1_000_000,'Drawing mark inventory limit')
         if drawing.get('ifcCoordinates') is not None:
             require(str(drawing.get('asset','')).endswith('.ifc'),'IFC frame requires its original source')
             ifc_coordinates_check(drawing['ifcCoordinates'])
@@ -195,6 +280,7 @@ def semantic_check(house):
         require(all(vector(p) for p in feature.get('route', [])), 'Invalid service route')
         if feature.get('uv') is not None:
             require(len(feature['uv']) == len(points) and all(numeric(p.get('u')) and numeric(p.get('v')) for p in feature['uv']), 'Invalid texture coordinates')
+        envelope_check(feature.get('envelope'),feature)
         vertices += len(points); triangles += len(indices)//3
     for observation in tables['observations'].values():
         for key, table in [('roomID','rooms'), ('stageID','stages'), ('segmentID','segments')]:

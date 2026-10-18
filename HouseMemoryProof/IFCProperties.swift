@@ -4,7 +4,7 @@ import CryptoKit
 
 struct IFCObjectReference:Codable,Equatable {
   var expressID:Int;var typeName:String;var guid:String;var guidStatus:String
-  static func guidValid(_ value:String)->Bool {value.range(of:"^[0-3][0-9A-Za-z_$]{21}$",options:.regularExpression) != nil}
+  static func guidValid(_ value:String)->Bool {value.utf8.count==22 && value.range(of:"^[0-3][0-9A-Za-z_$]{21}$",options:.regularExpression) != nil}
   var valid:Bool {
     expressID>0 && expressID<=Int(Int32.max) && !typeName.isEmpty && IFCCoordinateReference.bounded(typeName) && IFCCoordinateReference.bounded(guid) && ["valid","duplicate","malformed","missing"].contains(guidStatus) && (!["valid","duplicate"].contains(guidStatus) || Self.guidValid(guid)) && (guidStatus != "missing" || guid.isEmpty)
   }
@@ -62,12 +62,17 @@ enum IFCProperties {
     try require((root["sourceSchema"] as? String)?.isEmpty==false && root["excludedForwardFields"] as? [String]==["OwnerHistory","Representation","RepresentationMaps"],"missing source semantics")
     if let stored=root["sourceSHA256"] {try require(stored as? String==sourceSHA256,"original checksum changed")}
     try require(products.count<=10000 && storeys.count<=100 && records.count<=20000,"inventory limit exceeded")
-    var rows:[Int:[String:Any]]=[:],names:[Int:String]=[:]
+    var rows:[Int:[String:Any]]=[:],names:[Int:String]=[:],derived:[Int:Set<String>]=[:]
     for record in records {
       guard let id=integer(record["expressID"]),id>0,let fields=record["fields"] as? [String:Any],let name=record["typeName"] as? String,!name.isEmpty else{throw HouseError.message("IFC property record is malformed.")}
       try require(rows[id]==nil,"repeated record identity");rows[id]=fields;names[id]=name
+      let dimensions=fields["Dimensions"] as? [String:Any]
+      let expected=name.uppercased()=="IFCSIUNIT" && integer(dimensions?["type"])==5 && integer(dimensions?["value"])==0 ? ["Dimensions"]:[]
+      let declared=record["derivedFields"] as? [String] ?? []
+      try require(declared==expected && (record["derivedFields"]==nil || record["derivedFields"] is [String]),"invalid derived-field declaration")
+      derived[id]=Set(declared)
     }
-    for fields in rows.values {for (key,value) in fields where !["OwnerHistory","Representation","RepresentationMaps"].contains(key) {
+    for (id,fields) in rows {for (key,value) in fields where !["OwnerHistory","Representation","RepresentationMaps"].contains(key) && !(derived[id]?.contains(key) ?? false) {
       var references=[value]
       while let value=references.popLast() {
         if let object=value as? [String:Any] {

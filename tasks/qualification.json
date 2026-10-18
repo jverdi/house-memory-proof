@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
+  "currentImplementationCommit": "eb77e6e2c492e10acf941ee94e9ef6d7ca40d6ea",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -27,7 +27,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "fa9785efe79 passes 140 native, eight of nine UI and 24 independent readers. The service editor produced 11 duplicated keyboard Done buttons. Next candidate moves keyboard toolbar ownership to the parent Form and adds IFC property/identity/sidecar checks (146 native/nine UI expected)."
+      "remaining": "eb77 passes 134/135 executed native checks, eight of nine UI flows, three process recoveries, 50 portable cases and seven reader reports. The IFC derived sentinel causes native/UI failure and missing later exports. The repair passes seven actual pinned WASM cases; drawing/envelope/tour candidate has 31 local contracts and awaits native/UI/export validation."
     },
     {
       "area": "finished localization",
@@ -55,19 +55,22 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Commit and validate the parent-form keyboard toolbar repair plus IFC property/identity/sidecar candidate. Continue independent whole-house/geometry/persistence work; no sixth detector attempt or intermediate upload.",
+  "nextAction": "Commit and validate the actual-parser repair, drawing marks, measured envelopes and bounded tour candidate (153 native/11 UI expected). Continue remaining whole-house/coverage/navigation and persistence work; no sixth detector attempt or intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
-    "run": 39101587482,
-    "status": "completed with duplicated keyboard-toolbar failure",
-    "nativePassed": 140,
+    "source": "eb77e6e2c492e10acf941ee94e9ef6d7ca40d6ea",
+    "run": 39124873045,
+    "status": "completed with native IFC regression, related IFC UI failure and incomplete reader phase",
+    "nativePassed": 134,
+    "nativeFailed": 1,
+    "nativeExecuted": 135,
+    "nativeExpected": 146,
     "integrationComplete": false,
-    "evidence": "docs/evidence/native-fa978-summary.json",
+    "evidence": "docs/evidence/native-eb77-summary.json",
     "interfacePassed": 8,
-    "interfaceExecuted": 9,
-    "independentReadersPassed": 24,
-    "commandReaderContracts": 28,
+    "interfaceExpected": 9,
+    "interfaceSeconds": 913.087,
+    "readerReportsPassed": 7,
     "processKillPassed": 3
   },
   "previousIntegratedAttempt": {
@@ -548,5 +551,19 @@
     "singleButtonAssertionPrepared": true,
     "saveRelaunchSearchAssertionsRetained": true,
     "validationPending": true
+  },
+  "preparedCandidate": {
+    "schema": 5,
+    "localCommandContractsPassed": 31,
+    "actualPinnedIFCCasesPassed": 7,
+    "nativeExpected": 153,
+    "interfaceExpected": 11,
+    "accepted": false,
+    "scope": [
+      "Derived SI-unit and numeric getter IFC repair",
+      "Source-linked drawing proposals and manual review",
+      "Measured straight service envelope derivatives",
+      "Clear stationary tour viewpoints and bounded within-shot camera motion"
+    ]
   }
 }

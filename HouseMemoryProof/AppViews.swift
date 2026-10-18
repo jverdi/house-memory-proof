@@ -545,6 +545,13 @@ struct FeatureEditor: View {
         })
         Section("Evidence") {
           Text("\(feature.kind.rawValue) · \(feature.sourceIDs.count) linked observations")
+          if let envelope=feature.envelope {
+            Text("Recorded \(envelope.section.rawValue.lowercased()) outer size: \((envelope.widthMetres*1000).formatted()) mm"+(envelope.heightMetres.map{" × \(($0*1000).formatted()) mm"} ?? "")).font(.caption).accessibilityIdentifier("service-envelope-size")
+            Text(envelope.evidence).font(.caption).accessibilityIdentifier("service-envelope-evidence")
+            Text(envelope.dimensionToleranceMetres.map{"Recorded size tolerance ± \(($0*1000).formatted()) mm; centerline uncertainty remains unknown."} ?? "Dimension tolerance and centerline uncertainty remain unknown.").font(.caption)
+          }else if (2...128).contains(feature.route.count),[EvidenceKind.observed,.synthetic].contains(feature.kind),let house=model.house,let current=house.features.first(where:{$0.id==feature.id}) {
+            NavigationLink("Record a service envelope") {ServiceEnvelopePage(source:current,projectID:house.id)}
+          }
           if let coordinates=feature.importedCoordinates {Text("Imported coordinates: \(coordinates.unit.rawValue), \(coordinates.upright.rawValue). Owner-declared; placement is not independently calibrated.").font(.caption)}
           else if feature.notes.hasPrefix("Imported PLY; units declared metres") {Text("This older PLY import assumed metres. It has no recorded unit or upright-axis confirmation; verify its source before using dimensions.").font(.caption)}
           if let sources=feature.annotationSources {Text("Traced on \(sources.count) source objects. Changes to their revisions or registration make this annotation stale.").font(.caption)}

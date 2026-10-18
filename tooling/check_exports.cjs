@@ -32,10 +32,24 @@ function inspect(bytes) {
       const target=[p[0],p[2],-p[1]],actual=ps.slice(i*3,i*3+3);
       assert(actual.every((x,j)=>Math.abs(x-target[j])<2e-5),'tour position conversion or smoothing differs');
       const delta=Math.atan2(Math.sin((shot.endYaw??shot.yaw)-shot.yaw),Math.cos((shot.endYaw??shot.yaw)-shot.yaw));
-      const yaw=shot.endPosition?shot.yaw+delta*smooth:shot.yaw+Math.sin(t*Math.PI)*.65;
+      const duration=shot.duration/Math.max(1e-12,shot.endPhase-shot.startPhase);
+      const amplitude=doc.extras.tour.motionProfile==='camera-motion-v1'?Math.min(.65,.6*duration/Math.PI,1.2*duration*duration/(Math.PI*Math.PI)):.65;
+      const yaw=shot.endPosition?shot.yaw+delta*smooth:shot.yaw+Math.sin(t*Math.PI)*amplitude;
       const pitch=shot.endPosition?shot.pitch+((shot.endPitch??shot.pitch)-shot.pitch)*smooth:shot.pitch;
       const q=qs.slice(i*4,i*4+4),expected=[Math.sin(pitch/2)*Math.cos(yaw/2),Math.sin(yaw/2)*Math.cos(pitch/2),-Math.sin(yaw/2)*Math.sin(pitch/2),Math.cos(yaw/2)*Math.cos(pitch/2)];
       assert(Math.abs(Math.hypot(...q)-1)<1e-5);assert(Math.abs(q.reduce((sum,x,j)=>sum+x*expected[j],0))>1-1e-5,'camera rotation mismatch');
+    }
+    if(doc.extras.tour.motionProfile==='camera-motion-v1'){
+      let previousVelocity;
+      for(let i=1;i<ts.length;i++){
+        const dt=ts[i]-ts[i-1],velocity=[0,1,2].map(k=>(ps[i*3+k]-ps[(i-1)*3+k])/dt);
+        assert(Math.hypot(...velocity)<=1.001,'tour exceeds translation speed');
+        if(previousVelocity)assert(Math.hypot(...velocity.map((v,k)=>(v-previousVelocity[k])/dt))<=1.01,'tour exceeds translation acceleration');
+        previousVelocity=velocity;
+        const dot=[0,1,2,3].reduce((sum,k)=>sum+qs[i*4+k]*qs[(i-1)*4+k],0);
+        const norms=Math.hypot(...qs.slice(i*4,i*4+4))*Math.hypot(...qs.slice((i-1)*4,(i-1)*4+4));
+        assert(2*Math.acos(Math.min(1,Math.abs(dot)/norms))/dt<=.601,'tour exceeds angular speed');
+      }
     }
   }
   return {nodes:seen.size,meshes:doc.meshes.length,levels:roots.filter(i=>doc.nodes[i].extras?.type==='level').length,tourClips:shots.length,hierarchyAndAnimationPassed:true};
@@ -55,6 +69,10 @@ for(const name of ['ifc-source','ifc-registered','ifc-properties']){
  assert.equal(result.issues.numErrors,0);ifcCases.push({case:name,errors:result.issues.numErrors,warnings:result.issues.numWarnings,...inspect(bytes)});
 }
 fs.writeFileSync('build/evidence/ifc-source-gltf-validation.json',JSON.stringify({passed:true,reader:'Khronos glTF Validator',cases:ifcCases},null,2));
+const envelopeBytes=fs.readFileSync('build/command-private/service-envelopes.glb');
+const envelopeValidation=await validator.validateBytes(new Uint8Array(envelopeBytes),{uri:'service-envelopes.glb',maxIssues:10000});
+assert.equal(envelopeValidation.issues.numErrors,0);
+fs.writeFileSync('build/evidence/service-envelope-gltf-validation.json',JSON.stringify({passed:true,reader:'Khronos glTF Validator',errors:envelopeValidation.issues.numErrors,warnings:envelopeValidation.issues.numWarnings,...inspect(envelopeBytes)},null,2));
 require('node:child_process').execFileSync('python3',['tooling/hm','export-check','--package','build/evidence/test.glb','--output','build/evidence/general-glb-validation.json'],{stdio:'inherit'});
 // This small analytic route remains private. Publish only independent counts
 // and aggregate coordinate error, never original tracks or image identities.
