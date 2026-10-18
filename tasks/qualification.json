@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "eb77e6e2c492e10acf941ee94e9ef6d7ca40d6ea",
+  "currentImplementationCommit": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -27,7 +27,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "eb77 passes 134/135 executed native checks, eight of nine UI flows, three process recoveries, 50 portable cases and seven reader reports. The IFC derived sentinel causes native/UI failure and missing later exports. The repair passes seven actual pinned WASM cases; drawing/envelope/tour candidate has 31 local contracts and awaits native/UI/export validation."
+      "remaining": "6033 passes 152/153 native checks, 10/11 UI flows, three recoveries, 50 portable cases and 23 reader reports. All new drawing/envelope/IFC UI flows pass. Follow-up repairs the order-dependent store assertion and the photo-curve reveal helper, and adds coverage/IFC4.3 validation (156 native/11 UI expected). Five native-phase readers, command contracts and native CLI checks were skipped."
     },
     {
       "area": "finished localization",
@@ -39,7 +39,7 @@
     },
     {
       "area": "registration and thin services",
-      "remaining": "Manual photo curves passed native, interface, independent GLB and offline WebGL checks at 0e191bca22. Pipe/duct envelopes, calibrated uncertainty and whole-house registration/geometry qualification remain open."
+      "remaining": "Straight measured envelopes pass native archive/GLB/CSV checks at 6033. Broad curve/envelope geometry, calibrated uncertainty and whole-house registration qualification remain open."
     },
     {
       "area": "persistence and interchange",
@@ -55,23 +55,27 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Commit and validate the actual-parser repair, drawing marks, measured envelopes and bounded tour candidate (153 native/11 UI expected). Continue remaining whole-house/coverage/navigation and persistence work; no sixth detector attempt or intermediate upload.",
+  "nextAction": "Commit and validate coverage diagnostics, IFC4.3 fixtures, project-identity store assertions and bidirectional photo-curve UI reveal (156 native/11 UI expected). Continue the separately prepared tour-subject framing work and remaining whole-house/persistence qualification; no sixth detector attempt or intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "eb77e6e2c492e10acf941ee94e9ef6d7ca40d6ea",
-    "run": 39124873045,
-    "status": "completed with native IFC regression, related IFC UI failure and incomplete reader phase",
-    "nativePassed": 134,
+    "source": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
+    "run": 39127165713,
+    "status": "Completed with order-dependent native store assertion and photo-curve UI scrolling failure",
+    "nativePassed": 152,
     "nativeFailed": 1,
-    "nativeExecuted": 135,
-    "nativeExpected": 146,
+    "nativeExecuted": 153,
+    "nativeExpected": 153,
     "integrationComplete": false,
-    "evidence": "docs/evidence/native-eb77-summary.json",
-    "interfacePassed": 8,
-    "interfaceExpected": 9,
-    "interfaceSeconds": 913.087,
-    "readerReportsPassed": 7,
-    "processKillPassed": 3
+    "evidence": "docs/evidence/native-6033-summary.json",
+    "interfaceExpected": 11,
+    "processKillPassed": 3,
+    "interfacePassed": 10,
+    "interfaceExecuted": 11,
+    "interfaceSeconds": 843.773,
+    "readerReportsPassed": 23,
+    "portableCasesPassed": 50,
+    "commandContractsExecuted": false,
+    "nativeCLIExecuted": false
   },
   "previousIntegratedAttempt": {
     "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -131,8 +135,8 @@
     "nativeReconstructionCLIValidated": true
   },
   "wholeHouseDevelopment": {
-    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
-    "run": 39096349743,
+    "source": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
+    "run": 39127165677,
     "houses": 3,
     "rooms": [
       4,
@@ -187,8 +191,8 @@
     "mapsBuiltPerStage": 4
   },
   "sensorFaultDevelopment": {
-    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
-    "run": 39096349813,
+    "source": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
+    "run": 39127165698,
     "profiles": 4,
     "profilesPassed": 3,
     "complete": true,
@@ -384,18 +388,20 @@
     "reason": "Prevent older writers from losing reversible IFC source offsets"
   },
   "previousFailedIntegration": {
-    "source": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
-    "run": 39099066937,
-    "nativePassed": 136,
-    "nativeFailed": 0,
-    "processKillPassed": 3,
-    "portableCasesPassed": 50,
-    "commandContractTestsPassed": 27,
-    "independentReaderReportsPassed": 22,
-    "interfaceExpected": 8,
-    "interfaceExecuted": 0,
-    "reason": "UI target compile error: unsupported XCUIElement.lastMatch",
-    "evidence": "docs/evidence/native-fb2f-summary.json"
+    "source": "eb77e6e2c492e10acf941ee94e9ef6d7ca40d6ea",
+    "run": 39124873045,
+    "status": "completed with native IFC regression, related IFC UI failure and incomplete reader phase",
+    "nativePassed": 134,
+    "nativeFailed": 1,
+    "nativeExecuted": 135,
+    "nativeExpected": 146,
+    "integrationComplete": false,
+    "evidence": "docs/evidence/native-eb77-summary.json",
+    "interfacePassed": 8,
+    "interfaceExpected": 9,
+    "interfaceSeconds": 913.087,
+    "readerReportsPassed": 7,
+    "processKillPassed": 3
   },
   "supersededIntegrationAttempt": {
     "source": "d7d0a4af8ee32399e2b800c48aa3be6b7e413382",
@@ -440,7 +446,7 @@
     "rawEvidencePublished": false,
     "physicalQualification": false,
     "nativePassed": false,
-    "run": 39100177718,
+    "run": 39127165658,
     "roughAccepted": 44,
     "roughQueries": 44,
     "finishedAccepted": 41,
@@ -451,7 +457,8 @@
       23.049616914807523,
       14.859037782500355
     ],
-    "evidence": "docs/evidence/appearance-ec315-summary.json"
+    "evidence": "docs/evidence/appearance-ec315-summary.json",
+    "source": "6033f47536aa7e012822aabe8038ac6e756bc3bf"
   },
   "lowResolutionRepairBudget": {
     "failureClass": "finished-384 localization accuracy",
@@ -536,13 +543,14 @@
     "rawSourceUnitsPreserved": true,
     "propertyGraphSourceBound": true,
     "sourceIdentity": "original SHA-256 + EXPRESS ID",
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "rawExportFixturesPublished": false,
     "remaining": [
-      "Full IFC4x3 scaled CRS",
-      "Conversion-based unit interoperability",
-      "Broader representation and BIM authoring fidelity"
-    ]
+      "Native IFC4x3 scaled CRS validation",
+      "Broader representation and BIM authoring fidelity",
+      "Exact-source complete integration and signed cross-version handoff"
+    ],
+    "nativeValidatedSource": "6033f47536aa7e012822aabe8038ac6e756bc3bf"
   },
   "serviceToolbarRepair": {
     "failedSource": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
@@ -550,20 +558,41 @@
     "repair": "Parent Form owns one keyboard toolbar and passes its FocusState binding into service fields",
     "singleButtonAssertionPrepared": true,
     "saveRelaunchSearchAssertionsRetained": true,
-    "validationPending": true
+    "validationPending": false,
+    "validatedSource": "eb77e6e2c492e10acf941ee94e9ef6d7ca40d6ea"
   },
   "preparedCandidate": {
     "schema": 5,
-    "localCommandContractsPassed": 31,
-    "actualPinnedIFCCasesPassed": 7,
-    "nativeExpected": 153,
+    "actualPinnedIFCCasesPassed": 9,
+    "nativeExpected": 156,
     "interfaceExpected": 11,
     "accepted": false,
     "scope": [
-      "Derived SI-unit and numeric getter IFC repair",
-      "Source-linked drawing proposals and manual review",
-      "Measured straight service envelope derivatives",
-      "Clear stationary tour viewpoints and bounded within-shot camera motion"
-    ]
+      "Independent per-patch coverage evidence and actionable gap prompts",
+      "IFC4X3 and IFC4X3_ADD2 documentary scaled CRS checks",
+      "Project-identity roundtrip and full-inventory rejected-save assertion",
+      "Frozen replay workflow compiled-dependency triggers",
+      "Bidirectional complete-image reveal in the photo point/curve interface test"
+    ],
+    "localCommandContractsPassed": 31
+  },
+  "coverageGuidanceCandidate": {
+    "nativeChecksPrepared": 2,
+    "nativeValidationPending": true,
+    "independentPhotoDepthCounters": true,
+    "nextGapSelection": true,
+    "physicalQualification": false,
+    "closedLoopQualification": false,
+    "semanticReviewQualified": false,
+    "thresholdsChanged": false
+  },
+  "photoCurveInterfaceRepair": {
+    "failedSource": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
+    "failedTest": "testPhotoPointWorkflow",
+    "pointSavePassed": true,
+    "failure": "One-direction reveal scrolled the first image away after curve-mode reflow",
+    "repair": "Short bidirectional moves bounded to 16 attempts, complete visible bounds required, screenshot on failure",
+    "assertionsRetained": true,
+    "validationPending": true
   }
 }

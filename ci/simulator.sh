@@ -125,7 +125,7 @@ if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build
 if [ -f "$app_root/photo-curve-viewer.html" ]; then cp "$app_root/photo-curve-viewer.html" build/command-private/photo-curve-viewer.html; fi
 cp -R "$app_root/incremental-v2" build/evidence/incremental-v2
 # Retain diagnostics before failing if the encoder did not produce a movie.
-for media in test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
+for media in test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png

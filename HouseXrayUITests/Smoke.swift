@@ -182,11 +182,25 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(segment.waitForExistence(timeout:10));segment.tap()
     app.descendants(matching:.any)["point-segment-choice"].firstMatch.tap()
     func reveal(_ element:XCUIElement) {
-      for _ in 0..<12 {
-        if element.exists && element.isHittable && element.frame.minY>90 && element.frame.maxY<app.frame.maxY-95{return}
-        app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.80)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.27)))
+      var earlier=false
+      for attempt in 0..<16 {
+        let top=max(90,app.navigationBars.firstMatch.frame.maxY+8),bottom=min(app.frame.maxY-95,app.tabBars.firstMatch.frame.minY-8)
+        if element.exists {
+          let frame=element.frame
+          if element.isHittable && frame.minY>=top && frame.maxY<=bottom{return}
+          if frame.height>0 {
+            if frame.minY<top {earlier=true}
+            else if frame.maxY>bottom {earlier=false}
+          }
+        }else if attempt==8 {earlier.toggle()}
+        // Short bidirectional moves handle Form reflow after saving a point
+        // or switching to a curve without scrolling a visible image away.
+        let start=app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:earlier ? 0.35:0.65))
+        let end=app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:earlier ? 0.55:0.45))
+        start.press(forDuration:0.05,thenDragTo:end)
       }
-      XCTAssertTrue(element.isHittable)
+      screenshot("photo-control-reveal-failure")
+      XCTFail("Photo control did not become fully visible: \(element.identifier), frame \(element.frame)")
     }
     for (index,photo) in [0,4,8].enumerated() {
       let picker=app.descendants(matching:.any)["point-photo-picker-\(index)"].firstMatch;reveal(picker);picker.tap()
@@ -203,17 +217,10 @@ final class HouseXraySmoke: XCTestCase {
     let saved=app.staticTexts["Saved Photo-located point with three source photographs."]
     XCTAssertTrue(saved.waitForExistence(timeout:10));reveal(saved);screenshot("08-photo-point-saved")
     let curve=app.switches["Trace a visible curve"]
-    for _ in 0..<12 {
-      if curve.exists && curve.isHittable{break}
-      app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.27)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.80)))
-    }
-    setSwitch(curve,to:true)
+    reveal(curve);setSwitch(curve,to:true)
     for offset in [-0.0677083333,0.0677083333] {
       let first=app.descendants(matching:.any)["point-image-0"].firstMatch
-      for _ in 0..<12 {
-        if first.exists && first.isHittable && first.frame.minY>90{break}
-        app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.27)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.80)))
-      }
+      reveal(first)
       for index in 0..<3 {
         let image=app.descendants(matching:.any)["point-image-\(index)"].firstMatch;reveal(image)
         let frame=image.frame,w=min(frame.width,frame.height*4/3),h=w*3/4

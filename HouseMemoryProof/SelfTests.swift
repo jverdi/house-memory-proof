@@ -787,6 +787,54 @@ import simd
                 }
                 return true
             }
+            await check("Coverage advice distinguishes lighting blur sampling baseline depth and obstruction without false completeness") {
+                var baseline=try SimulatedCapture.make(repo:repo)
+                for i in baseline.observations.indices {baseline.observations[i].intrinsics[0]*=2;baseline.observations[i].intrinsics[4]*=2;baseline.observations[i].sharpness=0.1}
+                let segment=baseline.segments[0]
+                func analyze(_ h:House,depth:Double=0.2,x:Double = -0.2)throws->BoundaryCoverageReport {
+                    let b=RevealBoundary(name:"Confirmed analytic plane",segmentID:segment.id,origin:V3(x,1.8,1.6),horizontal:V3(1,0,0),vertical:V3(0,0,-1),width:0.4,height:0.4,depth:depth,finishOffset:0.01,sourceFingerprint:try VisualMapping.fingerprint(house:h,segment:h.segments[0]))
+                    return try BoundaryCoverage.analyze(house:h,boundary:b,repo:repo)
+                }
+                let good=try analyze(baseline)
+                guard good.supported==good.cells.count,good.cells.allSatisfy({$0.advice == .review}) else{return false}
+                let expected:[BoundaryCoverageAdvice]=[.illuminate,.steady,.closer,.translate,.depth,.depth,.aroundObstruction,.visit]
+                for fault in expected.indices {
+                    var h=baseline
+                    for i in h.observations.indices {
+                        switch fault {
+                        case 0:h.observations[i].light=20
+                        case 1:h.observations[i].sharpness=0
+                        case 2:h.observations[i].intrinsics[0]/=2;h.observations[i].intrinsics[4]/=2
+                        case 3:h.observations[i].camera[3]=0
+                        case 4:h.observations[i].depth=nil
+                        case 5:h.observations[i].confidence=try repo.put(Data(repeating:0,count:192*144),ext:"confidence8")
+                        default:break
+                        }
+                    }
+                    let result=try analyze(h,depth:fault==6 ? 0.5:0.2,x:fault==7 ? 100 : -0.2)
+                    guard result.supported==0,result.cells.allSatisfy({$0.advice==expected[fault]}) else{throw HouseError.message("Coverage advice fixture failed in condition \(fault).")}
+                    if fault==4 {guard result.cameraCount==0,result.consideredCameraCount==9 else{return false}}
+                }
+                // Restoring good observations resolves the actionable states;
+                // the test reconfirms the analytic plane for every input set.
+                return try analyze(baseline).supported==good.cells.count
+            }
+            await check("Supported coverage retains independent obstruction missing-depth and quality counters") {
+                var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
+                for i in h.observations.indices {h.observations[i].intrinsics[0]*=2;h.observations[i].intrinsics[4]*=2;h.observations[i].sharpness=0.1}
+                func plane(_ depth:Float)throws->String {var bytes=Data();for _ in 0..<(192*144){bytes.float(depth)};return try repo.put(bytes,ext:"depth32")}
+                h.observations[1].light=20;h.observations[2].sharpness=0
+                h.observations[3].depth=try plane(1);h.observations[5].depth=nil;h.observations[5].light=20;h.observations[5].sharpness=0
+                h.observations[6].confidence=try repo.put(Data(repeating:0,count:192*144),ext:"confidence8")
+                h.observations[7].depth=try plane(3)
+                let b=RevealBoundary(name:"Mixed analytic support",segmentID:segment.id,origin:V3(-0.2,1.8,1.6),horizontal:V3(1,0,0),vertical:V3(0,0,-1),width:0.4,height:0.4,depth:0.2,finishOffset:0.01,sourceFingerprint:try VisualMapping.fingerprint(house:h,segment:segment))
+                let result=try BoundaryCoverage.analyze(house:h,boundary:b,repo:repo)
+                guard result.supported==result.cells.count,result.cameraCount==8,result.consideredCameraCount==9 else{return false}
+                guard result.cells.allSatisfy({$0.projectedViews==9 && $0.matchingDepthViews==5 && $0.usefulViews==3 && $0.separatedViews==3 && $0.angularBaseline && $0.occludedViews==1 && $0.unavailableDepthViews==1 && $0.uncertainDepthViews==1 && $0.unmatchedDepthViews==1 && $0.darkViews==2 && $0.blurredViews==2}) else{return false}
+                let report:[String:Any]=["passed":true,"analyticOnly":true,"oracleIsolatedQualification":false,"physicalQualification":false,"patches":result.cells.count,"projectedViewsPerPatch":9,"compatibleDepthCameras":result.cameraCount,"supportedPatches":result.supported,"usefulViewsPerPatch":3,"obstructedViewsPerPatch":1,"unavailableDepthViewsPerPatch":1,"uncertainDepthViewsPerPatch":1,"unmatchedDepthViewsPerPatch":1,"darkViewsPerPatch":2,"blurredViewsPerPatch":2,"semanticReviewQualified":false,"sourceRecordsPublished":false]
+                try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys,.prettyPrinted]).write(to:mainRepo.root.appendingPathComponent("native-coverage-guidance.json"))
+                return true
+            }
             await check("Disconnected photograph is excluded without inventing camera corrections") {
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
                 var capture=try Exporter.restore(resources.appendingPathComponent("vision-map.hxray"),repo:repo)
@@ -1180,11 +1228,11 @@ import simd
                 var o=capture.observations[0];o.roomID=h.rooms[0].id;o.segmentID=segment.id;o.stageID=h.stages[1].id;h.observations=[o]
                 do{try h.validate();return false}catch{return true}
             }
-            await check("Local store roundtrip"){try repo.save(house);return try repo.all().first==house}
+            await check("Local store roundtrip"){try repo.save(house);return try repo.all().first(where:{$0.id==house.id})==house}
             await check("Revision recovery"){let original=house;house.revision+=1;house.name="Edited";try repo.save(house);return try repo.previous(house.id)==original}
             await check("Failed candidate does not replace committed evidence"){
-                let before=try repo.all().first;var bad=house;bad.features[0].mesh.triangles=[0,1,Int32.max]
-                do{try repo.save(bad);return false}catch{return try repo.all().first==before}
+                let before=try repo.all();var bad=house;bad.features[0].mesh.triangles=[0,1,Int32.max]
+                do{try repo.save(bad);return false}catch{return try repo.all()==before}
             }
             await check("Corrupt project is isolated without hiding healthy projects"){
                 let isolated=try Repository(root:folder.appendingPathComponent("corrupt-row"));let good=House.empty("Healthy"),bad=House.empty("Corrupt");try isolated.save(good);try isolated.save(bad)
@@ -1705,6 +1753,7 @@ import simd
                     && !IFCImporter.complete(done,parts:1,vertices:3,indices:6)
                     && !IFCImporter.complete([:],parts:0,vertices:0,indices:0)
             }
+            var ifcCase="Bundled IFC2x3 conversion and axes"
             do {
                 guard let path=Bundle.main.url(forResource:"IFC",withExtension:nil)?.appendingPathComponent("test-block.ifc") else{throw HouseError.message("IFC test fixture missing.")}
                 let importer=IFCImporter(),input=try Data(contentsOf:path),roomID=house.rooms[0].id,stageID=house.stages[0].id
@@ -1715,16 +1764,19 @@ import simd
                 let points=features.flatMap{$0.mesh.vertices};let extent=V3((points.map{$0.x}.max() ?? 0)-(points.map{$0.x}.min() ?? 0),(points.map{$0.y}.max() ?? 0)-(points.map{$0.y}.min() ?? 0),(points.map{$0.z}.max() ?? 0)-(points.map{$0.z}.min() ?? 0))
                 results.append(["test":"Bundled IFC2x3 conversion and axes","passed":abs(extent.x-1)<0.001 && abs(extent.y-2)<0.001 && abs(extent.z-3)<0.001 && importer.phases==["created","initializing","source","parsing","geometry","complete"],"extent":[extent.x,extent.y,extent.z],"phases":importer.phases])
                 let source=try String(contentsOf:path,encoding:.utf8)
+                ifcCase="IFC4 millimetres and nested placement";mark(ifcCase)
                 let millimetres=source.replacingOccurrences(of:"IFC2X3",with:"IFC4").replacingOccurrences(of:".ELEMENT.",with:".NOTDEFINED.").replacingOccurrences(of:".LENGTHUNIT.,$,.METRE.",with:".LENGTHUNIT.,.MILLI.,.METRE.").replacingOccurrences(of:"#17,1.,2.",with:"#17,1000.,2000.").replacingOccurrences(of:"#18,#9,#7,3.",with:"#18,#9,#7,3000.").replacingOccurrences(of:"$,$,#15,#21",with:"$,$,#25,#21").replacingOccurrences(of:"ENDSEC;\nEND-ISO",with:"#23=IFCCARTESIANPOINT((10000.,20000.,30000.));\n#24=IFCAXIS2PLACEMENT3D(#23,#7,#8);\n#25=IFCLOCALPLACEMENT(#15,#24);\nENDSEC;\nEND-ISO")
                 let converted=try await importer.load(Data(millimetres.utf8),roomID:house.rooms[0].id,stageID:house.stages[0].id)
                 let vertices=converted.flatMap{$0.mesh.vertices};let low=V3(vertices.map{$0.x}.min() ?? 0,vertices.map{$0.y}.min() ?? 0,vertices.map{$0.z}.min() ?? 0),high=V3(vertices.map{$0.x}.max() ?? 0,vertices.map{$0.y}.max() ?? 0,vertices.map{$0.z}.max() ?? 0)
                 results.append(["test":"IFC4 millimetres and nested placement","passed":(low-V3(9.5,19,30)).length<0.001 && (high-V3(10.5,21,33)).length<0.001,"lower":[low.x,low.y,low.z],"upper":[high.x,high.y,high.z]])
+                ifcCase="IFC rotated nested placement preserves metric axes";mark(ifcCase)
                 let rotated=millimetres.replacingOccurrences(of:"#24=IFCAXIS2PLACEMENT3D(#23,#7,#8);",with:"#24=IFCAXIS2PLACEMENT3D(#23,#7,#26);\n#26=IFCDIRECTION((0.,1.,0.));")
                 let turned=try await importer.load(Data(rotated.utf8),roomID:roomID,stageID:stageID)
                 let turnedVertices=turned.flatMap{$0.mesh.vertices}
                 let turnedLow=V3(turnedVertices.map{$0.x}.min() ?? 0,turnedVertices.map{$0.y}.min() ?? 0,turnedVertices.map{$0.z}.min() ?? 0)
                 let turnedHigh=V3(turnedVertices.map{$0.x}.max() ?? 0,turnedVertices.map{$0.y}.max() ?? 0,turnedVertices.map{$0.z}.max() ?? 0)
                 results.append(["test":"IFC rotated nested placement preserves metric axes","passed":(turnedLow-V3(9,19.5,30)).length<0.001 && (turnedHigh-V3(11,20.5,33)).length<0.001])
+                ifcCase="IFC far-origin rebasing recovers project metres without house alignment";mark(ifcCase)
                 let distant=millimetres.replacingOccurrences(of:"((10000.,20000.,30000.))",with:"((1000000000.,20000.,30000.))")
                 let far=try await importer.load(Data(distant.utf8),roomID:roomID,stageID:stageID)
                 guard let farReference=importer.coordinateReference else{throw HouseError.message("Missing reversible IFC source frame.")}
@@ -1732,10 +1784,26 @@ import simd
                 let farLow=V3(farPoints.map{$0.x}.min() ?? 0,farPoints.map{$0.y}.min() ?? 0,farPoints.map{$0.z}.min() ?? 0)
                 let farHigh=V3(farPoints.map{$0.x}.max() ?? 0,farPoints.map{$0.y}.max() ?? 0,farPoints.map{$0.z}.max() ?? 0)
                 results.append(["test":"IFC far-origin rebasing recovers project metres without house alignment","passed":farReference.valid && farReference.rebased && farReference.sourceLengthUnit=="MILLI METRE" && (farLow-V3(999999.5,19,30)).length<0.001 && (farHigh-V3(1000000.5,21,33)).length<0.001 && far.allSatisfy{$0.mesh.valid}])
+                ifcCase="IFC CRS rotation scale and offsets are retained without altering project geometry";mark(ifcCase)
                 let georeferenced=distant.replacingOccurrences(of:"ENDSEC;\nEND-ISO",with:"#30=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);\n#31=IFCPROJECTEDCRS('EPSG:32632','Synthetic CRS','WGS84',$,'UTM','32N',#30);\n#32=IFCMAPCONVERSION(#10,#31,500000.25,4200000.5,12.,0.,1.,0.001);\nENDSEC;\nEND-ISO")
                 let mapped=try await importer.load(Data(georeferenced.utf8),roomID:roomID,stageID:stageID)
                 guard let reference=importer.coordinateReference,let conversion=reference.mapConversions.first else{throw HouseError.message("Missing IFC georeference metadata.")}
                 results.append(["test":"IFC CRS rotation scale and offsets are retained without altering project geometry","passed":reference.mapConversions.count==1 && conversion.expressID==32 && conversion.values["Eastings"]==500000.25 && conversion.values["Northings"]==4200000.5 && conversion.values["Scale"]==0.001 && conversion.values["XAxisAbscissa"]==0 && conversion.values["XAxisOrdinate"]==1 && conversion.targetCRS["Name"]=="EPSG:32632" && conversion.targetCRS["MapUnit"]=="METRE" && mapped.map{$0.mesh}==far.map{$0.mesh} && reference.originMetres==farReference.originMetres])
+                ifcCase="IFC4.3 scaled CRS stays documentary and preserves source metric geometry";mark(ifcCase)
+                var scaledPassed=true
+                for schema in ["IFC4X3","IFC4X3_ADD2"] {
+                    let scaled=georeferenced.replacingOccurrences(of:"IFC4",with:schema).replacingOccurrences(of:"IFCMAPCONVERSION(#10,#31,500000.25,4200000.5,12.,0.,1.,0.001)",with:"IFCMAPCONVERSIONSCALED(#10,#31,500000.25,4200000.5,12.,0.,1.,0.001,0.9996,1.0004,1.002)")
+                    let output=try await importer.load(Data(scaled.utf8),roomID:roomID,stageID:stageID)
+                    guard let coordinates=importer.coordinateReference,let conversion=coordinates.mapConversions.first,let properties=importer.propertyGraph else{throw HouseError.message("Missing IFC4.3 conversion metadata.")}
+                    let decoded=try JSONDecoder().decode(IFCCoordinateReference.self,from:JSONEncoder().encode(coordinates))
+                    let graph=try JSONSerialization.jsonObject(with:properties.data) as! [String:Any]
+                    let points=output.flatMap{$0.mesh.vertices}.map{$0+coordinates.originMetres}
+                    let low=V3(points.map{$0.x}.min() ?? 0,points.map{$0.y}.min() ?? 0,points.map{$0.z}.min() ?? 0)
+                    let high=V3(points.map{$0.x}.max() ?? 0,points.map{$0.y}.max() ?? 0,points.map{$0.z}.max() ?? 0)
+                    scaledPassed = scaledPassed && coordinates.valid && decoded==coordinates && coordinates.sourceSchema==schema && graph["sourceSchema"] as? String==schema && coordinates.mapConversions.count==1 && conversion.values["FactorX"]==0.9996 && conversion.values["FactorY"]==1.0004 && conversion.values["FactorZ"]==1.002 && conversion.values["Scale"]==0.001 && conversion.targetCRS["MapUnit"]=="METRE" && (low-V3(999999.5,19,30)).length<0.001 && (high-V3(1000000.5,21,33)).length<0.001
+                }
+                results.append(["test":ifcCase,"passed":scaledPassed,"schemaCases":2,"crsAppliedToGeometry":false])
+                ifcCase="IFC out-of-envelope coordinates refuse atomically and importer recovers";mark(ifcCase)
                 var refused=false
                 let excessive=distant.replacingOccurrences(of:"1000000000.,20000.",with:"10000000000000.,20000.")
                 do {_ = try await importer.load(Data(excessive.utf8),roomID:roomID,stageID:stageID)}catch{refused=true}
@@ -1743,6 +1811,7 @@ import simd
                 let retainedInput=try Data(contentsOf:path)
                 results.append(["test":"IFC out-of-envelope coordinates refuse atomically and importer recovers","passed":refused && !recovered.isEmpty && retainedInput==input])
 
+                ifcCase="IFC raw properties storeys and source unit graph";mark(ifcCase)
                 let additions="""
                 #40=IFCBUILDINGSTOREY('2J$yPqHBD2TuLf$X2etp$2',#5,'Upper storey',$,$,#15,$,$,.ELEMENT.,3000.);
                 #41=IFCRELCONTAINEDINSPATIALSTRUCTURE('3J$yPqHBD2TuLf$X2etp$3',#5,$,$,(#22),#40);
@@ -1811,10 +1880,12 @@ import simd
                 #49=IFCGEOMETRICSET((#6));
                 #50=IFCSHAPEREPRESENTATION(#10,'Body','GeometricSet',(#49));
                 """
+                ifcCase="IFC point-only representations and duplicate GUIDs remain distinct source products";mark(ifcCase)
                 let partial=withProperties.replacingOccurrences(of:"ENDSEC;\nEND-ISO",with:omitted+"\nENDSEC;\nEND-ISO")
                 let partialFeatures=try await importer.load(Data(partial.utf8),roomID:propertyRoom,stageID:propertyStage.id)
                 guard let partialGraph=importer.propertyGraph else{throw HouseError.message("Missing partial-conversion census.")}
                 results.append(["test":"IFC point-only representations and duplicate GUIDs remain distinct source products","passed":partialGraph.summary.products==3 && partialGraph.summary.representedProducts==2 && partialGraph.summary.convertedProducts==1 && partialGraph.summary.unconvertedRepresentedProducts==1 && partialGraph.summary.duplicateGUIDs==2 && partialGraph.matches(partialFeatures) && partialGraph.objects[22]?.guidStatus=="duplicate" && partialGraph.objects[47]?.guidStatus=="duplicate"])
+                ifcCase="IFC malformed and missing GUIDs retain EXPRESS identities without merging";mark(ifcCase)
                 var warningsPassed=true
                 for (replacement,status) in [("'bad-guid'","malformed"),("$","missing")] {
                     let malformed=partial.replacingOccurrences(of:"'1J$yPqHBD2TuLf$X2etp$1'",with:replacement)
@@ -1822,6 +1893,7 @@ import simd
                     warningsPassed = warningsPassed && importer.propertyGraph?.objects[22]?.guidStatus==status && importer.propertyGraph?.objects[47]?.guidStatus==status && !output.isEmpty
                 }
                 results.append(["test":"IFC malformed and missing GUIDs retain EXPRESS identities without merging","passed":warningsPassed])
+                ifcCase="IFC conversion-based feet and inches retain raw factors and produce metric geometry";mark(ifcCase)
                 var conversionUnitsPassed=true
                 for (name,factor) in [("foot",0.3048),("inch",0.0254)] {
                     let units="""
@@ -1839,7 +1911,7 @@ import simd
                 }
                 results.append(["test":"IFC conversion-based feet and inches retain raw factors and produce metric geometry","passed":conversionUnitsPassed])
 
-            }catch{results.append(["test":"Bundled IFC2x3 conversion and axes","passed":false,"error":error.localizedDescription])}
+            }catch{results.append(["test":ifcCase,"passed":false,"error":error.localizedDescription])}
             do {
                 let fixture=try SimulatedCapture.make(repo:mainRepo)
                 await check("Photo triangulation uses an independent third view and rejects disagreement"){

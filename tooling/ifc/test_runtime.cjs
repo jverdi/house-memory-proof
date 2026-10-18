@@ -20,9 +20,11 @@ const partial=insert(properties,`#47=IFCBUILDINGELEMENTPROXY('1J$yPqHBD2TuLf$X2e
 const units=(name,factor)=>insert(ifc4.replace('IFCUNITASSIGNMENT((#11,#12))','IFCUNITASSIGNMENT((#53,#12))'),`#51=IFCDIMENSIONALEXPONENTS(1,0,0,0,0,0,0);
 #52=IFCMEASUREWITHUNIT(IFCLENGTHMEASURE(${factor}),#11);
 #53=IFCCONVERSIONBASEDUNIT(#51,.LENGTHUNIT.,'${name}',#52);`);
+const scaledCRS=schema=>insert(ifc4.replace('IFC4',schema),`#31=IFCPROJECTEDCRS('Synthetic map','Anisotropic documentary conversion',$,$,$,$,#11);
+#32=IFCMAPCONVERSIONSCALED(#10,#31,500000.,4200000.,12.,0.,1.,0.001,0.9996,1.0004,1.002);`);
 (async()=>{
  const api=new WebIFC.IfcAPI();await api.Init();api.SetLogLevel(6);
- const cases=[['IFC2x3',base,1],['IFC4 properties',properties,1],['point-only representation',partial,1],['malformed GUID',partial.replaceAll("'1J$yPqHBD2TuLf$X2etp$1'","'bad-guid'"),1],['missing GUID',partial.replaceAll("'1J$yPqHBD2TuLf$X2etp$1'",'$'),1],['foot',units('foot',.3048),.3048],['inch',units('inch',.0254),.0254]];
+ const cases=[['IFC2x3',base,1],['IFC4 properties',properties,1],['point-only representation',partial,1],['malformed GUID',partial.replaceAll("'1J$yPqHBD2TuLf$X2etp$1'","'bad-guid'"),1],['missing GUID',partial.replaceAll("'1J$yPqHBD2TuLf$X2etp$1'",'$'),1],['foot',units('foot',.3048),.3048],['inch',units('inch',.0254),.0254],['IFC4X3',scaledCRS('IFC4X3'),1],['IFC4X3_ADD2',scaledCRS('IFC4X3_ADD2'),1]];
  for(const [name,source,scale] of cases){
   const model=api.OpenModel(new Uint8Array(Buffer.from(source)),{COORDINATE_TO_ORIGIN:false});
   try{
@@ -48,6 +50,12 @@ const units=(name,factor)=>insert(ifc4.replace('IFCUNITASSIGNMENT((#11,#12))','I
    if(name==='malformed GUID')assert.equal(result.summary.malformedGUIDs,2);
    if(name==='missing GUID')assert.equal(result.summary.missingGUIDs,2);
    if(['foot','inch'].includes(name))assert.equal(reference.sourceLengthUnit,name);
+   if(name.startsWith('IFC4X3')){
+    assert.equal(reference.sourceSchema,name);assert.equal(reference.mapConversions.length,1);
+    const values=reference.mapConversions[0].values;
+    for(const [key,value] of Object.entries({Scale:.001,FactorX:.9996,FactorY:1.0004,FactorZ:1.002,Eastings:500000,Northings:4200000,XAxisAbscissa:0,XAxisOrdinate:1}))assert.equal(values[key],value);
+    assert.equal(reference.mapConversions[0].targetCRS.MapUnit,'METRE');
+   }
    cp.execFileSync('python3',['-c',`import sys,json,hashlib;sys.path.insert(0,'tooling');from ifc_properties_check import validate
 r=json.load(sys.stdin);data=json.dumps(r).encode();ref=dict(asset=hashlib.sha256(data).hexdigest()+'.json',sourceSHA256=r['sourceSHA256'],summary=r['summary']);validate(data,ref,r['sourceSHA256']+'.ifc',[])`],{input:JSON.stringify(result)});
   }finally{api.CloseModel(model)}

@@ -7,6 +7,14 @@ on:
       - HouseMemoryProof/VisualMapping.swift
       - HouseMemoryProof/PoseGraph.swift
       - HouseMemoryProof/PhotoReconstruction.swift
+      - HouseMemoryProof/Domain.swift
+      - HouseMemoryProof/EvidenceModels.swift
+      - HouseMemoryProof/ServiceDetails.swift
+      - HouseMemoryProof/PointCloudImport.swift
+      - HouseMemoryProof/IFCProperties.swift
+      - HouseMemoryProof/DrawingMarks.swift
+      - HouseMemoryProof/ServiceEnvelope.swift
+      - tooling/opencv/build-host.sh
       - packages/visual-core/**
   workflow_dispatch:
 permissions:
