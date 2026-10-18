@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: house-proof-${{ github.ref }}-${{ startsWith(github.event.head_commit.message, '[release]') && 'delivery' || 'validation' }}
+  group: house-proof-${{ github.ref }}-${{ startsWith(github.event.head_commit.message, '[release]') && github.sha || 'validation' }}
   cancel-in-progress: ${{ github.event_name == 'push' && !startsWith(github.event.head_commit.message, '[release]') }}
 
 jobs:
@@ -60,6 +60,9 @@ jobs:
         id: compile
         timeout-minutes: 12
         run: bash ci/simulator.sh compile
+      - name: Compile distribution configuration without signing
+        timeout-minutes: 12
+        run: bash ci/simulator.sh release
       - name: Run native image, reconstruction, storage and movie diagnostics
         id: native
         timeout-minutes: 10
@@ -80,6 +83,8 @@ jobs:
             build/evidence/tour-reveal-validation.json
             build/evidence/native-ifc-geometry.json
             build/evidence/native-service-tour.json
+            build/evidence/native-boundary-source.json
+            build/evidence/native-compatibility.json
             build/evidence/service-tour-validation.json
             build/evidence/command-tests.json
             build/evidence/cli-command-validation.json
@@ -135,7 +140,7 @@ jobs:
       group: personal-apple-upload
       cancel-in-progress: false
     # One owner-requested snapshot; subsequent implementation commits do not upload.
-    if: (github.event_name == 'push' && github.event.head_commit.message == '[release] Ship current-state TestFlight d7f5b79e') || (github.event_name == 'workflow_dispatch' && inputs.ship && github.ref == 'refs/tags/personal-beta')
+    if: (github.event_name == 'push' && github.event.head_commit.message == '[release] Ship current-state TestFlight continuation-20261018') || (github.event_name == 'workflow_dispatch' && inputs.ship && github.ref == 'refs/tags/personal-beta')
     runs-on: macos-26
     timeout-minutes: 60
     steps:

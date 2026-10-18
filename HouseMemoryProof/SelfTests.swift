@@ -819,6 +819,41 @@ import simd
                 // the test reconfirms the analytic plane for every input set.
                 return try analyze(baseline).supported==good.cells.count
             }
+            await check("Picked boundaries retain capture-loop continuity but reject changed geometry and coordinate frames") {
+                var full=try SimulatedCapture.make(repo:repo)
+                for i in full.observations.indices {full.observations[i].intrinsics[0]*=2;full.observations[i].intrinsics[4]*=2;full.observations[i].sharpness=0.1}
+                let source=full.features[0],segment=full.segments[0]
+                var initial=full;initial.observations=Array(full.observations.prefix(1))
+                let legacy=RevealBoundary(name:"Recorded source plane",segmentID:segment.id,origin:V3(-0.2,1.8,1.6),horizontal:V3(1,0,0),vertical:V3(0,0,-1),width:0.4,height:0.4,depth:0.2,finishOffset:0.01,sourceFingerprint:try VisualMapping.fingerprint(house:initial,segment:segment))
+                let boundary=try BoundaryEvidence.bind(legacy,sources:[source.id],house:initial)
+                let before=try BoundaryCoverage.analyze(house:initial,boundary:boundary,repo:repo)
+                guard before.supported==0,before.cells.allSatisfy({$0.advice == .translate}),RevealVolumes.current(boundary,house:full),!RevealVolumes.current(legacy,house:full) else{return false}
+                let after=try BoundaryCoverage.analyze(house:full,boundary:boundary,repo:repo)
+                guard after.supported==after.cells.count,after.cells.allSatisfy({$0.advice == .review}) else{return false}
+                for fault in 0..<7 {
+                    var changed=full
+                    switch fault {
+                    case 0:changed.features[0].revision+=1
+                    case 1:changed.features.removeAll()
+                    case 2:changed.features[0].artifactValid=false
+                    case 3:changed.segments[0].registration=Rigid()
+                    case 4:changed.features[0].kind = .planned
+                    case 5:changed.features[0].stageID=changed.stages[1].id
+                    default:changed.segments[0].roomID=UUID()
+                    }
+                    guard !RevealVolumes.current(boundary,house:changed) else{return false}
+                }
+                full.boundaries=[boundary];try full.validate()
+                let restored=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(full))
+                guard restored.boundaries==full.boundaries,RevealVolumes.current(restored.boundaries[0],house:restored) else{return false}
+                var malformed=boundary;malformed.sourceGeometry=[]
+                guard !malformed.valid else{return false}
+                let report:[String:Any]=["passed":true,"analyticOnly":true,"oracleIsolatedQualification":false,"physicalQualification":false,
+                  "initialViews":initial.observations.count,"finalViews":full.observations.count,"initialSupportedPatches":before.supported,
+                  "finalSupportedPatches":after.supported,"totalPatches":after.cells.count,"staleInputRefusals":7,"legacyBoundaryPolicyPreserved":true,"sourceRecordsPublished":false]
+                try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys,.prettyPrinted]).write(to:mainRepo.root.appendingPathComponent("native-boundary-source.json"))
+                return true
+            }
             await check("Supported coverage retains independent obstruction missing-depth and quality counters") {
                 var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
                 for i in h.observations.indices {h.observations[i].intrinsics[0]*=2;h.observations[i].intrinsics[4]*=2;h.observations[i].sharpness=0.1}
@@ -1250,6 +1285,43 @@ import simd
                     json["schema"]=version
                     do{_=try JSONDecoder().decode(House.self,from:JSONSerialization.data(withJSONObject:json));return false}catch{}
                 }
+                return true
+            }
+            await check("Authentic earlier TestFlight-source archive restores and reexports without losing geometry or originals") {
+                let input=Bundle.main.url(forResource:"IFC",withExtension:nil)!.appendingPathComponent("compatibility-161-1.hxray")
+                let expectedHash="7d0e5428b7f4649a94325ed5097df617b9e06156d7967929b93fab2ed55ec5c5"
+                guard try StreamingArchive.digest(input).sha==expectedHash else{return false}
+                let entries=try StoredZip.read(input)
+                guard let metadata=entries.first(where:{$0.name=="house.json"})?.data else{return false}
+                let original=try JSONDecoder().decode(House.self,from:metadata)
+                guard original.features.count==217,original.rooms.count==3,original.stages.count==2,original.drawings.count==1,original.assets.count==1 else{return false}
+                let target=try Repository(root:folder.appendingPathComponent("authentic-legacy-restore"))
+                let restored=try Exporter.restore(input,repo:target)
+                func sameEvidence(_ candidate:House,_ expected:House)->Bool {
+                    var normalized=candidate;normalized.id=expected.id;normalized.name=expected.name;normalized.revision=expected.revision
+                    return normalized==expected
+                }
+                guard sameEvidence(restored,original),restored.schema==House.currentSchema,try target.integrity(restored)==1 else{return false}
+                try target.save(restored)
+                let exported=try Exporter.archive(restored,repo:target),fresh=try Repository(root:folder.appendingPathComponent("authentic-current-restore"))
+                let again=try Exporter.restore(exported,repo:fresh)
+                guard sameEvidence(again,restored),try fresh.integrity(again)==1 else{return false}
+                var future=try StoredZip.read(exported)
+                guard let hi=future.firstIndex(where:{$0.name=="house.json"}),let mi=future.firstIndex(where:{$0.name=="manifest.json"}) else{return false}
+                var value=try JSONSerialization.jsonObject(with:future[hi].data) as! [String:Any];value["schema"]=999
+                future[hi].data=try JSONSerialization.data(withJSONObject:value,options:[.sortedKeys])
+                var manifest=try JSONSerialization.jsonObject(with:future[mi].data) as! [String:Any],hashes=manifest["sha256"] as! [String:String]
+                hashes["house.json"]=TourProvenance.digest(future[hi].data);manifest["sha256"]=hashes
+                future[mi].data=try JSONSerialization.data(withJSONObject:manifest,options:[.sortedKeys])
+                let unsupported=folder.appendingPathComponent("authentic-future-schema.hxray");try StoredZip.write(future,to:unsupported)
+                let before=try target.all()
+                do{_=try Exporter.restore(unsupported,repo:target);return false}catch{}
+                guard try target.all()==before,try target.integrity(restored)==1,try StreamingArchive.digest(input).sha==expectedHash else{return false}
+                let report:[String:Any]=["passed":true,"producerSource":"2fae54ff2d3177958a4b7e78da1f3546d23314fd","producerBuild":"161.1",
+                  "archiveSHA256":expectedHash,"sourceSchema":1,"restoredSchema":House.currentSchema,"featuresPreserved":217,"roomsPreserved":3,
+                  "originalAssetsVerified":1,"metadataAndGeometryExact":true,"currentWriterReimportPassed":true,"futureSchemaRefusedWithoutActivation":true,
+                  "originalBytesUnchanged":true,"runtime":"iOS simulator","signedApplicationExecution":false,"physicalQualification":false]
+                try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys,.prettyPrinted]).write(to:mainRepo.root.appendingPathComponent("native-compatibility.json"))
                 return true
             }
             await check("Stage composition isolates unfinished and finished session frames"){

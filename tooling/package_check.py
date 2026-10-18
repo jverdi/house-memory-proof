@@ -422,7 +422,12 @@ def check_package(path):
         manifest = json_bytes(archive.read('manifest.json'))
         require(manifest.get('format') == 'HouseXray' and type(manifest.get('version')) is int and manifest['version'] == 1, 'Unsupported archive manifest')
         hashes = manifest.get('sha256')
-        require(isinstance(hashes, dict) and set(hashes) == set(names)-{'manifest.json'}, 'Manifest/member inventory mismatch')
+        house = json_bytes(archive.read('house.json'))
+        require(isinstance(hashes, dict), 'Invalid manifest digest inventory')
+        payloads=set(names)-{'manifest.json'}
+        unhashed=payloads-set(hashes)
+        legacy_index=house.get('schema')==1 and unhashed=={'index.html'}
+        require(set(hashes).issubset(payloads) and (not unhashed or legacy_index), 'Manifest/member inventory mismatch')
         total = 0
         for name, expected in hashes.items():
             require(isinstance(expected,str) and re.fullmatch('[0-9a-f]{64}', expected), 'Invalid digest')
@@ -436,7 +441,14 @@ def check_package(path):
             if name.startswith('assets/'):
                 key = name[7:]
                 require(ASSET.fullmatch(key) and key[:64] == expected, 'Asset key does not identify its original bytes')
-        house = json_bytes(archive.read('house.json'))
+        if legacy_index:
+            # The genuine schema-1 writer omitted only index.html from its SHA
+            # manifest. ZIP CRC is still read and checked; original assets and
+            # the offline viewer never receive this compatibility exception.
+            with archive.open('index.html') as source:
+                while chunk := source.read(1024*1024):
+                    total+=len(chunk)
+                    require(total<=MAX_ARCHIVE,'Expanded byte budget exceeded')
         counts = semantic_check(house)
         assets = required_assets(house)
         require({'assets/'+key for key in assets} == {n for n in names if n.startswith('assets/')}, 'Referenced/original asset inventory mismatch')
@@ -454,7 +466,7 @@ def check_package(path):
         require(json_bytes(json.dumps(house, allow_nan=False).encode()) == house, 'Metadata JSON round trip differs')
         return dict(passed=True, reader='Python standard library independent archive reader', archiveVersion=1,
                     sourceRevision=house['revision'], metadataSHA256=hashes['house.json'], verifiedOriginals=len(assets),
-                    verifiedPayloadBytes=total, members=len(entries), semanticCounts=counts,
+                    verifiedPayloadBytes=total, members=len(entries), semanticCounts=counts,legacyIndexCRCOnly=legacy_index,
                     jsonRoundTripPassed=True, sourceModified=False, extractedFiles=0, physicalPrecisionQualified=False,
                     limitations=['Schema/identity/geometry/asset checks do not qualify capture accuracy or actual cloud-provider recovery.',
                                  'GLB, USDZ and rendered viewer behavior require their separate independent readers.'])

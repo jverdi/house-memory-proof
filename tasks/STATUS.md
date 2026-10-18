@@ -1,3 +1,13 @@
+# Continued capture, authentic archive compatibility and distribution repair
+
+The requested snapshot at f0fbc7444b / 209.1 has a SHA-verified passing native checkpoint: 163 native checks in 158.733 seconds and all 15 command/reader checks. Its interface phase is still running. Source inspection found a Release-only compile dependency: the owner-accessible self-tests reference DrawingMarkTestFixture, but that declaration was guarded by DEBUG. The follow-up makes the diagnostic fixture available in the signed app, generates the shared IFC geometry fixture for distribution, and adds an unsigned Release-device compilation gate before native/UI validation. The owner snapshot trigger is moved to this repaired continuation. Source 209 is not presented as uploaded or Apple-available.
+
+Newly picked boundaries bind selected geometry revisions and registration snapshots. Adding observations can improve coverage without redefining an unchanged plane; changed/missing geometry, invalid artifacts, changed evidence kind, room/stage or registration still invalidate it. Existing fingerprint-bound boundaries retain their original conservative policy. A native capture-loop test adds one then nine views, verifies all patches progress from baseline advice to supported, and preserves seven refusal cases and the metadata round trip. This is analytic evidence only, not the isolated whole-house closed-loop gate.
+
+The exact schema-1 archive from the same source as TestFlight 161.1 is frozen with producer/run/artifact/archive hashes. It contains synthetic demonstration geometry and one 14-byte original. Its independent validation exposed an older index.html manifest omission; the compatibility exception is restricted to schema 1 and that one index, with ZIP CRC still checked. Originals and viewer still require hashes. Native checks restore all 217 features and original data, re-export/reimport the current schema, and refuse an unsupported future schema without changing a healthy store. Actual signed-app/device update and provider behavior remain unqualified.
+
+40 portable command/reader contracts and 38 release-tool tests pass locally. The combined candidate expects 167 native checks and 12 UI flows; native validation is pending. The source-bound tour reader also explicitly recognizes the existing in-memory schema migration while preserving every supplied non-schema field.
+
 # Source-bound tours and connected measured envelopes candidate
 
 Prepared after the owner-requested TestFlight 209.1 snapshot trigger (f0fbc7444b, run 39142067295). That delivery remains independent and must finish its own validation/upload/readiness gates.

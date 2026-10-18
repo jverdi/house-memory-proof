@@ -24,7 +24,11 @@ def check(plan, metadata, original=None):
     require(proof.get('metadataEncoding') == 'swift-json-sorted-keys-v1', 'Unknown metadata encoding')
     require(proof.get('sourceMetadataSHA256') == digest(metadata), 'Metadata digest differs')
     if original is not None:
-        require(preserved(original, source), 'Native metadata changed supplied source fields')
+        retained=dict(original)
+        # House upgrades older schemas in memory; the input file remains intact.
+        if type(retained.get('schema')) is int and 1<=retained['schema']<=5 and source.get('schema')==5:
+            retained['schema']=5
+        require(preserved(retained, source), 'Native metadata changed supplied source fields')
     assets = sorted(required_assets(source))
     require(proof.get('sourceAssets') == assets, 'Original asset inventory differs')
     package = 'tour-package-v1\n'+digest(metadata)+'\n'+'\n'.join(assets)+'\n'

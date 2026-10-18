@@ -33,6 +33,12 @@ class TourSourceContracts(unittest.TestCase):
         with self.assertRaises(ValueError):check(self.plan,self.raw,changed)
         supplied=dict(revision=self.house['revision'])
         self.assertTrue(check(self.plan,self.raw,supplied)['passed'])
+        legacy=copy.deepcopy(self.house);legacy['schema']=1
+        current=copy.deepcopy(self.house);current['schema']=5
+        raw=json.dumps(current,sort_keys=True).encode();migrated=copy.deepcopy(self.plan)
+        proof=migrated['provenance'];proof['sourceMetadataSHA256']=digest(raw)
+        proof['sourcePackageSHA256']=digest(('tour-package-v1\n'+digest(raw)+'\n'+'\n'.join(proof['sourceAssets'])+'\n').encode())
+        self.assertTrue(check(migrated,raw,legacy)['passed'])
         missing=copy.deepcopy(self.plan);missing.pop('provenance')
         with self.assertRaises(ValueError):check(missing,self.raw,self.house)
 

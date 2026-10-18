@@ -8,3 +8,5 @@ cp build/synthetic-house/generator.json build/evidence/synthetic-house-generator
 
 build/simulation-env/bin/python tooling/simulation/vision_fixture.py build/vision-fixture
 cp build/vision-fixture/vision-map.hxray build/vision-fixture/vision-queries.json build/vision-fixture/vision-query-*.jpg HouseMemoryProof/IFC/
+
+python3 tooling/prepare_compatibility.py HouseMemoryProof/IFC/compatibility-161-1.hxray > build/evidence/compatibility-fixture.json

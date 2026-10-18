@@ -491,7 +491,7 @@ struct ExploreView: View {
           }
         }
         .sheet(isPresented: $editor) { if let f = selectedFeature { FeatureEditor(feature: f) } }
-        .sheet(item:$boundarySegment) { segment in BoundaryEditor(house:house,segment:segment,points:controller.points,cameraPosition:V3(ar:controller.camera.simdPosition)) }
+        .sheet(item:$boundarySegment) { segment in BoundaryEditor(house:house,segment:segment,points:controller.points,sourceFeatureIDs:controller.pointFeatureIDs,cameraPosition:V3(ar:controller.camera.simdPosition)) }
         .sheet(isPresented: $saveRoute) {
           NavigationStack {
             Form {
@@ -553,6 +553,7 @@ struct FeatureEditor: View {
           if let envelope=feature.envelope {
             Text("Recorded \(envelope.section.rawValue.lowercased()) outer size: \((envelope.widthMetres*1000).formatted()) mm"+(envelope.heightMetres.map{" × \(($0*1000).formatted()) mm"} ?? "")).font(.caption).accessibilityIdentifier("service-envelope-size")
             Text(envelope.evidence).font(.caption).accessibilityIdentifier("service-envelope-evidence")
+            Text(envelope.sourceEndInterval.map{"Recorded source intervals \(envelope.sourceInterval+1)–\($0+1) · constant diameter · mitered bends"} ?? "Recorded source interval \(envelope.sourceInterval+1)").font(.caption)
             Text(envelope.dimensionToleranceMetres.map{"Recorded size tolerance ± \(($0*1000).formatted()) mm; centerline uncertainty remains unknown."} ?? "Dimension tolerance and centerline uncertainty remain unknown.").font(.caption)
           }else if (2...128).contains(feature.route.count),[EvidenceKind.observed,.synthetic].contains(feature.kind),let house=model.house,let current=house.features.first(where:{$0.id==feature.id}) {
             NavigationLink("Record a service envelope") {ServiceEnvelopePage(source:current,projectID:house.id)}

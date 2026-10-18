@@ -1,4 +1,37 @@
 import Foundation
+import CryptoKit
+
+// A picked rectangle depends on its selected geometry and coordinate frame.
+// Additional observations can improve coverage without moving those sources.
+enum BoundaryEvidence {
+  private struct Signature:Codable {
+    var profile="picked-boundary-source-v1"
+    var segmentID:UUID;var roomID:UUID;var stageID:UUID;var registration:Rigid?
+    var geometry:[AnnotationDependency]
+  }
+  static func fingerprint(house:House,segment:Segment,sources:[UUID])throws->String {
+    guard (1...3).contains(sources.count),Set(sources).count==sources.count else{throw HouseError.message("Choose the boundary corners on current observed geometry.")}
+    let current=DerivedEvidence.currentIDs(house)
+    for id in sources {
+      guard current.contains(id),let feature=house.features.first(where:{$0.id==id}),
+        feature.roomID==segment.roomID,feature.stageID==segment.stageID,
+        feature.kind == .observed || (house.isDemo && feature.kind == .synthetic),
+        feature.segmentID==segment.id || (segment.registration != nil && feature.segmentID.flatMap{sid in house.segments.first{$0.id==sid}?.registration} != nil)
+      else{throw HouseError.message("Boundary corners need current observed geometry in the same room, stage and checked coordinate frame.")}
+    }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let signature=Signature(segmentID:segment.id,roomID:segment.roomID,stageID:segment.stageID,registration:segment.registration,
+      geometry:DerivedEvidence.dependencies(sources.sorted{$0.uuidString<$1.uuidString},house:house))
+    return SHA256.hash(data:try encoder.encode(signature)).map{String(format:"%02x",$0)}.joined()
+  }
+  static func bind(_ boundary:RevealBoundary,sources:[UUID],house:House)throws->RevealBoundary {
+    guard boundary.valid,let segment=house.segments.first(where:{$0.id==boundary.segmentID}) else{throw HouseError.message("The boundary capture frame is unavailable.")}
+    var result=boundary
+    result.sourceFingerprint=try fingerprint(house:house,segment:segment,sources:sources)
+    result.sourceGeometry=DerivedEvidence.dependencies(sources.sorted{$0.uuidString<$1.uuidString},house:house)
+    return result
+  }
+}
 
 // Exact polygon clipping keeps the opposite wall outside a reveal, including
 // triangles crossing the boundary. UVs are interpolated at new vertices.
@@ -31,7 +64,13 @@ enum RevealVolumes {
     result.mesh=mesh;result.uv=feature.uv == nil ? nil : uv;result.route=[];return result
   }
   static func current(_ boundary:RevealBoundary,house:House)->Bool {
-    guard boundary.valid,let segment=house.segments.first(where:{$0.id==boundary.segmentID}),let fingerprint=try? VisualMapping.fingerprint(house:house,segment:segment) else{return false}
+    guard boundary.valid,let segment=house.segments.first(where:{$0.id==boundary.segmentID}) else{return false}
+    if let geometry=boundary.sourceGeometry {
+      guard geometry==DerivedEvidence.dependencies(geometry.map{$0.featureID},house:house),
+        let fingerprint=try? BoundaryEvidence.fingerprint(house:house,segment:segment,sources:geometry.map{$0.featureID}) else{return false}
+      return fingerprint==boundary.sourceFingerprint
+    }
+    guard let fingerprint=try? VisualMapping.fingerprint(house:house,segment:segment) else{return false}
     return fingerprint==boundary.sourceFingerprint
   }
 }

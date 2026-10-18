@@ -95,7 +95,7 @@ enum DrawingSuggestions {
     return result
   }
 }
-#if DEBUG
+// The owner can run synthetic diagnostics in the signed TestFlight app.
 enum DrawingMarkTestFixture {
   static func pdf()->Data {
     UIGraphicsPDFRenderer(bounds:CGRect(x:0,y:0,width:900,height:650)).pdfData{context in
@@ -109,5 +109,4 @@ enum DrawingMarkTestFixture {
     }
   }
 }
-#endif
 #endif

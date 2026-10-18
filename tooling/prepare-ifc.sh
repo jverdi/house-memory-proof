@@ -6,3 +6,5 @@ cp build/ifc-runtime/node_modules/web-ifc/web-ifc.wasm HouseMemoryProof/IFC/
 cp build/ifc-runtime/node_modules/web-ifc/LICENSE.md HouseMemoryProof/IFC/
 cp build/ifc-runtime/package-lock.json build/evidence/ifc-package-lock.json
 cp fixtures/block.ifc HouseMemoryProof/IFC/test-block.ifc
+
+python3 tooling/ifc/geometry_fixtures.py HouseMemoryProof/IFC/test-geometry.json

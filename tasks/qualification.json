@@ -716,23 +716,37 @@
     "interfaceFlowSeconds": 50.902
   },
   "requestedSnapshot": {
-    "status": "requested_not_yet_uploaded",
+    "status": "replacement_validation_requested_after_release_source_audit",
     "implementationSource": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
     "validatedRun": 39138960576,
     "ownerRequest": "Also please trigger a new TestFlight",
     "fullyQualifiedRelease": false,
     "appleProcessingVerified": false,
     "internalTesterAccessVerified": false,
-    "physicalInstallationVerified": false
+    "physicalInstallationVerified": false,
+    "initialAttempt": {
+      "source": "f0fbc7444bb65a61f71f57174137fb2db3ebbf0c",
+      "run": 39142067295,
+      "build": "209.1",
+      "nativeChecksPassed": 163,
+      "readerChecksPassed": 15,
+      "nativeArtifact": 12142631146,
+      "nativeArtifactSHA256": "eabf0e0fada4b69088c0b1ae9a8145ef839c6e68fbf1a585cc7b46144d625276",
+      "appleUploadVerified": false,
+      "sourceAuditIssue": "Release self-tests reference a DEBUG-only drawing fixture"
+    }
   },
   "pendingContinuation": {
     "scope": [
       "source-and-profile-bound deterministic TourPlan",
       "connected circular measured envelope geometry and selection",
-      "independent package/profile and envelope readers"
+      "independent package/profile and envelope readers",
+      "geometry-bound capture boundaries with stale-source refusals",
+      "authentic earlier-writer archive restore and current re-export",
+      "Release configuration and bundled diagnostic fixture repair"
     ],
-    "localCommandContractsPassed": 39,
-    "expectedNativeChecks": 165,
+    "localCommandContractsPassed": 40,
+    "expectedNativeChecks": 167,
     "expectedUIFlows": 12,
     "nativeValidated": false,
     "physicalQualification": false

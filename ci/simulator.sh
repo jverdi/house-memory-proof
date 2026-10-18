@@ -3,14 +3,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
 mode="${1:-all}"
-case "$mode" in all|prepare|compile|verify|exercise|native|recovery|ui) ;; *) echo 'Expected all, prepare, compile, verify, exercise, native, recovery or ui'; exit 2;; esac
+case "$mode" in all|prepare|compile|release|verify|exercise|native|recovery|ui) ;; *) echo 'Expected all, prepare, compile, release, verify, exercise, native, recovery or ui'; exit 2;; esac
 native_failed=0
 if [ "$mode" = all ] || [ "$mode" = prepare ]; then
 python3 tooling/project.py
 git diff --exit-code -- HouseMemoryProof.xcodeproj/project.pbxproj
 bash tooling/prepare-ifc.sh
 node tooling/ifc/test_runtime.cjs
-python3 tooling/ifc/geometry_fixtures.py HouseMemoryProof/IFC/test-geometry.json
 node tooling/ifc/test_geometry_runtime.cjs
 node tooling/test_tour_framing.cjs
 bash tooling/prepare-simulation.sh
@@ -22,6 +21,18 @@ cp build/ceres/CERES-LICENSE.txt build/ceres/EIGEN-LICENSE.txt HouseMemoryProof/
 cp build/opencv/LICENSE HouseMemoryProof/IFC/OPENCV-LICENSE.txt
 fi
 if [ "$mode" = prepare ]; then exit 0; fi
+if [ "$mode" = release ]; then
+  # Distribution conditional compilation must pass before an owner upload.
+  # This compiles device code without signing or any Apple account operation.
+  python3 ci/run_bounded.py 600 xcodebuild build \
+    -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
+    -configuration Release -destination 'generic/platform=iOS' \
+    -derivedDataPath build/ReleaseValidation CODE_SIGNING_ALLOWED=NO \
+    CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}" \
+    PROOF_SOURCE_REVISION="$(git rev-parse --short=10 HEAD)" \
+    2>&1 | tee build/evidence/release-build.log
+  exit 0
+fi
 xcodebuild -version | tee build/evidence/xcode-version.txt
 xcrun simctl list devices available --json > build/evidence/simulator-inventory.json
 device_id="$(python3 - <<'PY'
@@ -128,7 +139,7 @@ if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build
 if [ -f "$app_root/photo-curve-viewer.html" ]; then cp "$app_root/photo-curve-viewer.html" build/command-private/photo-curve-viewer.html; fi
 cp -R "$app_root/incremental-v2" build/evidence/incremental-v2
 # Retain diagnostics before failing if the encoder did not produce a movie.
-for media in native-service-tour.json native-ifc-geometry.json native-tour-reveal.json native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
+for media in native-compatibility.json native-boundary-source.json native-service-tour.json native-ifc-geometry.json native-tour-reveal.json native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png

@@ -4,7 +4,7 @@ import simd
 struct BoundaryEditor:View {
   @EnvironmentObject var model:AppModel
   @Environment(\.dismiss) var dismiss
-  var house:House;var segment:Segment;var points:[V3];var cameraPosition:V3
+  var house:House;var segment:Segment;var points:[V3];var sourceFeatureIDs:[UUID];var cameraPosition:V3
   @State private var name="Wall section"
   @State private var depth=0.20
   @State private var finish=0.0125
@@ -41,7 +41,8 @@ struct BoundaryEditor:View {
     let p=points.map{inverse.apply($0)};let x=(p[1]-p[0]).normalized;var y=(p[2]-p[0])-x*x.dot(p[2]-p[0]);let height=y.length;y=y.normalized
     let towardCamera=x.cross(y).dot(inverse.apply(cameraPosition)-p[0])>0
     var origin=p[0];if towardCamera != flip {origin=origin+y*height;y=y * -1}
-    let b=RevealBoundary(name:name.isEmpty ? "Wall section":name,segmentID:segment.id,origin:origin,horizontal:x,vertical:y,width:(p[1]-p[0]).length,height:height,depth:depth,finishOffset:finish,sourceFingerprint:try VisualMapping.fingerprint(house:house,segment:segment))
-    guard b.valid else{throw HouseError.message("Choose three separated, non-collinear corners on the same wall or ceiling plane.")};return b
+    let b=RevealBoundary(name:name.isEmpty ? "Wall section":name,segmentID:segment.id,origin:origin,horizontal:x,vertical:y,width:(p[1]-p[0]).length,height:height,depth:depth,finishOffset:finish,sourceFingerprint:"")
+    guard b.valid else{throw HouseError.message("Choose three separated, non-collinear corners on the same wall or ceiling plane.")}
+    return try BoundaryEvidence.bind(b,sources:sourceFeatureIDs,house:house)
   }
 }
