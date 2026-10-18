@@ -167,7 +167,7 @@ def drawing_mark_check(mark):
     require(numeric(mark.get('rawScore')) and 0<=mark['rawScore']<=1,'Invalid drawing detector score')
 
 
-def envelope_check(value,feature=None):
+def envelope_check(value,feature=None,*,iso_dates=False):
     if value is None:return
     require(isinstance(value,dict) and type(value.get('version')) is int and value['version']==1,'Invalid envelope version')
     source=identity(value.get('sourceFeatureID'))
@@ -181,7 +181,12 @@ def envelope_check(value,feature=None):
     tolerance=value.get('dimensionToleranceMetres')
     require(tolerance is None or (numeric(tolerance) and 0<tolerance<min(width,height or width)/2),'Invalid size tolerance')
     evidence=value.get('evidence');require(isinstance(evidence,str) and bool(evidence.strip()) and len(evidence.encode('utf-8'))<=4096 and '\0' not in evidence,'Missing envelope measurement evidence')
-    require(numeric(value.get('recorded')),'Invalid measurement date')
+    recorded=value.get('recorded')
+    if iso_dates:
+        require(isinstance(recorded,str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',recorded),'Invalid CSV measurement date')
+        try:datetime.datetime.strptime(recorded,'%Y-%m-%dT%H:%M:%SZ')
+        except ValueError:raise InvalidPackage('Invalid CSV measurement date') from None
+    else:require(numeric(recorded),'Invalid measurement date')
     if feature is None:return
     require(feature.get('kind') in ['observed','synthetic'] and source!=identity(feature['id']),'Invalid envelope evidence kind or self-reference')
     dependencies=feature.get('annotationSources')

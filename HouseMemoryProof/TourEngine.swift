@@ -22,6 +22,8 @@ struct TourShot: Codable {
   var endPitch: Double? = nil
   var layerMode:String?=nil
   var tradeNames:[String]?=nil
+  var subject:TourSubject?=nil
+  var includesPlannedGeometry:Bool?=nil
 }
 struct TourPlan: Codable {
   var schema = 1
@@ -33,9 +35,10 @@ struct TourPlan: Codable {
   var width = 1920
   var height = 1080
   var motionProfile:String?="camera-motion-v1"
+  var framingProfile:String?=TourFraming.profile
 }
 enum TourDirector {
-  static func plan(_ h: House, duration: Double = 20, options: SceneOptions = SceneOptions(),preset:TourPreset = .overview)
+  static func plan(_ h: House, duration: Double = 20, options: SceneOptions = SceneOptions(),preset:TourPreset = .overview,aspect:Double=16.0/9)
     -> TourPlan
   {
     if preset != .overview {
@@ -47,7 +50,7 @@ enum TourDirector {
       }
       var shots:[TourShot]=[],excluded:[String]=[]
       for (label,scope) in variants {
-        let part=plan(h,duration:20,options:scope)
+        let part=plan(h,duration:20,options:scope,aspect:aspect)
         excluded += part.excluded.map{label+": "+$0}
         for var shot in part.shots {shot.layerMode=scope.mode.rawValue;shot.tradeNames=scope.trades.map{$0.rawValue}.sorted();shot.caption += " · "+label;shots.append(shot)}
       }
@@ -63,7 +66,8 @@ enum TourDirector {
       let count=max(1,shots.count),base=frames/count,remainder=frames%count
       for i in shots.indices {shots[i].duration=Double(base+(i<remainder ? 1:0))/30}
       let bounded=boundedMotion(shots);if bounded.cuts>0 {excluded.append("\(bounded.cuts) movements replaced by viewpoint cuts to keep camera motion within the requested duration.")}
-      return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(bounded.shots),excluded:excluded)
+      let framed=TourFraming.apply(bounded.shots,house:h,options:options,aspect:aspect)
+      return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(framed.shots),excluded:excluded+framed.excluded)
     }
     let observations=PoseRefinement.selectedForHouse(h)
     var shots: [TourShot] = []
@@ -136,7 +140,8 @@ enum TourDirector {
     let count=max(1,shots.count),base=frames/count,remainder=frames%count
     for i in shots.indices {shots[i].duration=Double(base+(i<remainder ? 1:0))/30}
     let bounded=boundedMotion(shots);if bounded.cuts>0 {excluded.append("\(bounded.cuts) movements replaced by viewpoint cuts to keep camera motion within the requested duration.")}
-    return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(bounded.shots),excluded:excluded)
+    let framed=TourFraming.apply(bounded.shots,house:h,options:options,aspect:aspect)
+    return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(framed.shots),excluded:excluded+framed.excluded)
   }
   // Cubic smoothstep reaches 1.5*d/T speed and 6*d/T² acceleration.
   // Limits apply within a shot; disconnected shots remain explicit cuts.
@@ -206,6 +211,7 @@ enum TourDirector {
     let t = max(0, min(1, phase))
     let smooth = t * t * (3 - 2 * t)
     guard let end = shot.endPosition else {
+      if shot.subject != nil {return (shot.position,shot.yaw,shot.pitch)}
       let duration=max(0,shot.duration/max(1e-12,shot.endPhase-shot.startPhase))
       let amplitude=min(0.65,min(0.6*duration/Double.pi,1.2*duration*duration/(Double.pi*Double.pi)))
       return (shot.position, shot.yaw + sin(t * Double.pi) * amplitude, shot.pitch)
@@ -237,7 +243,7 @@ struct MovieEncoderTimeout: LocalizedError {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v14-bounded-camera-motion", options.mode.rawValue,
+      "renderer-v15-framed-subjects", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
@@ -306,11 +312,11 @@ struct MovieEncoderTimeout: LocalizedError {
     progress: @escaping (Double) -> Void
   ) async throws -> URL {
     try Task.checkCancellation()
-    var plan = TourDirector.plan(house, duration: duration, options: options,preset:preset)
+    var plan = try await LocalWorker.run{TourDirector.plan(house,duration:duration,options:options,preset:preset,aspect:Double(width)/Double(height))}
     plan.width = width
     plan.height = height
     guard !plan.shots.isEmpty else {
-      throw HouseError.message("A tour needs a captured viewpoint or the synthetic sample house.")
+      throw HouseError.message("A tour needs a clear captured viewpoint with visible geometry. Check the omitted areas in the preview.")
     }
     guard repo.freeBytes() > 800_000_000 else {
       throw HouseError.message("Free at least 800 MB for movie segments and the final file.")
@@ -360,7 +366,7 @@ struct MovieEncoderTimeout: LocalizedError {
             stage: shot.layerMode==nil ? options.stage:nil))
         let camera = SceneBuilder.camera(at: shot.position, yaw: shot.yaw, pitch: shot.pitch)
         scene.rootNode.addChildNode(camera)
-        let provenance=(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
+        let provenance=(shot.includesPlannedGeometry==true ? "PLANNED GEOMETRY INCLUDED · ":"")+(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
         let renderer=try MovieFrameRenderer(scene:scene,camera:camera,width:width,height:height,title:shot.caption,provenance:provenance)
         let writer = try AVAssetWriter(outputURL: candidate, fileType: .mp4)
         let input = AVAssetWriterInput(

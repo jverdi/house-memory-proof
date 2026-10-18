@@ -1691,6 +1691,56 @@ import simd
                 let a=TourDirector.camera(shot,phase:0),m=TourDirector.camera(shot,phase:0.5),b=TourDirector.camera(shot,phase:1)
                 return a.0==V3() && b.0==V3(1,0,0) && abs(m.0.x-0.5)<1e-10 && abs(m.1-Double.pi)<1e-10 && abs(m.2-0.1)<1e-10
             }
+            await check("Tour sightlines use exact triangles and framing rejects near offscreen and behind-camera subjects") {
+                let h=House.empty("Sightline fixture"),triangle=Mesh(vertices:[V3(-2,2,-2),V3(2,2,-2),V3(-2,2,2)],triangles:[0,1,2])
+                let feature=Feature(name:"Diagonal face",trade:.structure,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.synthetic,mesh:triangle)
+                let sightlines=TourSightlines(features:[feature],house:h),limited=TourSightlines(features:[feature],house:h,limit:0)
+                guard sightlines.visible(from:V3(),to:V3(1.5,3,1.5)),!sightlines.visible(from:V3(),to:V3(-1,3,-1)),
+                  sightlines.visible(from:V3(),to:V3(-0.5,2,-0.5)),!limited.visible(from:V3(),to:V3(1.5,3,1.5)) else{return false}
+                let camera=(V3(),0.0,0.0)
+                guard TourFraming.inFrame(V3(0,1,0),camera:camera),TourFraming.inFrame(V3(0.4,1,0),camera:camera),
+                  !TourFraming.inFrame(V3(0.4,1,0),camera:camera,aspect:0.5),
+                  ![V3(0,-1,0),V3(0,0.2,0),V3(2,1,0),V3(0,1,1),V3(0,31,0)].contains(where:{TourFraming.inFrame($0,camera:camera)}) else{return false}
+                guard TourFraming.inFrame(V3(-2,0,0),camera:(V3(),Double.pi/2,0)),TourFraming.inFrame(V3(0,1,1),camera:(V3(),0,Double.pi/4)) else{return false}
+                // Near-camera clutter must not consume the bounded candidate
+                // search before a useful farther subject is considered.
+                var crowded=House.empty("Subject search budget");crowded.isDemo=true
+                for _ in 0..<30 {crowded.features.append(Feature(name:"Near points",trade:.unknown,roomID:crowded.rooms[0].id,stageID:crowded.stages[0].id,kind:.synthetic,mesh:Mesh(vertices:Array(repeating:V3(0,0.1,0),count:8),triangles:[])))}
+                let distant=Feature(name:"Useful point",trade:.unknown,roomID:crowded.rooms[0].id,stageID:crowded.stages[0].id,kind:.synthetic,mesh:Mesh(vertices:[V3(0,2,0)],triangles:[]))
+                crowded.features.append(distant)
+                let shot=TourShot(roomID:crowded.rooms[0].id,position:V3(),yaw:0,pitch:0,caption:"Budget fixture",duration:5)
+                let selected=TourFraming.apply([shot],house:crowded,options:SceneOptions())
+                return selected.shots.count==1 && selected.shots[0].subject?.featureID==distant.id
+            }
+            await check("Automatic tours retain a source-linked visible subject for every output frame") {
+                let h=try SimulatedCapture.make(repo:repo),plan=TourDirector.plan(h,duration:10)
+                guard plan.framingProfile==TourFraming.profile,!plan.shots.isEmpty,plan.shots.reduce(0,{$0+Int(($1.duration*30).rounded())})==300 else{return false}
+                let sightlines=TourSightlines(features:SceneBuilder.features(h,options:SceneOptions()),house:h)
+                for shot in plan.shots {
+                    guard let subject=shot.subject,h.features.contains(where:{$0.id==subject.featureID && $0.revision==subject.featureRevision}),
+                      TourFraming.check(shot,sightlines:sightlines,steps:max(1,Int((shot.duration*30).rounded()))) else{return false}
+                }
+                let decoded=try JSONDecoder().decode(TourPlan.self,from:JSONEncoder().encode(plan))
+                guard decoded.shots.map({$0.subject})==plan.shots.map({$0.subject}) else{return false}
+                var planned=h;planned.features[0].kind = .planned
+                let design=TourDirector.plan(planned,duration:5)
+                guard !design.shots.isEmpty,design.shots.allSatisfy({$0.includesPlannedGeometry==true}) else{return false}
+                let report:[String:Any]=["passed":true,"analyticOnly":true,"physicalQualification":false,"frames":300,"shots":plan.shots.count,"allRenderedFrameSubjectsVisible":true,"sourceLinked":true,"rawTargetRecordsPublished":false,"fullRoomCoverageQualified":false]
+                try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]).write(to:mainRepo.root.appendingPathComponent("native-tour-framing.json"))
+                return true
+            }
+            await check("Moving subject occlusion requires a cut and overly close geometry does not produce a blank tour") {
+                var h=try SimulatedCapture.make(repo:repo)
+                let obstacle=Feature(name:"Foreground obstacle",trade:.structure,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.synthetic,mesh:.box(center:V3(0,1,1.4),size:V3(0.1,0.02,0.5)))
+                let sightlines=TourSightlines(features:[obstacle],house:h)
+                let subject=TourSubject(featureID:h.features[0].id,featureRevision:h.features[0].revision,point:V3(0,2,1.4))
+                let moving=TourFraming.framed(TourShot(roomID:h.rooms[0].id,position:V3(-0.4,0,1.4),yaw:0,pitch:0,caption:"Occluded move",duration:5,endPosition:V3(0.4,0,1.4),endYaw:0,endPitch:0),subject:subject)
+                guard !TourFraming.check(moving,sightlines:sightlines,steps:150),TourFraming.check(TourFraming.held(moving),sightlines:sightlines,steps:150) else{return false}
+                for i in h.observations.indices {h.observations[i].camera[3]=0}
+                h.features[0].mesh = .box(center:V3(0,0.2,1.4),size:V3(0.01,0.01,0.01))
+                let plan=TourDirector.plan(h,duration:5)
+                return plan.shots.isEmpty && plan.excluded.contains(where:{$0.contains("framing and distance limits")})
+            }
             await check("Tour cache separates layers and projects"){let plan=TourDirector.plan(house);let a=try MovieExporter.cacheKey(house:house,plan:plan,options:SceneOptions());let b=try MovieExporter.cacheKey(house:house,plan:plan,options:SceneOptions(mode:.finished));var other=house;other.id=UUID();let c=try MovieExporter.cacheKey(house:other,plan:plan,options:SceneOptions());return a != b && a != c}
             await check("Walk collision and explicit doorway"){NavigationGeometry.allowed(V3(3,2,1.6),house:house) && !NavigationGeometry.allowed(V3(3,-0.1,1.6),house:house) && NavigationGeometry.allowed(V3(6.1,2.2,1.6),house:house) && !NavigationGeometry.allowed(V3(6.1,1,1.6),house:house)}
             await check("SceneKit offscreen render"){let scene=SceneBuilder.scene(house,options:SceneOptions());let camera=SceneBuilder.camera(at:V3(13,-12,12));camera.look(at:SCNVector3(4,1,-2));scene.rootNode.addChildNode(camera);let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene;renderer.pointOfView=camera;let image=renderer.snapshot(atTime:0,with:CGSize(width:480,height:320),antialiasingMode:.none);try image.pngData()?.write(to:mainRepo.root.appendingPathComponent("test-render.png"));return image.cgImage.map{CaptureController.sharpness($0)>0.002} ?? false}

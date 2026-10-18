@@ -165,6 +165,7 @@ enum SceneBuilder {
     n.camera = SCNCamera()
     n.camera?.zNear = 0.03
     n.camera?.zFar = 150
+    n.camera?.projectionDirection = .vertical
     n.camera?.fieldOfView = 65
     n.simdPosition = p.render
     n.eulerAngles = SCNVector3(Float(pitch), Float(yaw), 0)

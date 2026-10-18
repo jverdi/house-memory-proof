@@ -1,5 +1,5 @@
 """Inspect native envelope dimensions, export coordinates and provenance privately."""
-import csv,json,struct,sys,zipfile
+import csv,datetime,json,struct,sys,zipfile
 from pathlib import Path
 from package_check import check_package
 from interchange_check import semantic_csv
@@ -32,8 +32,15 @@ with (root/'service-envelopes.csv').open(newline='') as source:
     rows=[row for row in csv.DictReader(source) if row['record_type']=='feature']
 assert len(rows)==len(features)
 for row in rows:
-    assert json.loads(row['provenance_json']).get('envelope')==features[row['id']].get('envelope')
+    exported=json.loads(row['provenance_json']).get('envelope');original=features[row['id']].get('envelope')
+    if original is None:assert exported is None;continue
+    exported=dict(exported);original=dict(original)
+    # Semantic CSV uses ISO 8601 whole seconds; the archive retains the full
+    # Foundation reference-date value. Compare the instant at CSV resolution.
+    recorded=datetime.datetime.strptime(exported.pop('recorded'),'%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc).timestamp()
+    assert abs(recorded-(original.pop('recorded')+978307200))<1
+    assert exported==original
 aggregate=dict(passed=True,reader='Independent Python service-envelope archive GLB and CSV readers',
     sections=2,sourceCenterlinesPreserved=True,declaredDimensionsVerified=True,sourceDependenciesPreserved=True,
-    maximumExportCoordinateErrorMetres=maximum,toleranceIsSizeOnly=True,sourceRecordsPublished=False,physicalQualification=False)
+    maximumExportCoordinateErrorMetres=maximum,csvDateResolutionSeconds=1,measurementInstantPreserved=True,toleranceIsSizeOnly=True,sourceRecordsPublished=False,physicalQualification=False)
 out.write_text(json.dumps(aggregate,indent=2)+'\n');print(json.dumps(aggregate))

@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
+  "currentImplementationCommit": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -27,7 +27,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "6033 passes 152/153 native checks, 10/11 UI flows, three recoveries, 50 portable cases and 23 reader reports. All new drawing/envelope/IFC UI flows pass. Follow-up repairs the order-dependent store assertion and the photo-curve reveal helper, and adds coverage/IFC4.3 validation (156 native/11 UI expected). Five native-phase readers, command contracts and native CLI checks were skipped."
+      "remaining": "3c08 passes 156/156 native checks, 10/11 UI flows, three recoveries, 50 portable cases, 31 command contracts, both native CLI commands and 27 reader reports. The next candidate repairs the envelope CSV date reader and offscreen evidence-row UI assertion, and adds source-linked tour framing (159 native/11 UI expected)."
     },
     {
       "area": "finished localization",
@@ -55,27 +55,30 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Commit and validate coverage diagnostics, IFC4.3 fixtures, project-identity store assertions and bidirectional photo-curve UI reveal (156 native/11 UI expected). Continue the separately prepared tour-subject framing work and remaining whole-house/persistence qualification; no sixth detector attempt or intermediate upload.",
+  "nextAction": "Commit and validate the envelope CSV/UI repairs and source-linked tour framing (159 native/11 UI expected), then continue remaining whole-house and persistence qualification. No sixth detector attempt or intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
-    "run": 39127165713,
-    "status": "Completed with order-dependent native store assertion and photo-curve UI scrolling failure",
-    "nativePassed": 152,
-    "nativeFailed": 1,
-    "nativeExecuted": 153,
-    "nativeExpected": 153,
+    "source": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
+    "run": 39129514824,
+    "status": "Completed with envelope CSV date reader and envelope UI evidence-row visibility failures",
+    "nativePassed": 156,
+    "nativeFailed": 0,
+    "nativeExecuted": 156,
+    "nativeExpected": 156,
     "integrationComplete": false,
-    "evidence": "docs/evidence/native-6033-summary.json",
+    "evidence": "docs/evidence/native-3c08-summary.json",
     "interfaceExpected": 11,
     "processKillPassed": 3,
     "interfacePassed": 10,
     "interfaceExecuted": 11,
-    "interfaceSeconds": 843.773,
-    "readerReportsPassed": 23,
+    "interfaceSeconds": 830.509,
+    "readerReportsPassed": 27,
+    "readerReportsFailed": 1,
     "portableCasesPassed": 50,
-    "commandContractsExecuted": false,
-    "nativeCLIExecuted": false
+    "commandContractsExecuted": true,
+    "commandContractsPassed": 31,
+    "nativeCLIExecuted": true,
+    "nativeCLIPassed": 2
   },
   "previousIntegratedAttempt": {
     "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -564,27 +567,31 @@
   "preparedCandidate": {
     "schema": 5,
     "actualPinnedIFCCasesPassed": 9,
-    "nativeExpected": 156,
+    "nativeExpected": 159,
     "interfaceExpected": 11,
     "accepted": false,
     "scope": [
-      "Independent per-patch coverage evidence and actionable gap prompts",
-      "IFC4X3 and IFC4X3_ADD2 documentary scaled CRS checks",
-      "Project-identity roundtrip and full-inventory rejected-save assertion",
-      "Frozen replay workflow compiled-dependency triggers",
-      "Bidirectional complete-image reveal in the photo point/curve interface test"
+      "Visible source-linked tour subjects checked at every frame",
+      "Exact triangle sightlines and useful target distances",
+      "Planned-geometry labels in shot previews and movies",
+      "Off-main cancellable tour planning and export subject identity",
+      "Format-specific envelope date validation in the independent CSV reader",
+      "Reveal the restored envelope evidence row before exact UI persistence assertions"
     ],
-    "localCommandContractsPassed": 31
+    "localCommandContractsPassed": 32,
+    "localTourReaderContractsPassed": 9
   },
   "coverageGuidanceCandidate": {
     "nativeChecksPrepared": 2,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "independentPhotoDepthCounters": true,
     "nextGapSelection": true,
     "physicalQualification": false,
     "closedLoopQualification": false,
     "semanticReviewQualified": false,
-    "thresholdsChanged": false
+    "thresholdsChanged": false,
+    "nativeChecksPassed": 2,
+    "validatedSource": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3"
   },
   "photoCurveInterfaceRepair": {
     "failedSource": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
@@ -592,6 +599,46 @@
     "pointSavePassed": true,
     "failure": "One-direction reveal scrolled the first image away after curve-mode reflow",
     "repair": "Short bidirectional moves bounded to 16 attempts, complete visible bounds required, screenshot on failure",
+    "assertionsRetained": true,
+    "validationPending": false,
+    "validatedSource": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
+    "fullWorkflowPassed": true
+  },
+  "tourFramingCandidate": {
+    "profile": "subject-frustum-v1",
+    "nativeChecksPrepared": 3,
+    "nativeValidationPending": true,
+    "independentReaderContractsPassed": 9,
+    "physicalQualification": false,
+    "fullPointOfInterestCoverageQualified": false,
+    "matchedComparisonChoreographyQualified": false,
+    "confirmedServiceRouteQualification": false,
+    "primitiveBudget": 500000,
+    "candidateBudget": 512,
+    "selectedCandidateBudget": 128
+  },
+  "frozenReplay3c08": {
+    "run": 39129514774,
+    "evidence": "docs/evidence/frozen-3c08-summary.json",
+    "artifactSHA256Verified": true,
+    "passed": true,
+    "compiledBinaryMatches6033": true,
+    "protectedDraw": false
+  },
+  "envelopeReaderRepair": {
+    "localRegressionReproduced": true,
+    "problem": "Semantic CSV emits ISO 8601 whole-second dates; the envelope reader required archive numeric dates",
+    "repair": "Validate CSV UTC dates explicitly and compare handoff instants at one-second representation resolution; retain strict numeric archive dates",
+    "localCommandContractsPassed": 32,
+    "nativeHandoffValidationPending": true,
+    "confirmedFailedSource": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
+    "confirmedFailure": "Invalid measurement date at tooling/package_check.py:184"
+  },
+  "envelopeInterfaceRepair": {
+    "failedSource": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
+    "restoredSizeVerified": true,
+    "problem": "Evidence row below viewport was queried before being realized",
+    "repair": "Bounded short scrolls require evidence row visibility before exact text comparison",
     "assertionsRetained": true,
     "validationPending": true
   }

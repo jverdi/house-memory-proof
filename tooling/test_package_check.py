@@ -116,7 +116,7 @@ class PortablePackageContracts(unittest.TestCase):
         for i in range(4):j=(i+1)%4;triangles += [i,j,i+4,j,j+4,i+4,8,j,i,9,i+4,j+4]
         envelope['mesh']=dict(vertices=vertices,triangles=triangles);self.house['features'].append(envelope);self.house['schema']=5
         archive(self.path,self.house,self.parts);self.assertTrue(check_package(self.path)['passed'])
-        for field,value in [('widthMetres',0),('heightMetres',True),('widthAxis',dict(x=1,y=0,z=0)),('dimensionToleranceMetres',.2),('evidence',''),('sourceRevision',2),('version',True)]:
+        for field,value in [('widthMetres',0),('heightMetres',True),('widthAxis',dict(x=1,y=0,z=0)),('dimensionToleranceMetres',.2),('evidence',''),('sourceRevision',2),('version',True),('recorded','2024-02-29T12:34:56Z')]:
             bad=copy.deepcopy(self.house);bad['features'][1]['envelope'][field]=value;archive(self.path,bad,self.parts)
             with self.assertRaises(InvalidPackage):check_package(self.path)
         for field in ['vertices','triangles']:

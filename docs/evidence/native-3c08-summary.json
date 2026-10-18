@@ -1,0 +1,284 @@
+{
+  "build": "204.1",
+  "date": "2026-10-18T13:06:44Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 156.28600654166667,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1337655296,
+    "physicalFootprintBytes": 133489344,
+    "residentBytes": 253870080
+  },
+  "sourceRevision": "3c08a2e8e5",
+  "systemVersion": "26.5",
+  "source": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
+  "run": 39129514824,
+  "nativeChecks": 156,
+  "nativePassed": 156,
+  "nativeFailures": [],
+  "artifact": {
+    "id": 12137259463,
+    "sha256": "5df5575cd5327b08d4618dc73430b1f150826ccdbef991e7dff3b26986c6d346",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": false,
+  "interfaceExpected": 11,
+  "interfaceStatus": "Completed with one envelope evidence-row visibility assertion failure",
+  "nativePhaseStatus": "All 156 native checks passed. Independent service-envelope CSV validation failed on its ISO 8601 date; all other reader and command checks passed.",
+  "additionalTestFlightUpload": false,
+  "physicalQualification": false,
+  "fullArtifact": {
+    "id": 12137938363,
+    "sha256": "787f70a038dbc2bd8a89e4105921bbc4c7104983ab6bd960b5ff98291723391a",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 11,
+  "interfacePassed": 10,
+  "interfaceSeconds": 830.509,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "passed": true,
+      "seconds": 65.347
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "passed": true,
+      "seconds": 57.565
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "passed": true,
+      "seconds": 59.944
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "passed": true,
+      "seconds": 32.755
+    },
+    {
+      "name": "testMeasuredEnvelopeSaveAndRelaunch",
+      "passed": false,
+      "seconds": 68.726
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "passed": true,
+      "seconds": 47.461
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "passed": true,
+      "seconds": 244.126
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "passed": true,
+      "seconds": 57.351
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "passed": true,
+      "seconds": 42.784
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "passed": true,
+      "seconds": 52.163
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "passed": true,
+      "seconds": 102.287
+    }
+  ],
+  "interfaceFailure": "The restored 50 mm size was verified while its row was only partially visible at the bottom of the screen. The immediately following evidence text was not yet realized; the test queried its label without scrolling it into view. Exact source text and persistence assertions are retained in the repair.",
+  "independentReaders": {
+    "archive-validation": {
+      "passed": true
+    },
+    "chunked-snapshot-validation": {
+      "passed": true
+    },
+    "drawing-marks-validation": {
+      "passed": true
+    },
+    "general-glb-validation": {
+      "passed": true
+    },
+    "general-obj-validation": {
+      "passed": true
+    },
+    "general-ply-validation": {
+      "passed": true
+    },
+    "general-points-usd-validation": {
+      "passed": true
+    },
+    "general-semantic-validation": {
+      "passed": true
+    },
+    "general-test-usd-validation": {
+      "passed": true
+    },
+    "general-textured-usd-validation": {
+      "passed": true
+    },
+    "house-surface-gltf-validation": {
+      "passed": true
+    },
+    "ifc-properties-validation": {
+      "passed": true
+    },
+    "ifc-source-gltf-validation": {
+      "passed": true
+    },
+    "ifc-source-validation": {
+      "passed": true
+    },
+    "mesh-interchange-validation": {
+      "passed": true
+    },
+    "offline-viewer-validation": {
+      "passed": true
+    },
+    "photo-curve-gltf-validation": {
+      "passed": true
+    },
+    "photo-curve-viewer-validation": {
+      "passed": true
+    },
+    "points-gltf-validation": {
+      "passed": true
+    },
+    "points-usd-validation": {
+      "passed": true
+    },
+    "portable-package-validation": {
+      "passed": true
+    },
+    "semantic-csv-validation": {
+      "passed": true
+    },
+    "service-envelope-gltf-validation": {
+      "passed": true
+    },
+    "test-gltf-validation": {
+      "passed": true
+    },
+    "test-usd-validation": {
+      "passed": true
+    },
+    "textured-gltf-validation": {
+      "passed": true
+    },
+    "textured-usd-validation": {
+      "passed": true
+    }
+  },
+  "readerCount": 27,
+  "readerFailure": "Service-envelope CSV reader required an archive numeric date instead of the CSV ISO 8601 representation.",
+  "commandReaderContracts": 31,
+  "commandContractTests": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 31,
+    "seconds": 2.10522641700004,
+    "exitCode": 0
+  },
+  "cliTour": {
+    "passed": true,
+    "command": "production native tour via CLI",
+    "shots": 12,
+    "frames": 150,
+    "previews": 8,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "cliReconstruction": {
+    "passed": true,
+    "command": "production native reconstruction via CLI",
+    "sessions": 1,
+    "originalsVerified": 19,
+    "vertices": 10956,
+    "independentArchivePassed": true,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "processRecovery": [
+    {
+      "powerLossQualified": false,
+      "recoveredExactlyOnce": true,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "verifiedAssets": 3,
+      "passed": true
+    },
+    {
+      "recoveredExactlyOnce": true,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "verifiedAssets": 3,
+      "powerLossQualified": false,
+      "passed": true
+    },
+    {
+      "passed": true,
+      "verifiedAssets": 19,
+      "powerLossQualified": false,
+      "fault": "SIGKILL inside schema transaction before COMMIT"
+    }
+  ],
+  "portableCases": 50,
+  "coverageGuidance": {
+    "analyticOnly": true,
+    "blurredViewsPerPatch": 2,
+    "compatibleDepthCameras": 8,
+    "darkViewsPerPatch": 2,
+    "obstructedViewsPerPatch": 1,
+    "oracleIsolatedQualification": false,
+    "passed": true,
+    "patches": 16,
+    "physicalQualification": false,
+    "projectedViewsPerPatch": 9,
+    "semanticReviewQualified": false,
+    "sourceRecordsPublished": false,
+    "supportedPatches": 16,
+    "unavailableDepthViewsPerPatch": 1,
+    "uncertainDepthViewsPerPatch": 1,
+    "unmatchedDepthViewsPerPatch": 1,
+    "usefulViewsPerPatch": 3
+  },
+  "drawingReader": {
+    "passed": true,
+    "reader": "Independent Python drawing archive reader",
+    "verifiedOriginals": 1,
+    "textSuggestions": 2,
+    "boundarySuggestions": 6,
+    "reviewRequired": true,
+    "sourcePageLinksPreserved": true,
+    "detectorProvenancePreserved": true,
+    "measuredGeometryCreated": false,
+    "sourceRecordsPublished": false,
+    "physicalQualification": false
+  },
+  "ifcPropertyReader": {
+    "passed": true,
+    "reader": "Independent Python archive property graph GLB and CSV readers",
+    "verifiedOriginals": 2,
+    "products": 2,
+    "convertedProducts": 1,
+    "storeys": 1,
+    "rawUnitsAndPropertiesPreserved": true,
+    "sourceObjectLinksPreserved": true,
+    "sourceHashesVerified": true,
+    "propertyGraphPublished": false,
+    "physicalQualification": false
+  },
+  "visualInspection": {
+    "photoCurveSavedWithTwoSourceTracks": true,
+    "envelopeEvidenceBelowViewportObserved": true
+  }
+}

@@ -156,7 +156,7 @@ def semantic_csv(path):
                 require(bool(row['segment_id'])==(provenance.get('segmentID') is not None),'CSV provenance coordinate frame differs')
         if kind=='feature':
             service_check(provenance.get('service'))
-            envelope_check(provenance.get('envelope'))
+            envelope_check(provenance.get('envelope'),iso_dates=True)
             coordinate_declaration_check(provenance.get('importedCoordinates'))
             ifc_coordinates_check(provenance.get('ifcSourceCoordinates'))
             if provenance.get('ifcSourceCoordinates') is not None:

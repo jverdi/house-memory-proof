@@ -323,7 +323,7 @@ enum Exporter {
       nodes.append([
         "name": f.name, "mesh": meshes.count - 1,
         "extras": [
-          "id": f.id.uuidString, "room": f.roomID.uuidString, "stage": f.stageID.uuidString,
+          "id": f.id.uuidString, "revision": f.revision, "room": f.roomID.uuidString, "stage": f.stageID.uuidString,
           "evidence": f.kind.rawValue, "trade": f.trade.rawValue, "notes": f.notes,
           "endpoint": f.endpoint, "reviewed": f.reviewed,
           "serviceDetails": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.service ?? ServiceDetails())),
@@ -367,7 +367,14 @@ enum Exporter {
     }
     var tour=TourDirector.plan(h,options:options)
     let exportedRooms=Set(features.map{$0.roomID})
-    tour.shots.removeAll{!exportedRooms.contains($0.roomID)}
+    let exportedFeatures=Set(features.map{$0.id})
+    // Room-scoped planning may select another unregistered session from the
+    // globally scoped export. Never retain a camera's subject without its mesh.
+    let originalShotCount=tour.shots.count
+    tour.shots.removeAll{shot in
+      !exportedRooms.contains(shot.roomID) || shot.subject.map{!exportedFeatures.contains($0.featureID)} != false
+    }
+    if tour.shots.count<originalShotCount {tour.excluded.append("\(originalShotCount-tour.shots.count) shots omitted because their subject is outside the exported coordinate frame.")}
     var cameras:[[String:Any]]=[],animations:[[String:Any]]=[],cameraNodes:[Int]=[]
     func appendFloats(_ values:[Float],type:String,count:Int,min:[Float]?=nil,max:[Float]?=nil)->Int {
       let offset=bin.count;for value in values{bin.float(value)}

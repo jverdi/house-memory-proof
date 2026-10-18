@@ -61,6 +61,19 @@ class InterchangeContracts(unittest.TestCase):
         path=self.path.with_suffix('.obj');path.write_text('mtllib ../private.mtl\nv 0 0 0\n')
         with self.assertRaisesRegex(InvalidPackage,'External OBJ'):mesh(path)
 
+    def test_csv_envelope_dates_use_iso8601_without_weakening_archive_dates(self):
+        from package_check import envelope_check
+        source=json.loads(self.rows[0]['provenance_json'])
+        envelope=dict(version=1,sourceFeatureID=str(uuid.uuid4()),sourceRevision=1,sourceInterval=0,
+            section='Round',widthMetres=.05,evidence='Synthetic outer size',recorded='2024-02-29T12:34:56Z')
+        source['envelope']=envelope
+        self.rows[0]['provenance_json']=json.dumps(source);self.write()
+        self.assertTrue(semantic_csv(self.path)['passed'])
+        with self.assertRaisesRegex(InvalidPackage,'date'):envelope_check(envelope)
+        for bad in [0,None,'2025-02-29T12:34:56Z','2024-02-29T12:34:56','not a date']:
+            envelope['recorded']=bad;self.rows[0]['provenance_json']=json.dumps(source);self.write()
+            with self.assertRaisesRegex(InvalidPackage,'date'):semantic_csv(self.path)
+
     def test_usdz_compression_and_alignment_fail_before_openusd(self):
         path=self.path.with_suffix('.usdz')
         for compression in [zipfile.ZIP_STORED,zipfile.ZIP_DEFLATED]:

@@ -73,6 +73,17 @@ jobs:
             build/evidence/native-self-test.json
             build/evidence/native-progress.json
             build/evidence/self-test-partial.json
+            build/evidence/native-reader-status.json
+            build/evidence/native-coverage-guidance.json
+            build/evidence/native-tour-framing.json
+            build/evidence/command-tests.json
+            build/evidence/cli-command-validation.json
+            build/evidence/cli-reconstruction-validation.json
+            build/evidence/ifc-source-validation.json
+            build/evidence/ifc-properties-validation.json
+            build/evidence/drawing-marks-validation.json
+            build/evidence/service-envelope-validation.json
+            build/evidence/portable-package-validation.json
             build/evidence/coded-reference-diagnostics.json
             build/evidence/coded-source-*.png
             build/evidence/metal-target.png

@@ -82,16 +82,10 @@ struct ToolsPage: View {
             }
           }.disabled(model.busy)
           NavigationLink("Preview shot list") {
-            List {
-              let plan=TourDirector.plan(house,duration:duration,options:options,preset:tourPreset)
-              ForEach(Array(plan.shots.enumerated()),id:\.offset){index,shot in
-                VStack(alignment:.leading){Text("\(index+1). \(shot.caption)");Text("\(shot.duration.formatted(.number.precision(.fractionLength(2)))) seconds").font(.caption)}
-              }
-              ForEach(Array(plan.excluded.enumerated()),id:\.offset){_,reason in Text(reason).font(.caption)}
-            }.navigationTitle("Automatic shots")
+            TourShotPreviewPage(house:house,options:options,preset:tourPreset,duration:duration)
           }
           Text(
-            "Automatic camera turns at captured viewpoints. Rooms use explicit cuts; no invented path through unknown walls. Keep the app open. Completed shots resume on retry."
+            "Shots frame visible geometry from captured viewpoints. Rooms and interrupted paths use cuts; the shot list explains omitted views. Keep the app open. Completed shots resume on retry."
           ).font(.footnote).foregroundStyle(.secondary)
         }
         Section("Reusable 3D") {
@@ -251,6 +245,43 @@ struct ToolsPage: View {
     } catch { model.error = error.localizedDescription }
   }
 }
+struct TourShotPreviewPage:View {
+  @Environment(\.scenePhase) private var scenePhase
+  let house:House
+  let options:SceneOptions
+  let preset:TourPreset
+  let duration:Double
+  @State private var plan:TourPlan?
+  @State private var failure=""
+  private var requestID:String {
+    [house.id.uuidString,String(house.revision),options.mode.rawValue,options.trades.map{$0.rawValue}.sorted().joined(separator:","),options.room?.uuidString ?? "all",options.stage?.uuidString ?? "all",String(options.ceilings),preset.rawValue,String(duration),String(describing:scenePhase)].joined(separator:"|")
+  }
+  var body:some View {
+    Group {
+      if let plan {
+        List {
+          ForEach(Array(plan.shots.enumerated()),id:\.offset){index,shot in
+            VStack(alignment:.leading){
+              Text("\(index+1). \(shot.caption)")
+              Text("\(shot.duration.formatted(.number.precision(.fractionLength(2)))) seconds").font(.caption)
+              if let id=shot.subject?.featureID,let feature=house.features.first(where:{$0.id==id}) {Text("Subject: "+feature.name).font(.caption)}
+              if shot.includesPlannedGeometry==true {Text("Includes planned geometry").font(.caption)}
+            }
+          }
+          ForEach(Array(plan.excluded.enumerated()),id:\.offset){_,reason in Text(reason).font(.caption)}
+        }
+      }else if !failure.isEmpty {Text(failure).padding()}
+      else {ProgressView("Planning visible camera shots")}
+    }.navigationTitle("Automatic shots").task(id:requestID) {
+      plan=nil;failure=""
+      guard scenePhase == .active else{return}
+      let snapshot=house,scope=options,choice=preset,seconds=duration
+      do {plan=try await LocalWorker.run{TourDirector.plan(snapshot,duration:seconds,options:scope,preset:choice)}}
+      catch is CancellationError {}catch{failure=error.localizedDescription}
+    }
+  }
+}
+
 struct PlansPage: View {
   @EnvironmentObject var model: AppModel
   var house: House

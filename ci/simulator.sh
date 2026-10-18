@@ -10,6 +10,7 @@ python3 tooling/project.py
 git diff --exit-code -- HouseMemoryProof.xcodeproj/project.pbxproj
 bash tooling/prepare-ifc.sh
 node tooling/ifc/test_runtime.cjs
+node tooling/test_tour_framing.cjs
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
 bash tooling/solver/build.sh ios
@@ -125,7 +126,7 @@ if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build
 if [ -f "$app_root/photo-curve-viewer.html" ]; then cp "$app_root/photo-curve-viewer.html" build/command-private/photo-curve-viewer.html; fi
 cp -R "$app_root/incremental-v2" build/evidence/incremental-v2
 # Retain diagnostics before failing if the encoder did not produce a movie.
-for media in test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
+for media in native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
@@ -139,16 +140,30 @@ if not r['passed']: raise SystemExit('Native diagnostic failures retained in nat
 PYTEST
 if [ "$native_failed" -eq 0 ]; then
   mkdir -p build/command-private
-  node tooling/ifc/test_coordinates.cjs || native_failed=1
-  node tooling/ifc/test_properties.cjs || native_failed=1
-  python3 tooling/ifc/check_source.py build/command-private build/evidence || native_failed=1
-  python3 tooling/ifc/check_properties.py build/command-private build/evidence || native_failed=1
-  python3 tooling/check_drawing_marks.py build/command-private/drawing-marks.hxray build/evidence/drawing-marks-validation.json || native_failed=1
-  python3 tooling/check_service_envelopes.py build/command-private build/evidence/service-envelope-validation.json || native_failed=1
-  python3 tooling/hm export-check --package build/evidence/test.hxray --output build/evidence/portable-package-validation.json || native_failed=1
-  python3 tooling/hm test --suite commands --output build/evidence/command-tests.json || native_failed=1
-  python3 tooling/hm tour --scene build/evidence/test.hxray --preset before-after --duration 5 --simulator "$device_id" --output build/command-private/tour > build/command-private/tour-result.json || native_failed=1
-  python3 - <<'PYCOMMAND' || native_failed=1
+  printf '[]\n' > build/evidence/native-reader-status.json
+  native_check() {
+    local label="$1" status=0
+    shift
+    if "$@"; then status=0; else status=$?; native_failed=1; fi
+    # Labels and exit codes only: retain the exact failing phase before the
+    # longer UI suite, without publishing private fixture records.
+    python3 - "$label" "$status" <<'PYSTATUS'
+import json,pathlib,sys
+path=pathlib.Path('build/evidence/native-reader-status.json')
+rows=json.loads(path.read_text());rows.append(dict(check=sys.argv[1],exitCode=int(sys.argv[2]),passed=sys.argv[2]=='0'))
+path.write_text(json.dumps(rows,indent=2)+'\n')
+PYSTATUS
+  }
+  native_check ifc-coordinate-contracts node tooling/ifc/test_coordinates.cjs
+  native_check ifc-property-contracts node tooling/ifc/test_properties.cjs
+  native_check ifc-source-reader python3 tooling/ifc/check_source.py build/command-private build/evidence
+  native_check ifc-property-reader python3 tooling/ifc/check_properties.py build/command-private build/evidence
+  native_check drawing-reader python3 tooling/check_drawing_marks.py build/command-private/drawing-marks.hxray build/evidence/drawing-marks-validation.json
+  native_check envelope-reader python3 tooling/check_service_envelopes.py build/command-private build/evidence/service-envelope-validation.json
+  native_check archive-reader python3 tooling/hm export-check --package build/evidence/test.hxray --output build/evidence/portable-package-validation.json
+  native_check command-contracts python3 tooling/hm test --suite commands --output build/evidence/command-tests.json
+  native_check tour-command python3 tooling/hm tour --scene build/evidence/test.hxray --preset before-after --duration 5 --simulator "$device_id" --output build/command-private/tour > build/command-private/tour-result.json
+  native_check tour-result python3 - <<'PYCOMMAND'
 import json,pathlib,struct
 root=pathlib.Path('build/command-private/tour')
 try:
@@ -163,8 +178,8 @@ except Exception as error:
 pathlib.Path('build/evidence/cli-command-validation.json').write_text(json.dumps(report,indent=2)+'\n')
 assert report['passed'],report
 PYCOMMAND
-  python3 tooling/hm reconstruct --bundle "$app_root/command-capture.hxray" --kind points --simulator "$device_id" --output build/command-private/reconstruction > build/command-private/reconstruction-result.json || native_failed=1
-  python3 - <<'PYRECONSTRUCTION' || native_failed=1
+  native_check reconstruction-command python3 tooling/hm reconstruct --bundle "$app_root/command-capture.hxray" --kind points --simulator "$device_id" --output build/command-private/reconstruction > build/command-private/reconstruction-result.json
+  native_check reconstruction-result python3 - <<'PYRECONSTRUCTION'
 import json,pathlib
 try:
     result=json.loads(pathlib.Path('build/command-private/reconstruction/result.json').read_text())

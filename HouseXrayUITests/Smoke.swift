@@ -28,7 +28,16 @@ final class HouseXraySmoke: XCTestCase {
     let size=app.staticTexts["service-envelope-size"]
     for _ in 0..<20 {if size.exists && size.isHittable{break};app.swipeUp()}
     XCTAssertTrue(size.isHittable);XCTAssertTrue(size.label.contains("50 mm"))
-    XCTAssertEqual(app.staticTexts["service-envelope-evidence"].label,"Synthetic 50 mm outer measurement");screenshot("27-measured-envelope-relaunched")
+    let savedEvidence=app.descendants(matching:.any).matching(identifier:"service-envelope-evidence").firstMatch
+    // A one-pixel sliver of the size row can be hittable while the following
+    // evidence row is still outside the Form's realized accessibility cells.
+    for _ in 0..<10 {
+      if savedEvidence.exists && savedEvidence.isHittable && savedEvidence.frame.maxY<app.frame.maxY-40 {break}
+      app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.65)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.45)))
+    }
+    XCTAssertTrue(savedEvidence.exists && savedEvidence.isHittable)
+    XCTAssertLessThan(savedEvidence.frame.maxY,app.frame.maxY-40)
+    XCTAssertEqual(savedEvidence.label,"Synthetic 50 mm outer measurement");screenshot("27-measured-envelope-relaunched")
   }
   @MainActor func testDrawingSuggestionReviewAndRelaunch() throws {
     continueAfterFailure=false

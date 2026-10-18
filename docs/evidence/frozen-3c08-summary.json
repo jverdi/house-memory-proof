@@ -1,0 +1,30 @@
+{
+  "source": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
+  "run": 39129514774,
+  "artifact": {
+    "id": 12137084314,
+    "sha256": "d7a5b5621f483483d39181a504ceb4fd2fbe4441613f2a0b1258a3e8f4d078d9",
+    "sha256IndependentlyVerified": true
+  },
+  "candidateSHA256": "af1f008878fdda3e96d18b46c5d262105135a2638867135bac083fa055ba26a1",
+  "binaryMatches6033": true,
+  "frozen": {
+    "mapFeatures": 5559,
+    "mapViews": 5,
+    "queryLabelsExcluded": true,
+    "ambiguityCases": 6,
+    "ambiguityRejected": true,
+    "oracleReadDenied": true,
+    "positiveAccepted": 3,
+    "positiveQueries": 3,
+    "falseAccepts": 0,
+    "negativeQueries": 1,
+    "worstAcceptedPositionErrorMetres": 0.008099905352539724,
+    "passed": true,
+    "optimizedCameraCount": 5,
+    "maximumOptimizedCameraPositionErrorMetres": 0.010550516031309215
+  },
+  "rawSpatialEvidenceRepublished": false,
+  "physicalQualification": false,
+  "precisionEnabled": false
+}

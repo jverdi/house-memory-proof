@@ -1,6 +1,5 @@
 const fs=require('fs');
 const assert=require('node:assert/strict');
-const validator=require('../build/validation/node_modules/gltf-validator');
 function inspect(bytes) {
   const jsonLength=bytes.readUInt32LE(12);
   const doc=JSON.parse(bytes.subarray(20,20+jsonLength).toString());
@@ -18,6 +17,7 @@ function inspect(bytes) {
   }
   function floats(index,width){const a=doc.accessors[index],v=doc.bufferViews[a.bufferView],offset=(v.byteOffset??0)+(a.byteOffset??0);assert.equal(a.componentType,5126);return Array.from({length:a.count*width},(_,i)=>binary.readFloatLE(offset+i*4));}
   const shots=doc.extras.tour.shots;
+  assert(doc.extras.tour.framingProfile===undefined||doc.extras.tour.framingProfile===null||doc.extras.tour.framingProfile==='subject-frustum-v1','unknown tour framing profile');
   assert.equal((doc.animations??[]).length,shots.length);
   assert.equal((doc.cameras??[]).length,shots.length);
   for(const [index,animation] of (doc.animations??[]).entries()){
@@ -26,6 +26,13 @@ function inspect(bytes) {
     for(let i=1;i<ts.length;i++)assert(ts[i]>ts[i-1]);
     assert.equal(animation.channels[0].target.node,animation.channels[1].target.node);
     const node=doc.nodes[animation.channels[0].target.node];assert.equal(node.extras.room,shot.roomID);
+    if(doc.extras.tour.framingProfile==='subject-frustum-v1'){
+      const subject=shot.subject;assert(subject&&typeof subject.featureID==='string'&&Number.isInteger(subject.featureRevision),'missing source-linked tour subject');
+      const feature=doc.nodes.find(n=>n.mesh!==undefined&&n.extras?.id===subject.featureID);
+      assert(feature&&feature.extras.revision===subject.featureRevision&&feature.extras.room===shot.roomID,'tour subject source identity');
+      assert.equal(shot.includesPlannedGeometry,doc.nodes.some(n=>n.mesh!==undefined&&n.extras?.room===shot.roomID&&n.extras?.evidence==='planned'),'tour planned geometry label');
+    }
+
     for(let i=0;i<ts.length;i++){
       const t=shot.startPhase+(ts[i]/shot.duration)*(shot.endPhase-shot.startPhase),smooth=t*t*(3-2*t);
       const p=shot.endPosition?['x','y','z'].map(k=>shot.position[k]+(shot.endPosition[k]-shot.position[k])*smooth):['x','y','z'].map(k=>shot.position[k]);
@@ -33,11 +40,21 @@ function inspect(bytes) {
       assert(actual.every((x,j)=>Math.abs(x-target[j])<2e-5),'tour position conversion or smoothing differs');
       const delta=Math.atan2(Math.sin((shot.endYaw??shot.yaw)-shot.yaw),Math.cos((shot.endYaw??shot.yaw)-shot.yaw));
       const duration=shot.duration/Math.max(1e-12,shot.endPhase-shot.startPhase);
-      const amplitude=doc.extras.tour.motionProfile==='camera-motion-v1'?Math.min(.65,.6*duration/Math.PI,1.2*duration*duration/(Math.PI*Math.PI)):.65;
+      const amplitude=shot.subject?0:doc.extras.tour.motionProfile==='camera-motion-v1'?Math.min(.65,.6*duration/Math.PI,1.2*duration*duration/(Math.PI*Math.PI)):.65;
       const yaw=shot.endPosition?shot.yaw+delta*smooth:shot.yaw+Math.sin(t*Math.PI)*amplitude;
       const pitch=shot.endPosition?shot.pitch+((shot.endPitch??shot.pitch)-shot.pitch)*smooth:shot.pitch;
       const q=qs.slice(i*4,i*4+4),expected=[Math.sin(pitch/2)*Math.cos(yaw/2),Math.sin(yaw/2)*Math.cos(pitch/2),-Math.sin(yaw/2)*Math.sin(pitch/2),Math.cos(yaw/2)*Math.cos(pitch/2)];
       assert(Math.abs(Math.hypot(...q)-1)<1e-5);assert(Math.abs(q.reduce((sum,x,j)=>sum+x*expected[j],0))>1-1e-5,'camera rotation mismatch');
+      if(doc.extras.tour.framingProfile==='subject-frustum-v1'){
+        const subject=shot.subject;assert(subject&&typeof subject.featureID==='string'&&Number.isInteger(subject.featureRevision),'missing source-linked tour subject');
+        const point=[subject.point.x,subject.point.z,-subject.point.y],delta=point.map((x,j)=>x-actual[j]);
+        function rotate(v){const [x,y,z,w]=q,[a,b,c]=v,tx=2*(y*c-z*b),ty=2*(z*a-x*c),tz=2*(x*b-y*a);return [a+w*tx+y*tz-z*ty,b+w*ty+z*tx-x*tz,c+w*tz+x*ty-y*tx];}
+        const dot=v=>v.reduce((sum,x,j)=>sum+x*delta[j],0),depth=dot(rotate([0,0,-1]));
+        const camera=doc.cameras[node.camera].perspective,halfHeight=Math.tan(camera.yfov/2)*.75;
+        assert(Math.hypot(...delta)>=.35-1e-5&&Math.hypot(...delta)<=30+1e-5&&depth>camera.znear,'tour subject range');
+        assert(Math.abs(dot(rotate([1,0,0])))<=depth*halfHeight*camera.aspectRatio+1e-5&&Math.abs(dot(rotate([0,1,0])))<=depth*halfHeight+1e-5,'subject leaves safe camera region');
+      }
+
     }
     if(doc.extras.tour.motionProfile==='camera-motion-v1'){
       let previousVelocity;
@@ -55,7 +72,7 @@ function inspect(bytes) {
   return {nodes:seen.size,meshes:doc.meshes.length,levels:roots.filter(i=>doc.nodes[i].extras?.type==='level').length,tourClips:shots.length,hierarchyAndAnimationPassed:true};
 }
 module.exports={inspect};
-if(require.main===module)(async()=>{for(const name of ['test','textured','points','house-surface']){
+if(require.main===module)(async()=>{const validator=require('../build/validation/node_modules/gltf-validator');for(const name of ['test','textured','points','house-surface']){
   const bytes=fs.readFileSync('build/evidence/'+name+'.glb');
   const result=await validator.validateBytes(new Uint8Array(bytes),{uri:name+'.glb',maxIssues:10000});
   fs.writeFileSync('build/evidence/'+name+'-gltf-validation.json',JSON.stringify(result,null,2));
