@@ -3,9 +3,14 @@ import Darwin
 
 @main struct HouseXrayApp: App {
   @StateObject private var model = AppModel()
+  @State private var launchHandled = false
   var body: some Scene {
     WindowGroup {
       RootView().environmentObject(model).preferredColorScheme(.dark).tint(Color.mint).task {
+        // Full-screen presentation can reattach this task. Launch commands and
+        // fixtures must not rerun and replace the house the owner just chose.
+        guard !launchHandled else { return }
+        launchHandled = true
         #if DEBUG && targetEnvironment(simulator)
         let arguments=ProcessInfo.processInfo.arguments
         if let index=arguments.firstIndex(of:"--developer-command"),arguments.indices.contains(index+1),let repo=model.repository {

@@ -664,8 +664,15 @@ struct CapturePage: View {
   var house: House
   @State private var room: UUID?
   @State private var stage: UUID?
-  @State private var session = false
+  private struct CaptureSelection: Identifiable {
+    let id = UUID()
+    let room: Room
+    let stage: Stage
+  }
+  @State private var session: CaptureSelection?
   @State private var revealSegment: Segment?
+  private var selectedRoom: Room? { house.rooms.first { $0.id == room } }
+  private var selectedStage: Stage? { house.stages.first { $0.id == stage } }
   var body: some View {
     NavigationStack {
       Form {
@@ -685,7 +692,10 @@ struct CapturePage: View {
           }
         }
         Section {
-          Button("Start capture") { session = true }.disabled(house.isDemo)
+          Button("Start capture") {
+            guard let selectedRoom, let selectedStage else { return }
+            session = CaptureSelection(room: selectedRoom, stage: selectedStage)
+          }.disabled(house.isDemo || selectedRoom == nil || selectedStage == nil)
           if house.isDemo {
             Text("Create a real house to capture. The demo remains separate from field evidence.")
               .font(.footnote)
@@ -724,12 +734,10 @@ struct CapturePage: View {
         room = room ?? house.rooms.first?.id
         stage = stage ?? house.stages.first?.id
       }
-      .fullScreenCover(isPresented: $session) {
-        if let r = house.rooms.first(where: { $0.id == room }),
-          let s = house.stages.first(where: { $0.id == stage })
-        {
-          CaptureSessionView(model: model, room: r, stage: s, prior: nil)
-        }
+      .fullScreenCover(item: $session) { selection in
+        // Present the chosen location as one value. A Boolean cover combined
+        // with separately initialized picker state can present an empty view.
+        CaptureSessionView(model: model, room: selection.room, stage: selection.stage, prior: nil)
       }
       .fullScreenCover(item: $revealSegment) { seg in
         if let r = house.rooms.first(where: { $0.id == seg.roomID }),

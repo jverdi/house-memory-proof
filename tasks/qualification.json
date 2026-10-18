@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T20:05:49.523244Z",
+  "updatedUTC": "2026-10-18T20:56:07.441759Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "51bc6ba347b892039fc9606a04b638b3b6819586",
@@ -52,7 +52,7 @@
     },
     {
       "area": "homeowner onboarding and plain-language help",
-      "remaining": "R19 initial source 221.1 passes native/Release and all export checks but only 12/16 UI flows. Four failure recordings are retained and inspected. Targeted search-layout, scrolling/orientation and sample-to-real-house repairs require a 17-flow integration. Owner-device usability remains separate."
+      "remaining": "222.1 passes the four previously failed UI workflows and three homeowner cases, but the new-house capture case fails and the final navigation case is interrupted by the old 25-minute UI allocation. The original recording was recovered from the unfinalized bundle and shows correct new-house selections followed by sample reselection. A once-per-launch setup guard, value-based capture presentation and 30-minute allocation for all seventeen UI cases are prepared. Full integration and owner-device usability remain open."
     }
   ],
   "externalAcceptanceOpen": [
@@ -60,7 +60,7 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Publish and validate the targeted R19 follow-up through all seventeen interface workflows; retain 221.1 as a failed integration. Continue independent software/full-house acceptance without changing the failed localization gates or exhausted repair budget. TestFlight 216.1 remains available; device/provider and independent field results remain required.",
+  "nextAction": "Validate the once-per-launch fixture/command guard and capture presentation repair against all seventeen unchanged UI workflows with the expanded 30-minute harness allocation; native/startup and 60-minute job bounds remain. Retain failed 221.1 and interrupted 222.1 evidence. Continue the runbook with localization and device/field gates preserved. TestFlight 216.1 remains available; no intermediate upload is requested.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "status": "prepared_pending_publication",
@@ -69,7 +69,11 @@
     "nativeReaderPhasesExpected": 18,
     "validationReportsExpected": 35,
     "integrationComplete": false,
-    "precedingSource": "b46d612c9c274b275d4a9b9e083116c8affc837f"
+    "precedingSource": "9cb41a0cb12d5d49c7dd9cc47a6a6b2670c63b67",
+    "uiRunnerBudgetSeconds": 1800,
+    "uiStepTimeoutMinutes": 32,
+    "nativeAppBudgetSeconds": 300,
+    "wholeJobTimeoutMinutes": 60
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1073,7 +1077,7 @@
   },
   "homeownerGuidance": {
     "requirement": "R19 / architecture-runbook \u00a71.4",
-    "status": "repair_prepared_pending_validation",
+    "status": "capture_presentation_repair_prepared",
     "requestedDate": "2026-10-18",
     "onboardingSteps": 5,
     "startingGoals": 3,
@@ -1097,17 +1101,18 @@
     "screenshotsInspected": false,
     "ownerDeviceUsabilityVerified": false,
     "testflightDelivered": false,
-    "implementationSource": "b46d612c9c274b275d4a9b9e083116c8affc837f",
-    "validationRun": 39159360261,
-    "validationBuild": "221.1",
+    "implementationSource": "9cb41a0cb12d5d49c7dd9cc47a6a6b2670c63b67",
+    "validationRun": 39161820775,
+    "validationBuild": "222.1",
     "debugCompilationPassed": false,
     "unsignedReleaseCompilationPassed": false,
     "houseSwitchRepair": {
-      "status": "prepared_pending_native_validation",
+      "status": "capture_presentation_followup_prepared",
       "reason": "House-local room/stage selections could retain the previous house IDs and present a blank capture cover.",
       "change": "Key tab state by house identity and explicit guide-route reset, excluding ordinary house revisions.",
       "interfaceCheck": "Visit sample Capture, create a real house, open its First room / Rough-in capture screen without starting AR, then return to the sample.",
-      "nextExpectedUIFlows": 17
+      "nextExpectedUIFlows": 17,
+      "additionalChange": "Run launch commands and demo fixtures once per launch so presentation cannot reselect the sample; present the selected room and stage as one identifiable value, with invalid selections disabled."
     },
     "failedValidation": {
       "source": "b46d612c9c274b275d4a9b9e083116c8affc837f",
@@ -1124,36 +1129,60 @@
     "repairs": [
       "House-local tab identity includes tab and house IDs but excludes ordinary revisions.",
       "Evidence search prioritizes matching records above the keyboard.",
-      "Guidance tests scroll before accessing lazy rows, use explicit viewport-coordinate drags, and reset orientation while the app is running."
-    ]
+      "Guidance tests scroll before accessing lazy rows, use explicit viewport-coordinate drags, and reset orientation while the app is running.",
+      "Capture presentation carries its room and stage together instead of opening a Boolean cover with separately read picker state.",
+      "Launch fixtures and developer commands run once per application launch, so full-screen presentation cannot rerun --demo and reselect the sample house."
+    ],
+    "followupFailedValidation": {
+      "source": "9cb41a0cb12d5d49c7dd9cc47a6a6b2670c63b67",
+      "run": 39161820775,
+      "build": "222.1",
+      "nativePassed": 171,
+      "interfacePassed": 15,
+      "interfaceFailed": 1,
+      "interfaceCompletedCases": 16,
+      "interfaceExpected": 17,
+      "interfaceRunnerTimedOut": true,
+      "finalNavigationCaseIncomplete": true,
+      "precedingFourFailuresNowPass": true,
+      "captureFailureInspected": true,
+      "captureFailureLogReviewed": true,
+      "standardAttachmentExportFailed": true,
+      "originalRecordingRecoveredAndInspected": true,
+      "evidence": "docs/evidence/native-9cb-summary.json"
+    }
   },
   "lastCompletedValidation": {
-    "source": "b46d612c9c274b275d4a9b9e083116c8affc837f",
-    "run": 39159360261,
-    "build": "221.1",
+    "status": "failed_interface_and_ui_timeout",
     "nativeExpected": 171,
-    "interfaceExpected": 16,
+    "interfaceExpected": 17,
     "nativeReaderPhasesExpected": 18,
     "validationReportsExpected": 35,
     "integrationComplete": false,
-    "status": "failed_interface",
+    "precedingSource": "b46d612c9c274b275d4a9b9e083116c8affc837f",
+    "source": "9cb41a0cb12d5d49c7dd9cc47a6a6b2670c63b67",
+    "run": 39161820775,
+    "build": "222.1",
     "nativePassed": 171,
     "nativeReaderPhasesPassed": 18,
     "commandContractsPassed": 48,
     "nativeArtifact": {
-      "id": 12148512328,
-      "sha256": "d3898b04a69c6bf22f020f5758ca70493bc693aa27e70e020aed6e936ceb4be4",
+      "id": 12150080371,
+      "sha256": "e0d6941dc36b877be60d123cbe65aba08447548ab7f4dffc12d7b16165de560d",
       "sha256IndependentlyVerified": true
     },
-    "interfacePassed": 12,
-    "interfaceFailed": 4,
-    "interfaceSeconds": 837.015,
+    "interfacePassed": 15,
+    "interfaceFailed": 1,
+    "interfaceIncomplete": true,
+    "interfaceRunnerTimedOut": true,
+    "interfaceCompletedCases": 16,
+    "interfaceSeconds": null,
     "validationReportsPassed": 35,
     "fullArtifact": {
-      "id": 12148728245,
-      "sha256": "0b10f8f3461a0ad649003f067779d3a7cc51c5a83465507831d8dd50a49de13c",
+      "id": 12150770505,
+      "sha256": "cdd6b75f792c7f0b2c319b93eeee5260a5f65cf8645926001086ef3ffa6a52f0",
       "sha256IndependentlyVerified": true
     },
-    "evidence": "docs/evidence/native-b46-summary.json"
+    "evidence": "docs/evidence/native-9cb-summary.json"
   }
 }
