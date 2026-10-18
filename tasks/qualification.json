@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T21:41:26.551628Z",
+  "updatedUTC": "2026-10-18T22:27:00.582668Z",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
+  "currentImplementationCommit": "3883931263a2861a28cd354f190bbc3d8d71f178",
   "testflight": {
     "build": "216.1",
     "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -18,17 +18,17 @@
     "automaticRenewalEnabled": false
   },
   "verifiedNative": {
-    "source": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
-    "passed": 171,
+    "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "passed": 172,
     "failed": 0,
-    "artifact": 12150428025,
-    "sha256": "a9198527a498eb9d60b190b7f121fd1fb1a4d5318eb10d451654116e75ed62fd",
+    "artifact": 12151344299,
+    "sha256": "7eeead23fabaeb809de66e80142a461d70f9e5e7a4fc40bc3138a4847c5bab6e",
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "whole-house product qualification",
-      "remaining": "223.1 passes 171 native checks and 17 interface workflows, including homeowner guidance. The floor-support repair and bounded production reconstructed-fragment check are prepared with 172 native checks expected. Reconstructed whole-house topology/streaming, mixed-stage/closed-loop coverage, broad tour coverage and device workloads remain open."
+      "remaining": "224.1 passes 172 native checks and 17 UI flows. Floor support and two bounded production reconstructed fragments pass native movement and independent geometry scoring. Reconstructed whole-house topology/streaming, mixed-stage/closed-loop coverage, broad tours and device workloads remain open."
     },
     {
       "area": "finished localization",
@@ -52,7 +52,7 @@
     },
     {
       "area": "homeowner onboarding and plain-language help",
-      "remaining": "R19 implementation passes all 17 simulator interface flows at 223.1. Visual review requires capture-header contrast and opening-copy repairs. Actual owner-device VoiceOver, large-text/offline use and construction-task comprehension remain unverified."
+      "remaining": "R19 simulator workflows pass at 224.1, including the visually reviewed capture-header/instruction repairs. Further visual follow-up: dark lettering on bright onboarding and capture action buttons; separate the long walking notice from the viewer header controls; plain-language, brighter capture-count explanation. Actual owner-device VoiceOver, large-text/offline use and construction-task comprehension remain unverified."
     },
     {
       "area": "viewer comfort controls",
@@ -64,23 +64,43 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Recheck screenshot 40 for readable capture location/tracking and corrected opening instructions. Validate the prepared floor-support and reconstructed-fragment candidate, retaining the exact source, private-package hash and independent reader results. Continue the missing viewer comfort controls and broader reconstructed-house software work. Preserve the exhausted localization repair budget and all failed device/provider/field gates. TestFlight 216.1 remains available; no intermediate upload is requested.",
+  "nextAction": "Integrate and validate the prepared viewer comfort controls, then continue the remaining reconstructed-house software acceptance. Preserve localization failures and the exhausted five-attempt detector budget. Owner-device/provider and independent field evidence remain required. TestFlight 216.1 remains available; no intermediate upload is requested.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "prepared",
+    "status": "complete_integrated_pass",
     "nativeExpected": 172,
     "interfaceExpected": 17,
     "nativeReaderPhasesExpected": 19,
     "commandContractsExpected": 52,
     "validationReportsExpected": 36,
-    "integrationComplete": false,
+    "integrationComplete": true,
     "precedingSource": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
     "uiRunnerBudgetSeconds": 1800,
     "uiStepTimeoutMinutes": 32,
     "nativeAppBudgetSeconds": 300,
     "wholeJobTimeoutMinutes": 60,
-    "evidencePending": true,
-    "appleUploadRequested": false
+    "evidencePending": false,
+    "appleUploadRequested": false,
+    "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "run": 39169002149,
+    "build": "224.1",
+    "simulatorJob": 117797935478,
+    "nativePassed": 172,
+    "nativeReaderPhasesPassed": 19,
+    "commandContractsPassed": 52,
+    "debugCompilationPassed": true,
+    "unsignedReleaseCompilationPassed": true,
+    "nativePhaseConclusion": "success",
+    "evidence": "docs/evidence/native-388-summary.json",
+    "interfacePassed": 17,
+    "interfaceFailed": 0,
+    "interfaceSeconds": 1404.559,
+    "validationReportsPassed": 36,
+    "fullArtifact": {
+      "id": 12152882550,
+      "sha256": "ab8ed38e953f0de57fa3ae8ebeb9b8ee3819da04536dd80432979091a16d2091",
+      "sha256IndependentlyVerified": true
+    }
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -125,25 +145,25 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
-    "run": 39165628733,
-    "nativePassed": 171,
+    "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "run": 39169002149,
+    "nativePassed": 172,
     "nativeFailed": 0,
-    "nativePhaseChecksPassed": 18,
+    "nativePhaseChecksPassed": 19,
     "interfacePassed": 17,
     "interfaceFailed": 0,
-    "uiSeconds": 1367.054,
+    "uiSeconds": 1404.559,
     "processKillPassed": 3,
-    "validationReportsPassed": 35,
+    "validationReportsPassed": 36,
     "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12151955729,
-      "sha256": "eec4587078a326c856280905e396ee8a9d9240fe665b768be8eab27d3b56b12c",
+      "id": 12152882550,
+      "sha256": "ab8ed38e953f0de57fa3ae8ebeb9b8ee3819da04536dd80432979091a16d2091",
       "sha256IndependentlyVerified": true
     },
     "portableCasesPassed": 50,
-    "commandContractTestsPassed": 48,
-    "evidence": "docs/evidence/native-2b8-summary.json"
+    "commandContractTestsPassed": 52,
+    "evidence": "docs/evidence/native-388-summary.json"
   },
   "wholeHouseDevelopment": {
     "source": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
@@ -1008,27 +1028,25 @@
     "evidence": "docs/evidence/native-51bc-summary.json"
   },
   "previousIntegratedPass": {
-    "source": "51bc6ba347b892039fc9606a04b638b3b6819586",
-    "run": 39156497915,
+    "source": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
+    "run": 39165628733,
     "nativePassed": 171,
     "nativeFailed": 0,
     "nativePhaseChecksPassed": 18,
-    "interfacePassed": 13,
+    "interfacePassed": 17,
     "interfaceFailed": 0,
-    "uiSeconds": 970.917,
+    "uiSeconds": 1367.054,
     "processKillPassed": 3,
     "validationReportsPassed": 35,
     "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12147493172,
-      "sha256": "3f63711146010aafe7f5753fc15e609d5e482a1b9990476de3c4f553496e8700",
+      "id": 12151955729,
+      "sha256": "eec4587078a326c856280905e396ee8a9d9240fe665b768be8eab27d3b56b12c",
       "sha256IndependentlyVerified": true
     },
     "portableCasesPassed": 50,
     "commandContractTestsPassed": 48,
-    "nativeTourCLIValidated": true,
-    "nativeServiceTourCLIValidated": true,
-    "nativeReconstructionCLIValidated": true
+    "evidence": "docs/evidence/native-2b8-summary.json"
   },
   "previousTestflight": {
     "build": "161.1",
@@ -1082,7 +1100,7 @@
   },
   "homeownerGuidance": {
     "requirement": "R19 / architecture-runbook \u00a71.4",
-    "status": "capture_visual_repair_pending_validation",
+    "status": "simulator_pass_visual_followup_pending",
     "requestedDate": "2026-10-18",
     "onboardingSteps": 5,
     "startingGoals": 3,
@@ -1106,9 +1124,9 @@
     "screenshotsInspected": true,
     "ownerDeviceUsabilityVerified": false,
     "testflightDelivered": false,
-    "implementationSource": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
-    "validationRun": 39165628733,
-    "validationBuild": "223.1",
+    "implementationSource": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "validationRun": 39169002149,
+    "validationBuild": "224.1",
     "debugCompilationPassed": true,
     "unsignedReleaseCompilationPassed": true,
     "houseSwitchRepair": {
@@ -1159,54 +1177,53 @@
       "evidence": "docs/evidence/native-9cb-summary.json"
     },
     "visualFollowUpRequired": [
-      "Capture header contrast on bright preview",
-      "Capture initial message after location selection"
+      "dark lettering on bright onboarding and capture action buttons",
+      "separate the long walking notice from the viewer header controls",
+      "plain-language, brighter capture-count explanation"
     ],
     "evidence": "docs/evidence/native-2b8-summary.json",
     "captureContrastRepairPrepared": true,
-    "captureOpeningCopyRepairPrepared": true
+    "captureOpeningCopyRepairPrepared": true,
+    "captureVisualRepairEvidence": "docs/evidence/native-388-summary.json"
   },
   "lastCompletedValidation": {
     "status": "complete_integrated_pass",
-    "nativeExpected": 171,
+    "nativeExpected": 172,
     "interfaceExpected": 17,
-    "nativeReaderPhasesExpected": 18,
-    "validationReportsExpected": 35,
+    "nativeReaderPhasesExpected": 19,
+    "commandContractsExpected": 52,
+    "validationReportsExpected": 36,
     "integrationComplete": true,
-    "precedingSource": "9cb41a0cb12d5d49c7dd9cc47a6a6b2670c63b67",
+    "precedingSource": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
     "uiRunnerBudgetSeconds": 1800,
     "uiStepTimeoutMinutes": 32,
     "nativeAppBudgetSeconds": 300,
     "wholeJobTimeoutMinutes": 60,
-    "source": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
-    "run": 39165628733,
-    "build": "223.1",
     "evidencePending": false,
+    "appleUploadRequested": false,
+    "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "run": 39169002149,
+    "build": "224.1",
+    "simulatorJob": 117797935478,
+    "nativePassed": 172,
+    "nativeReaderPhasesPassed": 19,
+    "commandContractsPassed": 52,
     "debugCompilationPassed": true,
     "unsignedReleaseCompilationPassed": true,
-    "nativePassed": 171,
-    "nativeFailed": 0,
-    "nativeSeconds": 199.17109170833328,
-    "nativeReaderPhasesPassed": 18,
-    "commandContractsPassed": 48,
-    "nativeArtifact": {
-      "id": 12150428025,
-      "sha256": "a9198527a498eb9d60b190b7f121fd1fb1a4d5318eb10d451654116e75ed62fd",
-      "sha256IndependentlyVerified": true
-    },
-    "evidence": "docs/evidence/native-2b8-summary.json",
+    "nativePhaseConclusion": "success",
+    "evidence": "docs/evidence/native-388-summary.json",
     "interfacePassed": 17,
     "interfaceFailed": 0,
-    "interfaceSeconds": 1367.054,
-    "validationReportsPassed": 35,
+    "interfaceSeconds": 1404.559,
+    "validationReportsPassed": 36,
     "fullArtifact": {
-      "id": 12151955729,
-      "sha256": "eec4587078a326c856280905e396ee8a9d9240fe665b768be8eab27d3b56b12c",
+      "id": 12152882550,
+      "sha256": "ab8ed38e953f0de57fa3ae8ebeb9b8ee3819da04536dd80432979091a16d2091",
       "sha256IndependentlyVerified": true
     }
   },
   "navigationFloorSupportContinuation": {
-    "status": "prepared_native_validation_pending",
+    "status": "bounded_fragments_simulator_validated",
     "baseSource": "2b8a9bb195282e91da8fdd026bb44d81213e972e",
     "requirement": "Runbook 12.2 / P6.2",
     "connectedProfile": "analytic-connected-walk-v2",
@@ -1220,10 +1237,17 @@
     "nativeReaderPhasesExpected": 19,
     "interfaceExpected": 17,
     "validationReportsExpected": 36,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "reconstructedWholeHouseQualified": false,
     "automaticFloorClassificationQualified": false,
     "physicalQualification": false,
-    "evidence": "docs/evidence/navigation-floor-candidate.md"
+    "evidence": "docs/evidence/native-388-summary.json",
+    "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "run": 39169002149,
+    "build": "224.1",
+    "nativePassed": 172,
+    "interfacePassed": 17,
+    "screenshotsInspected": true,
+    "privatePackageSHA256": "c4eafd41f768dad3ed23deed9b9f9e07259c2ddd0489fc546cac1fb41793c2b2"
   }
 }

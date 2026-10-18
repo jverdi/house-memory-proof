@@ -1,0 +1,670 @@
+{
+  "build": "224.1",
+  "date": "2026-10-18T21:56:36Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 147.24610174999998,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1098104832,
+    "physicalFootprintBytes": 137994880,
+    "residentBytes": 647462912
+  },
+  "sourceRevision": "3883931263",
+  "systemVersion": "26.5",
+  "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
+  "run": 39169002149,
+  "nativeChecks": 172,
+  "nativePassed": 172,
+  "nativeFailures": [],
+  "nativeArtifact": {
+    "id": 12151344299,
+    "sha256": "7eeead23fabaeb809de66e80142a461d70f9e5e7a4fc40bc3138a4847c5bab6e",
+    "sha256IndependentlyVerified": true
+  },
+  "nativeReaderStatus": [
+    {
+      "check": "navigation-benchmark-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstructed-navigation-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "drawing-benchmark-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "capture-runtime-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-coordinate-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-source-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "drawing-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "envelope-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "archive-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "command-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reveal-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-result",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "service-tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "service-tour-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-result",
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "integrationComplete": true,
+  "physicalQualification": false,
+  "nativeExpected": 172,
+  "readerPhasesExpected": 19,
+  "validationReportsExpected": 36,
+  "interfaceExpected": 17,
+  "interfaceStatus": "passed",
+  "appleUploadVerified": false,
+  "boundarySource": {
+    "analyticOnly": true,
+    "finalSupportedPatches": 16,
+    "finalViews": 9,
+    "initialSupportedPatches": 0,
+    "initialViews": 1,
+    "legacyBoundaryPolicyPreserved": true,
+    "oracleIsolatedQualification": false,
+    "passed": true,
+    "physicalQualification": false,
+    "sourceRecordsPublished": false,
+    "staleInputRefusals": 7,
+    "totalPatches": 16
+  },
+  "authenticArchiveCompatibility": {
+    "archiveSHA256": "7d0e5428b7f4649a94325ed5097df617b9e06156d7967929b93fab2ed55ec5c5",
+    "currentWriterReimportPassed": true,
+    "featuresPreserved": 217,
+    "futureSchemaRefusedWithoutActivation": true,
+    "metadataAndGeometryExact": true,
+    "originalAssetsVerified": 1,
+    "originalBytesUnchanged": true,
+    "passed": true,
+    "physicalQualification": false,
+    "producerBuild": "161.1",
+    "producerSource": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
+    "restoredSchema": 5,
+    "roomsPreserved": 3,
+    "runtime": "iOS simulator",
+    "signedApplicationExecution": false,
+    "sourceSchema": 1
+  },
+  "captureRuntimeReader": {
+    "passed": true,
+    "reader": "Independent Python capture workload reader",
+    "sessions": [
+      {
+        "sourceRevision": "3883931263",
+        "build": "224.1",
+        "platform": "iPhone simulator",
+        "mode": "capture",
+        "finalized": true,
+        "stopReason": "self-test",
+        "observedSeconds": 0.03345083333351795,
+        "acquisitionEndSeconds": 0.024759791666838282,
+        "activeIntervals": [
+          {
+            "startSeconds": 0.0037076666667417157,
+            "endSeconds": 0.024759791666838282,
+            "seconds": 0.021052125000096567,
+            "cameraCallbackHz": 95.00228599207092,
+            "renderCallbackHz": 47.50114299603546,
+            "savedImagesPerSecond": 47.50114299603546
+          }
+        ],
+        "largestSampleGapSeconds": 0.021052125000096567,
+        "deliveredCameraFrames": 2,
+        "normalTrackingFrames": 1,
+        "savedImages": 1,
+        "saveFailures": 1,
+        "maximumPendingSaves": 1,
+        "maximumSaveSeconds": 0.5,
+        "memoryWarnings": 0,
+        "sampledPhysicalFootprintPeakBytes": 49321920,
+        "sampledThermalStates": [
+          "nominal"
+        ],
+        "batteryChange": null,
+        "volumeFreeBytesChange": 0
+      }
+    ],
+    "physicalQualification": false,
+    "precisionEnabled": false,
+    "presentedFrameRateMeasured": false,
+    "limitations": "Sampled resource evidence only; counters are callback rates. External disk activity, charging and sampling gaps need review. Incomplete sessions and missing battery/memory remain explicit. Neither duration nor successful decoding grants device acceptance."
+  },
+  "drawingBenchmarkReader": {
+    "passed": true,
+    "reader": "Independent analytic drawing suggestion scorer",
+    "profileHash": "9f858468f850556e2d7799d6389e839e53bf6c16ef58e5af5d3c92e85893dc36",
+    "cases": 11,
+    "classSizeCounts": [
+      {
+        "category": "rectangular-outline",
+        "size": "large",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 8,
+        "recall": 1.0,
+        "precision": 0.5
+      },
+      {
+        "category": "rectangular-outline",
+        "size": "small",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 17,
+        "recall": 1.0,
+        "precision": 0.32
+      },
+      {
+        "category": "room-name-text",
+        "size": "18px",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "room-name-text",
+        "size": "36px",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "service-label-text",
+        "size": "18px",
+        "truth": 4,
+        "matched": 4,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "service-label-text",
+        "size": "36px",
+        "truth": 4,
+        "matched": 4,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      }
+    ],
+    "methodSizeMetrics": [
+      {
+        "method": "OCR",
+        "size": "18px",
+        "truth": 12,
+        "matched": 12,
+        "falsePositive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "method": "OCR",
+        "size": "36px",
+        "truth": 12,
+        "matched": 12,
+        "falsePositive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "method": "rectangle",
+        "size": "large",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 8,
+        "precision": 0.5,
+        "recall": 1.0
+      },
+      {
+        "method": "rectangle",
+        "size": "small",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 17,
+        "precision": 0.32,
+        "recall": 1.0
+      }
+    ],
+    "negativeCaseProposals": 2,
+    "accuracyQualified": false,
+    "physicalQualification": false,
+    "protectedBenchmark": false,
+    "limitations": "Counts scored on eleven analytic development rasters only. OCR semantic subtype precision is unavailable; text/rectangle precision and recall are reported separately by size. No thresholds, model or operating envelope changed."
+  },
+  "envelopeReader": {
+    "passed": true,
+    "reader": "Independent Python service-envelope archive GLB and CSV readers",
+    "sections": 2,
+    "connectedCircularEnvelopes": 1,
+    "sourceCenterlinesPreserved": true,
+    "declaredDimensionsVerified": true,
+    "sourceDependenciesPreserved": true,
+    "maximumExportCoordinateErrorMetres": 1.1813446221253798e-07,
+    "csvDateResolutionSeconds": 1,
+    "measurementInstantPreserved": true,
+    "toleranceIsSizeOnly": true,
+    "sourceRecordsPublished": false,
+    "physicalQualification": false
+  },
+  "serviceTourReader": {
+    "passed": true,
+    "reader": "Independent Python service-tour reader",
+    "frames": 300,
+    "inspections": 6,
+    "endpoints": 4,
+    "sourceRoutesVerified": true,
+    "explicitConnectionsOnly": true,
+    "cameraCutsVerified": true,
+    "physicalQualification": false
+  },
+  "navigationBenchmarkReader": {
+    "passed": true,
+    "reader": "Independent Python connected-walk trace scorer",
+    "profile": "analytic-connected-walk-v2",
+    "cases": 9,
+    "unsupportedFloorVariants": 5,
+    "tracedSteps": 284,
+    "horizontalRouteMetres": 56.8,
+    "maximumCoordinateErrorMetres": 1.2588500979404671e-05,
+    "physicalQualification": false,
+    "reconstructionQualified": false,
+    "protectedBenchmark": false,
+    "limitations": "Analytic native-controller topology only; not reconstructed-house, field or sustained rendering qualification."
+  },
+  "reconstructedNavigationReader": {
+    "passed": true,
+    "reader": "Independent reconstructed triangle and native movement scorer",
+    "profile": "analytic-reconstructed-floor-v1",
+    "privatePackageSHA256": "c4eafd41f768dad3ed23deed9b9f9e07259c2ddd0489fc546cac1fb41793c2b2",
+    "flatVertices": 105336,
+    "gapVertices": 87552,
+    "tracedSteps": 8,
+    "refusedSteps": 3,
+    "unclassifiedRefused": true,
+    "explicitFreeFlyAndReturnVerified": true,
+    "rawSourceRecordsPublished": false,
+    "wholeHouseQualified": false,
+    "physicalQualification": false,
+    "limitations": "Bounded synthetic reconstructed floor only; no whole-house, automatic floor recognition or physical acceptance."
+  },
+  "commandContracts": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 52,
+    "seconds": 2.5244728750001286,
+    "exitCode": 0
+  },
+  "navigationBenchmark": {
+    "doorways": 4,
+    "horizontalRouteLengthMetres": 56.8,
+    "levels": 2,
+    "limitations": "Public analytic source geometry and camera positions through the actual native walking controller. This checks connected movement and refusals; it does not qualify reconstructed topology, localization, display performance or physical safety.",
+    "passed": true,
+    "physicalQualification": false,
+    "profile": "analytic-connected-walk-v2",
+    "protectedBenchmark": false,
+    "reconstructionQualified": false,
+    "rooms": 9,
+    "routeSpaces": 7,
+    "sourceGeometryUnchanged": true,
+    "stairTreads": 16,
+    "version": 2,
+    "cases": [
+      {
+        "attemptedSteps": 284,
+        "completedSteps": 284,
+        "maximumPositionErrorMetres": 7.629394538355427e-07,
+        "name": "six rooms and sixteen stair treads in both directions",
+        "passed": true
+      },
+      {
+        "movedSteps": 5,
+        "name": "closed door preserves the observed corridor but refuses passage",
+        "passed": true,
+        "refusedSteps": 11
+      },
+      {
+        "movedSteps": 5,
+        "name": "missing stair tread refuses unsupported continuation",
+        "passed": true,
+        "refusedSteps": 11
+      },
+      {
+        "movedSteps": 6,
+        "name": "low stair headroom refuses passage",
+        "passed": true,
+        "refusedSteps": 10
+      },
+      {
+        "movedSteps": 7,
+        "name": "unobserved doorway never invents a camera connection",
+        "passed": true,
+        "refusedSteps": 9
+      },
+      {
+        "cameraPositions": 20,
+        "name": "unregistered repeated room remains a separate frame",
+        "passed": true,
+        "visibleFeatures": 3
+      },
+      {
+        "name": "stacked floors without observed connections remain unavailable",
+        "passed": true
+      },
+      {
+        "name": "hidden layers preserve all walking obstacles",
+        "passed": true
+      },
+      {
+        "name": "camera corridors without observed floor support cannot enable walking",
+        "passed": true
+      }
+    ]
+  },
+  "reconstructedNavigation": {
+    "capturedViewsPerFragment": 9,
+    "classifiedWalkEnabled": true,
+    "completedSteps": 8,
+    "flatVertices": 105336,
+    "gapStartWalkEnabled": true,
+    "gapVertices": 87552,
+    "generatorMeshesSupplied": 0,
+    "landedWalkEnabled": true,
+    "limitations": "Two bounded synthetic depth fragments through production reconstruction and walking. Explicit floor classification is supplied by the diagnostic. This does not qualify automatic floor recognition, whole-house registration/navigation, sustained rendering or physical accuracy.",
+    "passed": true,
+    "physicalQualification": false,
+    "privatePackageSHA256": "c4eafd41f768dad3ed23deed9b9f9e07259c2ddd0489fc546cac1fb41793c2b2",
+    "profile": "analytic-reconstructed-floor-v1",
+    "protectedBenchmark": false,
+    "sourceGeometryUnchanged": true,
+    "unclassifiedRefused": true,
+    "version": 1,
+    "wholeHouseQualified": false
+  },
+  "interfaceRunnerTimedOut": false,
+  "interfaceCompletionTotalsAvailable": true,
+  "interfaceStartedCases": 17,
+  "interfaceCompletedCases": 17,
+  "interfaceUnfinishedCases": [],
+  "interfaceCompletedCaseSeconds": 1404.559,
+  "fullArtifact": {
+    "id": 12152882550,
+    "sha256": "ab8ed38e953f0de57fa3ae8ebeb9b8ee3819da04536dd80432979091a16d2091",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 17,
+  "interfacePassed": 17,
+  "interfaceFailures": 0,
+  "interfaceElapsedSeconds": 1404.559,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "result": "passed",
+      "seconds": 94.248
+    },
+    {
+      "name": "testClosureReviewKeepsMissingStageEvidenceExplicit",
+      "result": "passed",
+      "seconds": 29.371
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "result": "passed",
+      "seconds": 58.255
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "result": "passed",
+      "seconds": 70.182
+    },
+    {
+      "name": "testHomeownerHelpBeforeCreatingHouseAtLargeText",
+      "result": "passed",
+      "seconds": 136.722
+    },
+    {
+      "name": "testHomeownerIntroductionCompletionRestartAndPersistence",
+      "result": "passed",
+      "seconds": 96.454
+    },
+    {
+      "name": "testHomeownerSampleToRealHouseUsesNewCaptureLocation",
+      "result": "passed",
+      "seconds": 45.21
+    },
+    {
+      "name": "testHomeownerSkipReplaySearchAndTaskNavigation",
+      "result": "passed",
+      "seconds": 86.341
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "result": "passed",
+      "seconds": 29.981
+    },
+    {
+      "name": "testMeasuredEnvelopeSaveAndRelaunch",
+      "result": "passed",
+      "seconds": 75.902
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "result": "passed",
+      "seconds": 50.463
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "result": "passed",
+      "seconds": 328.095
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "result": "passed",
+      "seconds": 52.824
+    },
+    {
+      "name": "testReviewedServiceTourPreviewAndTradeScope",
+      "result": "passed",
+      "seconds": 52.306
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "result": "passed",
+      "seconds": 41.081
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "result": "passed",
+      "seconds": 54.114
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "result": "passed",
+      "seconds": 103.01
+    }
+  ],
+  "processRecoveries": {
+    "process-recovery-capture-row.json": {
+      "recoveredExactlyOnce": true,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "passed": true,
+      "verifiedAssets": 3,
+      "powerLossQualified": false
+    },
+    "process-recovery-journal.json": {
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "recoveredExactlyOnce": true,
+      "passed": true,
+      "powerLossQualified": false,
+      "verifiedAssets": 3
+    },
+    "process-recovery-migration.json": {
+      "verifiedAssets": 19,
+      "passed": true,
+      "powerLossQualified": false,
+      "fault": "SIGKILL inside schema transaction before COMMIT"
+    }
+  },
+  "portableChecks": 50,
+  "portablePassed": true,
+  "validationReports": {
+    "archive-validation.json": true,
+    "capture-runtime-validation.json": true,
+    "chunked-snapshot-validation.json": true,
+    "cli-command-validation.json": true,
+    "cli-reconstruction-validation.json": true,
+    "drawing-benchmark-validation.json": true,
+    "drawing-marks-validation.json": true,
+    "general-glb-validation.json": true,
+    "general-obj-validation.json": true,
+    "general-ply-validation.json": true,
+    "general-points-usd-validation.json": true,
+    "general-semantic-validation.json": true,
+    "general-test-usd-validation.json": true,
+    "general-textured-usd-validation.json": true,
+    "house-surface-gltf-validation.json": true,
+    "ifc-properties-validation.json": true,
+    "ifc-source-gltf-validation.json": true,
+    "ifc-source-validation.json": true,
+    "mesh-interchange-validation.json": true,
+    "navigation-benchmark-validation.json": true,
+    "offline-viewer-validation.json": true,
+    "photo-curve-gltf-validation.json": true,
+    "photo-curve-viewer-validation.json": true,
+    "points-gltf-validation.json": true,
+    "points-usd-validation.json": true,
+    "portable-package-validation.json": true,
+    "reconstructed-navigation-validation.json": true,
+    "semantic-csv-validation.json": true,
+    "service-envelope-gltf-validation.json": true,
+    "service-envelope-validation.json": true,
+    "service-tour-validation.json": true,
+    "test-gltf-validation.json": true,
+    "test-usd-validation.json": true,
+    "textured-gltf-validation.json": true,
+    "textured-usd-validation.json": true,
+    "tour-reveal-validation.json": true
+  },
+  "validationReportsPassed": true,
+  "recordedAssertionsComplete": true,
+  "simulatorJobConclusion": "success",
+  "debugCompilationPassed": true,
+  "unsignedReleaseCompilationPassed": true,
+  "nativePhaseConclusion": "success",
+  "appleUploadRequested": false,
+  "visualReview": {
+    "source": "3883931263a2861a28cd354f190bbc3d8d71f178",
+    "screenshotsInspected": true,
+    "screenshots": [
+      {
+        "number": 40,
+        "test": "HouseXraySmoke/testHomeownerSampleToRealHouseUsesNewCaptureLocation()",
+        "source": "ui-attachments/AF8FB553-9832-4FBC-9396-9D35FC605D8C.png",
+        "name": "40-homeowner-first-real-capture_0_FC0175D7-3F06-403B-898F-A74C0E49DF61.png",
+        "sha256": "7619712cbbdbe9404383fb5c0f7088520044bc012f4e7a507a012651f3b2b252",
+        "inspected": true,
+        "passed": true,
+        "scope": "capture-header-and-opening-instruction",
+        "finding": "First room \u00b7 Rough-in, Not started, Close and the direct Start instruction are readable on dark panels. Start still uses white text on a bright mint fill; the small count explanation remains technical and faint. Those follow-ups are prepared for the combined candidate."
+      },
+      {
+        "number": 41,
+        "test": "HouseXraySmoke/testPhotoPointWorkflow()",
+        "source": "ui-attachments/1E518883-952F-4549-9A4F-BBF17015010A.png",
+        "name": "41-photo-capture-without-floor_0_DEBDD7FF-2705-4B62-B19F-F43EA0867D08.png",
+        "sha256": "4fd2bd9372576db07d7a03b1629816d2303a4098e78b4e29d9ba1a6df2388e21",
+        "inspected": true,
+        "passed": true,
+        "scope": "missing-floor-notice-and-explicit-free-fly",
+        "finding": "The photo-only viewer explains that walking needs a captured floor and clear route, and Free fly is visibly on. The long notice squeezes Layers into two lines and crowds the top header; a separate full-width notice row and dark Layers lettering are prepared."
+      }
+    ],
+    "overallVisualAcceptance": false,
+    "remainingVisualFollowUp": [
+      "dark lettering on bright onboarding and capture action buttons",
+      "separate the long walking notice from the viewer header controls",
+      "plain-language, brighter capture-count explanation"
+    ],
+    "ownerDeviceValidated": false
+  }
+}

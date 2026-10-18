@@ -1,3 +1,11 @@
+## Capture-header readability and bounded reconstructed navigation pass — 224.1
+
+Source **3883931263a2861a28cd354f190bbc3d8d71f178**, run **39169002149**, passes Debug/Release compilation, **172/172 native checks**, **19 reader phases**, **52 command contracts**, **17/17 UI workflows in 1404.559 seconds**, three process recoveries, 50 portable cases and **36/36 validation reports**. Both artifacts are independently SHA-256 verified in `docs/evidence/native-388-summary.json`.
+
+Walking now requires captured floor support. The connected analytic test retains 284 steps and all earlier refusals, adding five unsupported-floor variants. Two bounded synthetic depth fragments pass production reconstruction, actual native movement and independent scoring of the retained triangles and trace. This does not qualify reconstructed whole-house navigation, automatic floor recognition or physical accuracy.
+
+Screenshots 40 and 41 are inspected: the first real capture has readable location/tracking and corrected Start guidance; the photo-only viewer explains its missing floor and uses Free fly. The full homeowner onboarding/help simulator workflows pass. Remaining visual follow-up: dark lettering on bright onboarding and capture action buttons; separate the long walking notice from the viewer header controls; plain-language, brighter capture-count explanation. Actual owner-device accessibility/offline use and task comprehension remain open. TestFlight remains **216.1**, without this guidance. No intermediate upload was requested. Viewer comfort controls are prepared separately and remain pending native validation. The whole plan, precision and accepted-release gates remain open.
+
 ## Capture readability and floor-support repairs prepared
 
 The 223.1 screenshot review found white capture labels against a bright preview and an outdated opening instruction. The capture overlays now use dark contrast panels and show the selected location with a direct Start instruction; the existing first-real-capture workflow checks the location and message. Screenshot 40 must be inspected again.
