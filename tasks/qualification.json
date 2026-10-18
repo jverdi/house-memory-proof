@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T17:03:36.263123Z",
+  "updatedUTC": "2026-10-18T17:22:59.327707Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
@@ -62,7 +62,12 @@
     "nativeExpected": 170,
     "interfaceExpected": 13,
     "integrationComplete": false,
-    "status": "Native compilation in progress after capture-stop durability repair"
+    "status": "All app and reader checks pass; enclosing ten-minute native step timed out after cold simulator startup",
+    "nativePassed": 170,
+    "nativeFailed": 0,
+    "nativePhaseChecksPassed": 17,
+    "nativeSeconds": 283.7584302916666,
+    "evidence": "docs/evidence/native-c835-summary.json"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -711,7 +716,7 @@
     "interfaceFlowSeconds": 50.902
   },
   "requestedSnapshot": {
-    "status": "validating_capture_stop_repair",
+    "status": "simulator_startup_step_repair_prepared",
     "implementationSource": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
     "validatedRun": 39138960576,
     "ownerRequest": "Also please trigger a new TestFlight",
@@ -768,7 +773,13 @@
       "source": "c835925d412db66ec204825e1f2cec4093917394",
       "run": 39147161265,
       "build": "215.1",
-      "appleUploadVerified": false
+      "appleUploadVerified": false,
+      "nativePassed": 170,
+      "nativeReaderChecksPassed": 17,
+      "nativePhaseConclusion": "failure",
+      "failure": "Ten-minute outer step timeout including cold simulator startup",
+      "nativeArtifact": 12144561128,
+      "nativeArtifactSHA256": "f9395d7c908bd95f87b4bae1c1ca2528b4f90d29762907e967f67c2f3f8d3629"
     }
   },
   "pendingContinuation": {
@@ -780,10 +791,10 @@
       "authentic earlier-writer archive restore and current re-export",
       "Release configuration and bundled diagnostic fixture repair"
     ],
-    "localCommandContractsPassed": 40,
-    "expectedNativeChecks": 167,
-    "expectedUIFlows": 12,
-    "nativeValidated": false,
+    "localCommandContractsPassed": 44,
+    "expectedNativeChecks": 170,
+    "expectedUIFlows": 13,
+    "nativeValidated": true,
     "physicalQualification": false,
     "partialValidation": {
       "source": "186642672f400f991393351a336f619db9d6c2df",
@@ -796,8 +807,9 @@
         "tour provenance",
         "connected circular envelopes"
       ],
-      "boundaryCompatibilityAndReleaseValidationPending": true
-    }
+      "boundaryCompatibilityAndReleaseValidationPending": false
+    },
+    "nativeValidatedSource": "c835925d412db66ec204825e1f2cec4093917394"
   },
   "captureRuntimeCandidate": {
     "prepared": true,
@@ -812,14 +824,17 @@
     "physicalQualification": false,
     "expectedNativeChecks": 169,
     "localCommandContractsPassed": 44,
-    "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
-    "independentReaderPending": true,
+    "nativeValidatedSource": "c835925d412db66ec204825e1f2cec4093917394",
+    "independentReaderPending": false,
     "stopMarkerDurabilityRepair": {
       "prepared": true,
       "problem": "Acquisition stop marker assigned after the last durable sample; force-quit before finalization could lose this diagnostic boundary",
       "repair": "Persist immediately and require the boundary in the exported incomplete report",
-      "nativeValidationPending": true
-    }
+      "nativeValidationPending": false,
+      "validatedSource": "c835925d412db66ec204825e1f2cec4093917394",
+      "passed": true
+    },
+    "independentReaderPassed": true
   },
   "drawingBenchmarkCandidate": {
     "prepared": true,
@@ -836,7 +851,7 @@
     "accuracyQualified": false,
     "realPlanQualification": false,
     "physicalQualification": false,
-    "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+    "nativeValidatedSource": "c835925d412db66ec204825e1f2cec4093917394",
     "independentReaderPassed": true,
     "OCRMatches": 24,
     "OCRTruth": 24,
@@ -870,5 +885,18 @@
     "evidence": "docs/evidence/host-da549-summary.json",
     "originalFailuresRetained": true,
     "protectedDraw": false
+  },
+  "simulatorStartupRepair": {
+    "prepared": true,
+    "coldBootSeconds": 173,
+    "appSelfTestSeconds": 283.7584302916666,
+    "appSelfTestBudgetSeconds": 300,
+    "startupBudgetSeconds": 300,
+    "nativeStepBudgetMinutes": 10,
+    "jobBudgetMinutes": 60,
+    "newStartupStepMinutes": 6,
+    "separatesStartupFromNativePhase": true,
+    "localControlFlowTestsPassed": 3,
+    "nativeValidationPending": true
   }
 }

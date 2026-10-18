@@ -1,3 +1,9 @@
+## Native repairs verified; cold-start workflow accounting repair
+
+Source **c835925d412d / 215.1** passes **170/170 native checks in 283.758 seconds**, all **17 independent reader/command phases**, and **44 command contracts**. The authentic 161.1-source ZIP64 archive preserves all 217 features, three rooms and the original asset; current re-export/reimport and unsupported-future-schema refusal pass. Capture-stop persistence and its independent reader also pass. Native checkpoint SHA-256 is verified (`docs/evidence/native-c835-summary.json`).
+
+The enclosing GitHub step nevertheless hit its **10-minute timeout** after **173 seconds of cold simulator migration**, app checks and CLI readers. This is retained as a workflow failure, and upload remains blocked. Startup now has its own six-minute step using the unchanged 300-second startup bound; app self-tests retain 300 seconds, the native phase retains ten minutes and the whole job retains sixty minutes. Three executable shell-control tests verify cold startup, already-booted readiness and failure propagation without compilation/app launch. No product acceptance threshold changed. The owner snapshot moves to this workflow repair; c835's interface/export phase continues for evidence.
+
 ## Current delivery candidate — c835925d412d / 215.1
 
 Run **39147161265** is validating the capture-stop durability repair and ZIP64 compatibility diagnostic, with **170 native checks and 13 UI flows** required before signing/upload. Debug compilation has passed. Apple upload and owner readiness are not yet verified. Superseded **214.1 / 13631e9f3b** is confirmed cancelled, including its unstarted Apple upload job.

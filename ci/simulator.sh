@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/evidence
 mode="${1:-all}"
-case "$mode" in all|prepare|compile|release|verify|exercise|native|recovery|ui) ;; *) echo 'Expected all, prepare, compile, release, verify, exercise, native, recovery or ui'; exit 2;; esac
+case "$mode" in all|prepare|compile|release|boot|verify|exercise|native|recovery|ui) ;; *) echo 'Expected all, prepare, compile, release, boot, verify, exercise, native, recovery or ui'; exit 2;; esac
 native_failed=0
 if [ "$mode" = all ] || [ "$mode" = prepare ]; then
 python3 tooling/project.py
@@ -51,7 +51,7 @@ PY
 )"
 revision="$(git rev-parse --short=10 HEAD)"
 build_number="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
-if [ "$mode" != exercise ] && [ "$mode" != native ] && [ "$mode" != recovery ] && [ "$mode" != ui ]; then
+if [ "$mode" != exercise ] && [ "$mode" != native ] && [ "$mode" != recovery ] && [ "$mode" != ui ] && [ "$mode" != boot ]; then
 # Compile application and UI-test targets together before native runtime work.
 python3 ci/run_bounded.py 600 xcodebuild build-for-testing \
   -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
@@ -70,6 +70,7 @@ fi
 # Cold platform migration took 185 seconds on a fresh hosted runner. This
 # startup allowance is separate from the unchanged 300-second app test gate.
 python3 ci/run_bounded.py 300 xcrun simctl bootstatus "$device_id" -b
+if [ "$mode" = boot ]; then exit 0; fi
 xcrun simctl install "$device_id" build/DerivedData/Build/Products/Debug-iphonesimulator/HouseMemoryProof.app
 xcrun simctl launch "$device_id" com.example.HouseMemoryProof --demo --self-test --video-test | tee build/evidence/launch.log
 # Allow the first SwiftUI frame to render before recording CI evidence.
