@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T01:08:30Z",
+  "updatedUTC": "2026-10-18T01:15:00Z",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "569252935341fbb900961ebbcf4173eb48663a37",
+  "currentImplementationCommit": "6852e809d0bbacda7a022ba92e5e0e5f6ff932c9",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -55,12 +55,12 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Finish exact-source integrated validation, repair any failures without weakening gates, and continue unresolved spatial and whole-house qualification.",
+  "nextAction": "Validate bounded encoder retry, explicit complete-frame decoding and cache-integrity recovery, then continue remaining spatial and whole-house qualification without enabling physical precision.",
   "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts.",
   "currentValidation": {
-    "run": 39084977311,
+    "run": 39085733551,
     "status": "in_progress",
-    "nativeExpected": 119,
+    "nativeExpected": 120,
     "interfaceExpected": 5,
     "physicalQualification": false
   },
@@ -86,5 +86,14 @@
     "releaseToolTestsPassed": 30,
     "artifact": 12120741336,
     "sha256": "4b8b0c82b46f64056a5770bcd69bf6e5dc4019f1f2f2166ab1bc98b443772560"
+  },
+  "nativeRegistration": {
+    "source": "569252935341fbb900961ebbcf4173eb48663a37",
+    "passed": true,
+    "sessions": 20,
+    "movedControlsRefused": 19,
+    "incorrectScaleRefused": 19,
+    "descendantsInvalidated": 19,
+    "analyticOnly": true
   }
 }

@@ -1,0 +1,54 @@
+{
+  "source": "569252935341fbb900961ebbcf4173eb48663a37",
+  "run": 39084977311,
+  "job": 117549519690,
+  "build": "187.1",
+  "native": {
+    "passed": 118,
+    "failed": 1,
+    "elapsedSeconds": 232.69939062499998,
+    "failures": [
+      {
+        "encoderDiagnostics": {
+          "expectedShotFrames": 100,
+          "height": 1080,
+          "nextFrameIndex": 25,
+          "phase": "waiting-for-encoder-capacity",
+          "shotIndex": 1,
+          "waitedSeconds": 15.001503624999941,
+          "width": 1920,
+          "writerStatus": 1
+        },
+        "error": "Movie encoder timed out. Completed shots are saved; export again to resume.",
+        "passed": false,
+        "test": "1080p30 MP4 encode, decode and verified chunk reuse"
+      }
+    ]
+  },
+  "registration": {
+    "descendantsInvalidated": 19,
+    "incorrectScaleRefused": 19,
+    "independentlyMovedControlsRefused": 19,
+    "limitations": "Exact analytic reference poses; not image-based house, sensor-scale or physical precision qualification.",
+    "maximumAnalyticWitnessErrorMetres": 2.0734733982992197e-14,
+    "passed": true,
+    "physicalDeviceQualified": false,
+    "sessions": 20,
+    "test": "Chained session registration preserves the house frame and invalidates descendants",
+    "incorrectScaleChallengeFactor": 1.1
+  },
+  "processKillRecovery": {
+    "passed": 3,
+    "failed": 0
+  },
+  "interface": {
+    "status": "superseded_by_movie_recovery_candidate"
+  },
+  "artifact": {
+    "id": 12120193855,
+    "sha256": "3e315496e349652a2bfab16757957daab1b8e75899fbd166aed839a3779e88a9"
+  },
+  "completeIntegratedPass": false,
+  "physicalDeviceQualified": false,
+  "precisionEnabled": false
+}
