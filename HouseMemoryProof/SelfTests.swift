@@ -7,6 +7,7 @@ import CoreImage
 import AVFoundation
 import UIKit
 import Darwin
+import simd
 
 @MainActor enum SelfTests {
     static func run(model:AppModel,includeMovie:Bool=false) async {
@@ -120,6 +121,9 @@ import Darwin
                 source.referencePoses[index].matrix[3]+=0.1
                 do {_=try ReferenceRegistration.fit(source:source,anchor:anchor,house:h);return false}catch{return true}
             }
+            mark("Chained session registration and independent controls")
+            do {results.append(try registrationChainReport())}
+            catch {results.append(["test":"Chained session registration preserves the house frame and invalidates descendants","passed":false,"error":error.localizedDescription])}
             await check("Display reduction uses bounded source points without perforated triangles") {
                 let mesh=Mesh.box(center:V3(),size:V3(2,3,4)),uv=mesh.vertices.map{UV(u:$0.x,v:$0.y)}
                 let reduced=DisplayGeometry.reduce(mesh,uv:uv,budget:9)
@@ -1223,7 +1227,11 @@ import Darwin
                     let generator=AVAssetImageGenerator(asset:AVURLAsset(url:target));let frame=try await generator.image(at:CMTime(seconds:1,preferredTimescale:30))
                     try UIImage(cgImage:frame.image).pngData()?.write(to:mainRepo.root.appendingPathComponent("test-tour-frame.png"))
                     results.append(["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":reused,"width":1920,"height":1080,"durationSeconds":10,"seconds":ProcessInfo.processInfo.systemUptime-started])
-                }catch{results.append(["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":false,"error":error.localizedDescription])}
+                }catch{
+                    var failure:[String:Any]=["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":false,"error":error.localizedDescription]
+                    if let timeout=error as? MovieEncoderTimeout {failure["encoderDiagnostics"]=timeout.diagnostics}
+                    results.append(failure)
+                }
                 mark("Movie interruption and final-publication recovery")
                 do {results.append(try await movieRecoveryReport(repo:Repository(root:folder.appendingPathComponent("movie-recovery"))))}
                 catch{results.append(["test":"Movie interruption and final-publication recovery","passed":false,"error":error.localizedDescription])}
@@ -1242,6 +1250,78 @@ import Darwin
 }
 
 extension SelfTests {
+    static func registrationChainReport() throws->[String:Any] {
+        var house=House.empty("Analytic chained-session registration")
+        let adapter=simd_double4x4(columns:(SIMD4(1,0,0,0),SIMD4(0,0,1,0),SIMD4(0,-1,0,0),SIMD4(0,0,0,1)))
+        var expected:[simd_double4x4]=[],segments:[Segment]=[]
+        for index in 0..<20 {
+            let angle=Double(index)*0.37,axis=simd_normalize(SIMD3<Double>(1,2,3))
+            var transform=simd_double4x4(simd_quatd(angle:angle,axis:axis))
+            transform.columns.3=SIMD4(Double(index%4)*4.3,Double(index/4)*3.1,Double(index/4)*2.8,1)
+            expected.append(transform)
+            var segment=Segment(roomID:house.rooms[0].id,stageID:house.stages[index%2].id)
+            if index==0 {segment.registration=Rigid(values:PoseRefinement.array(transform))}
+            segments.append(segment)
+        }
+        var groups:[[UUID]]=[]
+        for index in 1..<segments.count {
+            var ids:[UUID]=[]
+            for number in 0..<4 {
+                let board=ReferenceBoard(name:"Analytic control",image:"test.png",pdf:"test.pdf")
+                house.references.append(board);ids.append(board.id)
+                var boardWorld=simd_double4x4(simd_quatd(angle:Double(number)*0.8,axis:SIMD3<Double>(0,0,1)))
+                let centre=expected[index].columns.3
+                let offset=SIMD4<Double>(Double(number%2)*2,Double(number/2)*1.5,Double(number)*0.7,0)
+                boardWorld.columns.3=centre+offset
+                for session in [index-1,index] {
+                    let local=simd_inverse(adapter)*simd_inverse(expected[session])*boardWorld
+                    segments[session].referencePoses.append(ReferencePose(boardID:board.id,matrix:PoseRefinement.array(local)))
+                }
+            }
+            groups.append(ids)
+        }
+        house.segments=segments
+        let witnesses=[V3(),V3(7,-3,2),V3(-5,4,6),V3(2,8,-1)]
+        var worst=0.0,refused=0,scaleRefused=0
+        for index in 1..<segments.count {
+            let source=house.segments[index],anchor=house.segments[index-1]
+            let (transform,residual,link)=try ReferenceRegistration.fit(source:source,anchor:anchor,house:house)
+            let truth=Rigid(values:PoseRefinement.array(expected[index]))
+            for point in witnesses {worst=max(worst,(transform.apply(point)-truth.apply(point)).length)}
+            guard residual<1e-9 else{throw HouseError.message("Exact session controls acquired a registration residual.")}
+            // The withheld board must not be fitted away, even after a long
+            // chain of rotations and floor offsets has already been registered.
+            var moved=source
+            let check=link.boardIDs[2],position=moved.referencePoses.firstIndex{$0.boardID==check}!
+            moved.referencePoses[position].matrix[3]+=0.08
+            do {_=try ReferenceRegistration.fit(source:moved,anchor:anchor,house:house)}catch{refused+=1}
+            var scaled=source
+            let origin=source.referencePoses[0].matrix
+            for pose in scaled.referencePoses.indices {for axis in [3,7,11] {
+                scaled.referencePoses[pose].matrix[axis]=origin[axis]+(source.referencePoses[pose].matrix[axis]-origin[axis])*1.1
+            }}
+            do {_=try ReferenceRegistration.fit(source:scaled,anchor:anchor,house:house)}catch{scaleRefused+=1}
+            house.segments[index].registration=transform;house.segments[index].registrationResidual=residual
+            house.segments[index].registrationLink=link
+        }
+        guard worst<1e-8,refused==19,scaleRefused==19 else{throw HouseError.message("Chained registration changed the house frame or accepted moved/scaled controls.")}
+        house=try JSONDecoder().decode(House.self,from:JSONEncoder().encode(house))
+        ReferenceRegistration.invalidateChangedInputs(&house)
+        guard house.segments.allSatisfy({$0.registration != nil}) else{throw HouseError.message("Unchanged session registrations did not survive reload.")}
+        // Change one original print dimension. Its child and all descendants
+        // must lose the derived frame while every original pose remains intact.
+        let originalPoses=house.segments.map{$0.referencePoses}
+        let changed=house.references.firstIndex{$0.id==groups[0][0]}!
+        house.references[changed].width+=0.01
+        ReferenceRegistration.invalidateChangedInputs(&house)
+        guard house.segments[0].registration != nil,
+          house.segments.dropFirst().allSatisfy({$0.registration==nil && $0.registrationLink==nil}),
+          house.segments.map({$0.referencePoses})==originalPoses else{throw HouseError.message("A changed reference retained stale descendant frames or altered original poses.")}
+        return ["test":"Chained session registration preserves the house frame and invalidates descendants","passed":true,
+            "sessions":20,"independentlyMovedControlsRefused":refused,"incorrectScaleRefused":scaleRefused,"descendantsInvalidated":19,
+            "maximumAnalyticWitnessErrorMetres":worst,"physicalDeviceQualified":false,
+            "limitations":"Exact analytic reference poses; not image-based house, sensor-scale or physical precision qualification."]
+    }
     static func movieRecoveryReport(repo:Repository) async throws->[String:Any] {
         let house=DemoFactory.make(),options=SceneOptions(),exports=Exporter.destination("probe").deletingLastPathComponent()
         func published()throws->Set<String> {Set(try FileManager.default.contentsOfDirectory(atPath:exports.path))}

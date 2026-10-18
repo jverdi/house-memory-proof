@@ -1,15 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+release_mode="${1:-ship}"
+case "$release_mode" in ship|audit) ;; *) echo 'Expected ship or audit'; exit 2;; esac
 mkdir -p build/evidence
 python3 tooling/project.py
 git diff --exit-code -- HouseMemoryProof.xcodeproj/project.pbxproj
 export HOUSE_RELEASE_REVISION="$(git rev-parse --short=10 HEAD)"
 export HOUSE_RELEASE_BUILD="${GITHUB_RUN_NUMBER:-1}.${GITHUB_RUN_ATTEMPT:-1}"
-python3 ci/upload_preflight.py
-if python3 -c 'import json,sys;sys.exit(0 if not json.load(open("build/evidence/upload-preflight.json"))["upload_needed"] else 1)'; then
-  echo 'This exact build number already exists in Apple; readiness polling will verify processing and owner access.'
-  exit 0
+if [ "$release_mode" = ship ]; then
+  python3 ci/upload_preflight.py
+  if python3 -c 'import json,sys;sys.exit(0 if not json.load(open("build/evidence/upload-preflight.json"))["upload_needed"] else 1)'; then
+    echo 'This exact build number already exists in Apple; readiness polling will verify processing and owner access.'
+    exit 0
+  fi
 fi
 bash tooling/prepare-ifc.sh
 bash tooling/prepare-simulation.sh
@@ -74,7 +78,7 @@ python3 - <<'PY'
 import os, plistlib
 with open('build/ExportOptions.plist', 'wb') as out:
     plistlib.dump({
-        'method': 'app-store-connect', 'destination': 'upload',
+        'method': 'app-store-connect', 'destination': 'export',
         'signingStyle': 'automatic', 'teamID': os.environ['APPLE_TEAM_ID'],
         'testFlightInternalTestingOnly': True,
         'manageAppVersionAndBuildNumber': False, 'uploadSymbols': True
@@ -83,6 +87,35 @@ PY
 xcodebuild -exportArchive \
   -archivePath build/HouseMemoryProof.xcarchive \
   -exportPath build/export \
+  -exportOptionsPlist build/ExportOptions.plist "${auth[@]}" \
+  2>&1 | python3 ci/sanitize_signing_log.py "$key_path" | tee build/evidence/distribution-export.log
+
+python3 ci/verify_archive.py --export-directory build/export
+if [ "$release_mode" = audit ]; then
+  python3 - <<'PY'
+import json
+from pathlib import Path
+report=json.loads(Path('build/evidence/signed-release-manifest.json').read_text())
+assert report['releaseIdentityVerified'] and not report['debuggerAttachmentAllowed']
+Path('build/evidence/signing-audit-result.json').write_text(json.dumps(dict(
+    status='signed_distribution_export_verified_no_upload',sourceRevision=report['sourceRevision'],
+    build=report['build'],uploaded=False,physicalDeviceQualified=False),indent=2)+'\n')
+PY
+  echo 'Signing audit passed. No TestFlight upload was requested or performed.'
+  exit 0
+fi
+
+# Re-export the same checked archive through the already proven Xcode upload
+# path. Its receipt is tracked separately from the locally inspected IPA hash.
+python3 - <<'PY'
+import plistlib
+from pathlib import Path
+p=Path('build/ExportOptions.plist');options=plistlib.loads(p.read_bytes())
+options['destination']='upload';p.write_bytes(plistlib.dumps(options))
+PY
+xcodebuild -exportArchive \
+  -archivePath build/HouseMemoryProof.xcarchive \
+  -exportPath build/upload \
   -exportOptionsPlist build/ExportOptions.plist "${auth[@]}" \
   2>&1 | python3 ci/sanitize_signing_log.py "$key_path" | tee build/evidence/upload.log
 
@@ -93,6 +126,8 @@ Path('build/evidence/upload-result.json').write_text(json.dumps({
     'status': 'xcode_upload_command_succeeded',
     'revision': sys.argv[1], 'build': sys.argv[2],
     'bundle_id': os.environ['APP_BUNDLE_ID'],
+    'pre_upload_distribution_audit_passed': True,
+    'uploaded_ipa_hash_independently_verified': False,
     'apple_processing_verified': False,
     'internal_tester_access_verified': False,
     'physical_iPhone_verified': False

@@ -1,0 +1,62 @@
+name: Audit signed distribution without upload
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/signing-audit.yml
+      - ci/testflight.sh
+      - ci/verify_archive.py
+      - ci/test_testflight_script.py
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: personal-apple-upload
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv
+          key: opencv-4.13.0-ios26-arm64-v1-${{ hashFiles('tooling/opencv/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-eigen3.4-arm64-v2-${{ hashFiles('tooling/solver/build.sh') }}
+          restore-keys: |
+            ceres-2.2.0-eigen3.4-arm64-v3
+            ceres-2.2.0-eigen3.4-arm64-v1
+            ceres-host-bootstrap-v1
+      - name: Check release policy and no-upload audit control flow
+        run: |
+          python3 -m unittest discover -s ci -p 'test_*.py'
+          bash -n ci/testflight.sh
+          mkdir -p build/evidence
+          xcodebuild -help > build/evidence/xcodebuild-help.txt 2>&1
+      - name: Archive, export and inspect signed distribution without uploading
+        env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || '4RLZ6F3UA4' }}
+          APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID || 'com.jverdi.housememoryproof' }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
+        run: bash ci/testflight.sh audit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: signed-distribution-audit-${{ github.run_number }}-${{ github.run_attempt }}
+          path: build/evidence/
+          if-no-files-found: warn
+          retention-days: 90
+

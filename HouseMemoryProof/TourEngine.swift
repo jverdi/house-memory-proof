@@ -183,6 +183,17 @@ enum TourDirector {
   }
 
 }
+struct MovieEncoderTimeout: LocalizedError {
+  let shot:Int,frame:Int,expectedFrames:Int,width:Int,height:Int,writerStatus:Int
+  let waitedSeconds:Double
+  var errorDescription:String? {"Movie encoder timed out. Completed shots are saved; export again to resume."}
+  var diagnostics:[String:Any] {
+    ["phase":"waiting-for-encoder-capacity","shotIndex":shot,"nextFrameIndex":frame,
+     "expectedShotFrames":expectedFrames,"width":width,"height":height,
+     "writerStatus":writerStatus,"waitedSeconds":waitedSeconds]
+  }
+}
+
 @MainActor enum MovieExporter {
   static func cacheKey(house: House, plan: TourPlan, options: SceneOptions) throws -> String {
     let encoder = JSONEncoder()
@@ -336,12 +347,15 @@ enum TourDirector {
             throw HouseError.message(
               "Movie checkpoint saved. Keep the app open and cool, then export again to resume.")
           }
-          let readyDeadline=ProcessInfo.processInfo.systemUptime+15
+          let readyStarted=ProcessInfo.processInfo.systemUptime,readyDeadline=readyStarted+15
           while !input.isReadyForMoreMediaData {
             guard writer.status == .writing else {
               throw writer.error ?? HouseError.message("Movie encoder stopped.")
             }
-            guard ProcessInfo.processInfo.systemUptime<readyDeadline else{throw HouseError.message("Movie encoder timed out. Completed shots are saved; export again to resume.")}
+            guard ProcessInfo.processInfo.systemUptime<readyDeadline else {
+              throw MovieEncoderTimeout(shot:shotIndex,frame:frame,expectedFrames:frames,width:width,height:height,
+                writerStatus:writer.status.rawValue,waitedSeconds:ProcessInfo.processInfo.systemUptime-readyStarted)
+            }
             try await Task.sleep(nanoseconds: 10_000_000)
           }
           let phase =

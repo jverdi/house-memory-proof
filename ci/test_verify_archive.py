@@ -7,6 +7,10 @@ class SignedReleaseTests(unittest.TestCase):
         self.signed={'application-identifier':'TESTTEAM01.com.example.fixture','com.apple.developer.team-identifier':'TESTTEAM01','get-task-allow':False}
     def check(self):validate(self.info,self.signed,'com.example.fixture','TESTTEAM01','7.1','abc01234567890')
     def test_matching_identity_passes(self):self.check()
+    def test_development_archive_never_satisfies_distribution_gate(self):
+        self.signed['get-task-allow']=True
+        validate(self.info,self.signed,'com.example.fixture','TESTTEAM01','7.1','abc01234567890',distribution=False)
+        with self.assertRaises(ValueError):self.check()
     def test_wrong_source_build_or_bundle_is_refused(self):
         for key in ['CFBundleIdentifier','CFBundleVersion','ProofSourceRevision']:
             with self.subTest(key=key):
