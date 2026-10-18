@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "source": "f8259c889397a5c0b7e898e1c9a99f30b1344b7a",
+  "workflowCommit": "01cdc4a9d126c043146de04551c30059c8003490",
+  "run": 39083503548,
+  "artifact": 12119467947,
+  "artifactSHA256": "b35722f3027c539750017736f9dedc2b77a8bf60da635f7304de8ba3618e27b8",
+  "candidate": "PnP RANSAC outlier threshold reduced from 2.5 to 1 pixel; product accuracy, availability, consensus and geometry gates unchanged",
+  "adopted": false,
+  "reason": "Layout A improves but layout B still fails low-resolution precision; rough-to-finished availability remains zero.",
+  "cases": [
+    {
+      "case": "finished-layout-b-384",
+      "passed": false,
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.02076713105657792,
+      "worstAcceptedPositionErrorMetres": 0.03072648277866168,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "finished room with observed finished map": {
+          "attempts": 20,
+          "accepted": 20,
+          "availability": 1.0,
+          "p95Metres": 0.02076713105657792,
+          "worstMetres": 0.03072648277866168,
+          "passed": false
+        }
+      }
+    },
+    {
+      "case": "finished-layout-b-768",
+      "passed": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 19,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.006485589638705405,
+      "worstAcceptedPositionErrorMetres": 0.006485589638705405,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "finished room with observed finished map": {
+          "attempts": 20,
+          "accepted": 19,
+          "availability": 0.95,
+          "p95Metres": 0.006485589638705405,
+          "worstMetres": 0.006485589638705405,
+          "passed": true
+        }
+      }
+    },
+    {
+      "case": "finished-layout-a-384",
+      "passed": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.00868887565415194,
+      "worstAcceptedPositionErrorMetres": 0.01091820693271205,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "finished room with observed finished map": {
+          "attempts": 20,
+          "accepted": 20,
+          "availability": 1.0,
+          "p95Metres": 0.00868887565415194,
+          "worstMetres": 0.01091820693271205,
+          "passed": true
+        }
+      }
+    },
+    {
+      "case": "finished-layout-a-768",
+      "passed": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 19,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.007041173160470685,
+      "worstAcceptedPositionErrorMetres": 0.007041173160470685,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "finished room with observed finished map": {
+          "attempts": 20,
+          "accepted": 19,
+          "availability": 0.95,
+          "p95Metres": 0.007041173160470685,
+          "worstMetres": 0.007041173160470685,
+          "passed": true
+        }
+      }
+    },
+    {
+      "case": "paired",
+      "passed": false,
+      "positiveQueries": 20,
+      "positiveAccepted": 12,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.005216173974326672,
+      "worstAcceptedPositionErrorMetres": 0.005216173974326672,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "finished stage with retained reference surfaces": {
+          "attempts": 8,
+          "accepted": 0,
+          "availability": 0.0,
+          "p95Metres": null,
+          "worstMetres": null,
+          "passed": false
+        },
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1.0,
+          "p95Metres": 0.005216173974326672,
+          "worstMetres": 0.005216173974326672,
+          "passed": true
+        }
+      }
+    },
+    {
+      "case": "rough-a",
+      "passed": true,
+      "positiveQueries": 12,
+      "positiveAccepted": 12,
+      "negativeQueries": 8,
+      "falseAccepts": 0,
+      "p95Metres": 0.003975794837360552,
+      "worstAcceptedPositionErrorMetres": 0.003975794837360552,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1.0,
+          "p95Metres": 0.003975794837360552,
+          "worstMetres": 0.003975794837360552,
+          "passed": true
+        }
+      }
+    },
+    {
+      "case": "rough-b",
+      "passed": true,
+      "positiveQueries": 12,
+      "positiveAccepted": 12,
+      "negativeQueries": 8,
+      "falseAccepts": 0,
+      "p95Metres": 0.004601039623550373,
+      "worstAcceptedPositionErrorMetres": 0.004601039623550373,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1.0,
+          "p95Metres": 0.004601039623550373,
+          "worstMetres": 0.004601039623550373,
+          "passed": true
+        }
+      }
+    },
+    {
+      "case": "staggered",
+      "passed": false,
+      "positiveQueries": 20,
+      "positiveAccepted": 12,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.003056128068218461,
+      "worstAcceptedPositionErrorMetres": 0.003056128068218461,
+      "oracleReadDenied": true,
+      "scenarioMetrics": {
+        "finished stage with retained reference surfaces": {
+          "attempts": 8,
+          "accepted": 0,
+          "availability": 0.0,
+          "p95Metres": null,
+          "worstMetres": null,
+          "passed": false
+        },
+        "nominal selected room": {
+          "attempts": 12,
+          "accepted": 12,
+          "availability": 1.0,
+          "p95Metres": 0.003056128068218461,
+          "worstMetres": 0.003056128068218461,
+          "passed": true
+        }
+      }
+    }
+  ],
+  "physicalQualification": false,
+  "protectedHouseQualification": false
+}

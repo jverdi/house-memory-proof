@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-17T23:48:00Z",
+  "updatedUTC": "2026-10-18T00:44:00Z",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "c2beb732a8b919d5b6c072763d45525064aff90a",
+  "currentImplementationCommit": "6045475e6192601687279df064d349a5686a0385",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,16 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "f6f2865bc9ec1635b40c6bf79ff36b91158e626e",
-    "passed": 108,
+    "source": "75807dbab1e16e184b0093f2c184df7ae6e03d53",
+    "passed": 117,
     "failed": 0,
-    "artifact": 12118052415,
-    "sha256": "41072e8a01d5e0953fb532dbf95fe9fd6504f5517e4fd7271953301ba4855bb3"
+    "artifact": 12119103951,
+    "sha256": "01f57ff511ad8487e7096af958d8f40ec9163cd4c011edcc389356afda754f71",
+    "searchP95Milliseconds": 119.15399999998044,
+    "distinctPhotoNotes": 50000,
+    "completeIntegratedPass": false
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "Compile and run all native, interface, recovery and independent-reader checks for current source."
+      "remaining": "Verify all 118 native checks, five interface workflows, process-kill recovery and independent readers for coverage source 6045475e61."
     },
     {
       "area": "finished localization",
@@ -52,6 +55,13 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Inspect exact-source integrated CI; repair failures without weakening gates, then continue the remaining software qualification.",
-  "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts."
+  "nextAction": "Finish exact-source integrated validation, repair any failures without weakening gates, and continue unresolved spatial and whole-house qualification.",
+  "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts.",
+  "currentValidation": {
+    "run": 39083676227,
+    "status": "in_progress",
+    "nativeExpected": 118,
+    "interfaceExpected": 5,
+    "physicalQualification": false
+  }
 }

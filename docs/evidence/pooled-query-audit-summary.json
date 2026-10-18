@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "sourceRevision": "f8259c889397a5c0b7e898e1c9a99f30b1344b7a",
+  "workflowCommit": "0aed9fdf1f043fa04fb58847965e8186107efcce",
+  "run": 39082008716,
+  "artifact": 12118829779,
+  "artifactSHA256": "e439564cecc981ecb1a8a643a2f673ee6a7372825ba9708a5f57fa61efd8535c",
+  "independentlyHashVerified": true,
+  "experiment": "Attempt separately validated disjoint source-group pooling before the existing individual-source consensus path.",
+  "adopted": false,
+  "outcome": "All eight development protocols retain the same acceptance counts and reported position errors. No accuracy or availability improvement.",
+  "cases": [
+    {
+      "case": "finished-layout-B-384",
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.020859879102066665,
+      "worstMetres": 0.03348820788345665,
+      "passed": false
+    },
+    {
+      "case": "finished-layout-B-768",
+      "positiveQueries": 20,
+      "positiveAccepted": 19,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.006168092966285194,
+      "worstMetres": 0.006168092966285194,
+      "passed": true
+    },
+    {
+      "case": "finished-layout-A-384",
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.011225926925754845,
+      "worstMetres": 0.011660114677089325,
+      "passed": false
+    },
+    {
+      "case": "finished-layout-A-768",
+      "positiveQueries": 20,
+      "positiveAccepted": 19,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.006269729232097975,
+      "worstMetres": 0.006269729232097975,
+      "passed": true
+    },
+    {
+      "case": "paired",
+      "positiveQueries": 20,
+      "positiveAccepted": 12,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.0038196412403025213,
+      "worstMetres": 0.0038196412403025213,
+      "passed": false
+    },
+    {
+      "case": "rough-a",
+      "positiveQueries": 12,
+      "positiveAccepted": 12,
+      "negativeQueries": 8,
+      "falseAccepts": 0,
+      "p95Metres": 0.004230392288238054,
+      "worstMetres": 0.004230392288238054,
+      "passed": true
+    },
+    {
+      "case": "rough-b",
+      "positiveQueries": 12,
+      "positiveAccepted": 12,
+      "negativeQueries": 8,
+      "falseAccepts": 0,
+      "p95Metres": 0.0039965924224123015,
+      "worstMetres": 0.0039965924224123015,
+      "passed": true
+    },
+    {
+      "case": "staggered",
+      "positiveQueries": 20,
+      "positiveAccepted": 12,
+      "negativeQueries": 20,
+      "falseAccepts": 0,
+      "p95Metres": 0.0044288309903940636,
+      "worstMetres": 0.0044288309903940636,
+      "passed": false
+    }
+  ],
+  "thresholdsChanged": false,
+  "productionQualified": false
+}

@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "sourceRevision": "f8259c889397a5c0b7e898e1c9a99f30b1344b7a",
+  "run": 39081574975,
+  "build": "184.1",
+  "platform": "iPhone simulator",
+  "checks": 117,
+  "passed": 116,
+  "failed": 1,
+  "elapsedSeconds": 192.3574726666667,
+  "failure": {
+    "area": "50,000-photograph metadata search",
+    "queryP95Milliseconds": 305.3189583333733,
+    "limitMilliseconds": 300,
+    "fixture": "Repeated metadata; superseded by a distinct-description benchmark in the repair."
+  },
+  "artifact": 12118299945,
+  "artifactSHA256": "637acde2dab9ca7b45f54c65a65e0505f999cb6a3571b0298efd50f301d3ea9f",
+  "independentlyHashVerified": true,
+  "physicalBackgroundExecutionQualified": false,
+  "physicalPrecisionQualified": false,
+  "interface": {
+    "passed": 4,
+    "failed": 1,
+    "failure": "Step-navigation switch remained off after row-label tap; controls could not be found. Verified in native accessibility log."
+  },
+  "processKillRecovery": {
+    "passed": 3,
+    "failed": 0
+  },
+  "independentReaders": "All passed, including actual Swift chunked-snapshot payloads",
+  "integratedArtifact": {
+    "id": 12119876267,
+    "sha256": "5c9c49c1d0f422d274e06cac8fa9795b7e503b957e272cf41f2b609aa9937ddd"
+  }
+}

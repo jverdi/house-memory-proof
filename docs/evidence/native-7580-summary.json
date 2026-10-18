@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "source": "75807dbab1e16e184b0093f2c184df7ae6e03d53",
+  "build": "185.1",
+  "run": 39082994010,
+  "artifact": 12119103951,
+  "artifactSHA256": "01f57ff511ad8487e7096af958d8f40ec9163cd4c011edcc389356afda754f71",
+  "nativePassed": 117,
+  "nativeFailed": 0,
+  "elapsedSeconds": 139.85174058333337,
+  "platform": "iPhone simulator",
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1566228480,
+    "physicalFootprintBytes": 64168576,
+    "residentBytes": 285245440
+  },
+  "search": {
+    "defaultPageSize": 200,
+    "imageFilesRead": 0,
+    "indexBuildMilliseconds": 571.5768750000052,
+    "limitations": "Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone.",
+    "passed": true,
+    "photographs": 50000,
+    "queries": 12,
+    "queryP95Milliseconds": 119.15399999998044,
+    "test": "Fifty-thousand photograph metadata search",
+    "uniquePhotoMetadata": 50000
+  },
+  "integratedWorkflow": "Superseded after native checkpoint by coverage repair; not a complete integrated pass",
+  "precisionProfileEnabled": false,
+  "physicalQualification": false
+}

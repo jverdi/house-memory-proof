@@ -28,13 +28,16 @@ Acceptance remains the runbook's gates. Implemented features below are not equiv
 
 Every source checkpoint is committed to main. Aggregate evidence is retained under docs/evidence; detailed diagnostics stay in bounded CI artifacts. No additional intermediate upload is authorized by the snapshot workflow. The machine-readable continuation state is in qualification.json.
 
-### Current continuation: 2026-10-17
+### Current continuation: 2026-10-18
 
 - Snapshot 161.1 passed 102 native checks, all three interface flows, process-kill recovery, portable and independent-reader checks before signing/upload. Apple readiness and verified owner-group access passed in run 39080146782.
 - Source f6f2865bc9 passed 108 native checks covering aggregate IFC budgets/placement/refusal, drawing-source invalidation and ZIP64 directory/offset validation. Native checkpoint SHA-256: 41072e8a01d5e0953fb532dbf95fe9fd6504f5517e4fd7271953301ba4855bb3.
-- Following source adds room/stage metadata search with a 50,000-photo benchmark, accessible step/snap-turn controls, collision independent of hidden layers, safe walking viewpoints, CPU continued processing, memory-pressure cooldown, and viewer/index archive integrity. Integrated candidate validation is pending at c2beb732a8.
+- Source 75807dbab1 passes all 117 native checks: search now measures 119.154 ms p95 for 50,000 distinct photo notes, against the unchanged 300 ms target. All three actual process-kill checks pass. Its UI phase was superseded by coverage source 6045475e61, so it is not a complete integrated pass.
+- Chunked version 2 snapshots, legacy reading, incremental reuse, interruption/retry integrity and honest transfer states pass native checks; the independent Python reader passes on actual Swift output at f8259c8893. Provider/account behavior still needs real-device qualification.
+- Coverage source 6045475e61 streams bounded depth/confidence evidence, requires explicit high-confidence depth and separated good views, bounds sampled patches, and clears stale reports. Run 39083676227 is validating 118 native checks and five interface workflows.
+- Three isolated localization alternatives (pooled query, geometric median and tighter PnP outliers) did not resolve the retained failures and were not adopted.
 - Finished-map development tests at 768 pixels accept 19/20 queries in each layout with zero false accepts and at most 6.270 mm error after contradictory-depth refusal. Both 384-pixel cases fail the unchanged accuracy target. Rough-only maps still fail finished-stage availability. These failures remain open; no threshold was relaxed.
-- Daily expiry checks, 45-day renewal policy, existing-build upload preflight and signed-identity/symbol-retention checks are implemented. Twenty-one release-policy tests pass. Automatic renewal remains disabled pending acceptance; the new signing inspection still needs a future authorized signed build.
+- Daily expiry checks, 45-day renewal policy, existing-build upload preflight and signed-identity/symbol-retention checks are implemented. Twenty-six release-policy/readiness tests pass. Automatic renewal remains disabled pending acceptance; the new signing inspection still needs a future authorized signed build.
 - Full 50-development/20-protected **house topology** qualification is not satisfied by the 70 analytic corner configurations. Sensor diversity, whole-house registration, thin-service geometry and independent field precision remain required. Actual phone resource/background/iCloud-provider qualification remains separate.
 
 ### 2026-10-17 — movie timing and house-layout failures retained
