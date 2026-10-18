@@ -1,3 +1,9 @@
+## Current validation checkpoint — d7f5b79e31 / 208.1
+
+The combined source passes **163/163 native checks** in **127.101 seconds**, plus all **15 native-phase readers/commands**. The service CLI and independent reader verify six reviewed-route inspections, four endpoints, source points, explicit confirmed links and camera cuts over 300 frames. The full-decode movie test also verifies the JSON sidecar sharing inventory. All four additional IFC geometry cases and matched reveal/restoration checks pass. Native evidence is SHA-verified in `docs/evidence/native-d7f5-summary.json`.
+
+Process recovery, twelve interface flows and remaining export checks are continuing. The last complete integration remains dfec13ee61 / 205.1. Failed compilation at 74b8740b1d is retained in `docs/evidence/compile-74b874-summary.json`; the corrected fe985 native checkpoint and three recoveries are retained separately. No intermediate TestFlight upload occurred.
+
 ## Reviewed service-tour continuation
 
 The matched-reveal/IFC candidate was published as **74b8740b1d** after current-chat approval. Run 39137801029 failed at compilation on an ambiguous trailing-closure expression in the reveal round-trip test; pinned IFC preflight passed. **fe9855458b / 207.1** repairs that expression and passes **162/162 native checks** in 225.866 seconds, plus all 13 native-phase readers/commands. The SHA-verified checkpoint retains the encoded reveal/restoration result and all four zero-error IFC geometry cases (`docs/evidence/native-fe985-summary.json`). Its remaining UI run is superseded by this combined candidate. The last complete native/UI integration remains dfec13ee61 / 205.1.

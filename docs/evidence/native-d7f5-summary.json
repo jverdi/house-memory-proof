@@ -1,0 +1,174 @@
+{
+  "build": "208.1",
+  "date": "2026-10-18T15:15:48Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 127.10148149999998,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1243693056,
+    "physicalFootprintBytes": 133669632,
+    "residentBytes": 317767680
+  },
+  "sourceRevision": "d7f5b79e31",
+  "systemVersion": "26.5",
+  "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+  "run": 39138960576,
+  "nativeChecks": 163,
+  "nativePassed": 163,
+  "nativeFailures": [],
+  "artifact": {
+    "id": 12140104811,
+    "sha256": "9f60cd39ff0026a11c34f6182e9692939adc49c60987c98144476682f87f4bb5",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": false,
+  "interfaceExpected": 12,
+  "interfaceStatus": "Running",
+  "additionalTestFlightUpload": false,
+  "physicalQualification": false,
+  "nativeReaderStatus": [
+    {
+      "check": "ifc-coordinate-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-source-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "drawing-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "envelope-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "archive-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "command-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reveal-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-result",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "service-tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "service-tour-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-result",
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "serviceTour": {
+    "analyticOnly": true,
+    "confirmedLinksOnly": true,
+    "durationOmissionsExplicit": true,
+    "endpointInspections": 4,
+    "frames": 300,
+    "passed": true,
+    "physicalQualification": false,
+    "routes": 2,
+    "sourceChangesRefused": true,
+    "unsupportedInputsRefused": true
+  },
+  "serviceTourReader": {
+    "passed": true,
+    "reader": "Independent Python service-tour reader",
+    "frames": 300,
+    "inspections": 6,
+    "endpoints": 4,
+    "sourceRoutesVerified": true,
+    "explicitConnectionsOnly": true,
+    "cameraCutsVerified": true,
+    "physicalQualification": false
+  },
+  "tourReveal": {
+    "analyticOnly": true,
+    "fadeAndRestoreVerified": true,
+    "frames": 300,
+    "passed": true,
+    "physicalQualification": false,
+    "rawSourceRecordsPublished": false,
+    "refusalCases": 6,
+    "renderedRevealDiffers": true,
+    "restoredRenderMatches": true,
+    "sameCameraThroughout": true
+  },
+  "ifcGeometry": {
+    "analyticOnly": true,
+    "cases": 4,
+    "maximumBoundsErrorMetres": 0,
+    "maximumSolidVolumeErrorCubicMetres": 0,
+    "passed": true,
+    "physicalQualification": false,
+    "rawFixturesPublished": false,
+    "typeMaterialAndOpeningRelationsPreserved": true
+  },
+  "revealReader": {
+    "passed": true,
+    "reader": "Independent Python matched-reveal reader",
+    "shots": 1,
+    "frames": 150,
+    "comparisons": 1,
+    "sourceIdentitiesVerified": true,
+    "sameCameraVerified": true,
+    "fadeTimelineVerified": true,
+    "rawSourceRecordsPublished": false,
+    "physicalQualification": false
+  },
+  "commandContractTests": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 36,
+    "seconds": 4.168173417000048,
+    "exitCode": 0
+  }
+}

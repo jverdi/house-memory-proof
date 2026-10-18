@@ -137,5 +137,13 @@
     "tests": 34,
     "seconds": 4.3135972500000435,
     "exitCode": 0
+  },
+  "workflowConclusion": "cancelled",
+  "cancelReason": "Superseded after a successful native checkpoint by the combined reviewed-service candidate",
+  "processKillPassed": 3,
+  "fullArtifact": {
+    "id": 12141300179,
+    "sha256": "604e63c08423479035afcc75804b589fea412ee5665f417c691a9a0d4ad172a6",
+    "sha256IndependentlyVerified": true
   }
 }

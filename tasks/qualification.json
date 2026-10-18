@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
+  "currentImplementationCommit": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,17 +15,17 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
-    "passed": 162,
+    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+    "passed": 163,
     "failed": 0,
-    "artifact": 12141066100,
-    "sha256": "1b150dae9503a9699e1f29f1751b7b75c1cfcd0b095f68be49f9f25c3516d9b9",
+    "artifact": 12140104811,
+    "sha256": "9f60cd39ff0026a11c34f6182e9692939adc49c60987c98144476682f87f4bb5",
     "completeIntegratedPass": false
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "dfec13 is the last complete 159-native/11-UI integration. fe985 passes 162 native checks and all 13 native-phase readers/commands; its UI run is superseded by the reviewed service-tour follow-up (163 native/12 UI expected)."
+      "remaining": "d7f5 passes 163 native checks and all 15 native-phase readers/commands. Twelve interface flows, process recovery and remaining export checks are continuing; dfec13 remains the last complete integration."
     },
     {
       "area": "finished localization",
@@ -56,15 +56,15 @@
   "nextAction": "Validate the combined reveal, IFC, reviewed service-route and movie-sharing candidate (163 native/12 UI expected), retain exact-source evidence, and continue unresolved software/device qualification without changing precision gates or uploading another snapshot.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
-    "run": 39138005226,
-    "status": "162/162 native checks and all 13 native-phase readers/commands passed; UI superseded by service follow-up",
-    "nativeExpected": 162,
-    "interfaceExpected": 11,
+    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+    "run": 39138960576,
+    "status": "163/163 native and all 15 native-phase checks passed; process recovery and 12 interface flows continuing",
+    "nativeExpected": 163,
+    "interfaceExpected": 12,
     "integrationComplete": false,
-    "nativePassed": 162,
+    "nativePassed": 163,
     "nativeFailed": 0,
-    "evidence": "docs/evidence/native-fe985-summary.json"
+    "evidence": "docs/evidence/native-d7f5-summary.json"
   },
   "previousIntegratedAttempt": {
     "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -111,7 +111,6 @@
     "interfacePassed": 11,
     "uiSeconds": 852.713,
     "processKillPassed": 3,
-    "independentReaderReportsPassed": 26,
     "completeIntegratedPass": true,
     "fullArtifact": {
       "id": 12138497711,
@@ -121,7 +120,9 @@
     "portableCasesPassed": 50,
     "commandContractTestsPassed": 32,
     "nativeTourCLIValidated": true,
-    "nativeReconstructionCLIValidated": true
+    "nativeReconstructionCLIValidated": true,
+    "validationReportsPassed": 30,
+    "nativePhaseChecksPassed": 12
   },
   "wholeHouseDevelopment": {
     "source": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
@@ -296,7 +297,8 @@
     "interfaceValidationPending": false,
     "independentGLBAndViewerPending": false,
     "verifiedSource": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
-    "saveFeedbackLayoutRecheckPending": true
+    "saveFeedbackLayoutRecheckPending": false,
+    "saveFeedbackLayoutValidatedSource": "dfec13ee619a0d0735292948cc29115a1455615b"
   },
   "ifcRecoveryCandidate": {
     "prepared": true,
@@ -333,11 +335,12 @@
     "batchClassificationWithAtomicStaleRefusal": true,
     "singleRevisionUndoPrepared": true,
     "nativeValidationPending": false,
-    "interfaceValidationPending": true,
+    "interfaceValidationPending": false,
     "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
     "independentCSVAndGLBPassed": true,
     "batchInterfaceValidatedSource": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
-    "serviceEditInterfaceValidationPending": true
+    "serviceEditInterfaceValidationPending": false,
+    "serviceEditInterfaceValidatedSource": "dfec13ee619a0d0735292948cc29115a1455615b"
   },
   "declaredPointCloudImport": {
     "prepared": true,
@@ -354,10 +357,13 @@
     "interfaceValidatedSource": "ec315c98d625af528fcab2d36cf0b3b8683f3eee"
   },
   "projectReaderVersion": {
-    "current": 2,
+    "current": 5,
     "accepts": [
       1,
-      2
+      2,
+      3,
+      4,
+      5
     ],
     "legacyUpgrade": "in-memory; source bytes retained",
     "olderSchema1AppRefusesNewSaves": true,
@@ -366,15 +372,17 @@
     "semanticCSVVersion": 1,
     "nativeValidationPending": false,
     "signedCrossVersionMatrixPassed": false,
-    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
-    "candidateVersion": 3,
+    "nativeValidatedSource": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
+    "candidateVersion": 5,
     "candidateReads": [
       1,
       2,
-      3
+      3,
+      4,
+      5
     ],
-    "candidateNativeValidationPending": true,
-    "reason": "Prevent older writers from losing reversible IFC source offsets"
+    "candidateNativeValidationPending": false,
+    "reason": "Reader boundary preserves typed service records and reversible IFC coordinate/property metadata"
   },
   "previousFailedIntegration": {
     "source": "eb77e6e2c492e10acf941ee94e9ef6d7ca40d6ea",
@@ -515,13 +523,14 @@
     "localCommandReaderContracts": 28,
     "expectedNativeChecks": 140,
     "nativeValidationPending": false,
-    "independentExportValidationPending": true,
+    "independentExportValidationPending": false,
     "rawFixturePublished": false,
     "scaledCRSAndBroaderRepresentationsQualified": false,
     "nativeValidatedSource": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
     "interfaceValidationPending": false,
     "independentReadersPassed": true,
-    "savedSourceInterfacePassed": true
+    "savedSourceInterfacePassed": true,
+    "independentExportValidatedSource": "dfec13ee619a0d0735292948cc29115a1455615b"
   },
   "IFCPropertyCandidate": {
     "schema": 4,
@@ -626,7 +635,8 @@
     "problem": "Evidence row below viewport was queried before being realized",
     "repair": "Bounded short scrolls require evidence row visibility before exact text comparison",
     "assertionsRetained": true,
-    "validationPending": true
+    "validationPending": false,
+    "verifiedSource": "dfec13ee619a0d0735292948cc29115a1455615b"
   },
   "boundedIFCImport": {
     "spec": "architecture-runbook sections 17.2-17.3 and P8.4",
@@ -644,10 +654,14 @@
     "extraGeometryCandidate": {
       "localActualWASMCasesPassed": 4,
       "sameFixturesInNative": true,
-      "nativeValidationPending": true,
+      "nativeValidationPending": false,
       "openingRelationshipRepaired": true,
       "maximumLocalBoundsErrorMetres": 0,
-      "maximumLocalSolidVolumeErrorCubicMetres": 0
+      "maximumLocalSolidVolumeErrorCubicMetres": 0,
+      "nativeCasesPassed": 4,
+      "nativeVerifiedSource": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
+      "maximumNativeBoundsErrorMetres": 0,
+      "maximumNativeSolidVolumeErrorCubicMetres": 0
     },
     "physicalQualification": false
   },
@@ -678,9 +692,14 @@
     "nativeExpected": 163,
     "uiExpected": 12,
     "localCommandContractsPassed": 36,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "physicalQualification": false,
     "wholeHouseRouteCoverageQualified": false,
-    "sourceRoutesAndLinksRetained": true
+    "sourceRoutesAndLinksRetained": true,
+    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+    "run": 39138960576,
+    "nativePassed": true,
+    "independentReaderPassed": true,
+    "interfaceValidationPending": true
   }
 }

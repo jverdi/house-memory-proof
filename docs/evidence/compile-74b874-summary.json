@@ -1,0 +1,19 @@
+{
+  "source": "74b8740b1d8921dad26276f65a90d257765f22cd",
+  "run": 39137801029,
+  "build": "206.1",
+  "workflowConclusion": "failure",
+  "phase": "iOS compilation",
+  "failure": "Ambiguous trailing closures in the reveal-plan round-trip guard at SelfTests.swift:1516",
+  "nativeRuntimeExecuted": false,
+  "pinnedIFCPreflightPassed": true,
+  "artifact": {
+    "id": 12140905137,
+    "sha256": "22166a316cd46612ce1cfdc9efd1151adbc291147c7abc9a3652198488c7dbd0",
+    "sha256IndependentlyVerified": true
+  },
+  "repairSource": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
+  "repair": "Parenthesize both map closure arguments; preserve equality assertion",
+  "repairNativePassed": 162,
+  "additionalTestFlightUpload": false
+}
