@@ -12,6 +12,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   private var roomID = UUID(), stageID = UUID()
   private var timeout: Task<Void, Never>?
   private var activeRequest:UUID?
+  private(set) var phases:[String]=[]
   func load(_ data: Data, roomID: UUID, stageID: UUID) async throws -> [Feature] {
     guard data.count <= 50_000_000 else {
       throw HouseError.message("IFC input exceeds 50 MB. The source can still be archived.")
@@ -19,6 +20,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     guard activeRequest==nil else{throw HouseError.message("An IFC import is already active.")}
     try Task.checkCancellation()
     let request=UUID();activeRequest=request
+    phases=["created"]
     defer{if activeRequest==request {activeRequest=nil;input=Data()}}
     self.input = data
     self.roomID = roomID
@@ -30,6 +32,10 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
       self.continuation = continuation
       let config = WKWebViewConfiguration()
       config.websiteDataStore = .nonPersistent()
+      // This bounded local converter is intentionally outside the view tree.
+      // The default .suspend policy can suspend asynchronous WASM work after
+      // page load. It is destroyed on completion/cancellation within 60 s.
+      config.preferences.inactiveSchedulingPolicy = .none
       config.setURLSchemeHandler(self, forURLScheme: "hxlocal")
       config.userContentController.add(self, name: "ifc")
       let web = WKWebView(frame: CGRect(x: 0, y: 0, width: 1, height: 1), configuration: config)
@@ -38,10 +44,10 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
       web.load(URLRequest(url: URL(string: "hxlocal://bundle/index.html")!))
       timeout = Task {
         try? await Task.sleep(nanoseconds: 60_000_000_000)
-        if !Task.isCancelled {
+        if !Task.isCancelled,activeRequest==request {
           finish(
             .failure(
-              HouseError.message("IFC import exceeded its time budget. Source remains preserved.")))
+              HouseError.message("IFC import exceeded its time budget during \(phases.last ?? "startup"). Source remains preserved.")))
         }
       }
       }
@@ -61,6 +67,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     input = Data();activeRequest=nil;features=[];vertexCount=0;indexCount=0
     let c = continuation
     continuation = nil
+    if c != nil {switch result {case .success:phases.append("complete");case .failure(let error):phases.append(error is CancellationError ? "cancelled":"failed")}}
     c?.resume(with: result)
   }
   func userContentController(
@@ -71,7 +78,10 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
       finish(.failure(HouseError.message("IFC converter returned malformed output.")));return
     }
     do {
-      if type == "mesh" {
+      if type == "phase" {
+        guard let phase=body["phase"] as? String,["initializing","source","parsing","geometry"].contains(phase),phases.count<8 else{throw HouseError.message("Invalid IFC converter phase.")}
+        phases.append(phase)
+      } else if type == "mesh" {
         let feature=try Self.decodeMesh(body,roomID:roomID,stageID:stageID,currentVertices:vertexCount,currentIndices:indexCount)
         vertexCount += feature.mesh.vertices.count;indexCount += feature.mesh.triangles.count
         features.append(feature)
@@ -110,6 +120,9 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   }
 
   func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
+    guard webView===web,continuation != nil else {
+      urlSchemeTask.didFailWithError(CancellationError());return
+    }
     guard let url = urlSchemeTask.request.url, url.scheme == "hxlocal" else {
       urlSchemeTask.didFailWithError(HouseError.message("External IFC resource blocked."))
       return
@@ -150,8 +163,11 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     guard webView===web else{return}
     finish(.failure(HouseError.message("IFC parser process stopped. Source remains preserved.")))
   }
+  func webView(_ webView:WKWebView,didFail navigation:WKNavigation!,withError error:Error) {
+    if webView===web {finish(.failure(error))}
+  }
   func webView(
     _ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-  ) { decisionHandler(navigationAction.request.url?.scheme == "hxlocal" ? .allow : .cancel) }
+  ) { decisionHandler(webView===web && navigationAction.request.url?.scheme == "hxlocal" ? .allow : .cancel) }
 }

@@ -67,6 +67,30 @@ final class HouseXraySmoke: XCTestCase {
     let save=app.buttons["Check and save point"];reveal(save);XCTAssertTrue(save.isEnabled);save.tap()
     let saved=app.staticTexts["Saved Photo-located point with three source photographs."]
     XCTAssertTrue(saved.waitForExistence(timeout:10));screenshot("08-photo-point-saved")
+    let curve=app.switches["Trace a visible curve"]
+    for _ in 0..<12 {
+      if curve.exists && curve.isHittable{break}
+      app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.27)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.80)))
+    }
+    setSwitch(curve,to:true)
+    for offset in [-0.0677083333,0.0677083333] {
+      let first=app.descendants(matching:.any)["point-image-0"].firstMatch
+      for _ in 0..<12 {
+        if first.exists && first.isHittable && first.frame.minY>90{break}
+        app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.27)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.80)))
+      }
+      for index in 0..<3 {
+        let image=app.descendants(matching:.any)["point-image-\(index)"].firstMatch;reveal(image)
+        let frame=image.frame,w=min(frame.width,frame.height*4/3),h=w*3/4
+        let u=[0.6083333333,0.5,0.3916666667][index]+offset,v=0.6354166667
+        image.coordinate(withNormalizedOffset:CGVector(dx:((frame.width-w)/2+w*u)/frame.width,dy:((frame.height-h)/2+h*v)/frame.height)).tap()
+      }
+      let add=app.buttons["Check and add curve point"];reveal(add);XCTAssertTrue(add.isEnabled);add.tap()
+    }
+    let visible=app.switches["Every joining interval is visible in the source photos"];reveal(visible);setSwitch(visible,to:true)
+    let saveCurve=app.buttons["Save photo-traced curve"];reveal(saveCurve);XCTAssertTrue(saveCurve.isEnabled);saveCurve.tap()
+    XCTAssertTrue(app.staticTexts["Saved Photo-traced curve with 2 independently checked source tracks."].waitForExistence(timeout:10))
+    screenshot("16-photo-curve-saved")
     app.tabBars.buttons["Explore"].tap();app.buttons["Wall"].tap()
     for point in [CGVector(dx:0.25,dy:0.29),CGVector(dx:0.65,dy:0.29),CGVector(dx:0.25,dy:0.42)] {app.coordinate(withNormalizedOffset:point).tap()}
     let define=app.buttons["Define wall or ceiling volume"]
@@ -168,6 +192,7 @@ final class HouseXraySmoke: XCTestCase {
     surface.coordinate(withNormalizedOffset:CGVector(dx:0.55,dy:0.45)).tap();reveal(add);add.tap()
     app.buttons["documentary-save"].tap()
     app.terminate();app.launchArguments=["--documentary-demo"];app.launch();openPhoto()
+    screenshot("15a-single-photo-restored-image")
     reveal(count);XCTAssertEqual(count.label,"1 2D annotations")
     screenshot("15-single-photo-annotation-restored")
   }

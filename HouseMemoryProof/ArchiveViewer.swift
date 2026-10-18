@@ -9,10 +9,11 @@ enum ArchiveViewer {
     var output:[[String:Any]]=[]
     for f in features where !f.mesh.vertices.isEmpty {
       try Task.checkCancellation()
-      var vertices:[Double]=[],triangles:[Int]=[]
+      var vertices:[Double]=[],triangles:[Int]=[],line=false
       if f.mesh.triangles.isEmpty {
         let step=max(1,Int(ceil(Double(f.mesh.vertices.count)/Double(allowance))))
         simplified = simplified || step>1
+        line=f.isPhotoCurve && step==1
         for i in stride(from:0,to:f.mesh.vertices.count,by:step) {let p=f.mesh.vertices[i];vertices += [p.x,p.z,-p.y]}
       } else {
         let faces=f.mesh.triangles.count/3,step=max(1,Int(ceil(Double(faces*3)/Double(allowance))))
@@ -20,7 +21,7 @@ enum ArchiveViewer {
         for face in stride(from:0,to:faces,by:step) {for offset in 0..<3 {let p=f.mesh.vertices[Int(f.mesh.triangles[face*3+offset])];triangles.append(vertices.count/3);vertices += [p.x,p.z,-p.y]}}
       }
       let c=f.trade.hex
-      output.append(["name":f.name,"stage":f.stageID.uuidString,"trade":f.trade.rawValue,"vertices":vertices,"triangles":triangles,"color":[Double((c>>16)&255)/255,Double((c>>8)&255)/255,Double(c&255)/255]])
+      output.append(["name":f.name,"stage":f.stageID.uuidString,"trade":f.trade.rawValue,"vertices":vertices,"triangles":triangles,"line":line,"color":[Double((c>>16)&255)/255,Double((c>>8)&255)/255,Double(c&255)/255]])
     }
     let frame=SceneBuilder.activeUnregisteredSegment(house,options:options)
     let data=try JSONSerialization.data(withJSONObject:["name":house.name,"features":output,"stages":house.stages.map{["id":$0.id.uuidString,"name":$0.name]},"trades":Trade.allCases.map{["id":$0.rawValue,"name":$0.rawValue]},"simplified":simplified,"frameLabel":frame.map{"Capture frame "+String($0.uuidString.prefix(8))} ?? "Registered house frame"])

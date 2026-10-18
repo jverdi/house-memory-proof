@@ -2,6 +2,25 @@ import Foundation
 import simd
 
 enum PhotoTriangulation {
+  static func curve(_ samples:[[PhotoControl]],house:House,segment:Segment,name:String,trade:Trade,visibleIntervalsConfirmed:Bool)throws->Feature {
+    guard (2...128).contains(samples.count),visibleIntervalsConfirmed else {
+      throw HouseError.message("Select two to 128 independently checked points and confirm that every joining interval is visible. Keep occluded continuations as separate evidence.")
+    }
+    guard zip(samples,samples.dropFirst()).allSatisfy({pair in
+      Set(pair.0.map{$0.observationID}).intersection(Set(pair.1.map{$0.observationID})).count>=2
+    }) else {throw HouseError.message("Neighboring curve points need at least two shared source photographs. Split sections without overlapping visible evidence.")}
+    // Every point retains its own fitting pair and independent third view.
+    // Background depth is deliberately absent from this operation.
+    let points=try samples.map{try locate($0,house:house,segment:segment)}
+    guard zip(points,points.dropFirst()).allSatisfy({($0.0-$0.1).length>0.00001}) else{
+      throw HouseError.message("Consecutive curve points coincide. Remove the repeated selection.")
+    }
+    let sourceIDs=Set(samples.flatMap{$0.map{$0.observationID}}).sorted{$0.uuidString<$1.uuidString}
+    return Feature(name:name.isEmpty ? "Photo-traced curve":name,trade:trade,roomID:segment.roomID,stageID:segment.stageID,
+      kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:points,triangles:[]),route:points,sourceIDs:sourceIDs,
+      notes:"Manually selected visible centerline. Each point has two fitting photographs and an independent third-view check. The author confirmed visible joining intervals; no occluded continuation or crossing connection is inferred. Diameter, envelope, positional uncertainty and physical accuracy remain unknown. Display stroke has no metric thickness.",
+      segmentID:segment.id,sourceFingerprint:try VisualMapping.fingerprint(house:house,segment:segment),pointTracks:samples.map{PointTrack(controls:$0)})
+  }
   static func locate(_ controls:[PhotoControl],house:House,segment:Segment)throws->V3 {
     guard controls.count==3,Set(controls.map{$0.observationID}).count==3,controls.allSatisfy({$0.u.isFinite && $0.v.isFinite && (0...1).contains($0.u) && (0...1).contains($0.v)}) else{throw HouseError.message("Choose the same visible point in three different photographs.")}
     let candidates=PoseRefinement.selected(house.observations.filter{$0.segmentID==segment.id && !$0.documentary},segment:segment,house:house).0
@@ -30,4 +49,8 @@ enum PhotoTriangulation {
     }
     return point
   }
+}
+
+extension Feature {
+  var isPhotoCurve:Bool {pointTracks != nil && photoControls==nil && route.count>=2 && mesh.triangles.isEmpty && mesh.vertices==route}
 }

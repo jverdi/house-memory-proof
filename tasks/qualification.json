@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T04:12:54.109428+00:00",
+  "updatedUTC": "2026-10-18T04:28:19.754297+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "f62af5fe6e22dac3cbb851e901cc748aa823b22a",
+  "currentImplementationCommit": "67cc61c3d649081cc15e343cb993cde44405e2a2",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -27,7 +27,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "f62af5fe6e passed 129 native, five UI, three process-kill, 50 portable and 20 independent reader checks. Production CLI reconstruction preserved 19 originals and independently validated a separate 10,956-point candidate. The v18 detector, original-provenance and 2D annotation candidate now requires 131 native and six interface flows."
+      "remaining": "127/128 executed native checks and all six UI flows passed at 67cc61c3d6; the IFC timeout left three further native cases unexecuted. New photo/provenance paths passed. The next curve/IFC/stale-edit candidate requires 133 native, six expanded UI flows and 22 independent readers."
     },
     {
       "area": "finished localization",
@@ -39,7 +39,7 @@
     },
     {
       "area": "registration and thin services",
-      "remaining": "Whole-house registration/scaling and foreground curve/geometry qualification with independent truth."
+      "remaining": "Manual photo-curve candidate preserves per-point independent views and shared visible intervals without background depth or diameter. Automatic curves/envelopes, calibrated uncertainty and whole-house registration/geometry qualification remain open."
     },
     {
       "area": "persistence and interchange",
@@ -55,30 +55,43 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate the v18 exposure-aware detector on unchanged original, sensor and whole-house gates. Validate original-source provenance and single-photo annotation archive/undo/relaunch. Continue retained finished accuracy, depth-edge, full-house, thin-service, navigation and external qualification work.",
+  "nextAction": "Validate the bounded IFC worker scheduling repair, visible photo-curve native/UI/GLB/offline path and stale object-edit preservation. Retain failed 384-pixel finished and depth-edge gates; full-house/protected and external qualification remain open.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "run": null,
-    "status": "pending v18 detector, provenance and 2D annotation candidate",
-    "nativeExpected": 131,
+    "status": "pending visible-curve, IFC scheduling and stale-object edit candidate",
+    "nativeExpected": 133,
     "nativePassed": null,
     "nativeFailed": null,
     "interfaceExpected": 6,
     "interfacePassed": null,
     "processKillPassed": null,
+    "independentReadersExpected": 22,
     "independentReadersPassed": null,
     "physicalQualification": false
   },
   "previousIntegratedAttempt": {
-    "source": "6045475e6192601687279df064d349a5686a0385",
-    "run": 39083676227,
-    "nativePassed": 117,
+    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
+    "run": 39096349828,
+    "nativeExpected": 131,
+    "nativeExecuted": 128,
+    "nativePassed": 127,
     "nativeFailed": 1,
-    "interfacePassed": 5,
+    "nativeUnexecuted": 3,
+    "interfacePassed": 6,
     "processKillPassed": 3,
-    "independentReadersPassed": true,
-    "remainingFailure": "1080p30 encoder-capacity timeout",
-    "completeIntegratedPass": false
+    "independentReadersPassed": false,
+    "remainingFailure": "Existing IFC2x3 importer timed out; later IFC checks in that block were not executed",
+    "completeIntegratedPass": false,
+    "independentReaderReports": 19,
+    "independentReaderReportsExpected": 20,
+    "portableArchiveAndCommandAdaptersSkipped": true,
+    "fullArtifact": {
+      "id": 12124609303,
+      "sha256": "04e14654d79c79e4d5453f28bf736249d5bf18babe6b88e4fe24b3c0efbf0c9c",
+      "sha256IndependentlyVerified": true
+    },
+    "executedReaderReportsPassed": 19
   },
   "signingAudit": {
     "run": 39084977296,
@@ -116,8 +129,8 @@
     }
   },
   "wholeHouseDevelopment": {
-    "source": "2fd081de5dbf2d8638f2fd39a251743bde8b4c64",
-    "run": 39092565820,
+    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
+    "run": 39096349743,
     "houses": 3,
     "rooms": [
       4,
@@ -172,33 +185,20 @@
     "mapsBuiltPerStage": 4
   },
   "sensorFaultDevelopment": {
-    "source": "6f9aa373ed0b1a223f044ea2f08c037fb152045d",
-    "run": 39093916597,
+    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
+    "run": 39096349813,
     "profiles": 4,
-    "profilesPassed": 2,
+    "profilesPassed": 3,
     "complete": true,
     "knownClockRefusalPassed": true,
     "calibrationDriftPassed": true,
-    "dimBlurredAvailabilityPassed": false,
+    "dimBlurredAvailabilityPassed": true,
+    "dimBlurredFinishedP95Metres": 0.007895007665903689,
     "depthEdgesRoughPassed": true,
     "depthEdgesFinishedPassed": false,
     "criticalAttempts": 256,
     "criticalFalseAccepts": 0,
-    "physicalQualification": false,
-    "failureCategories": {
-      "dimBlurredRough": {
-        "depth-texture-support": 3,
-        "pose-view-count": 1
-      },
-      "dimBlurredFinished": {
-        "pose-view-count": 2,
-        "depth-texture-support": 2
-      },
-      "depthEdgesFinished": {
-        "photo-track-support": 3,
-        "pose-overlap": 1
-      }
-    }
+    "physicalQualification": false
   },
   "preparedCommands": {
     "nativeTourStoryboard": true,
@@ -258,9 +258,13 @@
     "criticalAttempts": 128,
     "originalPixelsChanged": false,
     "adoptedIntoCandidate": true,
-    "integratedValidationPending": true,
+    "integratedValidationPending": false,
     "original384FailuresRetained": true,
-    "physicalQualification": false
+    "physicalQualification": false,
+    "productionReplayPassed": true,
+    "productionSource": "67cc61c3d649081cc15e343cb993cde44405e2a2",
+    "productionRun": 39096349813,
+    "fullNativeIntegrationPassed": false
   },
   "singlePhotoAnnotations": {
     "prepared": true,
@@ -273,12 +277,36 @@
     "coordinates": "normalized EXIF-oriented image, top-left origin",
     "depthInferred": false,
     "archiveMetadataAndOverlay": true,
-    "nativeValidationPending": true,
-    "interfaceValidationPending": true
+    "nativeValidationPending": false,
+    "interfaceValidationPending": false,
+    "nativePassed": true,
+    "interfacePassed": true,
+    "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
+    "fullIntegrationPassed": false
   },
   "blockedFeedbackPublication": {
     "enabled": false,
     "reason": "Automatic approval review rejected disclosure of private Apple tester-feedback counts to public artifacts; removed, no feedback API read performed",
     "explicitApprovalRequired": true
+  },
+  "manualPhotoCurves": {
+    "prepared": true,
+    "maximumSamples": 128,
+    "independentViewsPerPoint": 3,
+    "sharedViewsPerInterval": 2,
+    "backgroundDepthUsed": false,
+    "metricDiameterKnown": false,
+    "calibratedUncertaintyKnown": false,
+    "nativeValidationPending": true,
+    "interfaceValidationPending": true,
+    "independentGLBAndViewerPending": true
+  },
+  "ifcRecoveryCandidate": {
+    "prepared": true,
+    "reason": "Offscreen WebKit suspension is a supported hypothesis for an observed 60-second timeout",
+    "publicSchedulingAPI": true,
+    "deadlineSeconds": 60,
+    "allowlistedPhaseDiagnostics": true,
+    "validationPending": true
   }
 }

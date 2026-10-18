@@ -115,6 +115,9 @@ cp "$app_root/textured.glb" build/evidence/textured.glb
 cp "$app_root/test.glb" build/evidence/test.glb
 cp "$app_root/test.usdz" build/evidence/test.usdz
 cp "$app_root/test-render.png" build/evidence/test-render.png
+mkdir -p build/command-private
+if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build/command-private/photo-curve.glb; fi
+if [ -f "$app_root/photo-curve-viewer.html" ]; then cp "$app_root/photo-curve-viewer.html" build/command-private/photo-curve-viewer.html; fi
 cp -R "$app_root/incremental-v2" build/evidence/incremental-v2
 # Retain diagnostics before failing if the encoder did not produce a movie.
 for media in test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png; do
@@ -192,7 +195,9 @@ fi
 if [ "$mode" = recovery ]; then exit 0; fi
 
 set +e
-python3 ci/run_bounded.py 600 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
+# Six workflows now include single-photo persistence and repeated multi-view
+# curve selection. Keep a bounded 15-minute process budget for that larger suite.
+python3 ci/run_bounded.py 900 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \

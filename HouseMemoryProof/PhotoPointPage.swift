@@ -10,9 +10,13 @@ struct PhotoPointPage:View {
   @State private var name="Photo-located point"
   @State private var trade:Trade = .unknown
   @State private var saved=""
+  @State private var curveMode=false
+  @State private var samples:[[PhotoControl]]=[]
+  @State private var intervalsVisible=false
   var observations:[Observation]{house.observations.filter{$0.segmentID==segmentID && $0.spatialPoseEligible}}
   var body:some View {Form{
     Text("Locate a small visible feature without trusting background LiDAR depth. Select the same point in three translated photographs. The first two fit the point; the third independently checks it. Results remain approximate. Photographs use their original sensor orientation.").font(.footnote)
+    Toggle("Trace a visible curve",isOn:$curveMode).onChange(of:curveMode){_,_ in samples=[];controls=[nil,nil,nil];intervalsVisible=false;saved=""}
     Picker("Capture segment",selection:$segmentID){Text("Choose").tag(UUID?.none);ForEach(house.segments){s in Text(s.started.formatted()).accessibilityIdentifier("point-segment-choice").tag(Optional(s.id))}}
     .accessibilityIdentifier("point-segment-picker")
     ForEach(0..<3,id:\.self){index in
@@ -27,7 +31,27 @@ struct PhotoPointPage:View {
     }
     TextField("Label",text:$name)
     Picker("System",selection:$trade){ForEach(Trade.allCases){Text($0.rawValue).tag($0)}}
-    Button("Check and save point"){
+    if curveMode {
+      Button("Check and add curve point"){
+        do {
+          guard let segment=house.segments.first(where:{$0.id==segmentID}),samples.count<128 else{throw HouseError.message("Select a session; curves are limited to 128 checked points.")}
+          let chosen=controls.compactMap{$0};_=try PhotoTriangulation.locate(chosen,house:house,segment:segment)
+          samples.append(chosen);controls=[nil,nil,nil];intervalsVisible=false
+        }catch{model.error=error.localizedDescription}
+      }.disabled(controls.contains(where:{$0==nil}) || samples.count>=128)
+      Text("\(samples.count) checked curve points · diameter and uncertainty unknown").font(.caption)
+      Button("Clear point selections"){controls=[nil,nil,nil]}.disabled(controls.allSatisfy{$0==nil})
+      Button("Undo curve point"){if !samples.isEmpty{samples.removeLast();intervalsVisible=false}}.disabled(samples.isEmpty)
+      Toggle("Every joining interval is visible in the source photos",isOn:$intervalsVisible)
+      Text("Finish one visible section before starting another. A crossing never creates a connection.").font(.caption)
+      Button("Save photo-traced curve"){
+        do {
+          guard model.house?.id==house.id,model.house?.revision==house.revision,let segment=house.segments.first(where:{$0.id==segmentID}) else{throw HouseError.message("Project changed. Reopen this tool and repeat the selections.")}
+          let feature=try PhotoTriangulation.curve(samples,house:house,segment:segment,name:name=="Photo-located point" ? "Photo-traced curve":name,trade:trade,visibleIntervalsConfirmed:intervalsVisible)
+          if model.edit(projectID:house.id,{$0.features.append(feature)}) {saved="Saved \(feature.name) with \(samples.count) independently checked source tracks.";samples=[];intervalsVisible=false}
+        }catch{model.error=error.localizedDescription}
+      }.disabled(samples.count<2 || !intervalsVisible || controls.contains(where:{$0 != nil}))
+    }else {Button("Check and save point"){
       do {
         guard let segment=house.segments.first(where:{$0.id==segmentID}),controls.compactMap({$0}).count==3 else{throw HouseError.message("Select three photograph points first.")}
         guard model.house?.id==house.id,model.house?.revision==house.revision else{throw HouseError.message("Project changed. Reopen this tool and repeat the selections.")}
@@ -35,9 +59,9 @@ struct PhotoPointPage:View {
         let feature=Feature(name:name.isEmpty ? "Photo-located point":name,trade:trade,roomID:segment.roomID,stageID:segment.stageID,kind:house.isDemo ? .synthetic:.observed,mesh:Mesh(vertices:[point],triangles:[]),route:[point],sourceIDs:chosen.map{$0.observationID},notes:"Manually identified point; two fitting photos and one independent reprojection check. No validated physical accuracy or inferred service thickness.",segmentID:segment.id,sourceFingerprint:try VisualMapping.fingerprint(house:house,segment:segment),photoControls:chosen)
         if model.edit(projectID:house.id,{$0.features.append(feature)}) {saved="Saved \(feature.name) with three source photographs.";controls=[nil,nil,nil]}
       }catch{model.error=error.localizedDescription}
-    }.disabled(controls.contains(where:{$0==nil}))
+    }.disabled(controls.contains(where:{$0==nil}))}
     if !saved.isEmpty {Text(saved).font(.footnote).foregroundStyle(.mint)}
-  }.navigationTitle("Photo point").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil]}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
+  }.navigationTitle("Photo point").onChange(of:segmentID){_,_ in selected=[nil,nil,nil];controls=[nil,nil,nil];samples=[];intervalsVisible=false}.onChange(of:selected){old,new in for i in 0..<3 where old[i] != new[i]{controls[i]=nil}}}
 }
 struct PhotoPointSurface:UIViewRepresentable {
   var url:URL

@@ -49,4 +49,17 @@ if(require.main===module)(async()=>{for(const name of ['test','textured','points
   const structure=inspect(bytes);fs.writeFileSync('build/evidence/'+name+'-interchange.json',JSON.stringify(structure,null,2));console.log(name,JSON.stringify(structure));
 }
 require('node:child_process').execFileSync('python3',['tooling/hm','export-check','--package','build/evidence/test.glb','--output','build/evidence/general-glb-validation.json'],{stdio:'inherit'});
+// This small analytic route remains private. Publish only independent counts
+// and aggregate coordinate error, never original tracks or image identities.
+const routeBytes=fs.readFileSync('build/command-private/photo-curve.glb');
+const routeResult=await validator.validateBytes(new Uint8Array(routeBytes),{uri:'photo-curve.glb',maxIssues:10000});
+assert.equal(routeResult.issues.numErrors,0);
+const length=routeBytes.readUInt32LE(12),route=JSON.parse(routeBytes.subarray(20,20+length).toString()),binary=routeBytes.subarray(28+length);
+assert.equal(route.meshes.length,1);const primitive=route.meshes[0].primitives[0];assert.equal(primitive.mode,3);
+const a=route.accessors[primitive.attributes.POSITION],view=route.bufferViews[a.bufferView];assert.equal(a.count,3);assert.equal(a.componentType,5126);
+const offset=(view.byteOffset??0)+(a.byteOffset??0),expected=[[0,1.1,-1.4],[.3,1.3,-1.45],[.6,1.5,-1.4]];
+let maximum=0;for(let i=0;i<3;i++)for(let axis=0;axis<3;axis++)maximum=Math.max(maximum,Math.abs(binary.readFloatLE(offset+(i*3+axis)*4)-expected[i][axis]));
+assert(maximum<1e-6);const node=route.nodes.find(n=>n.mesh===0);assert.equal(node.extras.photoCurveSourceTracks.length,3);assert(node.extras.photoCurveSourceTracks.every(t=>t.controls.length===3));
+const structure=inspect(routeBytes);
+fs.writeFileSync('build/evidence/photo-curve-gltf-validation.json',JSON.stringify({passed:true,reader:'Khronos glTF Validator plus independent fixed-frame line reader',points:3,sourceTracks:3,mode:'LINE_STRIP',metricDiameterInvented:false,maximumCoordinateErrorMetres:maximum,physicalQualification:false,...structure},null,2));
 })().catch(error=>{console.error(error);process.exitCode=1;});

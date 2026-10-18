@@ -430,6 +430,14 @@ enum StoreMigrationDiagnostics {
     body(&h)
     return commit(h, select: false)
   }
+  @discardableResult func saveFeatureEdit(_ replacement:Feature,expected:Feature,projectID:UUID)->Bool {
+    guard replacement.id==expected.id,expected.revision>=0,expected.revision<Int.max,var house=houses.first(where:{$0.id==projectID}),
+      let index=house.features.firstIndex(where:{$0.id==expected.id}),house.features[index]==expected else {
+      error="This object changed while its editor was open. Reopen it before saving your edits.";return false
+    }
+    var updated=replacement;updated.revision=expected.revision+1;house.features[index]=updated
+    return commit(house,select:false)
+  }
   @discardableResult func acceptStagedCapture(_ observation:Observation,projectID:UUID)->Bool {
     guard let index=houses.firstIndex(where:{$0.id==projectID}) else{error="Capture project is unavailable; its durable record will recover on reopening.";return false}
     if let existing=houses[index].observations.first(where:{$0.id==observation.id}) {return existing==observation}

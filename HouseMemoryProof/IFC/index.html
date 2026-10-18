@@ -2,9 +2,13 @@
 <script src="web-ifc-api-iife.js"></script><script>
 const send=x=>window.webkit.messageHandlers.ifc.postMessage(x);
 (async()=>{try{
+ send({type:'phase',phase:'initializing'});
  const api=new WebIFC.IfcAPI();api.SetWasmPath('hxlocal://bundle/');await api.Init();
+ send({type:'phase',phase:'source'});
  const bytes=new Uint8Array(await (await fetch('hxlocal://input/model.ifc')).arrayBuffer());
+ send({type:'phase',phase:'parsing'});
  const id=api.OpenModel(bytes,{COORDINATE_TO_ORIGIN:false});if(id<0)throw Error('IFC parsing failed');
+ send({type:'phase',phase:'geometry'});
  let total=0,totalIndices=0,parts=0;
  api.StreamAllMeshes(id,mesh=>{
   const line=api.GetLine(id,mesh.expressID,false);let name=line?.Name?.value||('IFC element '+mesh.expressID),guid=line?.GlobalId?.value||'';

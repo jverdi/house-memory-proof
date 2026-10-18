@@ -157,6 +157,7 @@ enum Exporter {
       var f = f
       if let sid = f.segmentID, let t = h.segments.first(where: { $0.id == sid })?.registration {
         f.mesh.vertices = f.mesh.vertices.map { t.apply($0) }
+        f.route = f.route.map { t.apply($0) }
       }
       return f
     }
@@ -171,6 +172,7 @@ enum Exporter {
       try Task.checkCancellation()
       estimate += Int64(feature.mesh.vertices.count)*(textGeometry ? 320:72)
         + Int64(max(feature.mesh.triangles.count,feature.mesh.vertices.count))*(textGeometry ? 32:12)+4096
+      if feature.isPhotoCurve {estimate += Int64(feature.pointTracks?.reduce(0){$0+$1.controls.count} ?? 0)*1024}
       if let key=feature.texture {
         guard feature.uv?.count==feature.mesh.vertices.count else{throw HouseError.message("A textured surface has no complete texture coordinates. Rebuild it before exporting.")}
         guard key.count<100,!key.contains("/"),!key.contains("\\"),!key.contains(".."),
@@ -292,7 +294,7 @@ enum Exporter {
         "primitives": [
           [
             "attributes": attributes, "indices": ii, "material": materials.count - 1,
-            "mode": f.mesh.triangles.isEmpty ? 0 : 4,
+            "mode": f.isPhotoCurve ? 3:f.mesh.triangles.isEmpty ? 0 : 4,
           ]
         ]
       ])
@@ -304,6 +306,8 @@ enum Exporter {
           "evidence": f.kind.rawValue, "trade": f.trade.rawValue, "notes": f.notes,
           "endpoint": f.endpoint, "reviewed": f.reviewed,
           "sourceObservations": f.sourceIDs.map { $0.uuidString },
+          "photoCurveSourceTracks": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.isPhotoCurve ? f.pointTracks ?? []:[])),
+          "photoCurveEnvelope": f.isPhotoCurve ? "Unknown; line primitive has no metric diameter":"Not a photo curve",
           "sourceGeometry": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.annotationSources ?? [])),
           "sourceRevision": f.revision,
           "captureClassification": f.captureClassification ?? "unclassified",

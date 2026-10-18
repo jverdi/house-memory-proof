@@ -525,6 +525,8 @@ struct FeatureEditor: View {
   @Environment(\.dismiss) var dismiss
   @State var feature: Feature
   @State private var sourcePhoto: Observation?
+  @State private var original:Feature?
+  @State private var projectID:UUID?
   var body: some View {
     NavigationStack {
       Form {
@@ -570,17 +572,13 @@ struct FeatureEditor: View {
           ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
           ToolbarItem(placement: .confirmationAction) {
             Button("Save") {
-              feature.revision += 1
-              model.edit {
-                if let i = $0.features.firstIndex(where: { $0.id == feature.id }) {
-                  $0.features[i] = feature
-                }
-              }
-              dismiss()
-            }
+              guard let original,let projectID else{return}
+              if model.saveFeatureEdit(feature,expected:original,projectID:projectID){dismiss()}
+            }.disabled(original==nil || projectID==nil)
           }
         }
-    }
+    }.onAppear{if original==nil{original=feature;projectID=model.house?.id}}
+      .interactiveDismissDisabled(original.map{feature != $0} ?? false)
   }
 }
 struct CapturePage: View {

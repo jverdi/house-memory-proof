@@ -1,0 +1,52 @@
+{
+  "source": "67cc61c3d649081cc15e343cb993cde44405e2a2",
+  "run": 39096349828,
+  "build": "196.1",
+  "nativeExpected": 131,
+  "nativeExecuted": 128,
+  "nativePassed": 127,
+  "nativeFailed": 1,
+  "nativeUnexecuted": 3,
+  "elapsedSeconds": 153.96006958333334,
+  "failures": [
+    {
+      "error": "IFC import exceeded its time budget. Source remains preserved.",
+      "passed": false,
+      "test": "Bundled IFC2x3 conversion and axes"
+    }
+  ],
+  "newChecks": [
+    {
+      "passed": true,
+      "seconds": 0.022713833333341427,
+      "test": "One-photo annotations remain two-dimensional and preserve originals through archive restore"
+    },
+    {
+      "passed": true,
+      "seconds": 0.00524962500003312,
+      "test": "Photograph point provenance refuses missing and cross-session originals"
+    }
+  ],
+  "artifact": {
+    "id": 12125250997,
+    "sha256": "77d8245f295a0f77c5bd92866d687ab213a4cb11bb37ccdf7e941ca4e6173ef0",
+    "sha256IndependentlyVerified": true
+  },
+  "completeIntegratedPass": false,
+  "physicalQualification": false,
+  "precisionEnabled": false,
+  "interfaceStatus": "passed",
+  "testflightUpload": false,
+  "uiPassed": 6,
+  "uiSeconds": 309.252,
+  "processKillPassed": 3,
+  "independentReaderReportsPassed": 19,
+  "independentReaderReportsExpected": 20,
+  "portableArchiveCommandSkippedAfterNativeFailure": true,
+  "commandAdaptersSkippedAfterNativeFailure": true,
+  "fullArtifact": {
+    "id": 12124609303,
+    "sha256": "04e14654d79c79e4d5453f28bf736249d5bf18babe6b88e4fe24b3c0efbf0c9c",
+    "sha256IndependentlyVerified": true
+  }
+}

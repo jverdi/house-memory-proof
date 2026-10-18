@@ -196,6 +196,24 @@ import simd
             catch {results.append(["test":"Coded reference images, saved corner provenance and finished-wall pose","passed":false,"error":error.localizedDescription])}
             await check("Multi-board pose holds out each board and rejects moved or duplicate references") {var error=0.0;return hx_reference_selftest(&error)==1 && error<0.003}
             await check("Pinned AprilTag identity, corner coordinates, rotation and duplicate rejection") {hx_tag_selftest()==1}
+            await check("Object edits refuse stale metadata and rebuilt geometry without overwriting saved work") {
+                let isolated=AppModel(root:folder.appendingPathComponent("object-edit-conflict"))
+                var h=House.empty("Object edit contract")
+                let feature=Feature(name:"Editable object",trade:.unknown,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.documentary,mesh:Mesh(vertices:[V3(1,1,1)],triangles:[]))
+                h.features=[feature];guard isolated.commit(h),let before=isolated.house else{return false}
+                var edited=feature;edited.notes="First committed edit"
+                guard isolated.saveFeatureEdit(edited,expected:feature,projectID:h.id),let saved=isolated.house else{return false}
+                guard saved.features[0].revision==feature.revision+1,saved.revision==before.revision+1 else{return false}
+                var stale=feature;stale.notes="Must not overwrite"
+                guard !isolated.saveFeatureEdit(stale,expected:feature,projectID:h.id),isolated.house==saved else{return false}
+                let expected=saved.features[0]
+                guard isolated.edit(projectID:h.id,{$0.features[0].mesh.vertices[0].x=2;$0.features[0].revision+=1}),let rebuilt=isolated.house else{return false}
+                edited=expected;edited.reviewed=true
+                guard !isolated.saveFeatureEdit(edited,expected:expected,projectID:h.id),isolated.house==rebuilt else{return false}
+                edited=rebuilt.features[0];edited.id=UUID()
+                guard !isolated.saveFeatureEdit(edited,expected:rebuilt.features[0],projectID:h.id) else{return false}
+                return try isolated.repository!.all().first(where:{$0.id==h.id})==rebuilt
+            }
             await check("Capture owns processing through final save and stale completion cannot unlock a new capture") {
                 let isolated=AppModel(root:folder.appendingPathComponent("capture-lease")),first=UUID(),second=UUID()
                 guard isolated.beginCapture(first),!isolated.beginCapture(second) else{return false}
@@ -1397,7 +1415,7 @@ import simd
                 do{_=try await cancelled.value;throw HouseError.message("Cancelled IFC import unexpectedly published geometry.")}catch is CancellationError{}
                 let features=try await importer.load(input,roomID:roomID,stageID:stageID)
                 let points=features.flatMap{$0.mesh.vertices};let extent=V3((points.map{$0.x}.max() ?? 0)-(points.map{$0.x}.min() ?? 0),(points.map{$0.y}.max() ?? 0)-(points.map{$0.y}.min() ?? 0),(points.map{$0.z}.max() ?? 0)-(points.map{$0.z}.min() ?? 0))
-                results.append(["test":"Bundled IFC2x3 conversion and axes","passed":abs(extent.x-1)<0.001 && abs(extent.y-2)<0.001 && abs(extent.z-3)<0.001,"extent":[extent.x,extent.y,extent.z]])
+                results.append(["test":"Bundled IFC2x3 conversion and axes","passed":abs(extent.x-1)<0.001 && abs(extent.y-2)<0.001 && abs(extent.z-3)<0.001 && importer.phases==["created","initializing","source","parsing","geometry","complete"],"extent":[extent.x,extent.y,extent.z],"phases":importer.phases])
                 let source=try String(contentsOf:path,encoding:.utf8)
                 let millimetres=source.replacingOccurrences(of:"IFC2X3",with:"IFC4").replacingOccurrences(of:".ELEMENT.",with:".NOTDEFINED.").replacingOccurrences(of:".LENGTHUNIT.,$,.METRE.",with:".LENGTHUNIT.,.MILLI.,.METRE.").replacingOccurrences(of:"#17,1.,2.",with:"#17,1000.,2000.").replacingOccurrences(of:"#18,#9,#7,3.",with:"#18,#9,#7,3000.").replacingOccurrences(of:"$,$,#15,#21",with:"$,$,#25,#21").replacingOccurrences(of:"ENDSEC;\nEND-ISO",with:"#23=IFCCARTESIANPOINT((10000.,20000.,30000.));\n#24=IFCAXIS2PLACEMENT3D(#23,#7,#8);\n#25=IFCLOCALPLACEMENT(#15,#24);\nENDSEC;\nEND-ISO")
                 let converted=try await importer.load(Data(millimetres.utf8),roomID:house.rooms[0].id,stageID:house.stages[0].id)
@@ -1429,6 +1447,41 @@ import simd
                     guard (result-expected).length<1e-8 else{return false}
                     controls[2].v+=0.1
                     do{_=try PhotoTriangulation.locate(controls,house:fixture,segment:fixture.segments[0]);return false}catch{return true}
+                }
+                await check("Photo-traced foreground curves ignore background depth and preserve independent source tracks") {
+                    var curveHouse=fixture;var registration=Rigid();registration.values[3]=0.3;registration.values[7]=0.2;registration.values[11]=0.1
+                    curveHouse.segments[0].registration=registration
+                    let expected=[V3(-0.3,1.2,1),V3(0,1.25,1.2),V3(0.3,1.2,1.4)]
+                    let tracks=try expected.map{point in try [0,4,8].map{index -> PhotoControl in
+                        let o=fixture.observations[index];guard let uv=CameraProjection.project(point,through:o)?.0 else{throw HouseError.message("Curve fixture outside image")}
+                        return PhotoControl(observationID:o.id,u:uv.u,v:uv.v)
+                    }}
+                    let feature=try PhotoTriangulation.curve(tracks,house:curveHouse,segment:curveHouse.segments[0],name:"Foreground curve",trade:.lowVoltage,visibleIntervalsConfirmed:true)
+                    guard feature.isPhotoCurve,feature.mesh.triangles.isEmpty,zip(feature.route,expected).allSatisfy({($0.0-$0.1).length<1e-8}),feature.pointTracks?.map({$0.controls})==tracks else{return false}
+                    curveHouse.features=[feature];try curveHouse.validate()
+                    let bytes=try JSONEncoder().encode(curveHouse)
+                    let package=try Exporter.archive(curveHouse,repo:mainRepo),targetRepo=try Repository(root:folder.appendingPathComponent("curve-restore"))
+                    let restored=try Exporter.restore(package,repo:targetRepo)
+                    try ArchiveViewer.html(curveHouse).write(to:mainRepo.root.appendingPathComponent("photo-curve-viewer.html"))
+                    guard restored.features==curveHouse.features,restored.connections.isEmpty,restored.observations==fixture.observations else{return false}
+                    let line=SceneBuilder.geometry(feature.mesh,connectedLine:true)
+                    guard line.elements.count==1,line.elements[0].primitiveType == .line,line.elements[0].primitiveCount==2 else{return false}
+                    let canonical=Exporter.canonicalFeatures(curveHouse,options:SceneOptions())
+                    guard canonical.count==1,canonical[0].isPhotoCurve,zip(canonical[0].route,expected).allSatisfy({($0.0-registration.apply($0.1)).length<1e-8}) else{return false}
+                    let glb=try Exporter.glb(curveHouse,options:SceneOptions()),target=mainRepo.root.appendingPathComponent("photo-curve.glb")
+                    try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:glb,to:target)
+                    for mode in 0..<5 {
+                        var samples=tracks,changed=curveHouse
+                        if mode==0{samples[1][2].v+=0.1}
+                        if mode==1{samples=[tracks[0]]}
+                        if mode==2{changed.observations[0].tracking="limited"}
+                        if mode==4{samples[1]=try [1,5,7].map{index -> PhotoControl in
+                            let o=fixture.observations[index];guard let uv=CameraProjection.project(expected[1],through:o)?.0 else{throw HouseError.message("Alternate curve view outside image")}
+                            return PhotoControl(observationID:o.id,u:uv.u,v:uv.v)
+                        }}
+                        do{_=try PhotoTriangulation.curve(samples,house:changed,segment:changed.segments[0],name:"Invalid",trade:.unknown,visibleIntervalsConfirmed:mode != 3);return false}catch{}
+                    }
+                    return try JSONDecoder().decode(House.self,from:bytes)==curveHouse && mainRepo.integrity(fixture)==fixture.assets.count
                 }
                 await check("Photograph point provenance refuses missing and cross-session originals") {
                     let controls=[0,4,8].map{PhotoControl(observationID:fixture.observations[$0].id,u:0.5,v:0.5)}

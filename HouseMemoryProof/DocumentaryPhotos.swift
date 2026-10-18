@@ -152,12 +152,12 @@ struct DocumentaryPhotoDetail: View {
           image = UIImage(cgImage: cg)
         }
       }
-    }
+    }.interactiveDismissDisabled(!draft.isEmpty || (original.map{photo != $0} ?? false))
   }
   private var annotationControls:some View {
     VStack(alignment:.leading,spacing:12){
       Text("2D annotations").font(.headline)
-      Text("Pinch to zoom, then tap the image. A box uses two opposite corners; a curve follows your taps. Add the annotation, then Save the photo. These marks describe only what is visible.").font(.caption)
+      Text("Pinch to zoom, then tap the image. A box uses two opposite corners; polygons close automatically and curves follow your taps. Add the annotation, then Save the photo. These marks describe only what is visible.").font(.caption)
       Picker("Shape",selection:Binding(get:{kind},set:{kind=$0;clearDraft()})){ForEach(ImageAnnotationKind.allCases,id:\.self){Text($0.rawValue.capitalized).tag($0)}}
         .pickerStyle(.segmented)
       TextField("Annotation label",text:$label).accessibilityIdentifier("documentary-annotation-label")
@@ -177,7 +177,7 @@ struct DocumentaryPhotoDetail: View {
       ForEach(marks){mark in
         VStack(alignment:.leading){
           Text(mark.label.isEmpty ? mark.kind.rawValue.capitalized:mark.label)
-          Text("\(mark.kind.rawValue.capitalized) · \(mark.points.count) points · \(mark.reviewed ? "Reviewed":"Unreviewed")").font(.caption)
+          Text("\(mark.kind.rawValue.capitalized) · \(mark.points.count) \(mark.points.count==1 ? "point":"points") · \(mark.reviewed ? "Reviewed":"Unreviewed")").font(.caption)
           HStack {
             Button("Edit"){editingID=mark.id;kind=mark.kind;draft=mark.points;label=mark.label}
               .accessibilityLabel("Edit \(mark.label.isEmpty ? mark.kind.rawValue:mark.label)")

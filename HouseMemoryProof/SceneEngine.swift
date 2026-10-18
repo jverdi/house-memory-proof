@@ -63,16 +63,18 @@ enum SceneBuilder {
       return unregistered == nil || h.isDemo
     }
   }
-  static func geometry(_ mesh: Mesh, uv: [UV]? = nil) -> SCNGeometry {
+  static func geometry(_ mesh: Mesh, uv: [UV]? = nil, connectedLine:Bool=false) -> SCNGeometry {
     let points = mesh.vertices.map { SCNVector3($0.render) }
     let source = SCNGeometrySource(vertices: points)
     let data = mesh.triangles.withUnsafeBytes { Data($0) }
-    let indices: Data =
-      mesh.triangles.isEmpty
+    let line=connectedLine && mesh.triangles.isEmpty && mesh.vertices.count>=2
+    let indices: Data = line
+      ? (1..<mesh.vertices.count).flatMap{[Int32($0-1),Int32($0)]}.withUnsafeBytes{Data($0)}
+      : mesh.triangles.isEmpty
       ? (0..<mesh.vertices.count).map { Int32($0) }.withUnsafeBytes { Data($0) } : data
     let element = SCNGeometryElement(
-      data: indices, primitiveType: mesh.triangles.isEmpty ? .point : .triangles,
-      primitiveCount: mesh.triangles.isEmpty ? mesh.vertices.count : mesh.triangles.count / 3,
+      data: indices, primitiveType: line ? .line:mesh.triangles.isEmpty ? .point : .triangles,
+      primitiveCount: line ? mesh.vertices.count-1:mesh.triangles.isEmpty ? mesh.vertices.count : mesh.triangles.count / 3,
       bytesPerIndex: 4)
     element.pointSize = 3
     element.minimumPointScreenSpaceRadius = 1
@@ -119,7 +121,9 @@ enum SceneBuilder {
     return scene
   }
   static func node(_ f:Feature,mesh:Mesh,uv:[UV]?,options:SceneOptions,textures:inout [String:UIImage],textured:Bool=true,assetRoot:URL?=nil)->SCNNode {
-      let n = SCNNode(geometry: geometry(mesh, uv: uv))
+      // Reduced point previews must not connect skipped samples across gaps.
+      let line=f.isPhotoCurve && mesh.vertices.count==f.mesh.vertices.count
+      let n = SCNNode(geometry: geometry(mesh, uv: uv,connectedLine:line))
       n.name = f.id.uuidString
       let m = SCNMaterial()
       m.lightingModel = .physicallyBased
