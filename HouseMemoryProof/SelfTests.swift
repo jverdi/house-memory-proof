@@ -1058,10 +1058,13 @@ import simd
                 json["schema"]=1;json.removeValue(forKey:"references")
                 let old=try JSONSerialization.data(withJSONObject:json),before=old
                 let decoded=try JSONDecoder().decode(House.self,from:old)
-                guard decoded.schema==2,decoded.id==house.id,decoded.references.isEmpty,decoded.features==house.features,old==before else{return false}
+                guard decoded.schema==House.currentSchema,decoded.id==house.id,decoded.references.isEmpty,decoded.features==house.features,old==before else{return false}
                 let upgraded=try JSONSerialization.jsonObject(with:JSONEncoder().encode(decoded)) as! [String:Any]
-                guard upgraded["schema"] as? Int==2 else{return false}
-                for version in [0,3,999] {
+                guard upgraded["schema"] as? Int==House.currentSchema else{return false}
+                json["schema"]=2
+                let previous=try JSONDecoder().decode(House.self,from:JSONSerialization.data(withJSONObject:json))
+                guard previous.schema==House.currentSchema,previous.features==house.features else{return false}
+                for version in [0,House.currentSchema+1,999] {
                     json["schema"]=version
                     do{_=try JSONDecoder().decode(House.self,from:JSONSerialization.data(withJSONObject:json));return false}catch{}
                 }
@@ -1249,6 +1252,39 @@ import simd
                 let archive=try Exporter.archive(imported,repo:repo),target=try Repository(root:folder.appendingPathComponent("ifc-source-restore"))
                 let restored=try Exporter.restore(archive,repo:target)
                 return try restored.features==imported.features && restored.segments==imported.segments && restored.drawings==original.drawings && target.read(key)==raw && target.integrity(restored)==1
+            }
+            await check("Reversible IFC source metadata survives archive GLB CSV and dependency invalidation") {
+                let reference=IFCCoordinateReference(sourceSchema:"IFC4",sourceLengthUnit:"MILLI METRE",originMetres:V3(1000000,0,0),mapConversions:[IFCMapReference(expressID:32,values:["Eastings":500000.25,"Northings":4200000.5,"OrthogonalHeight":12,"Scale":0.001],targetCRS:["Name":"EPSG:32632","MapUnit":"METRE"])])
+                var source=House.empty("Reversible IFC frame")
+                let raw=Data("Synthetic IFC original for metadata roundtrip".utf8),key=try repo.put(raw,ext:"ifc"),drawing=Drawing(name:"Far source.ifc",asset:key)
+                let room=source.rooms[0].id,stage=Stage(name:"Imported design",kind:.planned,phase:.other)
+                source.drawings=[drawing];source.stages.append(stage)
+                let geometry=Feature(name:"Far design",trade:.structure,roomID:room,stageID:stage.id,kind:.planned,mesh:.box(center:V3(0,20,31.5),size:V3(1,2,3)))
+                let imported=try IFCSourceEvidence.applying([geometry],source:drawing,stage:stage,roomID:room,coordinates:reference,to:source)
+                guard imported.drawings[0].ifcCoordinates==reference,DerivedEvidence.currentIDs(imported).contains(geometry.id),imported.segments[0].registration==nil else{return false}
+                var altered=imported;altered.drawings[0].ifcCoordinates?.originMetres.x += 1
+                guard !DerivedEvidence.currentIDs(altered).contains(geometry.id) else{return false}
+                altered=imported;altered.drawings[0].ifcCoordinates?.mapConversions[0].values["Scale"]=1
+                guard !DerivedEvidence.currentIDs(altered).contains(geometry.id) else{return false}
+                var bad=reference;bad.originMetres.x=1e10
+                do{_=try IFCSourceEvidence.applying([geometry],source:drawing,stage:stage,roomID:room,coordinates:bad,to:source);return false}catch{}
+                let archive=try Exporter.archive(imported,repo:repo),target=try Repository(root:folder.appendingPathComponent("ifc-coordinate-restore"))
+                let restored=try Exporter.restore(archive,repo:target)
+                guard restored.drawings==imported.drawings,restored.features==imported.features,try target.read(key)==raw else{return false}
+                var options=SceneOptions();options.stage=stage.id
+                let glb=try Data(contentsOf:Exporter.glb(imported,options:options))
+                let jsonEnd=20+Int(glb.uint32(12))
+                let payload=try JSONSerialization.jsonObject(with:glb.subdata(in:20..<jsonEnd)) as! [String:Any]
+                let extras=payload["extras"] as! [String:Any],references=extras["ifcSourceCoordinates"] as! [[String:Any]]
+                guard references.count==1,let encoded=references[0]["coordinates"],try JSONDecoder().decode(IFCCoordinateReference.self,from:JSONSerialization.data(withJSONObject:encoded))==reference else{return false}
+                let csv=try Data(contentsOf:Exporter.semanticCSV(imported))
+                try glb.write(to:mainRepo.root.appendingPathComponent("ifc-source.glb"))
+                try csv.write(to:mainRepo.root.appendingPathComponent("ifc-source.csv"))
+                try JSONEncoder().encode(imported).write(to:mainRepo.root.appendingPathComponent("ifc-source.json"))
+                var registered=imported;registered.segments[0].registration=Rigid(values:[0,-1,0,7,1,0,0,-3,0,0,1,2,0,0,0,1])
+                let aligned=try Data(contentsOf:Exporter.glb(registered,options:options))
+                try aligned.write(to:mainRepo.root.appendingPathComponent("ifc-registered.glb"))
+                return String(decoding:csv,as:UTF8.self).contains("ifcSourceCoordinates")
             }
             await check("PLY preserves fields and rejects malformed records without coordinate shifts") {
                 let header="ply\nformat ascii 1.0\nelement vertex 3\nproperty double x\nproperty double y\nproperty double z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n"
@@ -1551,8 +1587,19 @@ import simd
                 let turnedHigh=V3(turnedVertices.map{$0.x}.max() ?? 0,turnedVertices.map{$0.y}.max() ?? 0,turnedVertices.map{$0.z}.max() ?? 0)
                 results.append(["test":"IFC rotated nested placement preserves metric axes","passed":(turnedLow-V3(9,19.5,30)).length<0.001 && (turnedHigh-V3(11,20.5,33)).length<0.001])
                 let distant=millimetres.replacingOccurrences(of:"((10000.,20000.,30000.))",with:"((1000000000.,20000.,30000.))")
+                let far=try await importer.load(Data(distant.utf8),roomID:roomID,stageID:stageID)
+                guard let farReference=importer.coordinateReference else{throw HouseError.message("Missing reversible IFC source frame.")}
+                let farPoints=far.flatMap{$0.mesh.vertices}.map{$0+farReference.originMetres}
+                let farLow=V3(farPoints.map{$0.x}.min() ?? 0,farPoints.map{$0.y}.min() ?? 0,farPoints.map{$0.z}.min() ?? 0)
+                let farHigh=V3(farPoints.map{$0.x}.max() ?? 0,farPoints.map{$0.y}.max() ?? 0,farPoints.map{$0.z}.max() ?? 0)
+                results.append(["test":"IFC far-origin rebasing recovers project metres without house alignment","passed":farReference.valid && farReference.rebased && farReference.sourceLengthUnit=="MILLI METRE" && (farLow-V3(999999.5,19,30)).length<0.001 && (farHigh-V3(1000000.5,21,33)).length<0.001 && far.allSatisfy{$0.mesh.valid}])
+                let georeferenced=distant.replacingOccurrences(of:"ENDSEC;\nEND-ISO",with:"#30=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);\n#31=IFCPROJECTEDCRS('EPSG:32632','Synthetic CRS','WGS84',$,'UTM','32N',#30);\n#32=IFCMAPCONVERSION(#10,#31,500000.25,4200000.5,12.,0.,1.,0.001);\nENDSEC;\nEND-ISO")
+                let mapped=try await importer.load(Data(georeferenced.utf8),roomID:roomID,stageID:stageID)
+                guard let reference=importer.coordinateReference,let conversion=reference.mapConversions.first else{throw HouseError.message("Missing IFC georeference metadata.")}
+                results.append(["test":"IFC CRS rotation scale and offsets are retained without altering project geometry","passed":reference.mapConversions.count==1 && conversion.expressID==32 && conversion.values["Eastings"]==500000.25 && conversion.values["Northings"]==4200000.5 && conversion.values["Scale"]==0.001 && conversion.values["XAxisAbscissa"]==0 && conversion.values["XAxisOrdinate"]==1 && conversion.targetCRS["Name"]=="EPSG:32632" && conversion.targetCRS["MapUnit"]=="METRE" && mapped.map{$0.mesh}==far.map{$0.mesh} && reference.originMetres==farReference.originMetres])
                 var refused=false
-                do {_ = try await importer.load(Data(distant.utf8),roomID:roomID,stageID:stageID)}catch{refused=true}
+                let excessive=distant.replacingOccurrences(of:"1000000000.,20000.",with:"10000000000000.,20000.")
+                do {_ = try await importer.load(Data(excessive.utf8),roomID:roomID,stageID:stageID)}catch{refused=true}
                 let recovered=try await importer.load(input,roomID:roomID,stageID:stageID)
                 let retainedInput=try Data(contentsOf:path)
                 results.append(["test":"IFC out-of-envelope coordinates refuse atomically and importer recovers","passed":refused && !recovered.isEmpty && retainedInput==input])

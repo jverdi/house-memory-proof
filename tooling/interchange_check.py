@@ -13,7 +13,7 @@ from pathlib import Path, PurePosixPath
 import stat
 import struct
 import zipfile
-from package_check import require, identity, json_bytes, rigid, service_check, coordinate_declaration_check
+from package_check import require, identity, json_bytes, rigid, service_check, coordinate_declaration_check, ifc_coordinates_check
 
 MAX_MODEL=512*1024*1024
 COLUMNS='schema_version house_id house_revision record_type id parent_id index name room_id room_name level stage_id stage_name stage_date evidence_kind trade coordinate_frame segment_id registration_json x_m y_m z_m x2_m y2_m z2_m length_m endpoint_label from_feature_id from_end to_feature_id to_end confirmed reviewed hidden date source source_ids_json provenance_json notes'.split()
@@ -156,6 +156,9 @@ def semantic_csv(path):
         if kind=='feature':
             service_check(provenance.get('service'))
             coordinate_declaration_check(provenance.get('importedCoordinates'))
+            ifc_coordinates_check(provenance.get('ifcSourceCoordinates'))
+            if provenance.get('ifcSourceCoordinates') is not None:
+                identity(provenance.get('sourceDrawingID'));identity(provenance.get('segmentID'))
             if provenance.get('importedCoordinates') is not None:
                 identity(provenance.get('sourceDrawingID'));identity(provenance.get('segmentID'))
             features[row['id']]=row

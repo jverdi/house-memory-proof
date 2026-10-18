@@ -208,7 +208,19 @@ enum Exporter {
   static func glb(_ h: House, options: SceneOptions) throws -> URL {
     let features = canonicalFeatures(h, options: options)
     guard !features.isEmpty else{throw HouseError.message("No geometry selected.")}
-    let assets=try exportAssets(features,textGeometry:false)
+    struct IFCSource:Encodable {var id:UUID;var asset:String;var coordinates:IFCCoordinateReference}
+    let sourceIDs=Set(features.compactMap{$0.sourceDrawingID})
+    var ifcSources:[IFCSource]=[],sourceBudget:Int64=0
+    for drawing in h.drawings where sourceIDs.contains(drawing.id) {
+      if let coordinates=drawing.ifcCoordinates {
+        guard coordinates.valid else{throw HouseError.message("Invalid IFC source frame.")}
+        let strings=[coordinates.converter,coordinates.sourceSchema,coordinates.sourceLengthUnit]+coordinates.mapConversions.flatMap{Array($0.targetCRS.values)}
+        sourceBudget += strings.reduce(Int64(0)){$0+Int64($1.utf8.count)}*24+Int64(coordinates.mapConversions.count)*8192+4096
+        guard sourceBudget<256_000_000 else{throw HouseError.message("IFC source metadata exceeds the model export budget.")}
+        ifcSources.append(IFCSource(id:drawing.id,asset:drawing.asset,coordinates:coordinates))
+      }
+    }
+    let assets=try exportAssets(features,textGeometry:false,budget:256_000_000-sourceBudget)
     var bin = Data()
     var views: [[String: Any]] = []
     var accessors: [[String: Any]] = []
@@ -306,6 +318,8 @@ enum Exporter {
         ]
       ])
       featureNodes[f.roomID,default:[:]][f.stageID,default:[]].append(nodes.count)
+      let registration=f.segmentID.flatMap{sid in h.segments.first(where:{$0.id==sid})?.registration}
+      let exportedFrame=registration != nil ? "house":f.segmentID.map{"segment:"+$0.uuidString} ?? "house"
       nodes.append([
         "name": f.name, "mesh": meshes.count - 1,
         "extras": [
@@ -316,6 +330,9 @@ enum Exporter {
           "importedCoordinates": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.importedCoordinates),options:.fragmentsAllowed),
           "sourceDrawing": f.sourceDrawingID?.uuidString ?? "",
           "sourceDrawingFingerprint": f.sourceDrawingFingerprint ?? "",
+          "sourceSegment":f.segmentID?.uuidString ?? "",
+          "exportCoordinateFrame":exportedFrame,
+          "sourceToHouseRegistration":try JSONSerialization.jsonObject(with:JSONEncoder().encode(registration),options:.fragmentsAllowed),
           "sourceObservations": f.sourceIDs.map { $0.uuidString },
           "photoCurveSourceTracks": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.isPhotoCurve ? f.pointTracks ?? []:[])),
           "photoCurveEnvelope": f.isPhotoCurve ? "Unknown; line primitive has no metric diameter":"Not a photo curve",
@@ -391,6 +408,8 @@ enum Exporter {
     json["extras"] = [
       "tour":try JSONSerialization.jsonObject(with:JSONEncoder().encode(tour)),
       "sourceCoordinateSystem":"metres Z-up; geometry and cameras converted to glTF Y-up",
+      "ifcSourceCoordinates":try JSONSerialization.jsonObject(with:JSONEncoder().encode(ifcSources)),
+      "ifcSourceCoordinatesUse":"Convert glTF vertices to canonical Z-up; invert sourceToHouseRegistration if present, then add originMetres to recover project metres. MapConversion records are documentary and are not applied.",
       "connections": try JSONSerialization.jsonObject(with: JSONEncoder().encode(h.connections)),
       "measurements": try JSONSerialization.jsonObject(with: JSONEncoder().encode(h.dimensions)),
     ]
@@ -648,7 +667,12 @@ enum Exporter {
       var values=try location(feature.roomID,feature.stageID,feature.segmentID)
       values.merge(["record_type":"feature","id":feature.id.uuidString,"name":feature.name,"trade":feature.trade.rawValue,"evidence_kind":feature.kind.rawValue,"endpoint_label":feature.endpoint,"reviewed":String(feature.reviewed),"hidden":String(feature.hidden),"source_ids_json":try json(feature.sourceIDs),"notes":feature.notes],uniquingKeysWith:{$1})
       var provenance=feature;provenance.mesh=Mesh();provenance.route=[];provenance.uv=nil;provenance.pointTracks=nil
-      values["provenance_json"]=try json(provenance)
+      if let id=feature.sourceDrawingID,let coordinates=h.drawings.first(where:{$0.id==id})?.ifcCoordinates {
+        guard coordinates.valid else{throw HouseError.message("Invalid IFC source frame.")}
+        var payload=try JSONSerialization.jsonObject(with:Data(try json(provenance).utf8)) as! [String:Any]
+        payload["ifcSourceCoordinates"]=try JSONSerialization.jsonObject(with:JSONEncoder().encode(coordinates))
+        values["provenance_json"]=String(decoding:try JSONSerialization.data(withJSONObject:payload,options:.sortedKeys),as:UTF8.self)
+      } else {values["provenance_json"]=try json(provenance)}
       try row(values)
       // Child records link back to the feature; do not duplicate large provenance per point.
       var child=try location(feature.roomID,feature.stageID,feature.segmentID)

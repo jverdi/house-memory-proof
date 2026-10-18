@@ -1,0 +1,481 @@
+{
+  "build": "200.1",
+  "date": "2026-10-18T05:27:09Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 115.58840650000002,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1377402880,
+    "physicalFootprintBytes": 65839744,
+    "residentBytes": 284295168
+  },
+  "sourceRevision": "ec315c98d6",
+  "systemVersion": "26.5",
+  "source": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
+  "run": 39100177707,
+  "nativeChecks": 137,
+  "nativePassed": 137,
+  "nativeFailures": [],
+  "artifact": {
+    "id": 12126516039,
+    "sha256": "7eceb7bc62b7e415ab84564182d2bf27fe14bada36eab25455d14f6776c3b6fa",
+    "sha256IndependentlyVerified": true
+  },
+  "fullArtifact": {
+    "id": 12126428622,
+    "sha256": "92ec4e5a7e607a18f3a3887f05d5d7c3342933096c4d8fb677a041d26cfe5c23",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": false,
+  "interfaceExpected": 9,
+  "interfaceExecuted": 9,
+  "interfacePassed": 8,
+  "interfaceSeconds": 658.551,
+  "interfaceCases": [
+    {
+      "test": "testBatchClassificationWorkflow",
+      "passed": true,
+      "seconds": 88.406
+    },
+    {
+      "test": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "passed": false,
+      "seconds": 59.793
+    },
+    {
+      "test": "testLandscapeControlsAndRotation",
+      "passed": true,
+      "seconds": 52.082
+    },
+    {
+      "test": "testPersonalHouseWorkflow",
+      "passed": true,
+      "seconds": 53.905
+    },
+    {
+      "test": "testPhotoPointWorkflow",
+      "passed": true,
+      "seconds": 210.077
+    },
+    {
+      "test": "testPointCloudDeclarationWorkflow",
+      "passed": true,
+      "seconds": 46.755
+    },
+    {
+      "test": "testSavedIFCSourceWorkflow",
+      "passed": true,
+      "seconds": 22.78
+    },
+    {
+      "test": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "passed": true,
+      "seconds": 47.301
+    },
+    {
+      "test": "testStepNavigationControlsInBothOrientations",
+      "passed": true,
+      "seconds": 77.453
+    }
+  ],
+  "interfaceFailure": "The service edit/search flow lost the Port field during one-direction scrolling after observed-label entry; save/relaunch verification was not reached.",
+  "newChecks": [
+    {
+      "passed": true,
+      "seconds": 0.02241912499994214,
+      "test": "Typed service evidence preserves unknowns, rejects invalid claims and survives search and archive restore"
+    },
+    {
+      "passed": true,
+      "seconds": 0.012530166666692821,
+      "test": "Batch classification commits one reversible revision and refuses stale selected objects atomically"
+    },
+    {
+      "passed": true,
+      "seconds": 0.055847499999799766,
+      "test": "Project reader upgrades legacy metadata without rewriting it and refuses unknown future schemas"
+    },
+    {
+      "passed": true,
+      "seconds": 0.017537499999889405,
+      "test": "PLY import requires explicit units and axes, preserves the original and never assumes house alignment"
+    },
+    {
+      "passed": true,
+      "seconds": 0.015432624999903055,
+      "test": "IFC source dependency preserves a separate design frame and refuses stale publication"
+    }
+  ],
+  "processRecovery": [
+    {
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "powerLossQualified": false,
+      "passed": true
+    },
+    {
+      "passed": true,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "powerLossQualified": false,
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3
+    },
+    {
+      "fault": "SIGKILL inside schema transaction before COMMIT",
+      "powerLossQualified": false,
+      "passed": true,
+      "verifiedAssets": 19
+    }
+  ],
+  "portableCases": 50,
+  "commandReaderContracts": 27,
+  "independentReaders": {
+    "archive-validation": {
+      "reader": "Python zipfile",
+      "passed": true,
+      "format": "ZIP64"
+    },
+    "chunked-snapshot-validation": {
+      "passed": true,
+      "reader": "Python standard library",
+      "formatVersion": 2,
+      "originalsVerified": 2,
+      "packedChunks": 1,
+      "manifestSHA256": "c38cc3a0078ea94c1d58c5a64fe3de615c88a7f09bfeb2c463411f0512bd988f",
+      "remoteDurabilityQualified": false,
+      "actualProviderFaultsQualified": false
+    },
+    "general-glb-validation": {
+      "passed": true,
+      "format": "GLB 2.0",
+      "reader": "Khronos glTF Validator",
+      "sha256": "511d7e29d048f17c2168ecfcc23fc414d73cd6a771c7ee1f1e23fe02c2a66d85",
+      "bytes": 313352,
+      "errors": 0,
+      "warnings": 0,
+      "issueCodes": {},
+      "externalResourcesLoaded": false,
+      "sourceModified": false,
+      "physicalPrecisionQualified": false,
+      "houseXraySemanticsChecked": true,
+      "structure": {
+        "nodes": 205,
+        "meshes": 190,
+        "levels": 2,
+        "tourClips": 6,
+        "hierarchyAndAnimationPassed": true
+      }
+    },
+    "general-obj-validation": {
+      "passed": true,
+      "format": "OBJ",
+      "reader": "trimesh 5.1.1",
+      "sha256": "8e6dcab7d7e07e9a941a2865aabe6080be3ea70e590554a615dd3614b5ff1ff8",
+      "bytes": 283,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "groups": 2,
+      "vertices": 14,
+      "triangles": 5,
+      "pointClouds": 0,
+      "geometryOnly": true,
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "general-ply-validation": {
+      "passed": true,
+      "format": "PLY",
+      "reader": "trimesh 5.1.1",
+      "sha256": "73ae09cb7e26db782b69d94a51a9d600f44c8745b3a7fc5857bd45b201225b2d",
+      "bytes": 328,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "groups": 1,
+      "vertices": 7,
+      "triangles": 5,
+      "pointClouds": 0,
+      "geometryOnly": true,
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "general-points-usd-validation": {
+      "passed": true,
+      "format": "USDZ native profile",
+      "reader": "OpenUSD 25.11",
+      "sha256": "e4e0dc9cdda279a55138a3d0394d23e0422638e6c4d66dce499701bf39a5ecd2",
+      "bytes": 667085,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "meshes": 0,
+      "pointClouds": 1,
+      "vertices": 10956,
+      "faces": 0,
+      "textureReferences": 0,
+      "units": "metres",
+      "upAxis": "Z",
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "general-semantic-validation": {
+      "passed": true,
+      "format": "House Xray semantic CSV v1",
+      "reader": "Python standard-library csv",
+      "sha256": "8956e0cd42f9041c279b842c77ca7636ddf6f4039e2c0cb88dd98163e34568fc",
+      "bytes": 11179,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "records": 17,
+      "recordTypes": {
+        "feature": 3,
+        "route_point": 6,
+        "endpoint": 6,
+        "measurement": 1,
+        "connection": 1
+      },
+      "relationshipsChecked": true,
+      "provenanceChecked": true,
+      "csvRoundTripPassed": true
+    },
+    "general-test-usd-validation": {
+      "passed": true,
+      "format": "USDZ native profile",
+      "reader": "OpenUSD 25.11",
+      "sha256": "e4c761bf532fc65657fd6f3d116bf29a25cc0cebb7255aa044aa26be9ac01f66",
+      "bytes": 147196,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "meshes": 190,
+      "pointClouds": 0,
+      "vertices": 1856,
+      "faces": 2568,
+      "textureReferences": 0,
+      "units": "metres",
+      "upAxis": "Z",
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "general-textured-usd-validation": {
+      "passed": true,
+      "format": "USDZ native profile",
+      "reader": "OpenUSD 25.11",
+      "sha256": "23b265b666ef21d22eb2283050f11fcdfe83ca6176a975e104d1bbd13f803659",
+      "bytes": 48977,
+      "sourceModified": false,
+      "externalResourcesLoaded": false,
+      "physicalPrecisionQualified": false,
+      "meshes": 2,
+      "pointClouds": 0,
+      "vertices": 36,
+      "faces": 12,
+      "textureReferences": 2,
+      "units": "metres",
+      "upAxis": "Z",
+      "sourceGeometryEquivalenceChecked": false
+    },
+    "house-surface-gltf-validation": {
+      "passed": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "mesh-interchange-validation": {
+      "passed": true,
+      "reader": "trimesh 5.1.1",
+      "units": "metres",
+      "upAxis": "Z",
+      "registrationAppliedExactlyOnce": true,
+      "hiddenGeometryExcluded": true,
+      "physicalPrecisionQualified": false,
+      "files": [
+        {
+          "file": "interchange.ply",
+          "sha256": "73ae09cb7e26db782b69d94a51a9d600f44c8745b3a7fc5857bd45b201225b2d",
+          "vertices": 7,
+          "triangles": 5,
+          "boundsMetres": [
+            [
+              0.0,
+              -3.0,
+              0.0
+            ],
+            [
+              4.0,
+              2.0,
+              4.0
+            ]
+          ],
+          "orientedGeometryMatches": true
+        },
+        {
+          "file": "interchange.obj",
+          "sha256": "8e6dcab7d7e07e9a941a2865aabe6080be3ea70e590554a615dd3614b5ff1ff8",
+          "vertices": 7,
+          "triangles": 5,
+          "boundsMetres": [
+            [
+              0.0,
+              -3.0,
+              0.0
+            ],
+            [
+              4.0,
+              2.0,
+              4.0
+            ]
+          ],
+          "orientedGeometryMatches": true
+        }
+      ],
+      "objGroups": [
+        "feature_11111111_1111_4111_8111_111111111111",
+        "feature_22222222_2222_4222_8222_222222222222"
+      ],
+      "objGroupGeometryMatches": true
+    },
+    "offline-viewer-validation": {
+      "passed": true,
+      "objects": 217,
+      "stageFilteredObjects": 190,
+      "externalRequests": [],
+      "errors": [],
+      "offlineFileProtocol": true
+    },
+    "photo-curve-gltf-validation": {
+      "passed": true,
+      "reader": "Khronos glTF Validator plus independent fixed-frame line reader",
+      "points": 3,
+      "sourceTracks": 3,
+      "mode": "LINE_STRIP",
+      "metricDiameterInvented": false,
+      "typedServiceDetailsPreserved": true,
+      "maximumCoordinateErrorMetres": 4.768371586472142e-08,
+      "physicalQualification": false,
+      "nodes": 11,
+      "meshes": 1,
+      "levels": 1,
+      "tourClips": 6,
+      "hierarchyAndAnimationPassed": true
+    },
+    "photo-curve-viewer-validation": {
+      "passed": true,
+      "objects": 1,
+      "lines": 1,
+      "shown": 1,
+      "coloredPixels": 383,
+      "webglError": 0,
+      "externalRequests": 0,
+      "rawSourcePublished": false,
+      "physicalQualification": false
+    },
+    "points-gltf-validation": {
+      "passed": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "points-usd-validation": {
+      "reader": "OpenUSD 25.11",
+      "passed": true,
+      "meshes": 0,
+      "units": "metres",
+      "upAxis": "Z"
+    },
+    "portable-package-validation": {
+      "passed": true,
+      "reader": "Python standard library independent archive reader",
+      "archiveVersion": 1,
+      "sourceRevision": 2,
+      "metadataSHA256": "c09e40a5d86faa85b7709228faaf459b0754aba7644ed8feab6a34b1134293fc",
+      "verifiedOriginals": 1,
+      "verifiedPayloadBytes": 798444,
+      "members": 5,
+      "semanticCounts": {
+        "rooms": 3,
+        "stages": 2,
+        "sessions": 0,
+        "features": 217,
+        "observations": 0,
+        "documentaryPhotos": 0,
+        "imageAnnotations": 0,
+        "vertices": 2072,
+        "triangles": 2892,
+        "serviceConnections": 0
+      },
+      "jsonRoundTripPassed": true,
+      "sourceModified": false,
+      "extractedFiles": 0,
+      "physicalPrecisionQualified": false,
+      "limitations": [
+        "Schema/identity/geometry/asset checks do not qualify capture accuracy or actual cloud-provider recovery.",
+        "GLB, USDZ and rendered viewer behavior require their separate independent readers."
+      ]
+    },
+    "semantic-csv-validation": {
+      "passed": true,
+      "reader": "Python standard-library csv",
+      "records": 17,
+      "sha256": "8956e0cd42f9041c279b842c77ca7636ddf6f4039e2c0cb88dd98163e34568fc",
+      "separateFramesPreserved": true,
+      "registrationNotAppliedToSourceCoordinates": true,
+      "unicodeMultilineAndQuotedTextPreserved": true,
+      "formulaTextEscaped": true,
+      "sourceRelationshipsPreserved": true,
+      "typedServiceDetailsPreserved": true,
+      "physicalPrecisionQualified": false
+    },
+    "test-gltf-validation": {
+      "passed": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "test-usd-validation": {
+      "reader": "OpenUSD 25.11",
+      "passed": true,
+      "meshes": 190,
+      "units": "metres",
+      "upAxis": "Z"
+    },
+    "textured-gltf-validation": {
+      "passed": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "textured-usd-validation": {
+      "reader": "OpenUSD 25.11",
+      "passed": true,
+      "meshes": 2,
+      "units": "metres",
+      "upAxis": "Z"
+    }
+  },
+  "readerCount": 22,
+  "cliTour": {
+    "passed": true,
+    "command": "production native tour via CLI",
+    "shots": 12,
+    "frames": 150,
+    "previews": 8,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "cliReconstruction": {
+    "passed": true,
+    "command": "production native reconstruction via CLI",
+    "sessions": 1,
+    "originalsVerified": 19,
+    "vertices": 10956,
+    "independentArchivePassed": true,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "visualInspection": {
+    "curveSaveFeedbackVisible": true,
+    "savedIFCResultVisible": true
+  },
+  "additionalTestFlightUpload": false,
+  "physicalQualification": false
+}

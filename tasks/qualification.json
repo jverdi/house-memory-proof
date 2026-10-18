@@ -27,15 +27,15 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "Validate the 137-native/nine-UI IFC source/frame/reopen and UI compile-repair candidate. fb2f9201d6 passed native/readers, but zero UI flows executed after a test-target compile error."
+      "remaining": "ec315c98d6 passes 137 native/8 of 9 UI/22 readers. Repair service editing keyboard/scroll interaction and validate reversible IFC-origin/CRS/schema-3 candidate (140 native/nine UI expected)."
     },
     {
       "area": "finished localization",
-      "remaining": "Finished accuracy also fails in the new four-, seven- and eleven-room layouts (15.094, 15.632 and 22.486 mm p95). Diagnose map/feature/query errors while preserving original 384-pixel and rough-to-finished failures."
+      "remaining": "The five-iteration finished-384 repair budget is exhausted; all failed attempts retained, fifth not adopted. Original 384 accuracy, rough-to-finished availability and finished depth-edge map availability remain failed release gates."
     },
     {
       "area": "whole-house simulation",
-      "remaining": "Original finished localization failures remain. Window/clutter/material variants pass local generator/archive contracts; two native development replays are prepared. Full 50/20 evaluation, continuous paths, coverage diversity and closed-loop navigation remain incomplete."
+      "remaining": "Window/clutter replays pass rough localization but fail finished accuracy (23.050/14.859 mm p95); four-room availability also fails. Full 50/20 evaluation, continuous paths, stage diversity, coverage and closed-loop navigation remain incomplete."
     },
     {
       "area": "registration and thin services",
@@ -55,24 +55,18 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Complete ec315c98d6 native/UI/readers and separate appearance replays, then evaluate the fifth bounded finished-384 repair without changing shipping code or gates.",
+  "nextAction": "Commit and validate the service keyboard/reveal repair and reversible IFC coordinates; then continue independent coverage/navigation/geometry and persistence work. No sixth detector attempt or intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
+    "source": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
     "run": 39100177707,
-    "status": "running IFC/source-frame/UI compilation repair candidate",
-    "nativeExpected": 137,
-    "nativePassed": null,
-    "nativeFailed": null,
-    "interfaceExpected": 9,
-    "interfacePassed": null,
-    "processKillPassed": null,
-    "independentReadersExpected": 22,
-    "independentReadersPassed": null,
-    "localSimulationContractsPassed": 49,
-    "localCommandContractsPassed": 11,
-    "interfaceProcessBudgetSeconds": 1200,
-    "physicalQualification": false,
-    "source": "ec315c98d625af528fcab2d36cf0b3b8683f3eee"
+    "status": "completed with service-edit interface failure",
+    "nativePassed": 137,
+    "interfacePassed": 8,
+    "interfaceExecuted": 9,
+    "independentReadersPassed": 22,
+    "integrationComplete": false,
+    "evidence": "docs/evidence/native-ec315-summary.json"
   },
   "previousIntegratedAttempt": {
     "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -343,7 +337,9 @@
     "nativeValidationPending": false,
     "interfaceValidationPending": true,
     "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
-    "independentCSVAndGLBPassed": true
+    "independentCSVAndGLBPassed": true,
+    "batchInterfaceValidatedSource": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
+    "serviceEditInterfaceValidationPending": true
   },
   "declaredPointCloudImport": {
     "prepared": true,
@@ -355,8 +351,9 @@
     "separateDocumentaryFrame": true,
     "sourceDeclarationFingerprint": true,
     "nativeValidationPending": false,
-    "interfaceValidationPending": true,
-    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d"
+    "interfaceValidationPending": false,
+    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
+    "interfaceValidatedSource": "ec315c98d625af528fcab2d36cf0b3b8683f3eee"
   },
   "projectReaderVersion": {
     "current": 2,
@@ -371,7 +368,15 @@
     "semanticCSVVersion": 1,
     "nativeValidationPending": false,
     "signedCrossVersionMatrixPassed": false,
-    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d"
+    "nativeValidatedSource": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
+    "candidateVersion": 3,
+    "candidateReads": [
+      1,
+      2,
+      3
+    ],
+    "candidateNativeValidationPending": true,
+    "reason": "Prevent older writers from losing reversible IFC source offsets"
   },
   "previousFailedIntegration": {
     "source": "fb2f9201d6ced8b8d2250b6256f18d98c44f5a7d",
@@ -409,9 +414,11 @@
     "stalePublicationRefused": true,
     "reopenSavedSourceWithRoomChoice": true,
     "olderImportsRelocated": false,
-    "nativeValidationPending": true,
-    "interfaceValidationPending": true,
-    "farOriginAndGeoreferenceQualified": false
+    "nativeValidationPending": false,
+    "interfaceValidationPending": false,
+    "farOriginAndGeoreferenceQualified": false,
+    "nativeValidatedSource": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
+    "interfaceValidatedSource": "ec315c98d625af528fcab2d36cf0b3b8683f3eee"
   },
   "appearanceDevelopment": {
     "variant": "windows-clutter",
@@ -424,18 +431,31 @@
     "preparedNativeLayouts": 2,
     "maximumJobMinutes": 40,
     "maximumParallelJobs": 1,
-    "nativeReplayExecuted": false,
+    "nativeReplayExecuted": true,
     "rawEvidencePublished": false,
-    "physicalQualification": false
+    "physicalQualification": false,
+    "nativePassed": false,
+    "run": 39100177718,
+    "roughAccepted": 44,
+    "roughQueries": 44,
+    "finishedAccepted": 41,
+    "finishedQueries": 44,
+    "criticalFalseAccepts": 0,
+    "criticalQueries": 176,
+    "finishedP95Millimetres": [
+      23.049616914807523,
+      14.859037782500355
+    ],
+    "evidence": "docs/evidence/appearance-ec315-summary.json"
   },
   "lowResolutionRepairBudget": {
     "failureClass": "finished-384 localization accuracy",
     "maximumIterations": 5,
     "currentIteration": 5,
     "currentVariant": "fixed-2x-cubic-akaze-analysis",
-    "currentRun": null,
+    "currentRun": 39100358085,
     "currentAdopted": false,
-    "currentExecuted": false,
+    "currentExecuted": true,
     "priorAttempts": [
       {
         "name": "pooled query",
@@ -464,6 +484,24 @@
     "acceptanceThresholdsChanged": false,
     "operatingEnvelopeChanged": false,
     "localAuditTestsPassed": 5,
-    "fallback": "Keep documentary/approximate operation and precision disabled; retain failed release gate and continue independent work"
+    "fallback": "Keep documentary/approximate operation and precision disabled; retain failed release gate and continue independent work",
+    "currentPassed": false,
+    "budgetExhausted": true,
+    "currentSource": "82f4d081d17c8aadb5a49eba2dcc3d0a1f6cac36",
+    "evidence": "docs/evidence/akaze-sampling-82f4-summary.json"
+  },
+  "IFCCoordinateCandidate": {
+    "prepared": true,
+    "reversibleFarOrigin": true,
+    "documentaryCRSRecords": true,
+    "houseAlignmentInferred": false,
+    "archiveGLBCSVPreservationPrepared": true,
+    "schema": 3,
+    "localCommandReaderContracts": 28,
+    "expectedNativeChecks": 140,
+    "nativeValidationPending": true,
+    "independentExportValidationPending": true,
+    "rawFixturePublished": false,
+    "scaledCRSAndBroaderRepresentationsQualified": false
   }
 }

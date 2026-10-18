@@ -54,12 +54,22 @@ class PortablePackageContracts(unittest.TestCase):
         self.assertEqual(list(Path(self.temp.name).iterdir()),[self.path])
 
     def test_project_reader_versions_are_explicit_and_sources_remain_unchanged(self):
-        for schema in [1,2,0,3,999]:
+        for schema in [1,2,3,0,4,999]:
             self.house['schema']=schema;archive(self.path,self.house,self.parts);before=self.path.read_bytes()
-            if schema in [1,2]:self.assertTrue(check_package(self.path)['passed'])
+            if schema in [1,2,3]:self.assertTrue(check_package(self.path)['passed'])
             else:
                 with self.assertRaisesRegex(InvalidPackage,'schema'):check_package(self.path)
             self.assertEqual(self.path.read_bytes(),before)
+
+    def test_ifc_origin_and_crs_roundtrip_and_malformed_refusal(self):
+        reference=dict(version=1,converter='web-ifc-0.0.72',sourceSchema='IFC4',sourceLengthUnit='MILLI METRE',originMetres=dict(x=1000000,y=0,z=0),mapConversions=[dict(expressID=32,values=dict(Scale=.001,Eastings=500000.25),targetCRS=dict(Name='EPSG:32632'))])
+        raw=b'original IFC';key=hashlib.sha256(raw).hexdigest()+'.ifc';self.parts['assets/'+key]=raw
+        self.house['drawings']=[dict(id=str(uuid.uuid4()),asset=key,ifcCoordinates=reference)]
+        archive(self.path,self.house,self.parts);before=self.path.read_bytes();self.assertTrue(check_package(self.path)['passed']);self.assertEqual(self.path.read_bytes(),before)
+        mutations=[lambda r:r.update(version=2),lambda r:r['originMetres'].update(x=1e10),lambda r:r['mapConversions'][0]['values'].update(Unknown=1),lambda r:r['mapConversions'][0]['values'].update(Scale=True),lambda r:r['mapConversions'][0]['targetCRS'].update(Name='bad\0CRS'),lambda r:r['mapConversions'].append(copy.deepcopy(r['mapConversions'][0]))]
+        for mutate in mutations:
+            bad=copy.deepcopy(self.house);mutate(bad['drawings'][0]['ifcCoordinates']);archive(self.path,bad,self.parts)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
 
     def test_changed_original_and_incomplete_manifest_fail(self):
         for mutate in [lambda p:p.__setitem__(next(iter(self.parts)),b'changed'),

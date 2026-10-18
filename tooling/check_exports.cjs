@@ -48,6 +48,13 @@ if(require.main===module)(async()=>{for(const name of ['test','textured','points
   console.log(name,JSON.stringify(result.issues));if(result.issues.numErrors)process.exitCode=1;
   const structure=inspect(bytes);fs.writeFileSync('build/evidence/'+name+'-interchange.json',JSON.stringify(structure,null,2));console.log(name,JSON.stringify(structure));
 }
+const ifcCases=[];
+for(const name of ['ifc-source','ifc-registered']){
+ const bytes=fs.readFileSync('build/command-private/'+name+'.glb');
+ const result=await validator.validateBytes(new Uint8Array(bytes),{uri:name+'.glb',maxIssues:10000});
+ assert.equal(result.issues.numErrors,0);ifcCases.push({case:name,errors:result.issues.numErrors,warnings:result.issues.numWarnings,...inspect(bytes)});
+}
+fs.writeFileSync('build/evidence/ifc-source-gltf-validation.json',JSON.stringify({passed:true,reader:'Khronos glTF Validator',cases:ifcCases},null,2));
 require('node:child_process').execFileSync('python3',['tooling/hm','export-check','--package','build/evidence/test.glb','--output','build/evidence/general-glb-validation.json'],{stdio:'inherit'});
 // This small analytic route remains private. Publish only independent counts
 // and aggregate coordinate error, never original tracks or image identities.

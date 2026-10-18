@@ -30,7 +30,56 @@ This fixes the earlier Tools importer, which retained the IFC file but did not
 link its objects to that file and left their coordinates in the global house
 frame. A native source/frame/stale-publication/archive regression and a saved-source
 interface workflow are prepared (137 native checks and nine UI flows expected);
-exact-source validation is pending. Older already-imported objects are not
+source ec315c98d6 passed the native regression and saved-source UI flow. Its full integration remains failed because of the separate service-edit UI case. Older already-imported objects are not
 silently relocated. Far-origin rebasing, explicit georeference records and
 broader malformed-GUID/unsupported-geometry qualification remain open; the
 existing large-coordinate refusal continues to preserve the original.
+
+## Reversible project coordinates and documentary CRS candidate
+
+The next candidate retains a typed source coordinate record on the original
+Drawing. Near-source coordinates are unchanged. If the first transformed point
+exceeds 10 km on an axis, the converter chooses a fixed 100 m grid origin and
+subtracts it before handing geometry to native code. Adding the retained Z-up
+metre origin recovers the project coordinates. Absolute source coordinates are
+bounded to 1e9 m; the existing 100 km local geometry limit remains. Widely
+separated geometry outside that range refuses the entire conversion while the
+original survives. This is numeric rebasing, not registration or surveying.
+
+Pinned web-ifc 0.0.72 still handles source units and nested placements. The
+converter records the source schema/length-unit label and up to 16
+IfcMapConversion records, including source numeric fields, projected-CRS labels
+and map-unit labels; scaled factors are retained when supplied by the reader.
+Those records are documentary: no CRS rotation, scale, projection or house
+alignment is applied. Missing fields remain absent rather than invented. Full
+IFC4x3 scaled-conversion interoperability, conversion-based units, malformed GUIDs
+and unsupported representation census remain unqualified.
+
+The typed origin/CRS record participates in the derived-source fingerprint.
+Archive/JSON retain it; GLB carries one record per selected source in root extras,
+and semantic CSV carries it in each source feature's provenance. GLB nodes also
+record the source segment, export frame and any applied local-to-house
+registration, so readers can invert that transform before adding the origin.
+The independent reader covers both a local source and an explicitly rotated/
+translated export. GLB admission
+counts worst-case escaped metadata and simultaneous encoding copies. The saved
+source page preserves the read-only record when notes are saved. Schema 3 reads
+versions 1/2 in memory and causes older readers to refuse new saves, preventing
+silent loss of the reversible origin. Originals are never rewritten by opening.
+The signed old/new-app handoff is still an external qualification item.
+
+Local JS contracts cover near/far coordinates, reversibility, range refusal,
+units, CRS/scaled-field retention, no inferred alignment and metadata budgets.
+The independent package reader covers malformed origins/CRS and schema refusal;
+28 command/reader contracts pass locally. Native tests are prepared for real
+IFC4 millimetre far-origin conversion, real CRS parsing, archive restoration,
+source invalidation and GLB/CSV handoff. A separate Python reader decodes the
+actual Swift GLB vertices and adds the retained origin to recover known project
+bounds; pinned Khronos validation also includes this GLB. The small IFC export fixture stays private in CI; only aggregate reader reports
+are retained. Native validation of this candidate is pending (140 checks expected); no physical claim is made.
+
+Primary API basis: pinned `ThatOpen/engine_web-ifc` tag `0.72`,
+`src/ts/web-ifc-api.ts` (`GetLineIDsWithType`, `GetLine`, `GetModelSchema`) and
+`src/cpp/web-ifc/geometry/IfcGeometryProcessor.cpp` (placed geometry transforms).
+IFC field definitions: buildingSMART IFC4.3 `IfcMapConversion` and
+`IfcMapConversionScaled`. No newer web-ifc API is assumed.

@@ -126,14 +126,23 @@ enum DrawingEvidence {
 enum IFCSourceEvidence {
   static func fingerprint(_ drawing:Drawing)throws->String {
     guard drawing.asset.hasSuffix(".ifc") else{throw HouseError.message("The IFC source is missing.")}
-    return SHA256.hash(data:Data(("ifc-source-v1|web-ifc-0.0.72|metres-z-up|"+drawing.asset).utf8)).map{String(format:"%02x",$0)}.joined()
+    var input=Data(("ifc-source-v1|web-ifc-0.0.72|metres-z-up|"+drawing.asset).utf8)
+    if let reference=drawing.ifcCoordinates {
+      guard reference.valid else{throw HouseError.message("The IFC source frame is invalid.")}
+      let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+      input.append(Data("|source-coordinates-v1|".utf8));input.append(try encoder.encode(reference))
+    }
+    return SHA256.hash(data:input).map{String(format:"%02x",$0)}.joined()
   }
-  static func applying(_ features:[Feature],source:Drawing,stage:Stage,roomID:UUID,to house:House)throws->House {
+  static func applying(_ features:[Feature],source:Drawing,stage:Stage,roomID:UUID,coordinates:IFCCoordinateReference?=nil,to house:House)throws->House {
     guard !features.isEmpty,house.drawings.contains(source),house.rooms.contains(where:{$0.id==roomID}),house.stages.contains(stage),stage.kind == .planned,
       features.allSatisfy({$0.kind == .planned && $0.roomID==roomID && $0.stageID==stage.id && $0.segmentID==nil && $0.sourceDrawingID==nil}),
       Set(features.map{$0.id}).isDisjoint(with:Set(house.features.map{$0.id})) else{throw HouseError.message("The IFC source, room or stage changed. Reopen the saved original before importing geometry.")}
-    let fingerprint=try Self.fingerprint(source),segment=Segment(roomID:roomID,stageID:stage.id)
-    var updated=house
+    var updated=house,referenced=source
+    if let coordinates {guard coordinates.valid else{throw HouseError.message("The IFC source frame is invalid.")};referenced.ifcCoordinates=coordinates}
+    let fingerprint=try Self.fingerprint(referenced),segment=Segment(roomID:roomID,stageID:stage.id)
+    guard let index=updated.drawings.firstIndex(of:source) else{throw HouseError.message("The IFC source changed.")}
+    updated.drawings[index]=referenced
     updated.segments.append(segment)
     updated.features += features.map{value in
       var feature=value;feature.segmentID=segment.id;feature.sourceDrawingID=source.id;feature.sourceDrawingFingerprint=fingerprint
@@ -170,14 +179,19 @@ enum DerivedEvidence {
       guard let fingerprint=try? DrawingEvidence.fingerprint(drawing) else{return nil}
       return(drawing.id,fingerprint)
     },uniquingKeysWith:{_,_ in "ambiguous"})
+    let originals=Dictionary(house.drawings.map{($0.id,$0)},uniquingKeysWith:{first,_ in first})
+    let ifcFingerprints=Dictionary(house.drawings.compactMap{drawing -> (UUID,String)? in
+      guard drawing.asset.hasSuffix(".ifc"),let fingerprint=try? IFCSourceEvidence.fingerprint(drawing) else{return nil}
+      return(drawing.id,fingerprint)
+    },uniquingKeysWith:{_,_ in "ambiguous"})
     let eligible=house.features.filter { feature in
       guard feature.artifactValid != false else{return false}
       if let drawing=feature.sourceDrawingID {
         guard let expected=feature.sourceDrawingFingerprint else{return false}
         if let declaration=feature.importedCoordinates {
-          guard let original=house.drawings.first(where:{$0.id==drawing}),let actual=try? PointCloudImport.fingerprint(original,declaration:declaration),actual==expected else{return false}
-        } else if let original=house.drawings.first(where:{$0.id==drawing}),original.asset.hasSuffix(".ifc") {
-          guard feature.kind == .planned,feature.segmentID != nil,(try? IFCSourceEvidence.fingerprint(original))==expected else{return false}
+          guard let original=originals[drawing],let actual=try? PointCloudImport.fingerprint(original,declaration:declaration),actual==expected else{return false}
+        } else if let original=originals[drawing],original.asset.hasSuffix(".ifc") {
+          guard feature.kind == .planned,feature.segmentID != nil,ifcFingerprints[drawing]==expected else{return false}
         } else {guard drawings[drawing]==expected else{return false}}
       }
       guard let expected=feature.sourceFingerprint else{return true}

@@ -54,6 +54,24 @@ def numeric(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
+def ifc_coordinates_check(value):
+    if value is None:return
+    require(isinstance(value,dict) and type(value.get('version')) is int and value['version']==1 and value.get('converter')=='web-ifc-0.0.72','Invalid IFC frame version')
+    def text(value):return isinstance(value,str) and len(value.encode('utf-8'))<=4096 and '\0' not in value
+    require(text(value.get('sourceSchema')) and bool(value['sourceSchema']) and text(value.get('sourceLengthUnit')),'Invalid IFC source units/schema')
+    origin=value.get('originMetres')
+    require(vector(origin) and all(abs(origin[k])<=1e9 for k in ('x','y','z')),'Invalid IFC source origin')
+    maps=value.get('mapConversions')
+    require(isinstance(maps,list) and len(maps)<=16,'Invalid IFC coordinate conversion inventory')
+    seen=set()
+    for item in maps:
+        require(isinstance(item,dict),'Invalid IFC conversion')
+        key=item.get('expressID');require(type(key) is int and 0<key<=2147483647 and key not in seen,'Invalid IFC conversion identity');seen.add(key)
+        values=item.get('values');target=item.get('targetCRS')
+        require(isinstance(values,dict) and set(values)<=set('Eastings Northings OrthogonalHeight XAxisAbscissa XAxisOrdinate Scale FactorX FactorY FactorZ'.split()) and all(numeric(v) and abs(v)<=1e12 for v in values.values()),'Invalid IFC conversion values')
+        require(isinstance(target,dict) and set(target)<=set('Name Description GeodeticDatum VerticalDatum MapProjection MapZone MapUnit'.split()) and all(text(v) for v in target.values()),'Invalid IFC target CRS')
+
+
 def service_check(value):
     if value is None:return
     require(isinstance(value,dict),'Invalid service details')
@@ -114,7 +132,7 @@ def required_assets(house):
 
 
 def semantic_check(house):
-    require(type(house.get('schema')) is int and house['schema'] in (1,2), 'Unsupported house schema')
+    require(type(house.get('schema')) is int and house['schema'] in (1,2,3), 'Unsupported house schema')
     identity(house.get('id'))
     require(type(house.get('revision')) is int and house['revision'] >= 0, 'Invalid source revision')
     tables = {}
@@ -126,6 +144,10 @@ def semantic_check(house):
         ids = [identity(item.get('id')) for item in rows]
         require(len(set(ids)) == len(ids), 'Duplicate '+name+' identity')
         tables[name] = dict(zip(ids, rows))
+    for drawing in tables['drawings'].values():
+        if drawing.get('ifcCoordinates') is not None:
+            require(str(drawing.get('asset','')).endswith('.ifc'),'IFC frame requires its original source')
+            ifc_coordinates_check(drawing['ifcCoordinates'])
     def reference(item, key, table, optional=False):
         if optional and item.get(key) is None:
             return

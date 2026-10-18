@@ -12,9 +12,14 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(convert.isEnabled);convert.tap()
     let result=app.staticTexts["ifc-source-result"];XCTAssertTrue(result.waitForExistence(timeout:75))
     XCTAssertTrue(result.label.contains("separate source frame"));XCTAssertTrue(result.label.contains("House alignment remains unknown"))
-    XCTAssertTrue(result.isHittable);screenshot("21-saved-ifc-source-frame")
+    for _ in 0..<4 {if result.isHittable{break};app.swipeUp()}
+    XCTAssertTrue(result.isHittable)
+    let coordinates=app.staticTexts["ifc-source-coordinates"];XCTAssertTrue(coordinates.exists)
+    let retained=coordinates.label;XCTAssertTrue(retained.contains("without a local offset"));screenshot("21-saved-ifc-source-frame")
     app.navigationBars["Source.ifc"].buttons["Save"].tap()
-    XCTAssertTrue(app.staticTexts["Source.ifc"].waitForExistence(timeout:10))
+    XCTAssertTrue(app.staticTexts["Source.ifc"].waitForExistence(timeout:10));app.staticTexts["Source.ifc"].tap()
+    XCTAssertTrue(coordinates.waitForExistence(timeout:10));XCTAssertEqual(coordinates.label,retained)
+    app.navigationBars["Source.ifc"].buttons["Save"].tap()
   }
   @MainActor func testPointCloudDeclarationWorkflow() throws {
     continueAfterFailure=false
@@ -203,15 +208,22 @@ final class HouseXraySmoke: XCTestCase {
     app.staticTexts["Speaker prewire"].firstMatch.tap()
     func revealField(_ field:XCUIElement) {
       for _ in 0..<12 {
-        if field.exists && field.isHittable && field.frame.maxY<app.frame.maxY-100{return}
-        app.swipeUp()
+        let frame=field.exists ? field.frame:.zero
+        if field.exists && field.isHittable && frame.minY>120 && frame.maxY<app.frame.maxY-100{return}
+        let moveDown=field.exists && frame.maxY>0 && frame.minY<120
+        let start=app.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:moveDown ? 0.32:0.65))
+        let end=app.coordinate(withNormalizedOffset:CGVector(dx:0.95,dy:moveDown ? 0.65:0.32))
+        start.press(forDuration:0.05,thenDragTo:end)
       }
+      screenshot("service-field-reveal-failure")
       XCTAssertTrue(field.isHittable)
     }
     let label=app.textFields["service-observed-label"]
     revealField(label);label.tap();label.typeText("Label-UI-contract")
+    let done=app.buttons["service-keyboard-done"];XCTAssertTrue(done.waitForExistence(timeout:5));done.tap()
     let port=app.textFields["service-port"]
     revealField(port);port.tap();port.typeText("P-UI-24")
+    XCTAssertTrue(done.waitForExistence(timeout:5));done.tap();screenshot("22-service-fields-before-save")
     app.navigationBars["Object details"].buttons["Save"].tap()
     XCTAssertTrue(app.navigationBars["Evidence"].waitForExistence(timeout:10))
     app.terminate();app.launch()

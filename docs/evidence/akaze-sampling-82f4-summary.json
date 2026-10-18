@@ -1,0 +1,153 @@
+{
+  "source": "82f4d081d17c8aadb5a49eba2dcc3d0a1f6cac36",
+  "run": 39100358085,
+  "variant": "fixed-2x-cubic-akaze-analysis",
+  "candidateSHA256": "1ca1bfea9fc0cfe379e0d2721818e3abd166fb786b05ab89dadc22fdb3e42f38",
+  "repairIteration": 5,
+  "complete": true,
+  "passed": false,
+  "adopted": false,
+  "layouts": [
+    {
+      "developmentLayout": 905771,
+      "cases": [
+        {
+          "stage": "rough",
+          "width": 384,
+          "passed": true,
+          "complete": true,
+          "positiveQueries": 12,
+          "positiveAccepted": 12,
+          "negativeQueries": 8,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "p95Metres": 0.0022649045846515822,
+          "worstAcceptedPositionErrorMetres": 0.0022649045846515822,
+          "maximumOptimizedCameraPositionErrorMetres": 0.002006705369524752,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true
+        },
+        {
+          "stage": "finished",
+          "width": 384,
+          "passed": true,
+          "complete": true,
+          "positiveQueries": 20,
+          "positiveAccepted": 20,
+          "negativeQueries": 20,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "p95Metres": 0.006821869641802337,
+          "worstAcceptedPositionErrorMetres": 0.009298315992148648,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0037179451776456103,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true
+        },
+        {
+          "stage": "finished",
+          "width": 768,
+          "passed": false,
+          "complete": true,
+          "positiveQueries": 20,
+          "positiveAccepted": 0,
+          "negativeQueries": 20,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "p95Metres": null,
+          "worstAcceptedPositionErrorMetres": 0.0,
+          "maximumOptimizedCameraPositionErrorMetres": 0.004206518670231051,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true
+        }
+      ]
+    },
+    {
+      "developmentLayout": 683431,
+      "cases": [
+        {
+          "stage": "rough",
+          "width": 384,
+          "passed": true,
+          "complete": true,
+          "positiveQueries": 12,
+          "positiveAccepted": 12,
+          "negativeQueries": 8,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "p95Metres": 0.005860328050479529,
+          "worstAcceptedPositionErrorMetres": 0.005860328050479529,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0032008195078746635,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true
+        },
+        {
+          "stage": "finished",
+          "width": 384,
+          "passed": false,
+          "complete": true,
+          "positiveQueries": 20,
+          "positiveAccepted": 20,
+          "negativeQueries": 20,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "p95Metres": 0.01418236162388232,
+          "worstAcceptedPositionErrorMetres": 0.01713212694425034,
+          "maximumOptimizedCameraPositionErrorMetres": 0.004851004542416788,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true
+        },
+        {
+          "stage": "finished",
+          "width": 768,
+          "passed": false,
+          "complete": true,
+          "positiveQueries": 20,
+          "positiveAccepted": 0,
+          "negativeQueries": 20,
+          "falseAccepts": 0,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "p95Metres": null,
+          "worstAcceptedPositionErrorMetres": 0.0,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0031888024744471666,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 12126680630,
+      "sha256": "aa04dcf910dbf19f809e29d7e061e82524aa362ef871f3825e16e8893059a68e",
+      "sha256IndependentlyVerified": true
+    },
+    {
+      "id": 12126745614,
+      "sha256": "dd58b7fb6c50661d75ebec6463209996d5571dd3c9b410223d0f55d4c7c3f37a",
+      "sha256IndependentlyVerified": true
+    }
+  ],
+  "budgetExhausted": true,
+  "shippingDetectorChanged": false,
+  "precisionEnabled": false,
+  "physicalQualification": false,
+  "rawEvidencePublished": false
+}

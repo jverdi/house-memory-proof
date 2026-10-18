@@ -13,6 +13,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   private var timeout: Task<Void, Never>?
   private var activeRequest:UUID?
   private(set) var phases:[String]=[]
+  private(set) var coordinateReference:IFCCoordinateReference?
   func load(_ data: Data, roomID: UUID, stageID: UUID) async throws -> [Feature] {
     guard data.count <= 50_000_000 else {
       throw HouseError.message("IFC input exceeds 50 MB. The source can still be archived.")
@@ -20,7 +21,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     guard activeRequest==nil else{throw HouseError.message("An IFC import is already active.")}
     try Task.checkCancellation()
     let request=UUID();activeRequest=request
-    phases=["created"]
+    phases=["created"];coordinateReference=nil
     defer{if activeRequest==request {activeRequest=nil;input=Data()}}
     self.input = data
     self.roomID = roomID
@@ -89,6 +90,10 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
         guard Self.complete(body,parts:features.count,vertices:vertexCount,indices:indexCount) else {
           throw HouseError.message("IFC conversion ended with incomplete geometry. Source remains preserved.")
         }
+        guard let raw=body["coordinateReference"] else{throw HouseError.message("IFC source frame is missing.")}
+        let reference=try JSONDecoder().decode(IFCCoordinateReference.self,from:JSONSerialization.data(withJSONObject:raw))
+        guard reference.valid else{throw HouseError.message("IFC source frame is invalid.")}
+        coordinateReference=reference
         finish(.success(features))
       } else if type == "error" {
         throw HouseError.message("IFC: \((body["message"] as? String ?? "conversion failed").prefix(2000))")
@@ -135,7 +140,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
         mime = "application/octet-stream"
       } else {
         let name = url.lastPathComponent
-        guard ["index.html", "web-ifc-api-iife.js", "web-ifc.wasm"].contains(name),
+        guard ["index.html", "coordinates.js", "web-ifc-api-iife.js", "web-ifc.wasm"].contains(name),
           let folder = Bundle.main.url(forResource: "IFC", withExtension: nil)
         else { throw HouseError.message("Bundled IFC dependency missing.") }
         data = try Data(contentsOf: folder.appendingPathComponent(name))

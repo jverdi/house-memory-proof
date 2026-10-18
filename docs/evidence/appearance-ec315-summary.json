@@ -1,0 +1,238 @@
+{
+  "source": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
+  "run": 39100177718,
+  "complete": true,
+  "passed": false,
+  "cases": [
+    {
+      "stage": "rough",
+      "complete": true,
+      "passed": true,
+      "rooms": 4,
+      "levels": 1,
+      "width": 384,
+      "inputArchiveCheckPassed": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "positiveQueries": 16,
+      "positiveAccepted": 16,
+      "negativeQueries": 32,
+      "falseAccepts": 0,
+      "expectedMapCount": 4,
+      "mapCount": 4,
+      "mapViews": 32,
+      "optimizedCameraCount": 32,
+      "p95Metres": 0.0064050925194209804,
+      "worstAcceptedPositionErrorMetres": 0.0064050925194209804,
+      "maximumOptimizedCameraPositionErrorMetres": 0.005412797003505341,
+      "sceneVariant": "windows-clutter",
+      "sceneInventory": {
+        "windows": 4,
+        "clutterObjects": 6,
+        "materialFamily": 2
+      },
+      "mappingFailureCategories": {},
+      "rotationErrorDegrees": {
+        "count": 16,
+        "p50": 0.04867968611385465,
+        "p95": 0.10376455359020549,
+        "maximum": 0.10376455359020549
+      },
+      "visibleSurfaceOverlay": {
+        "scoredAcceptedQueries": 16,
+        "samples": 768,
+        "behindCamera": 0,
+        "worldMetres": {
+          "count": 768,
+          "p50": 0.0013192447492059002,
+          "p95": 0.0030273753217743174,
+          "maximum": 0.004073879099477482
+        },
+        "reprojectionPixels": {
+          "count": 768,
+          "p50": 0.09054316717263436,
+          "p95": 0.22652562101802434,
+          "maximum": 0.8412867462271724
+        },
+        "diagnosticOnly": true,
+        "alignmentToTruth": false
+      }
+    },
+    {
+      "stage": "finished",
+      "complete": true,
+      "passed": false,
+      "rooms": 4,
+      "levels": 1,
+      "width": 384,
+      "inputArchiveCheckPassed": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "positiveQueries": 16,
+      "positiveAccepted": 14,
+      "negativeQueries": 32,
+      "falseAccepts": 0,
+      "expectedMapCount": 4,
+      "mapCount": 4,
+      "mapViews": 32,
+      "optimizedCameraCount": 32,
+      "p95Metres": 0.023049616914807523,
+      "worstAcceptedPositionErrorMetres": 0.023049616914807523,
+      "maximumOptimizedCameraPositionErrorMetres": 0.009553484730107928,
+      "sceneVariant": "windows-clutter",
+      "sceneInventory": {
+        "windows": 4,
+        "clutterObjects": 6,
+        "materialFamily": 2
+      },
+      "mappingFailureCategories": {},
+      "rotationErrorDegrees": {
+        "count": 14,
+        "p50": 0.182533609252005,
+        "p95": 0.4817412922723171,
+        "maximum": 0.4817412922723171
+      },
+      "visibleSurfaceOverlay": {
+        "scoredAcceptedQueries": 14,
+        "samples": 672,
+        "behindCamera": 0,
+        "worldMetres": {
+          "count": 672,
+          "p50": 0.002621508179362183,
+          "p95": 0.007385596641172378,
+          "maximum": 0.016486514081832413
+        },
+        "reprojectionPixels": {
+          "count": 672,
+          "p50": 0.18286263588300677,
+          "p95": 0.5109873254697622,
+          "maximum": 0.900943781601874
+        },
+        "diagnosticOnly": true,
+        "alignmentToTruth": false
+      }
+    },
+    {
+      "stage": "rough",
+      "complete": true,
+      "passed": true,
+      "rooms": 7,
+      "levels": 2,
+      "width": 384,
+      "inputArchiveCheckPassed": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "positiveQueries": 28,
+      "positiveAccepted": 28,
+      "negativeQueries": 56,
+      "falseAccepts": 0,
+      "expectedMapCount": 7,
+      "mapCount": 7,
+      "mapViews": 56,
+      "optimizedCameraCount": 56,
+      "p95Metres": 0.004798499129071675,
+      "worstAcceptedPositionErrorMetres": 0.004839457476729017,
+      "maximumOptimizedCameraPositionErrorMetres": 0.003224357533012858,
+      "sceneVariant": "windows-clutter",
+      "sceneInventory": {
+        "windows": 6,
+        "clutterObjects": 9,
+        "materialFamily": 0
+      },
+      "mappingFailureCategories": {},
+      "rotationErrorDegrees": {
+        "count": 28,
+        "p50": 0.045960540598375,
+        "p95": 0.08916910606601604,
+        "maximum": 0.0908108699000721
+      },
+      "visibleSurfaceOverlay": {
+        "scoredAcceptedQueries": 28,
+        "samples": 1303,
+        "behindCamera": 0,
+        "worldMetres": {
+          "count": 1303,
+          "p50": 0.0009816029336571976,
+          "p95": 0.002107376222773364,
+          "maximum": 0.004183856742823414
+        },
+        "reprojectionPixels": {
+          "count": 1303,
+          "p50": 0.061652613981809594,
+          "p95": 0.14643782986984538,
+          "maximum": 0.4792305017055864
+        },
+        "diagnosticOnly": true,
+        "alignmentToTruth": false
+      }
+    },
+    {
+      "stage": "finished",
+      "complete": true,
+      "passed": false,
+      "rooms": 7,
+      "levels": 2,
+      "width": 384,
+      "inputArchiveCheckPassed": true,
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "positiveQueries": 28,
+      "positiveAccepted": 27,
+      "negativeQueries": 56,
+      "falseAccepts": 0,
+      "expectedMapCount": 7,
+      "mapCount": 7,
+      "mapViews": 56,
+      "optimizedCameraCount": 56,
+      "p95Metres": 0.014859037782500355,
+      "worstAcceptedPositionErrorMetres": 0.02161624993965441,
+      "maximumOptimizedCameraPositionErrorMetres": 0.006488994183896172,
+      "sceneVariant": "windows-clutter",
+      "sceneInventory": {
+        "windows": 6,
+        "clutterObjects": 9,
+        "materialFamily": 0
+      },
+      "mappingFailureCategories": {},
+      "rotationErrorDegrees": {
+        "count": 27,
+        "p50": 0.1293368188337543,
+        "p95": 0.31692217886584,
+        "maximum": 0.42613847854065734
+      },
+      "visibleSurfaceOverlay": {
+        "scoredAcceptedQueries": 27,
+        "samples": 1267,
+        "behindCamera": 0,
+        "worldMetres": {
+          "count": 1267,
+          "p50": 0.0020816747797792216,
+          "p95": 0.006781528528072639,
+          "maximum": 0.011611811124344902
+        },
+        "reprojectionPixels": {
+          "count": 1267,
+          "p50": 0.12857966225064213,
+          "p95": 0.39823112124672544,
+          "maximum": 1.0000138929459677
+        },
+        "diagnosticOnly": true,
+        "alignmentToTruth": false
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 12126053579,
+      "sha256": "9a14f8a837ce9be1356db1bd1d69ffde564529db4eca6f7fb8c9f807cea69c46",
+      "sha256IndependentlyVerified": true
+    },
+    {
+      "id": 12126278158,
+      "sha256": "00f896ab29fe859ab8fcfec7ff082331f41085fa5aef8df00f16fbec2cc07dff",
+      "sha256IndependentlyVerified": true
+    }
+  ],
+  "rawEvidencePublished": false,
+  "physicalQualification": false
+}

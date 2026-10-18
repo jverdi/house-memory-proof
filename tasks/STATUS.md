@@ -1,5 +1,15 @@
 # Implementation ledger
 
+## Retained spatial outcomes and reversible IFC candidate
+
+Source **ec315c98d6**, build **200.1**, passed **137/137 native checks** in **115.588 seconds**, three recoveries, **eight of nine UI flows** (658.551 seconds), 50 portable cases, 27 command/reader contracts and **22 independent readers**. Both artifacts are independently SHA-256 verified. Batch, PLY, saved IFC and curve feedback interfaces passed; service edit/search lost the Port field during one-direction scrolling after label entry, before save/relaunch verification. This remains a failed integration; the preceding complete pass is 0e191bca22. Evidence: `docs/evidence/native-ec315-summary.json`. The next candidate adds explicit keyboard dismissal and bounded bidirectional field reveal while retaining the full persistence/search assertions.
+
+The fifth isolated detector experiment **82f4d081d1 / 39100358085** completed and failed: finished-384 p95 is **6.822 / 14.182 mm**, and finished-768 availability regressed to **0/20 on both layouts**. Rough cases pass; all 96 critical queries abstain. Both aggregate artifacts were independently verified. **Not adopted; five-iteration budget exhausted.** Shipping detection and acceptance gates are unchanged. Remaining hypotheses/fallback and all earlier attempts are recorded in `experiments/akaze-sampling-audit/README.md`; evidence is `docs/evidence/akaze-sampling-82f4-summary.json`. This does not complete the localization release gate.
+
+Both window/clutter layouts completed: rough **44/44** passes; finished **41/44** has **23.050 / 14.859 mm p95**, with **0/176 critical accepts**. Four-room availability is also below 90%. All nine baseline/sensor/visual/frozen artifacts were verified and retain the same original failures. Aggregate evidence: `docs/evidence/appearance-ec315-summary.json`, `docs/evidence/host-ec315-summary.json`. No protected set was drawn.
+
+The next app candidate preserves reversible far-origin IFC offsets and documentary source CRS/unit records, source fingerprints, archive/GLB/CSV handoff and saved-source notes. Schema 3 prevents old writers from discarding origins. Near coordinates and the original IFC remain unchanged; no georeference is applied as house alignment. Local JS and **28 command/reader contracts** pass. **140 native checks, nine UI flows and the added independent IFC GLB/CSV readers await exact-source validation.** Small raw export fixtures remain private in CI. Full scaled-CRS/representation, signed cross-version, device/provider/field and whole-house acceptance remain open. Precision stays disabled; no upload.
+
 ## Fifth bounded finished-384 sampling experiment
 
 The IFC/source-frame/UI repair candidate **ec315c98d6** is under validation (native run **39100177707**, 137 native / nine UI expected). Its app code is unchanged by the separate experiment below.

@@ -42,6 +42,7 @@ struct ServiceDetails:Codable,Equatable {
 import SwiftUI
 struct ServiceDetailsFields:View {
   @Binding var details:ServiceDetails
+  @FocusState private var focusedField:String?
   let boundaries:[RevealBoundary]
   private func text(_ key:WritableKeyPath<ServiceDetails,String?>)->Binding<String> {
     Binding(get:{details[keyPath:key] ?? ""},set:{details[keyPath:key]=$0.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty ? nil:$0})
@@ -51,15 +52,15 @@ struct ServiceDetailsFields:View {
       Picker("Service class",selection:Binding(get:{details.classification ?? .unknown},set:{details.classification=$0 == .unknown ? nil:$0})) {
         ForEach(ServiceClass.allCases,id:\.self){Text($0.rawValue).tag($0)}
       }.accessibilityIdentifier("object-service-class")
-      TextField("Observed label",text:text(\.observedLabel)).accessibilityIdentifier("service-observed-label")
-      TextField("Panel reference",text:text(\.panelReference))
-      TextField("Circuit reference",text:text(\.circuitReference))
-      TextField("Cable category",text:text(\.cableCategory))
-      TextField("Endpoint",text:text(\.endpoint))
-      TextField("Port",text:text(\.port)).accessibilityIdentifier("service-port")
-      TextField("Conduit size, including units",text:text(\.conduitSize))
-      TextField("Pipe / duct envelope, including units",text:text(\.pipeDuctEnvelope))
-      TextField("Installation date · YYYY-MM-DD",text:text(\.installationDate)).textInputAutocapitalization(.never)
+      TextField("Observed label",text:text(\.observedLabel)).accessibilityIdentifier("service-observed-label").focused($focusedField,equals:"Observed label")
+      TextField("Panel reference",text:text(\.panelReference)).focused($focusedField,equals:"Panel reference")
+      TextField("Circuit reference",text:text(\.circuitReference)).focused($focusedField,equals:"Circuit reference")
+      TextField("Cable category",text:text(\.cableCategory)).focused($focusedField,equals:"Cable category")
+      TextField("Endpoint",text:text(\.endpoint)).focused($focusedField,equals:"Endpoint")
+      TextField("Port",text:text(\.port)).accessibilityIdentifier("service-port").focused($focusedField,equals:"Port")
+      TextField("Conduit size, including units",text:text(\.conduitSize)).focused($focusedField,equals:"Conduit size, including units")
+      TextField("Pipe / duct envelope, including units",text:text(\.pipeDuctEnvelope)).focused($focusedField,equals:"Pipe / duct envelope, including units")
+      TextField("Installation date · YYYY-MM-DD",text:text(\.installationDate)).textInputAutocapitalization(.never).focused($focusedField,equals:"Installation date · YYYY-MM-DD")
       Picker("Associated boundary",selection:$details.boundaryID) {
         Text("Unknown").tag(Optional<UUID>.none)
         ForEach(boundaries){Text($0.name).tag(Optional($0.id))}
@@ -67,9 +68,13 @@ struct ServiceDetailsFields:View {
       Picker("Identity confidence",selection:Binding(get:{details.confidence ?? .unknown},set:{details.confidence=$0 == .unknown ? nil:$0})) {
         ForEach(IdentityConfidence.allCases,id:\.self){Text($0.rawValue).tag($0)}
       }
-      TextField("Identity evidence or test notes",text:text(\.identityEvidence),axis:.vertical)
+      TextField("Identity evidence or test notes",text:text(\.identityEvidence),axis:.vertical).focused($focusedField,equals:"Identity evidence or test notes")
       Text("Leave unavailable details blank. Sizes are recorded descriptions, not measured geometry. Appearance alone does not prove gauge, contents, circuit identity or route continuity.").font(.footnote)
       if !details.valid {Text("Use a valid YYYY-MM-DD date, keep each field within 4,096 UTF-8 bytes, and describe the evidence for an owner-confirmed identity.").font(.footnote).foregroundStyle(.red)}
+    }.submitLabel(.done).onSubmit{focusedField=nil}.toolbar {
+      ToolbarItemGroup(placement:.keyboard) {
+        if focusedField != nil {Spacer();Button("Done"){focusedField=nil}.accessibilityIdentifier("service-keyboard-done")}
+      }
     }
   }
 }

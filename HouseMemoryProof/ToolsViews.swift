@@ -224,7 +224,7 @@ struct ToolsPage: View {
           guard let current=model.house,current.id == projectID else {
             throw HouseError.message("Project changed; import not published.")
           }
-          let updated=try IFCSourceEvidence.applying(features,source:drawing,stage:stage,roomID:room.id,to:current)
+          let updated=try IFCSourceEvidence.applying(features,source:drawing,stage:stage,roomID:room.id,coordinates:importer.coordinateReference,to:current)
           if model.commit(updated,select:false) {importReport="IFC design imported in its own source frame. Choose Imported IFC design in Explore → Layers to inspect it. House alignment remains unknown."}
           return nil
         }
@@ -342,6 +342,7 @@ struct DrawingPage: View {
             DrawingAlignmentPage(drawing: $drawing, document: document)
           }
         } else {
+          ScrollView {VStack(spacing:12) {
           ContentUnavailableView(
             "Source preserved", systemImage: "doc",
             description: Text(
@@ -373,23 +374,27 @@ struct DrawingPage: View {
               ifcReport=""
               model.perform("Converting saved IFC locally") {
                 let data=try await LocalWorker.run{try repo.read(original.asset,limit:50_000_000)}
-                let features=try await IFCImporter().load(data,roomID:roomID,stageID:stage.id)
+                let importer=IFCImporter()
+                let features=try await importer.load(data,roomID:roomID,stageID:stage.id)
                 try Task.checkCancellation()
                 guard let current=model.house,current.id==house.id else{throw HouseError.message("Project changed; import not published.")}
-                let updated=try IFCSourceEvidence.applying(features,source:original,stage:stage,roomID:roomID,to:current)
-                if model.commit(updated,select:false){ifcReport="Imported \(features.count) design objects in a separate source frame. House alignment remains unknown. Choose Imported IFC design in Explore → Layers."}
+                let updated=try IFCSourceEvidence.applying(features,source:original,stage:stage,roomID:roomID,coordinates:importer.coordinateReference,to:current)
+                if model.commit(updated,select:false){drawing.ifcCoordinates=importer.coordinateReference;ifcReport="Imported \(features.count) design meshes in a separate source frame. House alignment remains unknown. Choose Imported IFC design in Explore → Layers."}
                 return nil
               }
             }.disabled(model.busy || ifcRoom==nil)
+            if let reference=drawing.ifcCoordinates {Text(reference.summary+" CRS metadata is retained without applying a house alignment.").font(.caption).accessibilityIdentifier("ifc-source-coordinates")}
             if !ifcReport.isEmpty {Text(ifcReport).font(.footnote).accessibilityIdentifier("ifc-source-result")}
           }
+          }.padding(.horizontal)}
         }
         TextField("Source notes", text: $drawing.notes, axis: .vertical).padding()
       }.navigationTitle(drawing.name).navigationBarTitleDisplayMode(.inline).toolbar {
         Button("Save") {
           model.edit {
             if let i = $0.drawings.firstIndex(where: { $0.id == drawing.id }) {
-              $0.drawings[i] = drawing
+              var saved=drawing;saved.ifcCoordinates=$0.drawings[i].ifcCoordinates
+              $0.drawings[i] = saved
             }
           }
           dismiss()

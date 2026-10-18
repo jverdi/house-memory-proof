@@ -573,7 +573,7 @@ struct FeatureEditor: View {
           Text("Session association alone does not prove a photograph shows this exact object.")
             .font(.caption)
         }
-      }.sheet(item: $sourcePhoto) { PhotoDetail(observation: $0) }.navigationTitle("Object details")
+      }.scrollDismissesKeyboard(.immediately).sheet(item: $sourcePhoto) { PhotoDetail(observation: $0) }.navigationTitle("Object details")
         .toolbar {
           ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
           ToolbarItem(placement: .confirmationAction) {

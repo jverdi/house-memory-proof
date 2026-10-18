@@ -153,12 +153,30 @@ struct Dimension:Codable,Identifiable,Equatable {
     var id=UUID();var name:String;var a:V3;var b:V3;var roomID:UUID;var date=Date();var source="Approximate geometry";var sourceRevision:Int;var segmentID:UUID?=nil;var sourceGeometry:[AnnotationDependency]?=nil
     var metres:Double {(a-b).length}
 }
+// The source CRS is documentary metadata; it is never applied as house alignment.
+// Add originMetres to a local Z-up vertex to recover project-frame metres.
+struct IFCMapReference:Codable,Equatable {
+    var expressID:Int;var values:[String:Double];var targetCRS:[String:String]
+    var valid:Bool {
+        expressID>0 && expressID<=Int(Int32.max) && Set(values.keys).isSubset(of:Set(["Eastings","Northings","OrthogonalHeight","XAxisAbscissa","XAxisOrdinate","Scale","FactorX","FactorY","FactorZ"])) && values.values.allSatisfy{$0.isFinite && abs($0)<=1e12} && Set(targetCRS.keys).isSubset(of:Set(["Name","Description","GeodeticDatum","VerticalDatum","MapProjection","MapZone","MapUnit"])) && targetCRS.values.allSatisfy{IFCCoordinateReference.bounded($0)}
+    }
+}
+struct IFCCoordinateReference:Codable,Equatable {
+    var version=1;var converter="web-ifc-0.0.72";var sourceSchema:String;var sourceLengthUnit:String
+    var originMetres:V3;var mapConversions:[IFCMapReference]
+    static func bounded(_ text:String)->Bool {text.utf8.count<=4096 && !text.contains("\0")}
+    var valid:Bool {
+        version==1 && converter=="web-ifc-0.0.72" && Self.bounded(sourceSchema) && !sourceSchema.isEmpty && Self.bounded(sourceLengthUnit) && originMetres.finite && [originMetres.x,originMetres.y,originMetres.z].allSatisfy{abs($0)<=1e9} && mapConversions.count<=16 && Set(mapConversions.map{$0.expressID}).count==mapConversions.count && mapConversions.allSatisfy{$0.valid}
+    }
+    var rebased:Bool {originMetres != V3()}
+    var summary:String {rebased ? "Large source coordinates were rebased locally; the reversible project offset is retained." : "Source project coordinates retained without a local offset."}
+}
 struct Drawing:Codable,Identifiable,Equatable {
-    var id=UUID();var name:String;var asset:String;var page:Int=0;var metresPerPoint:Double?;var roomID:UUID?;var notes="Design reference; not surveyed as-built geometry.";var alignment:DrawingAlignment?=nil
+    var id=UUID();var name:String;var asset:String;var page:Int=0;var metresPerPoint:Double?;var roomID:UUID?;var notes="Design reference; not surveyed as-built geometry.";var alignment:DrawingAlignment?=nil;var ifcCoordinates:IFCCoordinateReference?=nil
 }
 struct Bookmark:Codable,Identifiable,Equatable { var id=UUID();var name:String;var position:V3;var yaw:Double;var pitch:Double;var roomID:UUID;var segmentID:UUID?=nil }
 struct House:Codable,Identifiable,Equatable {
-    static let currentSchema=2
+    static let currentSchema=3
     var schema=House.currentSchema;var id=UUID();var name:String;var created=Date();var revision=1;var rooms:[Room]=[];var stages:[Stage]=[]
     var features:[Feature]=[];var observations:[Observation]=[];var segments:[Segment]=[];var dimensions:[Dimension]=[];var drawings:[Drawing]=[];var bookmarks:[Bookmark]=[]
     var boundaries:[RevealBoundary]=[]
@@ -181,6 +199,7 @@ struct House:Codable,Identifiable,Equatable {
         guard fieldChecks.count<=10000,Set(fieldChecks.map{$0.id}).count==fieldChecks.count,fieldChecks.allSatisfy({$0.valid}) else{throw HouseError.message("Invalid field evidence records.")}
         let roomIDs=Set(rooms.map{$0.id}),stageIDs=Set(stages.map{$0.id})
         guard drawings.count<=10000,Set(drawings.map{$0.id}).count==drawings.count else{throw HouseError.message("Invalid source drawing inventory.")}
+        for drawing in drawings {if let reference=drawing.ifcCoordinates {guard drawing.asset.hasSuffix(".ifc"),reference.valid else{throw HouseError.message("Invalid IFC source coordinates.")}}}
         guard documentaryPhotos.count<=50000,Set(documentaryPhotos.map{$0.id}).count==documentaryPhotos.count else{throw HouseError.message("Invalid documentary photograph inventory.")}
         var markIDs=Set<UUID>(),markCount=0,markPoints=0
         for photo in documentaryPhotos {
@@ -305,7 +324,7 @@ extension House {
         let inputSchema=try c.decode(Int.self,forKey:.schema)
         guard (1...Self.currentSchema).contains(inputSchema) else{throw HouseError.message("This project uses an unsupported schema. Update the app; the original is preserved.")}
         // Upgrade in memory only. Existing source files stay immutable; the
-        // schema-2 marker makes older schema-1 readers refuse later saves.
+        // schema-3 marker prevents older readers from losing reversible IFC origins.
         schema=Self.currentSchema
         id=try c.decode(UUID.self,forKey:.id)
         name=try c.decode(String.self,forKey:.name)

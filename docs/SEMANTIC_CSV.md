@@ -11,3 +11,12 @@ Dates are UTC ISO 8601. Features have `stage_date`, not an invented feature-capt
 Text cells whose first non-whitespace character is `=`, `+`, `-`, `@` or an apostrophe, or which begin with tab/CR/LF, receive one leading apostrophe to prevent spreadsheet formula interpretation. Literal leading apostrophes are therefore escaped too. To recover original text, remove exactly one initial apostrophe from a non-numeric cell when present. Numeric columns remain numeric, including negative coordinates and levels. Standard CSV parsing recovers commas, quotes, Unicode and embedded newlines.
 
 The writer streams records, admits at most 128 MB total and 2 MB per field, checks cancellation between records and removes incomplete output on failure. It does not load textures or original media. Empty projects produce the header. The native fixture and independent Python `csv` reader verify separate/registered/house frames, route order, connection indices, measurements, identity, dates, hidden records and text escaping. This format summarizes records; it is not a precision certificate or replacement for the complete archive.
+
+IFC-derived features additionally carry `ifcSourceCoordinates` in
+`provenance_json`: a Z-up metre origin, converter/schema/unit labels and retained
+MapConversion/CRS fields. Add the origin to local source-frame coordinates to
+recover project metres, before any separate segment-to-house registration. The
+CRS records are documentary and are not applied. Unknown house alignment remains
+unknown. Mesh positions themselves remain in the archive/GLB; this CSV remains a
+semantic summary. The independent reader validates these optional records and
+requires the original source/segment identities.

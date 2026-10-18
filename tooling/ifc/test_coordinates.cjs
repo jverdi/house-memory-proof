@@ -1,0 +1,20 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const context={TextEncoder};vm.createContext(context);vm.runInContext(fs.readFileSync('HouseMemoryProof/IFC/coordinates.js','utf8'),context);
+const {frame,metadata}=context.IFCCoordinates;
+const plain=x=>JSON.parse(JSON.stringify(x));
+let reference={},f=frame(reference);assert.deepEqual(plain(f.point([10,30,-20])),[10,30,-20]);assert.deepEqual(plain(reference.originMetres),{x:0,y:0,z:0});
+reference={};f=frame(reference);assert.deepEqual(plain(f.point([999999.5,30,-20])),[-.5,30,-20]);assert.deepEqual(plain(f.point([1000000.5,33,-21])),[.5,33,-21]);assert.deepEqual(plain(reference.originMetres),{x:1000000,y:0,z:0});
+for(const point of [[NaN,0,0],[Infinity,0,0],[1e9+1,0,0],[0,0]])assert.throws(()=>frame({}).point(point));
+assert.throws(()=>f.point([2000000,0,0]));
+const line={1:{UnitsInContext:{value:2}},2:{Units:[{value:3}]},3:{UnitType:{value:'LENGTHUNIT'},Prefix:{value:'MILLI'},Name:{value:'METRE'}},4:{TargetCRS:{value:5},Eastings:{value:500000.25},Northings:{value:4200000.5},OrthogonalHeight:{value:12},XAxisAbscissa:{value:0},XAxisOrdinate:{value:1},Scale:{value:.001}},5:{Name:{value:'EPSG:32632'},MapUnit:{value:6}},6:{Name:{value:'METRE'}}};
+const api={GetLineIDsWithType(_,t){const ids=t===10?[1]:t===20?[4]:[];return {size:()=>ids.length,get:i=>ids[i]}},GetLine:(_,id)=>line[id],GetModelSchema:()=> 'IFC4'};
+reference=plain(metadata(api,0,{IFCPROJECT:10,IFCMAPCONVERSION:20}));assert.equal(reference.sourceLengthUnit,'MILLI METRE');assert.equal(reference.mapConversions[0].values.Scale,.001);assert.equal(reference.mapConversions[0].targetCRS.Name,'EPSG:32632');assert.equal(reference.mapConversions[0].targetCRS.MapUnit,'METRE');
+// Source CRS remains documentary: even rotated/scaled map metadata does not alter geometry.
+f=frame(reference);assert.deepEqual(plain(f.point([10,30,-20])),[10,30,-20]);
+line[4].FactorX={value:2};line[4].FactorY={value:3};line[4].FactorZ={value:4};assert.equal(metadata(api,0,{IFCPROJECT:10,IFCMAPCONVERSION:20}).mapConversions[0].values.FactorY,3);
+assert.equal(metadata(api,0,{IFCPROJECT:10}).mapConversions.length,0);
+assert.throws(()=>metadata({...api,GetLineIDsWithType:()=>({size:()=>100001})},0,{IFCPROJECT:10}));
+line[4].Scale={value:Infinity};assert.throws(()=>metadata(api,0,{IFCPROJECT:10,IFCMAPCONVERSION:20}));line[4].Scale={value:.001};
+line[5].Name={value:'é'.repeat(2049)};assert.throws(()=>metadata(api,0,{IFCPROJECT:10,IFCMAPCONVERSION:20}));
+line[5].Name={value:'bad\0CRS'};assert.throws(()=>metadata(api,0,{IFCPROJECT:10,IFCMAPCONVERSION:20}));
+console.log('IFC coordinate contracts passed: near/far/reversible/range/unit/CRS/scaled/no-alignment/budget');
