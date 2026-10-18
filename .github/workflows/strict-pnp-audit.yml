@@ -1,0 +1,82 @@
+name: Audit tighter PnP outlier selection
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/strict-pnp-audit.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: strict-pnp-audit
+  cancel-in-progress: true
+jobs:
+  replay:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: f8259c889397a5c0b7e898e1c9a99f30b1344b7a
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Build isolated candidate without changing shipping source
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p=pathlib.Path('packages/visual-core/hx_vision.cpp')
+          s=p.read_text()
+          before='false,400,2.5,0.999,inliers,cv::SOLVEPNP_EPNP'
+          assert s.count(before)==1
+          p.write_text(s.replace(before,'false,400,1.0,0.999,inliers,cv::SOLVEPNP_EPNP'))
+          PY
+          mkdir -p build/strict-pnp-evidence
+          git rev-parse HEAD > build/strict-pnp-evidence/source.txt
+          git diff -- packages/visual-core/hx_vision.cpp > build/strict-pnp-evidence/candidate.diff
+          bash tooling/opencv/build-host.sh
+          shasum -a 256 build/vision-replay > build/strict-pnp-evidence/binary.txt
+          python3 -m venv build/vision-env
+          build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+      - name: Preserve low-resolution failures and all existing house protocols
+        run: |
+          failed=0
+          for width in 384 768; do
+            for seed in 905771 683431; do
+              build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/finished-$seed-$width" --seed "$seed" --paired --staggered --finished-capture --width "$width"
+              build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/finished-$seed-$width" --output "build/strict-pnp-evidence/finished-$seed-$width.json" --refine --bundle --house || failed=1
+            done
+          done
+          for spec in 'rough-a 905771' 'rough-b 683431' 'paired 905771 --paired' 'staggered 905771 --paired --staggered'; do
+            read -r name seed arg1 arg2 <<< "$spec"
+            build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/$name" --seed "$seed" ${arg1:-} ${arg2:-}
+            build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/$name" --output "build/strict-pnp-evidence/$name.json" --refine --bundle --house || failed=1
+          done
+          exit "$failed"
+      - name: Report aggregate acceptance without spatial replay details
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          keys=['passed','positiveQueries','positiveAccepted','negativeQueries','falseAccepts','p95Metres','worstAcceptedPositionErrorMetres','oracleReadDenied','scenarioMetrics','mapCount','optimizedCameraCount','maximumOptimizedCameraPositionErrorMetres']
+          for path in sorted(pathlib.Path('build/strict-pnp-evidence').glob('*.json')):
+              report=json.loads(path.read_text())
+              print('STRICT_PNP_AGGREGATE '+json.dumps(dict(case=path.stem,**{k:report[k] for k in keys if k in report})),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: strict-pnp-development-diagnostics
+          path: build/strict-pnp-evidence/
+          retention-days: 14
