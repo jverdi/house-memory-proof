@@ -1,7 +1,7 @@
 # House Memory — Personal App Architecture and Execution Runbook
 
-Version: 2.0 · Revised October 16, 2026, America/New_York  
-Status: Reviewed implementation plan. No app, build pipeline, on-device benchmark, or field accuracy result is claimed to exist yet.  
+Version: 2.1 · Revised October 18, 2026, America/New_York
+Status: Execution runbook with the owner-requested homeowner guidance amendment R19. Current implementation and acceptance evidence are recorded in tasks/STATUS.md and docs/IMPLEMENTATION.md; requirements here are not claims that gates have passed.
 Owner: Jared Verdi  
 Working name: House Memory
 
@@ -1365,6 +1365,8 @@ Beautiful navigation and movies can progress in parallel with spatial work, but 
 
 ## 25. End-to-end acceptance demonstration
 
+Begin with R19: a first-time homeowner must be able to follow the introduction and offline guides to create a room/date record, capture or import a photo, review it, find it again and save a complete backup. Verify skip, replay and next-launch settings without modifying existing project records. Keep comprehension and actual device accessibility results distinct from simulator navigation checks.
+
 Run this through the actual native application and shipped local modules, with networking disabled except during the separately labeled iCloud/delivery tests:
 
 1. Open the bundled synthetic house with two floors, repeated rooms, framing, ducts, plumbing, electric, and low-voltage routes.
@@ -1552,8 +1554,9 @@ Test names are required deliverables, not assertions that code has already passe
 | R16 Personal/no service | P11 | T-NO-BACKEND: offline feature demo and dependency audit |
 | R17 Synthetic iteration | P2/P11 | T-REPLAY-PARITY: real portable modules, isolated oracle, native adapter contract |
 | R18 Qualified device/lifecycle | P0/P10/P12/P13 | T-DEVICE-QUALIFY and T-BETA-RENEW: measured device results and refresh evidence |
+| R19 Homeowner guidance | P0/P1/P11/P12 | T-HOMEOWNER-GUIDANCE: first use, skip/restart/relaunch, offline searchable task help, contextual actions, large text/landscape and owner comprehension |
 
-All eighteen requirements are necessary for the defined release. Optional iCloud can be disabled, but its implemented enabled path must be tested before it is offered as a recovery option.
+All nineteen requirements are necessary for the defined release. Optional iCloud can be disabled, but its implemented enabled path must be tested before it is offered as a recovery option.
 
 ## 30. Review record and execution decisions
 
@@ -1598,7 +1601,7 @@ The strict version of “everything entirely inside ChatGPT Mobile with no human
 
 ### 30.4 Validation of this document
 
-Before saving, check section numbering, all R01–R18 traceability, all P0–P13 work packages, gate dependencies, source-reference resolution, JSON examples, code fences, and leftover hosted-service requirements. Audit specifically for cloud reconstruction, application authentication, public App Store release, required desktop conversion, and claims of silent remote phone control.
+Before saving, check section numbering, all R01–R19 traceability, all P0–P13 work packages, gate dependencies, source-reference resolution, JSON examples, code fences, and leftover hosted-service requirements. Audit specifically for cloud reconstruction, application authentication, public App Store release, required desktop conversion, and claims of silent remote phone control.
 
 These checks establish internal consistency of the plan. They do not mean the app, infrastructure access, tests, or precision have already been validated.
 

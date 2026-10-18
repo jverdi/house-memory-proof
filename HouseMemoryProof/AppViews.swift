@@ -10,22 +10,23 @@ struct RootView: View {
   @EnvironmentObject var model: AppModel
   @StateObject private var guidance = HomeownerGuidance()
   @State private var tab = 0
+  @State private var guidanceRoutes: [Int: UUID] = [:]
   @State private var newProject = false
   @State private var name = "My house"
   var body: some View {
     Group {
       if let house = model.house {
         TabView(selection: $tab) {
-          OverviewView(house: house, openExplore: { tab = 1 }, openCapture: { tab = 2 }).tabItem {
+          OverviewView(house: house, openExplore: { tab = 1 }, openCapture: { tab = 2 }).id(guidanceRoutes[0]).tabItem {
             Label("House", systemImage: "house")
           }.tag(0)
-          ExploreView(house: house).tabItem { Label("Explore", systemImage: "cube.transparent") }
+          ExploreView(house: house).id(guidanceRoutes[1]).tabItem { Label("Explore", systemImage: "cube.transparent") }
             .tag(1)
-          CapturePage(house: house).tabItem { Label("Capture", systemImage: "camera.viewfinder") }
+          CapturePage(house: house).id(guidanceRoutes[2]).tabItem { Label("Capture", systemImage: "camera.viewfinder") }
             .tag(2)
-          EvidencePage(house: house).tabItem { Label("Evidence", systemImage: "photo.stack") }.tag(
+          EvidencePage(house: house).id(guidanceRoutes[3]).tabItem { Label("Evidence", systemImage: "photo.stack") }.tag(
             3)
-          ToolsPage(house: house).tabItem { Label("Tools", systemImage: "slider.horizontal.3") }
+          ToolsPage(house: house).id(guidanceRoutes[4]).tabItem { Label("Tools", systemImage: "slider.horizontal.3") }
             .tag(4)
         }
       } else {
@@ -39,7 +40,7 @@ struct RootView: View {
               Text("Remember what\nthe walls hide.").font(
                 .system(size: 44, weight: .semibold, design: .rounded))
               Text(
-                "Your construction record. On your iPhone. Capture exposed services, explore their geometry, and keep the original evidence."
+                "Your construction record. On your iPhone. Save photos and notes before walls close, then find them by room and date."
               ).font(.title3).foregroundStyle(.secondary)
               HomeHelpButton()
               Button {
@@ -55,7 +56,7 @@ struct RootView: View {
                   .padding(10)
               }.buttonStyle(.bordered)
               Text(
-                "No account. No server. No subscription.\nThe sample is synthetic; real captures remain approximate until validated."
+                "No account. Works offline. No subscription.\nThe sample is a practice example. 3D views and measurements remain approximate."
               ).font(.footnote).foregroundStyle(.secondary)
             }.padding(28)
           }.background(ink)
@@ -84,7 +85,7 @@ struct RootView: View {
     }
     .alert(
       "House Xray",
-      isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })
+      isPresented: Binding(get: { model.error != nil && !guidance.showHelp }, set: { if !$0 { model.error = nil } })
     ) {
       Button("OK") { model.error = nil }
     } message: {
@@ -108,6 +109,9 @@ struct RootView: View {
         case .tools: tab = 4
         case .createHouse: newProject = true
         }
+        // A guide's next action opens the named tab at its root, even if an
+        // earlier visit left a different detail page or search open there.
+        if destination != .createHouse { guidanceRoutes[tab] = UUID() }
       }
     }) {
       NavigationStack {
@@ -116,6 +120,9 @@ struct RootView: View {
           else { HomeHelpCenter() }
         }
       }.environmentObject(guidance).environmentObject(model)
+        .alert("House Xray", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
+          Button("OK") { model.error = nil }
+        } message: { Text(model.error ?? "") }
         .sheet(isPresented: Binding(get: { model.shareURL != nil }, set: { if !$0 { model.shareURL = nil } })) {
           if let url = model.shareURL { ShareSheet(url: url) }
         }
@@ -206,7 +213,7 @@ struct OverviewView: View {
           Label(
             house.isDemo
               ? "This demo includes synthetic rough-in and finished layers."
-              : "No precision profile. Measurements and AR overlays are approximate.",
+              : "3D views, measurements and camera overlays are approximate. Check the original photos for context.",
             systemImage: "info.circle"
           ).font(.footnote).foregroundStyle(.secondary)
           HStack {
@@ -655,7 +662,7 @@ struct CapturePage: View {
         Section {
           Label("Capture what will be hidden", systemImage: "camera.viewfinder").font(.title2)
           Text(
-            "Capture each wall side, joist bay, ceiling and late change before closing it. ARKit geometry is approximate; original images remain the primary evidence."
+            "Before walls or ceilings are covered, record the pipes, cables and framing you want to remember. Include wide views and clear close-ups. The 3D view is approximate; keep the original photos."
           )
           HomeHelpButton(topic: .capture, title: "How to record this visit")
         }
@@ -821,7 +828,7 @@ struct EvidencePage: View {
         }
         Section("Original photographs") {
           if house.observations.isEmpty {
-            Text("No captured photographs yet. Sample geometry is not photographic evidence.")
+            Text("No captured photographs yet. Use Capture for a new visit, or Import existing photographs for photos you already have.")
               .foregroundStyle(.secondary)
           }
           if searching {ProgressView("Searching saved evidence…")}

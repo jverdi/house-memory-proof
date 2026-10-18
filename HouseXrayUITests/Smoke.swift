@@ -52,6 +52,8 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(skip.waitForExistence(timeout: 20)); skip.tap()
     app.terminate(); app.launch()
     XCTAssertTrue(app.tabBars.buttons["House"].waitForExistence(timeout: 20)); XCTAssertFalse(skip.exists)
+    app.tabBars.buttons["Tools"].tap(); app.buttons["Drawings & design references"].tap()
+    XCTAssertTrue(app.navigationBars["Drawings"].waitForExistence(timeout: 5))
     openHomeHelp(app)
     let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("backup")
     let backup = app.buttons["help-guide-backup"]; XCTAssertTrue(backup.waitForExistence(timeout: 5)); guidanceReveal(backup, in: app); backup.tap()

@@ -136,6 +136,7 @@ struct HomeownerIntroduction: View {
           .accessibilityValue(guidance.goal == goal ? "Selected" : "Not selected")
       }
       Text("No account is needed. Your record stays on this iPhone until you choose to export it or save a folder backup.").foregroundStyle(.secondary)
+      Text("You can skip now and reopen this introduction from Help & getting started → Help settings.").font(.footnote).foregroundStyle(.secondary)
     case 1:
       instruction("Create your house", "Use Create your house on the welcome screen. The sample house is only a practice example; it is not your construction record.")
       instruction("Name the space", "On House, tap + beside Spaces (Add space). Use a name you will recognize, such as Upstairs bathroom. Level 0 is the main level; use 1 for the next floor.")
