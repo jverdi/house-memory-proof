@@ -33,14 +33,15 @@ enum BoundaryCoverage {
     for o in selected {
       try Task.checkCancellation()
       guard o.depthWidth>0,o.depthHeight>0,o.depthWidth*o.depthHeight<=1_000_000 else{continue}
-      let data=try repo.read(o.depth!),confidence=try o.confidence.map{try repo.read($0)},m=o.camera,position=V3(m[3],-m[11],m[7])
-      guard data.count==o.depthWidth*o.depthHeight*4,confidence==nil || confidence?.count==o.depthWidth*o.depthHeight,boundary.viewedFromFront(position) else{continue}
+      let data=try DurableFiles.read(repo.assetURL(o.depth!),limit:o.depthWidth*o.depthHeight*4)
+      let confidence=try o.confidence.map{try DurableFiles.read(repo.assetURL($0),limit:o.depthWidth*o.depthHeight)},m=o.camera,position=V3(m[3],-m[11],m[7])
+      guard data.count==o.depthWidth*o.depthHeight*4,let confidence,confidence.count==o.depthWidth*o.depthHeight,boundary.viewedFromFront(position) else{continue}
       for i in points.indices where states[i] != 2 {
         if i%64==0 {try Task.checkCancellation()}
         let p=points[i]
         guard let (uv,z)=TextureBuilder.project(p,through:o) else{continue}
         let ix=min(o.depthWidth-1,Int(uv.u*Double(o.depthWidth))),iy=min(o.depthHeight-1,Int(uv.v*Double(o.depthHeight))),index=iy*o.depthWidth+ix
-        guard confidence==nil || confidence![index]>=2 else{continue}
+        guard confidence[index]>=2 else{continue}
         let measured=Double(Float(bitPattern:data.uint32(index*4)))
         guard measured.isFinite,measured>0 else{continue}
         if measured<z-0.03 {blocked[i]=true;continue}
@@ -89,6 +90,7 @@ struct BoundaryCoveragePanel:View {
         if r.revision != house.revision {Text("Project changed since this report; analyze again.").foregroundStyle(.orange)}
       }
       Text("The denominator is the selected rectangle at the entered cavity depth, including unseen areas. A 3 cm depth agreement is a coverage diagnostic, not accuracy qualification or proof that the cavity is empty. Incorrect depth or occluded services remain unknown.").font(.footnote)
-    }
+    }.onChange(of:house.revision){_,_ in report=nil;selectedCell=nil}
+      .onChange(of:house.id){_,_ in report=nil;selectedCell=nil;selection=nil}
   }
 }

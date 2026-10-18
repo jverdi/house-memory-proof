@@ -409,6 +409,49 @@ import Darwin
                 let conflict=ChunkedSnapshots.TransferSummary(total:4,uploaded:3,conflicts:1)
                 return !waiting.message.contains("reports all") && complete.message.contains("restore on another") && conflict.message.contains("needs attention")
             }
+            await check("Observed coverage requires confident depth, separated good views and bounded sampled area") {
+                var h=House.empty("Coverage confidence"),o:[Observation]=[]
+                let room=h.rooms[0].id,stage=h.stages[0].id
+                let segment=Segment(roomID:room,stageID:stage);h.segments=[segment]
+                let image=try repo.put(Data("coverage metadata only".utf8),ext:"jpg")
+                func plane(_ value:Float)throws->String {var data=Data();for _ in 0..<256 {data.float(value)};return try repo.put(data,ext:"depth32")}
+                let depth=try plane(2),high=try repo.put(Data(repeating:2,count:256),ext:"confidence8")
+                let low=try repo.put(Data(repeating:0,count:256),ext:"confidence8")
+                for (i,x) in [-0.4,0.0,0.4].enumerated() {
+                    var camera=Rigid().values;camera[3]=x
+                    o.append(Observation(roomID:room,stageID:stage,segmentID:segment.id,timestamp:Double(i),image:image,depth:depth,confidence:high,depthWidth:16,depthHeight:16,width:640,height:480,camera:camera,intrinsics:[400,0,320,0,400,240,0,0,1],tracking:"synthetic",light:800,sharpness:0.1))
+                }
+                h.observations=o
+                h.features=[Feature(name:"Captured wall",trade:.structure,roomID:room,stageID:stage,kind:.synthetic,mesh:Mesh(vertices:[V3(-0.15,2,-0.1),V3(0.15,2,-0.1),V3(0,2,0.2)],triangles:[0,1,2]),segmentID:segment.id,geometrySource:.capturedMesh)]
+                let good=try CoverageAnalyzer.analyze(house:h,segment:segment,repo:repo)
+                guard good.sampledPatches==1,good.supportedPatches==1,abs(good.observedArea-0.045)<1e-9 else{return false}
+                let foreground=try plane(1.95),absent=try plane(0)
+                for fault in 0..<9 {
+                    h.observations=o
+                    for i in h.observations.indices {
+                        switch fault {
+                        case 0:h.observations[i].confidence=low
+                        case 1:h.observations[i].confidence=nil
+                        case 2:h.observations[i].depth=foreground
+                        case 3:h.observations[i].depth=absent
+                        case 4:h.observations[i].depth=nil
+                        case 5:h.observations[i].camera[3]=0
+                        case 6:h.observations[i].sharpness=0
+                        case 7:h.observations[i].light=50
+                        default:h.observations[i].confidence=try repo.put(Data([2]),ext:"confidence8")
+                        }
+                    }
+                    guard try CoverageAnalyzer.analyze(house:h,segment:segment,repo:repo).supportedPatches==0 else{return false}
+                }
+                h.observations=Array(o.prefix(2))
+                guard try CoverageAnalyzer.analyze(house:h,segment:segment,repo:repo).supportedPatches==0 else{return false}
+                h.observations=o;h.observations[0].confidence=try repo.put(Data(repeating:2,count:257),ext:"confidence8")
+                do{_=try CoverageAnalyzer.analyze(house:h,segment:segment,repo:repo);return false}catch{}
+                guard try repo.read(high)==Data(repeating:2,count:256) else{return false}
+                h.observations=o;h.features[0].mesh.triangles=(0..<5000).flatMap{_ in [Int32(0),1,2]}
+                let sampled=try CoverageAnalyzer.analyze(house:h,segment:segment,repo:repo)
+                return sampled.sampledPatches==2500 && sampled.supportedPatches==2500 && abs(sampled.observedArea-112.5)<1e-7
+            }
             await check("Boundary coverage counts unseen and occluded nominal patches") {
                 var h=try SimulatedCapture.make(repo:repo);let segment=h.segments[0]
                 // Narrow-FOV planar depth diagnostic; RGB pixels are not consumed by coverage.
@@ -420,7 +463,10 @@ import Darwin
                 let blocked=try BoundaryCoverage.analyze(house:h,boundary:behind,repo:repo)
                 var unseen=b;unseen.origin.x=100
                 let unknown=try BoundaryCoverage.analyze(house:h,boundary:unseen,repo:repo)
-                return supported.supported>0 && blocked.supported==0 && blocked.states.contains(3) && unknown.states.allSatisfy{$0==0}
+                guard supported.supported>0 && blocked.supported==0 && blocked.states.contains(3) && unknown.states.allSatisfy({$0==0}) else{return false}
+                for i in h.observations.indices {h.observations[i].confidence=nil}
+                var unverified=b;unverified.sourceFingerprint=try VisualMapping.fingerprint(house:h,segment:segment)
+                return try BoundaryCoverage.analyze(house:h,boundary:unverified,repo:repo).supported==0
             }
             await check("Disconnected photograph is excluded without inventing camera corrections") {
                 let resources=Bundle.main.url(forResource:"IFC",withExtension:nil)!
