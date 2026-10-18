@@ -28,5 +28,9 @@
   },
   "integratedWorkflow": "Superseded after native checkpoint by coverage repair; not a complete integrated pass",
   "precisionProfileEnabled": false,
-  "physicalQualification": false
+  "physicalQualification": false,
+  "processKillRecovery": {
+    "passed": 3,
+    "failed": 0
+  }
 }

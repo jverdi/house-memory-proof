@@ -5,7 +5,7 @@ Updated during the October 17–18, 2026 implementation session. This document r
 ## Release state
 
 - Prior delivery proof: build 2.1 was installed by the owner.
-- Current implementation: source **6045475e61**, experimental. Combined native/interface validation is running in 39083676227. The preceding source 75807dbab1 passed all 117 native checks; that is not a complete integrated pass.
+- Current implementation: source **5692529353**, experimental; run 39084977311 is checking 119 native cases. The preceding source 6045475e61 passed 117/118 native checks, all three process-termination checks, five interface workflows and the independent readers. Its remaining failure was an encoder-capacity timeout. A bounded shot-retry candidate is prepared for separate validation.
 - The requested current-state TestFlight snapshot **161.1**, source **2fae54ff2d**, is uploaded and verified **VALID / IN_BETA_TESTING**, with owner access in Personal iPhone (delivery run 39078429529; readiness run 39080146782). Physical installation is unverified. Subsequent development commits do not upload.
 - Production readiness: **not established**.
 - Field precision profile: **disabled**. No synthetic metric enables one.
@@ -533,3 +533,11 @@ Source 6045475e61 streams one bounded depth/confidence pair at a time instead of
 
 The added native scenario checks nominal support, ten unsupported evidence/view conditions, oversized confidence refusal without original loss, and the global sampling bound. Together with the earlier checks, 118 native checks are expected. Exact-source integrated validation remains pending in run 39083676227; no device, field or full-house gate is claimed.
 
+
+### Distribution audit and chained registration continuation
+
+The earlier successful snapshot used an Apple Development identity in its intermediate archive, then Xcode re-signed during distribution export. The release checker now treats those phases separately: archive source/team/symbol checks do not qualify distribution, and the exported IPA must pass the strict entitlement/source/build/symbol checks before the existing upload path can run. A dedicated audit exports and inspects without uploading; its shell control flow is exercised with isolated stand-ins. Thirty release-tool tests pass locally and in CI. Real signing audit 39084977296 passed at 5692529353: the intermediate development archive passed identity/symbol checks, the exported IPA passed strict distribution checks with debugger attachment disabled, and the retained symbol digest matched. No upload occurred. Aggregate evidence is in docs/evidence/signing-audit-5692-summary.json. The new native registration check remains under validation.
+
+Native diagnostics now retain the exact shot/frame/status for an encoder-capacity timeout, with the same 15-second wait and unchanged 1080p30 validation. The recurring timeout remains unresolved until evidence identifies and verifies a repair. A new analytic registration regression chains twenty sessions through rotations and five floor offsets, checks off-control witness positions, rejects independently moved and incorrectly scaled controls, persists/reloads the chain, and requires changed print dimensions to invalidate all descendants without modifying original poses. This is a coordinate/dependency check, not a full-house image or physical qualification claim.
+
+A bounded encoder recovery candidate now discards only the unfinished shot after a capacity timeout and constructs a fresh encoder once. A second stall propagates the original resumable failure. Cancellation, backgrounding, critical heat and other errors are not retried. The per-wait deadline and every frame/duration/decode/cache acceptance check stay unchanged. Native diagnostics record recoveries, and injected first/repeated stalls must prove completed-shot preservation, exact-frame recovery, bounded attempts and no incomplete publication. This candidate needs its own native evidence; it does not establish the cause of the hosted encoder stall or phone reliability.

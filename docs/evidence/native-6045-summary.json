@@ -1,0 +1,48 @@
+{
+  "source": "6045475e6192601687279df064d349a5686a0385",
+  "run": 39083676227,
+  "job": 117545827189,
+  "build": "186.1",
+  "platform": "iPhone simulator",
+  "native": {
+    "passed": 117,
+    "failed": 1,
+    "elapsedSeconds": 207.26208916666667,
+    "failures": [
+      {
+        "error": "Movie encoder timed out. Completed shots are saved; export again to resume.",
+        "passed": false,
+        "test": "1080p30 MP4 encode, decode and verified chunk reuse"
+      }
+    ],
+    "searchP95Milliseconds": 114.68804166668178
+  },
+  "processKillRecovery": {
+    "passed": 3,
+    "failed": 0
+  },
+  "interface": {
+    "passed": 5,
+    "failed": 0,
+    "elapsedSeconds": 308.218,
+    "stepPortraitAndLandscapeScreenshotsInspected": true
+  },
+  "artifact": {
+    "id": 12120053316,
+    "sha256": "021bc33c85626f92cc86b17721d6d48713bcd6daca7177a6c482f814a210bfca"
+  },
+  "physicalDeviceQualified": false,
+  "precisionEnabled": false,
+  "completeIntegratedPass": false,
+  "limitations": [
+    "The encoder-capacity wait timed out; no deadline or video acceptance gate was relaxed.",
+    "Native coverage, snapshot, search, all process-kill recovery, interface and independent-reader steps passed. The retained movie timeout prevents integrated acceptance."
+  ],
+  "independentReaders": {
+    "status": "passed"
+  },
+  "simulatorArtifact": {
+    "id": 12119678865,
+    "sha256": "5e5b84b13117a4f39858c5237c80f4686db27ce2070d06b8b025d46dd9aaaef1"
+  }
+}

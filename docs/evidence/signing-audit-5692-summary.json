@@ -1,0 +1,26 @@
+{
+  "source": "569252935341fbb900961ebbcf4173eb48663a37",
+  "run": 39084977296,
+  "job": 117549519613,
+  "auditBuild": "1.1",
+  "status": "signed_distribution_export_verified_no_upload",
+  "uploaded": false,
+  "archiveIdentityVerified": true,
+  "intermediateArchiveDebuggerAllowed": true,
+  "distributionIdentityVerified": true,
+  "distributionDebuggerAllowed": false,
+  "symbolUUIDsMatch": true,
+  "symbolsSHA256": "1b4cbc262eaaab603b0225c1b2dafbc83807fffcbb412c289250b406f5ce28b7",
+  "inspectedIPASHA256": "b0d38f9c178942367b3a4303b12196dc812b12ea88e116b8d1f2627c29a25caa",
+  "physicalDeviceQualified": false,
+  "releaseToolTestsPassed": 30,
+  "artifact": {
+    "id": 12120741336,
+    "sha256": "4b8b0c82b46f64056a5770bcd69bf6e5dc4019f1f2f2166ab1bc98b443772560",
+    "retentionDays": 90
+  },
+  "limitations": [
+    "This audit did not upload an IPA or verify a physical installation.",
+    "The shipping script uses a second Xcode export/upload from the same inspected archive; that uploaded IPA hash is not independently verified."
+  ]
+}
