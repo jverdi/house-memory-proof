@@ -183,6 +183,11 @@ struct ToolsPage: View {
               model.error = "Run self-tests first."
             }
           }
+          Button("Export capture performance") {
+            guard let repo=model.repository else{return}
+            do{model.shareURL=try CaptureRuntimeRecorder.export(repository:repo)}catch{model.error=error.localizedDescription}
+          }.disabled(model.captureInProgress)
+          Text("Capture performance is sampled every 10 seconds for up to two hours per session. Up to 100 local reports are retained. An interrupted report remains incomplete; this does not qualify device accuracy.").font(.caption)
           if !diagnostics.isEmpty { Text(diagnostics).font(.footnote) }
           Text(
             "Build \(Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "local") · \(Bundle.main.object(forInfoDictionaryKey:"ProofSourceRevision") as? String ?? "local")"

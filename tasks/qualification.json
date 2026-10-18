@@ -749,6 +749,49 @@
     "expectedNativeChecks": 167,
     "expectedUIFlows": 12,
     "nativeValidated": false,
+    "physicalQualification": false,
+    "partialValidation": {
+      "source": "186642672f400f991393351a336f619db9d6c2df",
+      "run": 39142570607,
+      "nativePassed": 165,
+      "readerChecksPassed": 15,
+      "artifact": 12142527623,
+      "sha256": "7e3c491576ed77a09e0f193cacc02e3141c8b9d92c7977ad7c6cf3ed5656f195",
+      "scope": [
+        "tour provenance",
+        "connected circular envelopes"
+      ],
+      "boundaryCompatibilityAndReleaseValidationPending": true
+    }
+  },
+  "captureRuntimeCandidate": {
+    "prepared": true,
+    "samplePeriodSeconds": 10,
+    "maximumSamplesPerSession": 721,
+    "maximumReports": 100,
+    "automaticOriginalDeletion": false,
+    "reportIncludesImagesOrCoordinates": false,
+    "incompleteSessionsPreserved": true,
+    "displayPresentedFPSMeasured": false,
+    "nativeValidationPending": true,
+    "physicalQualification": false,
+    "expectedNativeChecks": 169,
+    "localCommandContractsPassed": 44
+  },
+  "drawingBenchmarkCandidate": {
+    "prepared": true,
+    "analyticCases": 11,
+    "fontFamilies": 2,
+    "textPixelSizes": [
+      18,
+      36
+    ],
+    "contrasts": 2,
+    "negativeCases": 3,
+    "independentBoxScoring": true,
+    "nativeValidationPending": true,
+    "accuracyQualified": false,
+    "realPlanQualification": false,
     "physicalQualification": false
   }
 }

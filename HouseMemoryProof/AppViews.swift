@@ -756,9 +756,9 @@ struct CaptureSessionView: View {
           }
         }.padding().background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
       }.padding()
-    }.onChange(of: phase) { _, new in if new != .active { controller.stop() } }.onReceive(
+    }.onChange(of: phase) { _, new in if new != .active { controller.stop(reason:"application-inactive") } }.onReceive(
       NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)
-    ) { _ in controller.stop() }.onDisappear { controller.stop() }
+    ) { _ in controller.stop(reason:"memory-warning") }.onDisappear { controller.stop(reason:"capture-screen-closed") }
   }
 }
 struct EvidencePage: View {

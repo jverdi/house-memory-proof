@@ -36,6 +36,9 @@ enum CaptureBuffers {
   @Published var processing = false
   @Published var coverageCells = 0
   @Published var referenceGuidance = ""
+  private let renderCounter=CaptureRenderCounter()
+  private var runtime:CaptureRuntimeRecorder?
+  private var stopReason="owner-stopped"
   private var cellSet = Set<String>()
   private var model: AppModel?
   private var houseID: UUID?
@@ -75,6 +78,7 @@ enum CaptureBuffers {
   init(model: AppModel) {
     self.model = model
     super.init()
+    view.delegate=renderCounter
     view.session.delegate = self
     view.session.delegateQueue = .main
     view.automaticallyUpdatesLighting = true
@@ -226,6 +230,11 @@ enum CaptureBuffers {
         }
         view.scene = SCNScene()
       }
+      if let sid=segment?.id {
+        do{runtime=try CaptureRuntimeRecorder(repository:repo,sessionID:sid,projectID:h.id,reveal:reveal,renderCounter:renderCounter,onError:{[weak model] message in model?.error=message})}
+        catch{model?.error=error.localizedDescription}
+      }
+      stopReason="owner-stopped"
       view.session.run(config, options: [.resetTracking, .removeExistingAnchors])
       running = true
       message =
@@ -248,6 +257,7 @@ enum CaptureBuffers {
       tracking = "Limited: \(reason)"
       normal = false
     }
+    runtime?.frame(normalTracking:normal)
     if reveal {
       guard model?.house?.id==houseID,model?.house?.revision==revealSourceRevision else {
         revealedNodes.forEach{$0.isHidden=true};message="Saved capture inputs changed. Close and reopen reveal to check the new evidence.";return
@@ -385,11 +395,14 @@ enum CaptureBuffers {
       let project=model?.houses.first(where:{$0.id==houseID}),
       let room=project.rooms.first(where:{$0.id==segment.roomID}),let stage=project.stages.first(where:{$0.id==segment.stageID}) else { return }
     guard repo.freeBytes() > 500_000_000 else {
+      stopReason="storage-reserve"
       message = "Storage reserve reached. Saving this session."
       stop()
       return
     }
     pending += 1
+    let runtimeRecorder=runtime,saveStarted=ProcessInfo.processInfo.systemUptime
+    runtimeRecorder?.beganSave()
     let receiptBefore=ProcessInfo.processInfo.systemUptime,receivedUTC=Date(),receiptAfter=ProcessInfo.processInfo.systemUptime
     let deviceModel=UIDevice.current.model,systemVersion=UIDevice.current.systemVersion
     let checkReferenceCoverage = !documentary && count%5==0 && project.references.contains{$0.valid && $0.tagID != nil}
@@ -516,6 +529,7 @@ enum CaptureBuffers {
               }
             } == true
           }
+          runtimeRecorder?.completedSave(seconds:ProcessInfo.processInfo.systemUptime-saveStarted,success:saved)
           guard saved == true else {
             self.message = "The project checkpoint could not be committed. Durable photo records are preserved; reopen the app after resolving storage."
             if self.running { self.stop() } else if self.stopping && self.pending == 0 { self.finishStop() }
@@ -538,6 +552,7 @@ enum CaptureBuffers {
         Task { @MainActor in
           guard let self else { return }
           self.pending -= 1
+          runtimeRecorder?.completedSave(seconds:ProcessInfo.processInfo.systemUptime-saveStarted,success:false)
           self.message = error.localizedDescription
           if self.stopping { self.finishStop() }
         }
@@ -677,9 +692,11 @@ enum CaptureBuffers {
       }
     }
   }
-  func stop() {
+  func stop(reason:String="owner-stopped") {
     starting = nil
     guard running else { return }
+    if stopReason=="owner-stopped" {stopReason=reason}
+    runtime?.endAcquisition()
     running = false
     stopping = true
     processing = true
@@ -696,6 +713,7 @@ enum CaptureBuffers {
     if captureLease==token {captureLease=nil}
   }
   private func finishCaptureState() {
+    runtime?.finish(reason:stopReason);runtime=nil
     mapWatchdog?.cancel();mapWatchdog=nil;mapRequest=nil
     detailWatchdog?.cancel();detailWatchdog=nil;detailRequest=nil
     view.session.pause();processing=false;stopping=false
@@ -754,6 +772,7 @@ enum CaptureBuffers {
     }
   }
   func sessionWasInterrupted(_ session: ARSession) {
+    stopReason="session-interrupted"
     if let sid = segment?.id, let houseID {
       model?.edit(projectID: houseID) { h in
         if let i = h.segments.firstIndex(where: { $0.id == sid }) {
@@ -766,6 +785,7 @@ enum CaptureBuffers {
     stop()
   }
   func session(_ session: ARSession, didFailWithError error: Error) {
+    stopReason="session-error"
     message = error.localizedDescription
     stop()
   }

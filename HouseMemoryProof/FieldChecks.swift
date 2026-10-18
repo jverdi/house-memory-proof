@@ -24,7 +24,7 @@ struct FieldChecksPage:View {
         Text("Use accessible framing with a cable, pipe, box and ceiling-like surface. Establish fixed references, measure independent checkpoints, and record the uncertainty of those measurements.")
         Text("Capture exposed construction, then cover it with a removable finish of measured thickness. Repeat from new viewpoints and a later session. Keep calibration captures separate from validation; do not refit registration to validation checkpoints.")
         Text("Include an incorrect room or floor, the other side of a wall, a moved reference and tracking loss. The overlay should disappear when its alignment is not trustworthy.")
-        Text("For device checks, run a 30-minute visit in short segments. Include backgrounding, interruption, reopening, movie resume and a Files-folder restore. Export the synthetic self-test report separately.")
+        Text("For device checks, run a 30-minute visit in short segments. Include backgrounding, interruption, reopening, movie resume and a Files-folder restore. Use Tools → Export capture performance for the sampled visit report. Export the synthetic self-test report separately.")
       }.font(.footnote)
       Section("Record a field check") {
         Picker("Purpose",selection:$split){ForEach(FieldSplit.allCases,id:\.self){Text($0.rawValue).tag($0)}}

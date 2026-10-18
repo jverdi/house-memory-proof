@@ -139,7 +139,7 @@ if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build
 if [ -f "$app_root/photo-curve-viewer.html" ]; then cp "$app_root/photo-curve-viewer.html" build/command-private/photo-curve-viewer.html; fi
 cp -R "$app_root/incremental-v2" build/evidence/incremental-v2
 # Retain diagnostics before failing if the encoder did not produce a movie.
-for media in native-compatibility.json native-boundary-source.json native-service-tour.json native-ifc-geometry.json native-tour-reveal.json native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
+for media in native-drawing-benchmark.json native-capture-runtime.json native-compatibility.json native-boundary-source.json native-service-tour.json native-ifc-geometry.json native-tour-reveal.json native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
@@ -167,6 +167,8 @@ rows=json.loads(path.read_text());rows.append(dict(check=sys.argv[1],exitCode=in
 path.write_text(json.dumps(rows,indent=2)+'\n')
 PYSTATUS
   }
+  native_check drawing-benchmark-reader python3 tooling/check_drawing_benchmark.py build/evidence/native-drawing-benchmark.json --output build/evidence/drawing-benchmark-validation.json
+  native_check capture-runtime-reader python3 tooling/check_capture_runtime.py build/evidence/native-capture-runtime.json --output build/evidence/capture-runtime-validation.json
   native_check ifc-coordinate-contracts node tooling/ifc/test_coordinates.cjs
   native_check ifc-property-contracts node tooling/ifc/test_properties.cjs
   native_check ifc-source-reader python3 tooling/ifc/check_source.py build/command-private build/evidence

@@ -85,6 +85,9 @@ jobs:
             build/evidence/native-service-tour.json
             build/evidence/native-boundary-source.json
             build/evidence/native-compatibility.json
+            build/evidence/capture-runtime-validation.json
+            build/evidence/native-drawing-benchmark.json
+            build/evidence/drawing-benchmark-validation.json
             build/evidence/service-tour-validation.json
             build/evidence/command-tests.json
             build/evidence/cli-command-validation.json

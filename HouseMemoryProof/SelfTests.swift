@@ -48,6 +48,32 @@ import simd
                 do {_=try isolated.read(key,limit:original.count);return false}catch{}
                 return try Data(contentsOf:file)==corrupt
             }
+            await check("Capture workload reports preserve incomplete sessions, counters and resource unknowns") {
+                let isolated=try Repository(root:folder.appendingPathComponent("runtime-report"))
+                let counter=CaptureRenderCounter();var errors:[String]=[]
+                let recorder=try CaptureRuntimeRecorder(repository:isolated,sessionID:UUID(),projectID:house.id,reveal:false,renderCounter:counter,onError:{errors.append($0)})
+                recorder.frame(normalTracking:true);recorder.frame(normalTracking:false)
+                counter.renderer(SCNView(),didRenderScene:SCNScene(),atTime:1)
+                recorder.beganSave();recorder.completedSave(seconds:0.25,success:true)
+                recorder.beganSave();recorder.completedSave(seconds:0.5,success:false)
+                recorder.endAcquisition()
+                let incompleteURL=try CaptureRuntimeRecorder.export(repository:isolated)
+                let incomplete=try JSONDecoder().decode([CaptureRuntimeReport].self,from:Data(contentsOf:incompleteURL))
+                guard incomplete.count==1,incomplete[0].endedUTC==nil,incomplete[0].physicalQualification==false else{return false}
+                recorder.finish(reason:"self-test")
+                let report=recorder.report
+                guard errors.isEmpty,report.valid,let last=report.samples.last,last.deliveredCameraFrames==2,last.normalTrackingFrames==1,last.renderedCallbacks==1,last.savedImages==1,last.saveFailures==1,last.pendingSaves==0,last.maximumPendingSaves==1,last.completedSaveSeconds==0.75,last.maximumSaveSeconds==0.5,report.acquisitionEndSeconds != nil,report.endedUTC != nil else{return false}
+                guard CaptureRuntimeReport.rate(100,400,seconds:10)==30,CaptureRuntimeReport.rate(2,1,seconds:10)==nil,CaptureRuntimeReport.rate(1,2,seconds:0)==nil else{return false}
+                var invalid=report;invalid.samples[1].elapsedSeconds=invalid.samples[0].elapsedSeconds
+                guard !invalid.valid else{return false}
+                invalid=report;invalid.samples[0].batteryLevel=1.1;guard !invalid.valid else{return false}
+                invalid=report;invalid.samples[0].maximumSaveSeconds=1;guard !invalid.valid else{return false}
+                let exported=try CaptureRuntimeRecorder.export(repository:isolated)
+                let decoded=try JSONDecoder().decode([CaptureRuntimeReport].self,from:Data(contentsOf:exported))
+                guard decoded.count==1,decoded[0].samples==report.samples else{return false}
+                try Data(contentsOf:exported).write(to:mainRepo.root.appendingPathComponent("native-capture-runtime.json"))
+                return true
+            }
             await check("Capture buffer copies reject mismatched formats and preserve row padding") {
                 for format in [kCVPixelFormatType_DepthFloat32,kCVPixelFormatType_OneComponent8] {
                     let strideBytes=format==kCVPixelFormatType_DepthFloat32 ? 4:1
@@ -1080,6 +1106,11 @@ import simd
                 let output=mainRepo.root.appendingPathComponent("drawing-marks.hxray")
                 try? FileManager.default.removeItem(at:output);try FileManager.default.copyItem(at:archive,to:output)
                 return try target.integrity(restored)==1
+            }
+            await check("Drawing fallback benchmark reports class and size counts without granting accuracy") {
+                let report=try DrawingBenchmark.run()
+                try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys,.prettyPrinted]).write(to:mainRepo.root.appendingPathComponent("native-drawing-benchmark.json"))
+                return (report["executionPassed"] as? Bool)==true && (report["accuracyQualified"] as? Bool)==false
             }
             await check("Blank drawing proposals abstain without creating rooms or boundaries") {
                 let format=UIGraphicsImageRendererFormat();format.scale=1;format.opaque=true
