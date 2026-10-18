@@ -265,6 +265,7 @@ struct TourShotPreviewPage:View {
               Text("\(index+1). \(shot.caption)")
               Text("\(shot.duration.formatted(.number.precision(.fractionLength(2)))) seconds").font(.caption)
               if let id=shot.subject?.featureID,let feature=house.features.first(where:{$0.id==id}) {Text("Subject: "+feature.name).font(.caption)}
+              if shot.reveal != nil {Text("Same camera: finish fades, recorded evidence appears, then context returns. Uncaptured areas remain unknown.").font(.caption)}
               if shot.includesPlannedGeometry==true {Text("Includes planned geometry").font(.caption)}
             }
           }

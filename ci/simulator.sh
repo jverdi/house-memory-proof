@@ -10,6 +10,8 @@ python3 tooling/project.py
 git diff --exit-code -- HouseMemoryProof.xcodeproj/project.pbxproj
 bash tooling/prepare-ifc.sh
 node tooling/ifc/test_runtime.cjs
+python3 tooling/ifc/geometry_fixtures.py HouseMemoryProof/IFC/test-geometry.json
+node tooling/ifc/test_geometry_runtime.cjs
 node tooling/test_tour_framing.cjs
 bash tooling/prepare-simulation.sh
 bash tooling/opencv/build.sh
@@ -126,7 +128,7 @@ if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build
 if [ -f "$app_root/photo-curve-viewer.html" ]; then cp "$app_root/photo-curve-viewer.html" build/command-private/photo-curve-viewer.html; fi
 cp -R "$app_root/incremental-v2" build/evidence/incremental-v2
 # Retain diagnostics before failing if the encoder did not produce a movie.
-for media in native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
+for media in native-ifc-geometry.json native-tour-reveal.json native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
@@ -162,7 +164,8 @@ PYSTATUS
   native_check envelope-reader python3 tooling/check_service_envelopes.py build/command-private build/evidence/service-envelope-validation.json
   native_check archive-reader python3 tooling/hm export-check --package build/evidence/test.hxray --output build/evidence/portable-package-validation.json
   native_check command-contracts python3 tooling/hm test --suite commands --output build/evidence/command-tests.json
-  native_check tour-command python3 tooling/hm tour --scene build/evidence/test.hxray --preset before-after --duration 5 --simulator "$device_id" --output build/command-private/tour > build/command-private/tour-result.json
+  native_check tour-command python3 tooling/hm tour --scene "$app_root/command-reveal.hxray" --preset before-after --duration 5 --simulator "$device_id" --output build/command-private/tour > build/command-private/tour-result.json
+  native_check reveal-reader python3 tooling/check_tour_reveal.py "$app_root/command-reveal.hxray" build/command-private/tour/tour.json build/evidence/tour-reveal-validation.json
   native_check tour-result python3 - <<'PYCOMMAND'
 import json,pathlib,struct
 root=pathlib.Path('build/command-private/tour')

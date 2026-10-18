@@ -1,3 +1,21 @@
+# Current continuation — October 18, 2026
+
+The recovered latest main source **dfec13ee61 / 205.1** completed native, UI, recovery and export integration successfully (run 39131633332). All 159 native checks passed; the complete artifact SHA-256 is independently verified. TestFlight remains the requested 161.1 snapshot; no intermediate upload.
+
+This candidate integrates the unfinished matched-camera reveal and IFC mapping/opening work recovered from the prior session. Expected native count: **162**, with 11 existing UI flows. Local checks pass: 50 portable C++ cases, 34 Python command/reader tests, nine GLB camera contracts, IFC property contracts, nine existing actual-WASM cases and four geometry cases. Native movie, scene fade/restoration, CLI reveal and IFC adapter checks remain pending. Accuracy gates and exhausted detector iteration budget are unchanged.
+
+## Publication and validation
+
+The owner explicitly approved direct publication to `jverdi/house-memory-proof` main and CI in this chat on October 18. The recovered candidate is being committed for native validation. Intermediate TestFlight delivery remains disabled.
+
+## IFC geometry and source relationships prepared after dfec13
+
+Source **dfec13ee61 / 205.1** passes **159/159 native checks**, all twelve native-phase reader/command checks and three actual process recoveries. This includes source-linked tour framing, the repaired envelope CSV date reader, 32 command contracts and both native CLI commands. The SHA-verified native checkpoint is retained in `docs/evidence/native-dfec-summary.json`. All eleven UI flows and the remaining export readers subsequently passed in the complete SHA-verified artifact.
+
+The next candidate repairs a missing `IfcRelVoidsElement` source relationship found by an actual parser fixture. Four shared private cases verify nested placement, mapped rotation/uniform scale, nonuniform scale and opening subtraction, including declared bounds, solid volume, material/type identity and the original relationship graph. All four pass pinned web-ifc 0.0.72 locally with zero bounds/volume error; the existing nine real parser cases and JS property contracts still pass. The iOS check consumes the same fixtures; **162 native / 11 UI checks are expected with the matched-reveal additions**. Raw cases remain private in CI; only aggregate results are retained.
+
+The bounded importer requirements in runbook §17.2/P8.4 have native coverage for nested placements, georeferences, malformed GUIDs, large coordinates, unsupported geometry and refusal/source preservation. Section 17.3 explicitly excludes complete authoring-grade BIM round trips; this is not an additional release requirement. The new mapped/opening cases require native validation. Signed cross-version and large-device/provider acceptance remain open.
+
 # Implementation ledger
 
 ## Visible tour subjects prepared after 3c08a2e8e5

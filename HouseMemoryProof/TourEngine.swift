@@ -24,6 +24,7 @@ struct TourShot: Codable {
   var tradeNames:[String]?=nil
   var subject:TourSubject?=nil
   var includesPlannedGeometry:Bool?=nil
+  var reveal:TourRevealEvent?=nil
 }
 struct TourPlan: Codable {
   var schema = 1
@@ -41,13 +42,10 @@ enum TourDirector {
   static func plan(_ h: House, duration: Double = 20, options: SceneOptions = SceneOptions(),preset:TourPreset = .overview,aspect:Double=16.0/9)
     -> TourPlan
   {
+    if preset == .beforeAfter {return TourReveal.plan(h,duration:duration,options:options,aspect:aspect)}
     if preset != .overview {
       var variants:[(String,SceneOptions)]=[]
-      if preset == .beforeAfter {
-        for mode in [ViewMode.rough,.finished] {var scope=options;scope.mode=mode;scope.stage=nil;variants.append((mode.rawValue,scope))}
-      }else{
-        for trade in [Trade.electrical,.lowVoltage,.plumbing,.hvac] {var scope=options;scope.mode = .rough;scope.trades=[trade];variants.append((trade.rawValue,scope))}
-      }
+      for trade in [Trade.electrical,.lowVoltage,.plumbing,.hvac] {var scope=options;scope.mode = .rough;scope.trades=[trade];variants.append((trade.rawValue,scope))}
       var shots:[TourShot]=[],excluded:[String]=[]
       for (label,scope) in variants {
         let part=plan(h,duration:20,options:scope,aspect:aspect)
@@ -243,7 +241,7 @@ struct MovieEncoderTimeout: LocalizedError {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v15-framed-subjects", options.mode.rawValue,
+      "renderer-v16-matched-reveal", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")
@@ -359,14 +357,10 @@ struct MovieEncoderTimeout: LocalizedError {
       var encoderAttempt=0
       while true {
         try Task.checkCancellation()
-        let scene = SceneBuilder.scene(
-          house,
-          options: SceneOptions(
-            mode: shot.layerMode.flatMap(ViewMode.init(rawValue:)) ?? options.mode, trades: shot.tradeNames.map{Set($0.compactMap(Trade.init(rawValue:)))} ?? options.trades, ceilings: options.ceilings, room: shot.roomID,
-            stage: shot.layerMode==nil ? options.stage:nil))
+        let scene = try TourReveal.scene(house,shot:shot,options:options)
         let camera = SceneBuilder.camera(at: shot.position, yaw: shot.yaw, pitch: shot.pitch)
         scene.rootNode.addChildNode(camera)
-        let provenance=(shot.includesPlannedGeometry==true ? "PLANNED GEOMETRY INCLUDED · ":"")+(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
+        let provenance=(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+(shot.includesPlannedGeometry==true ? "PLANNED GEOMETRY INCLUDED · ":"")+(shot.reveal != nil ? "Recorded evidence only; uncaptured areas unknown · ":"")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
         let renderer=try MovieFrameRenderer(scene:scene,camera:camera,width:width,height:height,title:shot.caption,provenance:provenance)
         let writer = try AVAssetWriter(outputURL: candidate, fileType: .mp4)
         let input = AVAssetWriterInput(
@@ -414,6 +408,7 @@ struct MovieEncoderTimeout: LocalizedError {
               shot.startPhase + (shot.endPhase - shot.startPhase) * Double(frame)
               / Double(max(1, frames - 1))
             let pose = TourDirector.camera(shot, phase: phase)
+            TourReveal.apply(shot,to:scene,phase:phase)
             camera.simdPosition = pose.0.render
             camera.eulerAngles = SCNVector3(Float(pose.2), Float(pose.1), 0)
             guard let pool=adaptor.pixelBufferPool else{throw HouseError.message("Movie encoder did not provide a reusable frame pool.")}

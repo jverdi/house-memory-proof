@@ -187,7 +187,9 @@ def tour(scene, preset, duration, simulator, bundle, output, timeout=180):
             shot = plan['shots'][int(name[8:-4])]
             cards.append('<figure><img src="'+name+'" alt="'+html.escape(shot['caption'],quote=True)+'"><figcaption>'+html.escape(shot['caption'])+'</figcaption></figure>')
         exclusions=''.join('<li>'+html.escape(x)+'</li>' for x in plan['excluded'])
-        page='<!doctype html><meta charset="utf-8"><title>House Xray tour storyboard</title><style>body{font:16px system-ui;margin:2rem;background:#101923;color:#eee}figure{display:inline-block;max-width:640px;margin:1rem}img{width:100%}</style><h1>Tour storyboard</h1><p>Approximate geometry. '+str(len(previews))+' previews from '+str(len(plan['shots']))+' shots. The full timeline is in <a href="tour.json">tour.json</a>.</p>'+''.join(cards)+'<h2>Excluded regions</h2><ul>'+exclusions+'</ul>'
+        notice='SYNTHETIC DEMONSTRATION. ' if plan.get('synthetic') else 'Approximate captured geometry. '
+        if any(s.get('reveal') for s in plan['shots']):notice+='Recorded evidence only; uncaptured areas remain unknown. '
+        page='<!doctype html><meta charset="utf-8"><title>House Xray tour storyboard</title><style>body{font:16px system-ui;margin:2rem;background:#101923;color:#eee}figure{display:inline-block;max-width:640px;margin:1rem}img{width:100%}</style><h1>Tour storyboard</h1><p>'+notice+str(len(previews))+' previews from '+str(len(plan['shots']))+' shots. The full timeline is in <a href="tour.json">tour.json</a>.</p>'+''.join(cards)+'<h2>Excluded regions</h2><ul>'+exclusions+'</ul>'
         (output/'index.html').write_text(page)
         return result
 

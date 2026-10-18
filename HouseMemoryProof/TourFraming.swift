@@ -15,17 +15,18 @@ struct TourSightlines {
       .init(low:V3(min(a.x,min(b.x,c.x)),min(a.y,min(b.y,c.y)),min(a.z,min(b.z,c.z))),
         high:V3(max(a.x,max(b.x,c.x)),max(a.y,max(b.y,c.y)),max(a.z,max(b.z,c.z))))
     }
-    func blocks(from origin:V3,to target:V3)->Bool {
+    func intersection(from origin:V3,to target:V3)->Double? {
       let ray=target-origin,u=b-a,v=c-a,p=ray.cross(v),det=u.dot(p)
-      guard abs(det)>1e-12 else{return false}
+      guard abs(det)>1e-12 else{return nil}
       let inverse=1/det,delta=origin-a,s=delta.dot(p)*inverse
-      guard s>=(-1e-9),s<=1+1e-9 else{return false}
+      guard s>=(-1e-9),s<=1+1e-9 else{return nil}
       let q=delta.cross(u),t=ray.dot(q)*inverse
-      guard t>=(-1e-9),s+t<=1+1e-9 else{return false}
+      guard t>=(-1e-9),s+t<=1+1e-9 else{return nil}
       let distance=v.dot(q)*inverse
       // The selected surface itself is the ray endpoint, not an obstruction.
-      return distance>1e-7 && distance<1-1e-7
+      return distance>1e-7 && distance<1-1e-7 ? distance:nil
     }
+    func blocks(from origin:V3,to target:V3)->Bool {intersection(from:origin,to:target) != nil}
   }
   private var triangles:[Triangle]=[]
   private var nodes:[SpatialClearance.Node]=[]
@@ -78,6 +79,20 @@ struct TourSightlines {
       nodes[index].left=left;nodes[index].right=right;nodes[index].count=0
     }
     return index
+  }
+  func firstSurface(from camera:V3,to target:V3)->V3? {
+    guard complete,camera.finite,target.finite,!nodes.isEmpty,!Task.isCancelled else{return nil}
+    var stack=[0],nearest=Double.infinity
+    while let index=stack.popLast() {
+      let node=nodes[index]
+      guard node.bounds.intersects(camera,target,radius:0) else{continue}
+      if node.count>0 {
+        for i in node.start..<(node.start+node.count) {
+          if let fraction=triangles[i].intersection(from:camera,to:target) {nearest=min(nearest,fraction)}
+        }
+      }else{stack.append(node.left);stack.append(node.right)}
+    }
+    return nearest.isFinite ? camera+(target-camera)*nearest:nil
   }
   func visible(from camera:V3,to target:V3)->Bool {
     guard complete,camera.finite,target.finite,!Task.isCancelled else{return false}

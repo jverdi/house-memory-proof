@@ -52,7 +52,7 @@
     }
     const productIDs=ids(types.IFCPRODUCT,LIMIT.products),storeyIDs=ids(types.IFCBUILDINGSTOREY,LIMIT.storeys),projectIDs=ids(types.IFCPROJECT,100);
     for(const id of [...productIDs,...storeyIDs,...projectIDs])read(id);
-    const relationTypes=['IFCRELCONTAINEDINSPATIALSTRUCTURE','IFCRELAGGREGATES','IFCRELDEFINESBYPROPERTIES','IFCRELDEFINESBYTYPE','IFCRELASSOCIATESMATERIAL'];
+    const relationTypes=['IFCRELCONTAINEDINSPATIALSTRUCTURE','IFCRELAGGREGATES','IFCRELDEFINESBYPROPERTIES','IFCRELDEFINESBYTYPE','IFCRELASSOCIATESMATERIAL','IFCRELVOIDSELEMENT'];
     for(const name of relationTypes)for(const id of ids(types[name],LIMIT.records))read(id);
     const guids=new Map();for(const id of productIDs){const value=raw(records.get(id).fields.GlobalId);if(guidOK(value))guids.set(value,(guids.get(value)||0)+1)}
     const converted=new Set(),productSet=new Set(productIDs);

@@ -145,3 +145,39 @@ interoperability remain open. This work makes no capture-accuracy claim.
 
 Primary representation definition: buildingSMART IFC4 ADD1 `IfcGeometricSet`
 permits points, curves and surfaces without solid/topological mesh structure.
+
+## Placement, mapping and opening continuation
+
+Source 3c08a2e8e5 passed the native property/unit cases and both IFC4.3
+scaled-CRS schemas. Its independent property-graph, source-coordinate and GLB
+readers also passed. Build 204.1 remains a failed integration because of the
+separate envelope CSV date reader and interface assertion. Source dfec13e
+contains those repairs and tour framing. Its verified build 205.1 checkpoint
+passes all 159 native checks, five native-phase readers, 32 command contracts
+and both CLI commands. Its interface/export integration subsequently passed all eleven UI flows and the independent readers.
+
+The next candidate exercises four additional analytic representations through
+the pinned real WASM reader and the native WKWebView adapter: a translated and
+rotated parent/child placement, a reused representation with rotation and
+uniform scale, nonuniform mapped scale, and an opening subtracted from a solid.
+Checks compare canonical bounds and solid volume against independently declared
+expectations, and retain product/type/material identities. The same generated
+private sources feed both runtimes; only aggregate errors and counts are copied
+into CI evidence. The generator runs only in simulator preparation, and its
+output is ignored by git.
+
+The four actual WASM cases pass with zero measured bounds and volume error.
+They exposed a metadata omission: opening subtraction affected the converted
+mesh correctly, but `IfcRelVoidsElement` was absent from the retained source
+graph. The candidate now follows that bounded relationship and retains the
+host/opening identities. Missing references still refuse conversion. Opening
+products can remain unconverted as standalone meshes; the census continues to
+report that fact rather than inventing a second solid or calling every such
+record unsupported.
+
+The original nine WASM cases and property contracts still pass. One native
+four-case group is prepared (162 total checks expected with the matched-reveal candidate).
+Native validation, broader boolean/curve/material representations, signed
+cross-version compatibility and full BIM interoperability remain open.
+
+The required bounded importer matrix in runbook §17.2/P8.4 now has native checks for nested placements, georeferences, malformed GUIDs, large coordinates, unsupported geometry and bounded source-preserving refusal. Complete authoring-grade BIM round trips are explicitly outside §17.3. The four extra mapped/opening cases above remain pending native validation; they do not create an unbounded representation-completeness gate.

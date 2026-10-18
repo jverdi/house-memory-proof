@@ -39,4 +39,8 @@ const typed={...api,GetNameFromTypeCode:t=>t===105?'IfcSIUnit':'TYPE_'+t};
 let derivedGraph=prepare(typed,0,types).finish();assert.deepEqual(plain(derivedGraph.records.find(r=>r.expressID===6).derivedFields),['Dimensions']);
 assert.throws(()=>prepare(api,0,types));lines[6].Other=ref(0);assert.throws(()=>prepare(typed,0,types));delete lines[6].Other;
 lines[6].Dimensions=ref(999);assert.throws(()=>prepare(typed,0,types));delete lines[6].Dimensions;
+types.IFCRELVOIDSELEMENT=15;inventory[15]=[11];
+lines[11]={expressID:11,type:110,RelatingBuildingElement:ref(1),RelatedOpeningElement:ref(2)};
+assert.equal(prepare(api,0,types).finish().records.find(r=>r.expressID===11).fields.RelatedOpeningElement.value,2);
+lines[11].RelatedOpeningElement=ref(999);assert.throws(()=>prepare(api,0,types));
 console.log('IFC property contracts passed: raw units/properties/links, cycles, incomplete geometry, GUIDs, missing references and bounds');

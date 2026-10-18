@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
+  "currentImplementationCommit": "dfec13ee619a0d0735292948cc29115a1455615b",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -27,7 +27,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "3c08 passes 156/156 native checks, 10/11 UI flows, three recoveries, 50 portable cases, 31 command contracts, both native CLI commands and 27 reader reports. The next candidate repairs the envelope CSV date reader and offscreen evidence-row UI assertion, and adds source-linked tour framing (159 native/11 UI expected)."
+      "remaining": "dfec13 passes 159 native checks, every native-phase reader/command and three process recoveries. Complete eleven-flow UI and remaining reader results are pending. Next IFC candidate adds four shared analytic geometry cases and opening source relationships (160 native/11 UI expected)."
     },
     {
       "area": "finished localization",
@@ -55,30 +55,18 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Commit and validate the envelope CSV/UI repairs and source-linked tour framing (159 native/11 UI expected), then continue remaining whole-house and persistence qualification. No sixth detector attempt or intermediate upload.",
+  "nextAction": "Retain the complete dfec13 integration result, then validate the bounded IFC geometry/relationship follow-up. Continue matched-camera tour choreography and remaining software acceptance. No sixth detector attempt or intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
-    "run": 39129514824,
-    "status": "Completed with envelope CSV date reader and envelope UI evidence-row visibility failures",
-    "nativePassed": 156,
+    "source": "dfec13ee619a0d0735292948cc29115a1455615b",
+    "run": 39131633332,
+    "status": "159 native checks, all twelve native-phase readers/commands and three process recoveries passed; interface and remaining readers running",
+    "nativePassed": 159,
     "nativeFailed": 0,
-    "nativeExecuted": 156,
-    "nativeExpected": 156,
-    "integrationComplete": false,
-    "evidence": "docs/evidence/native-3c08-summary.json",
+    "nativeExpected": 159,
     "interfaceExpected": 11,
-    "processKillPassed": 3,
-    "interfacePassed": 10,
-    "interfaceExecuted": 11,
-    "interfaceSeconds": 830.509,
-    "readerReportsPassed": 27,
-    "readerReportsFailed": 1,
-    "portableCasesPassed": 50,
-    "commandContractsExecuted": true,
-    "commandContractsPassed": 31,
-    "nativeCLIExecuted": true,
-    "nativeCLIPassed": 2
+    "integrationComplete": false,
+    "evidence": "docs/evidence/native-dfec-summary.json"
   },
   "previousIntegratedAttempt": {
     "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -549,11 +537,10 @@
     "nativeValidationPending": false,
     "rawExportFixturesPublished": false,
     "remaining": [
-      "Native IFC4x3 scaled CRS validation",
-      "Broader representation and BIM authoring fidelity",
       "Exact-source complete integration and signed cross-version handoff"
     ],
-    "nativeValidatedSource": "6033f47536aa7e012822aabe8038ac6e756bc3bf"
+    "nativeValidatedSource": "6033f47536aa7e012822aabe8038ac6e756bc3bf",
+    "scaledCRSValidatedSource": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3"
   },
   "serviceToolbarRepair": {
     "failedSource": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
@@ -566,17 +553,15 @@
   },
   "preparedCandidate": {
     "schema": 5,
-    "actualPinnedIFCCasesPassed": 9,
-    "nativeExpected": 159,
+    "actualPinnedIFCCasesPassed": 13,
+    "nativeExpected": 160,
     "interfaceExpected": 11,
     "accepted": false,
     "scope": [
-      "Visible source-linked tour subjects checked at every frame",
-      "Exact triangle sightlines and useful target distances",
-      "Planned-geometry labels in shot previews and movies",
-      "Off-main cancellable tour planning and export subject identity",
-      "Format-specific envelope date validation in the independent CSV reader",
-      "Reveal the restored envelope evidence row before exact UI persistence assertions"
+      "Nested placements, mapped rotation/uniform scale and nonuniform scale",
+      "Opening subtraction solid geometry with retained IfcRelVoidsElement",
+      "Material and type identities in source sidecar",
+      "Shared private fixtures through actual Node and iOS parsers"
     ],
     "localCommandContractsPassed": 32,
     "localTourReaderContractsPassed": 9
@@ -607,7 +592,7 @@
   "tourFramingCandidate": {
     "profile": "subject-frustum-v1",
     "nativeChecksPrepared": 3,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "independentReaderContractsPassed": 9,
     "physicalQualification": false,
     "fullPointOfInterestCoverageQualified": false,
@@ -615,7 +600,9 @@
     "confirmedServiceRouteQualification": false,
     "primitiveBudget": 500000,
     "candidateBudget": 512,
-    "selectedCandidateBudget": 128
+    "selectedCandidateBudget": 128,
+    "nativeValidatedSource": "dfec13ee619a0d0735292948cc29115a1455615b",
+    "nativeChecksPassed": 3
   },
   "frozenReplay3c08": {
     "run": 39129514774,
@@ -630,9 +617,10 @@
     "problem": "Semantic CSV emits ISO 8601 whole-second dates; the envelope reader required archive numeric dates",
     "repair": "Validate CSV UTC dates explicitly and compare handoff instants at one-second representation resolution; retain strict numeric archive dates",
     "localCommandContractsPassed": 32,
-    "nativeHandoffValidationPending": true,
+    "nativeHandoffValidationPending": false,
     "confirmedFailedSource": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
-    "confirmedFailure": "Invalid measurement date at tooling/package_check.py:184"
+    "confirmedFailure": "Invalid measurement date at tooling/package_check.py:184",
+    "nativeHandoffValidatedSource": "dfec13ee619a0d0735292948cc29115a1455615b"
   },
   "envelopeInterfaceRepair": {
     "failedSource": "3c08a2e8e5692cc74174fe2c80b9a56048cea5c3",
@@ -641,5 +629,43 @@
     "repair": "Bounded short scrolls require evidence row visibility before exact text comparison",
     "assertionsRetained": true,
     "validationPending": true
+  },
+  "boundedIFCImport": {
+    "spec": "architecture-runbook sections 17.2-17.3 and P8.4",
+    "requiredNativeCasesPassed": true,
+    "verifiedSource": "dfec13ee619a0d0735292948cc29115a1455615b",
+    "cases": [
+      "IFC2x3/IFC4 offline cancellation/reuse",
+      "Nested metric placements and rotations",
+      "Reversible far origins and documentary georeferences",
+      "Malformed, missing and duplicate GUIDs",
+      "Unsupported geometry census and original preservation",
+      "Input, geometry, property and coordinate budget refusal"
+    ],
+    "completeAuthoringBIMRequired": false,
+    "extraGeometryCandidate": {
+      "localActualWASMCasesPassed": 4,
+      "sameFixturesInNative": true,
+      "nativeValidationPending": true,
+      "openingRelationshipRepaired": true,
+      "maximumLocalBoundsErrorMetres": 0,
+      "maximumLocalSolidVolumeErrorCubicMetres": 0
+    },
+    "physicalQualification": false
+  },
+  "continuation20261018": {
+    "lastCompleteIntegration": "dfec13ee619a0d0735292948cc29115a1455615b",
+    "run": 39131633332,
+    "nativePassed": 159,
+    "interfacePassed": 11,
+    "fullArtifactSHA256Verified": true,
+    "candidateNativeExpected": 162,
+    "candidateIntegrationPending": true,
+    "commandContractsPassed": 34,
+    "additionalTestFlightUpload": false,
+    "physicalQualification": false,
+    "portableCasesPassed": 50,
+    "remoteCommitBlocked": false,
+    "publicationAuthorized": true
   }
 }

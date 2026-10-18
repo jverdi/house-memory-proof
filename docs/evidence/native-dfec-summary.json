@@ -1,0 +1,156 @@
+{
+  "build": "205.1",
+  "date": "2026-10-18T13:34:46Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 105.26890374999999,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1630044160,
+    "physicalFootprintBytes": 133325504,
+    "residentBytes": 340869120
+  },
+  "sourceRevision": "dfec13ee61",
+  "systemVersion": "26.5",
+  "source": "dfec13ee619a0d0735292948cc29115a1455615b",
+  "run": 39131633332,
+  "nativeChecks": 159,
+  "nativePassed": 159,
+  "nativeFailures": [],
+  "artifact": {
+    "id": 12138032912,
+    "sha256": "a39a48857cafc8d244847ec516c4ec16977a22c5265cbb190b62012fa96788f7",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": true,
+  "interfaceExpected": 11,
+  "interfaceStatus": "Passed all 11 interface flows",
+  "nativePhaseStatus": "All native, reader, command-contract and native CLI checks passed",
+  "nativeReaderStatus": [
+    {
+      "check": "ifc-coordinate-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-source-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "drawing-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "envelope-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "archive-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "command-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-result",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-result",
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "tourFraming": {
+    "allRenderedFrameSubjectsVisible": true,
+    "analyticOnly": true,
+    "frames": 300,
+    "fullRoomCoverageQualified": false,
+    "passed": true,
+    "physicalQualification": false,
+    "rawTargetRecordsPublished": false,
+    "shots": 3,
+    "sourceLinked": true
+  },
+  "serviceEnvelopeReader": {
+    "passed": true,
+    "reader": "Independent Python service-envelope archive GLB and CSV readers",
+    "sections": 2,
+    "sourceCenterlinesPreserved": true,
+    "declaredDimensionsVerified": true,
+    "sourceDependenciesPreserved": true,
+    "maximumExportCoordinateErrorMetres": 5.6918650681581084e-08,
+    "csvDateResolutionSeconds": 1,
+    "measurementInstantPreserved": true,
+    "toleranceIsSizeOnly": true,
+    "sourceRecordsPublished": false,
+    "physicalQualification": false
+  },
+  "commandContractTests": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 32,
+    "seconds": 1.8537944170000173,
+    "exitCode": 0
+  },
+  "cliTour": {
+    "passed": true,
+    "command": "production native tour via CLI",
+    "shots": 12,
+    "frames": 150,
+    "previews": 8,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "cliReconstruction": {
+    "passed": true,
+    "command": "production native reconstruction via CLI",
+    "sessions": 1,
+    "originalsVerified": 19,
+    "vertices": 10956,
+    "independentArchivePassed": true,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "additionalTestFlightUpload": false,
+  "physicalQualification": false,
+  "interfacePassed": 11,
+  "fullArtifact": {
+    "id": 12138497711,
+    "sha256": "f52791b6c6147b7ee850ed33532e41937f41f248d7b6dcfc69c2f4a10fbda889",
+    "sha256IndependentlyVerified": true
+  },
+  "workflowConclusion": "success",
+  "interfaceElapsedSeconds": 852.713,
+  "portableChecks": 50
+}

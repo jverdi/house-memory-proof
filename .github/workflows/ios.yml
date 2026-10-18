@@ -76,6 +76,9 @@ jobs:
             build/evidence/native-reader-status.json
             build/evidence/native-coverage-guidance.json
             build/evidence/native-tour-framing.json
+            build/evidence/native-tour-reveal.json
+            build/evidence/tour-reveal-validation.json
+            build/evidence/native-ifc-geometry.json
             build/evidence/command-tests.json
             build/evidence/cli-command-validation.json
             build/evidence/cli-reconstruction-validation.json

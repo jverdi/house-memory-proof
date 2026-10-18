@@ -2,7 +2,7 @@
 
 Personal, local-first native iPhone construction record. SwiftUI + ARKit + SceneKit/Metal, SQLite, a portable C++ depth-fusion core, and an offline bundled IFC parser. No application server, account system, billing, or runtime reconstruction service.
 
-**The source now contains a substantial experimental application. It does not yet satisfy the production/precision gates in the [architecture runbook](docs/architecture-runbook.md).** The installed delivery proof was build 2.1; implementation builds have not been uploaded to TestFlight.
+**The source now contains a substantial experimental application. It does not yet satisfy the production/precision gates in the [architecture runbook](docs/architecture-runbook.md).** The owner installed delivery proof 2.1; requested current-state snapshot 161.1 is available in internal TestFlight. Later implementation commits remain validation-only.
 
 ## Implemented paths
 
@@ -34,7 +34,7 @@ The managed macOS workflow compiles the app, launches the iPhone simulator, runs
 
 ## Delivery
 
-The repository and hosted macOS runner previously delivered signed **House Xray build 2.1** to the owner's internal TestFlight group. The owner confirmed installation on October 17, 2026. [Proof evidence](docs/evidence/testflight-delivery-2.1.json) is separate from application acceptance.
+The repository and hosted macOS runner delivered signed **House Xray build 2.1**, and later snapshot **161.1**, to the owner's internal TestFlight group. The owner confirmed installation on October 17, 2026. [Proof evidence](docs/evidence/testflight-delivery-2.1.json) is separate from application acceptance.
 
 - App ID: `6823862609`
 - Bundle: `com.jverdi.housememoryproof`

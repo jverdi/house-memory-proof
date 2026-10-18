@@ -59,9 +59,9 @@ import UIKit
     for index in 0..<count {
       let shotIndex=index*plan.shots.count/count,shot=plan.shots[shotIndex]
       let name="preview-\(shotIndex).png"
-      let png:Data?=autoreleasepool {
-        let scope=SceneOptions(mode:shot.layerMode.flatMap(ViewMode.init(rawValue:)) ?? options.mode,trades:shot.tradeNames.map{Set($0.compactMap(Trade.init(rawValue:)))} ?? options.trades,ceilings:options.ceilings,room:shot.roomID,stage:nil)
-        let scene=SceneBuilder.scene(house,options:scope,assetRoot:assets)
+      let png:Data?=try autoreleasepool {
+        let scene=try TourReveal.scene(house,shot:shot,options:options,assetRoot:assets)
+        TourReveal.apply(shot,to:scene,phase:(shot.startPhase+shot.endPhase)/2)
         let pose=TourDirector.camera(shot,phase:(shot.startPhase+shot.endPhase)/2),camera=SceneBuilder.camera(at:pose.0,yaw:pose.1,pitch:pose.2)
         scene.rootNode.addChildNode(camera)
         let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil)

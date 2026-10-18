@@ -1500,12 +1500,62 @@ import simd
             }
             await check("USDZ stored and 64-byte aligned"){let url=try Exporter.usdz(house,options:SceneOptions());let d=try Data(contentsOf:url);try d.write(to:mainRepo.root.appendingPathComponent("test.usdz"));let entries=try StoredZip.read(url);let start=30+Int(d.uint16(26))+Int(d.uint16(28));return start%64==0 && entries.first?.name=="house.usda"}
             await check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}
-            await check("Before-after and service tours retain stage identity and exact frame timeline") {
-                for preset in [TourPreset.beforeAfter,.services] {
+            await check("Service tours retain stage identity and exact frame timeline") {
+                for preset in [TourPreset.services] {
                     let plan=TourDirector.plan(house,duration:10,preset:preset)
                     guard !plan.shots.isEmpty,plan.shots.allSatisfy({$0.duration<=5 && $0.layerMode != nil && $0.tradeNames != nil}),plan.shots.reduce(0,{ $0+Int(($1.duration*30).rounded()) })==300 else{return false}
-                    if preset == .beforeAfter {guard Set(plan.shots.compactMap{$0.layerMode})==Set([ViewMode.rough.rawValue,ViewMode.finished.rawValue]) else{return false}}
                 }
+                return true
+            }
+            await check("Matched before-after reveal keeps one camera and restores captured finish context") {
+                let fixture=matchedRevealFixture(),room=fixture.rooms[0].id,finished=fixture.stages[1].id,target=fixture.features[0],finish=fixture.features[1]
+                let plan=TourDirector.plan(fixture,duration:10,preset:.beforeAfter)
+                guard plan.shots.count==2,plan.shots.reduce(0,{$0+Int(($1.duration*30).rounded())})==300,
+                  plan.shots.allSatisfy({$0.subject?.featureID==target.id && $0.reveal?.finishes.map{$0.featureID}==[finish.id] && $0.endPosition==nil}) else{return false}
+                let bytes=try JSONEncoder().encode(plan),decoded=try JSONDecoder().decode(TourPlan.self,from:bytes)
+                guard decoded.shots.map{$0.reveal}==plan.shots.map{$0.reveal} else{return false}
+                let first=plan.shots[0],event=first.reveal!,camera=TourDirector.camera(first,phase:0)
+                let scene=try TourReveal.scene(fixture,shot:first,options:SceneOptions())
+                guard let surface=scene.rootNode.childNode(withName:finish.id.uuidString,recursively:false),let exposed=scene.rootNode.childNode(withName:target.id.uuidString,recursively:false) else{return false}
+                for phase in [0.0,0.15,0.5,0.85,1] {
+                    TourReveal.apply(first,to:scene,phase:phase)
+                    let amount=event.amount(at:phase)
+                    guard abs(Double(surface.opacity)-(1-0.85*amount))<1e-6,abs(Double(exposed.opacity)-amount)<1e-6 else{return false}
+                }
+                guard event.amount(at:0)==0,event.amount(at:0.5)==1,event.amount(at:1)==0 else{return false}
+                for shot in plan.shots {for frame in 0..<150 {
+                    let phase=shot.startPhase+(shot.endPhase-shot.startPhase)*Double(frame)/149,p=TourDirector.camera(shot,phase:phase)
+                    guard p.0==camera.0,p.1==camera.1,p.2==camera.2,shot.reveal!.finishes.allSatisfy({TourFraming.inFrame($0.point,camera:p)}),shot.subject.map({TourFraming.inFrame($0.point,camera:p)})==true else{return false}
+                }}
+                let cameraNode=SceneBuilder.camera(at:camera.0,yaw:camera.1,pitch:camera.2)
+                scene.rootNode.addChildNode(cameraNode)
+                let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene;renderer.pointOfView=cameraNode
+                var images:[Data]=[]
+                for phase in [0.0,0.5,1.0] {
+                    TourReveal.apply(first,to:scene,phase:phase)
+                    guard let image=renderer.snapshot(atTime:0,with:CGSize(width:320,height:180),antialiasingMode:.none).pngData() else{return false}
+                    images.append(image)
+                }
+                guard images[0] != images[1],images[0]==images[2] else{return false}
+                // A planned shell, unrelated frame, missing finish, hidden source,
+                // foreground obstacle or stale target cannot create a reveal.
+                for fault in 0..<5 {
+                    var bad=fixture
+                    switch fault {
+                    case 0:bad.features[1].kind = .planned
+                    case 1:var segment=Segment(roomID:room,stageID:finished);segment.registration=nil;bad.segments=[segment];bad.features[1].segmentID=segment.id
+                    case 2:bad.features.removeLast()
+                    case 3:bad.features[0].hidden=true
+                    default:bad.features.append(Feature(name:"Foreground obstruction",trade:.floor,roomID:room,stageID:finished,kind:.synthetic,mesh:.box(center:V3(0,2,1.6),size:V3(3,0.1,3))))
+                    }
+                    guard TourDirector.plan(bad,duration:10,preset:.beforeAfter).shots.isEmpty else{return false}
+                }
+                var stale=fixture;stale.features[0].revision+=1
+                do{_=try TourReveal.scene(stale,shot:first,options:SceneOptions());return false}catch{}
+                let archive=try Exporter.archive(fixture,repo:repo),targetArchive=mainRepo.root.appendingPathComponent("command-reveal.hxray")
+                try? FileManager.default.removeItem(at:targetArchive);try FileManager.default.moveItem(at:archive,to:targetArchive)
+                let report:[String:Any]=["passed":true,"analyticOnly":true,"frames":300,"sameCameraThroughout":true,"fadeAndRestoreVerified":true,"renderedRevealDiffers":true,"restoredRenderMatches":true,"refusalCases":6,"rawSourceRecordsPublished":false,"physicalQualification":false]
+                try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys,.prettyPrinted]).write(to:mainRepo.root.appendingPathComponent("native-tour-reveal.json"))
                 return true
             }
             await check("Deterministic tour source revision"){let a=try JSONEncoder().encode(TourDirector.plan(house)),b=try JSONEncoder().encode(TourDirector.plan(house));let p=try JSONDecoder().decode(TourPlan.self,from:a),q=try JSONDecoder().decode(TourPlan.self,from:b);return Set(p.shots.map{$0.roomID}).count==3 && p.shots.allSatisfy{$0.duration<=5} && p.sourceRevision==q.sourceRevision && p.shots.map{$0.position}==q.shots.map{$0.position}}
@@ -1961,6 +2011,44 @@ import simd
                 }
                 results.append(["test":"IFC conversion-based feet and inches retain raw factors and produce metric geometry","passed":conversionUnitsPassed])
 
+                ifcCase="IFC nested placements mapped scales and openings retain geometry and source relationships";mark(ifcCase)
+                struct GeometryCase:Decodable {var name:String;var source:String;var low:[Double];var high:[Double];var volume:Double;var products:Int;var converted:Int}
+                guard let geometryPath=Bundle.main.url(forResource:"test-geometry",withExtension:"json",subdirectory:"IFC") else{throw HouseError.message("Missing private IFC geometry fixture.")}
+                let cases=try JSONDecoder().decode([GeometryCase].self,from:Data(contentsOf:geometryPath))
+                guard cases.count==4 else{throw HouseError.message("IFC geometry fixture inventory changed.")}
+                var maximumBoundsError=0.0,maximumVolumeError=0.0
+                for fixture in cases {
+                    guard fixture.low.count==3,fixture.high.count==3 else{throw HouseError.message("Invalid IFC geometry bounds fixture.")}
+                    let output=try await importer.load(Data(fixture.source.utf8),roomID:roomID,stageID:stageID)
+                    guard let coordinates=importer.coordinateReference,let properties=importer.propertyGraph,
+                      properties.summary.products==fixture.products,properties.summary.convertedProducts==fixture.converted,properties.matches(output),!output.isEmpty else{throw HouseError.message("IFC geometry source inventory differs: "+fixture.name)}
+                    let points=output.flatMap{$0.mesh.vertices}.map{$0+coordinates.originMetres}
+                    let low=[points.map{$0.x}.min()!,points.map{$0.y}.min()!,points.map{$0.z}.min()!]
+                    let high=[points.map{$0.x}.max()!,points.map{$0.y}.max()!,points.map{$0.z}.max()!]
+                    for axis in 0..<3 {maximumBoundsError=max(maximumBoundsError,max(abs(low[axis]-fixture.low[axis]),abs(high[axis]-fixture.high[axis])))}
+                    var volume=0.0
+                    for feature in output {
+                        let mesh=feature.mesh,origin=mesh.vertices[0];var signed=0.0
+                        for index in stride(from:0,to:mesh.triangles.count,by:3) {
+                            let a=mesh.vertices[Int(mesh.triangles[index])]-origin,b=mesh.vertices[Int(mesh.triangles[index+1])]-origin,c=mesh.vertices[Int(mesh.triangles[index+2])]-origin
+                            signed+=a.dot(b.cross(c))/6
+                        }
+                        volume+=abs(signed)
+                    }
+                    maximumVolumeError=max(maximumVolumeError,abs(volume-fixture.volume))
+                    guard maximumBoundsError<0.00001,maximumVolumeError<0.00001 else{throw HouseError.message("IFC geometry bounds or solid volume differs: "+fixture.name)}
+                    let document=try JSONSerialization.jsonObject(with:properties.data) as! [String:Any],records=document["records"] as! [[String:Any]]
+                    func value(_ id:Int,_ field:String)->Any? {
+                        let fields=records.first{$0["expressID"] as? Int==id}?["fields"] as? [String:Any]
+                        return (fields?[field] as? [String:Any])?["value"]
+                    }
+                    guard value(70,"Name") as? String=="Synthetic copper",value(71,"RelatingMaterial") as? Int==70,value(73,"RelatingType") as? Int==72,
+                      fixture.name != "opening subtraction" || value(55,"RelatedOpeningElement") as? Int==54 else{throw HouseError.message("IFC type material or opening relationship was lost.")}
+                }
+                let geometryReport:[String:Any]=["passed":true,"analyticOnly":true,"cases":cases.count,"maximumBoundsErrorMetres":maximumBoundsError,"maximumSolidVolumeErrorCubicMetres":maximumVolumeError,"typeMaterialAndOpeningRelationsPreserved":true,"rawFixturesPublished":false,"physicalQualification":false]
+                try JSONSerialization.data(withJSONObject:geometryReport,options:[.prettyPrinted,.sortedKeys]).write(to:mainRepo.root.appendingPathComponent("native-ifc-geometry.json"))
+                results.append(["test":ifcCase,"passed":true,"geometryCases":cases.count])
+
             }catch{results.append(["test":ifcCase,"passed":false,"error":error.localizedDescription])}
             do {
                 let fixture=try SimulatedCapture.make(repo:mainRepo)
@@ -2173,6 +2261,19 @@ import simd
                     failure["encoderRetryEvents"]=encoderRecoveries
                     results.append(failure)
                 }
+                mark("Matched reveal movie encoding")
+                do {
+                    let fixture=matchedRevealFixture(),movieRepo=try Repository(root:folder.appendingPathComponent("reveal-movie"))
+                    let movie=try await MovieExporter.render(fixture,repo:movieRepo,options:SceneOptions(),duration:5,width:320,height:180,preset:.beforeAfter){_ in}
+                    if let issue=await MovieExporter.clipIssue(movie,frames:150,width:320,height:180,decodeAllFrames:true) {throw HouseError.message(issue)}
+                    let generator=AVAssetImageGenerator(asset:AVURLAsset(url:movie));generator.requestedTimeToleranceBefore = .zero;generator.requestedTimeToleranceAfter = .zero
+                    var colours:[[Double]]=[]
+                    for frame in [0,75,149] {let image=try await generator.image(at:CMTime(value:Int64(frame),timescale:30));colours.append(try centralColour(image.image))}
+                    let revealDifference=zip(colours[0],colours[1]).reduce(0){$0+abs($1.0-$1.1)}/3
+                    let restoreDifference=zip(colours[0],colours[2]).reduce(0){$0+abs($1.0-$1.1)}/3
+                    guard revealDifference>15,restoreDifference<5 else{throw HouseError.message("Encoded reveal colour change/restoration differs: \(revealDifference) / \(restoreDifference)")}
+                    results.append(["test":"Matched reveal movie encodes and decodes the complete layer timeline","passed":true,"decodedFrames":150])
+                }catch{results.append(["test":"Matched reveal movie encodes and decodes the complete layer timeline","passed":false,"error":error.localizedDescription])}
                 mark("Movie interruption and final-publication recovery")
                 do {results.append(try await movieRecoveryReport(repo:Repository(root:folder.appendingPathComponent("movie-recovery"))))}
                 catch{results.append(["test":"Movie interruption and final-publication recovery","passed":false,"error":error.localizedDescription])}
@@ -2194,6 +2295,21 @@ import simd
 }
 
 extension SelfTests {
+    static func centralColour(_ image:CGImage)throws->[Double] {
+        guard let crop=image.cropping(to:CGRect(x:image.width/2-8,y:image.height/2-8,width:16,height:16)),
+          let context=CGContext(data:nil,width:16,height:16,bitsPerComponent:8,bytesPerRow:64,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue|CGBitmapInfo.byteOrder32Big.rawValue),let data=context.data else{throw HouseError.message("Cannot sample encoded reveal frame.")}
+        context.draw(crop,in:CGRect(x:0,y:0,width:16,height:16));let bytes=data.assumingMemoryBound(to:UInt8.self)
+        return (0..<3).map{channel in (0..<256).reduce(0.0){$0+Double(bytes[$1*4+channel])}/256}
+    }
+    static func matchedRevealFixture()->House {
+        var fixture=House.empty("Matched reveal fixture");fixture.isDemo=true
+        fixture.rooms[0].origin=V3(-2,-1,0);fixture.rooms[0].size=V3(4,4,3.2)
+        let room=fixture.rooms[0].id,rough=fixture.stages[0].id,finished=fixture.stages[1].id
+        let target=Feature(name:"Captured framing",trade:.structure,roomID:room,stageID:rough,kind:.synthetic,mesh:.box(center:V3(0,3,1.6),size:V3(1,0.1,2)))
+        let finish=Feature(name:"Captured finish",trade:.finish,roomID:room,stageID:finished,kind:.synthetic,mesh:.box(center:V3(0,2.8,1.6),size:V3(2,0.02,2.5)))
+        fixture.features=[target,finish]
+        return fixture
+    }
     static func registrationChainReport() throws->[String:Any] {
         var house=House.empty("Analytic chained-session registration")
         let adapter=simd_double4x4(columns:(SIMD4(1,0,0,0),SIMD4(0,0,1,0),SIMD4(0,-1,0,0),SIMD4(0,0,0,1)))
