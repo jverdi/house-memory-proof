@@ -123,7 +123,7 @@
   "readerPhasesExpected": 18,
   "validationReportsExpected": 35,
   "interfaceExpected": 13,
-  "interfaceStatus": "failed_batch_keyboard_dismissal_in_live_run",
+  "interfaceStatus": "superseded_after_batch_keyboard_failure",
   "appleUploadVerified": false,
   "boundarySource": {
     "analyticOnly": true,
@@ -427,8 +427,33 @@
       "line": 178,
       "failure": "Keyboard exists remained true after filter submit; five-second expectation failed",
       "seconds": 57.293,
-      "evidence": "GitHub job 117746119378 live XCTest output",
-      "fullArtifactVerified": false
+      "evidence": "ui-tests.log in SHA-verified artifact 12145443569",
+      "fullArtifactVerified": true
     }
-  ]
+  ],
+  "fullArtifact": {
+    "id": 12145443569,
+    "sha256": "89c1ddc663ee0b59fe4b14a1677ac38b1cfd3c0a47554aa62d602856115ee2a2",
+    "sha256IndependentlyVerified": true,
+    "partialRun": true
+  },
+  "simulatorJobConclusion": "cancelled",
+  "interfaceCompletedCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "result": "failed",
+      "seconds": 57.293
+    },
+    {
+      "name": "testClosureReviewKeepsMissingStageEvidenceExplicit",
+      "result": "passed",
+      "seconds": 28.336
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "result": "passed",
+      "seconds": 59.267
+    }
+  ],
+  "interfaceSuiteComplete": false
 }

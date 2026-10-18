@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T18:16:32.966324Z",
+  "updatedUTC": "2026-10-18T18:18:14.896230Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -59,20 +59,14 @@
   "nextAction": "Complete the 218.1 interface/export integration and retain exact-source results. Continue independent full-house navigation/streaming, mixed-stage coverage, broad service-envelope and cross-version acceptance. Preserve original finished-localization failures and the exhausted five-attempt budget. The requested 216.1 snapshot is available to its owner; device/provider and measured field qualification remain required.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
-    "run": 39151470099,
-    "build": "218.1",
+    "source": "8d2a1d28de265d2491345c37cf664293434a6b14",
+    "run": 39153443322,
+    "build": "219.1",
     "nativeExpected": 171,
     "interfaceExpected": 13,
     "nativeReaderPhasesExpected": 18,
     "integrationComplete": false,
-    "status": "native_passed_interface_keyboard_dismissal_failure_observed",
-    "nativePassed": 171,
-    "nativeReaderPhasesPassed": 18,
-    "commandContractsPassed": 48,
-    "nativeSeconds": 190.86271375,
-    "nativeArtifact": 12144944730,
-    "nativeArtifactSHA256": "7a41f7c4107241770b4511be5b6ef4a8cf2bb0738ff5af0bf34d3c53b819b3df"
+    "status": "queued"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1023,5 +1017,21 @@
     "physicalInstallationVerified": false,
     "readinessRun": 39080146782,
     "additionalIntermediateUploads": false
+  },
+  "previousValidation": {
+    "source": "11ad4ad7bc4356707d3b8b8e3c5ef530224bee73",
+    "run": 39151470099,
+    "build": "218.1",
+    "nativeExpected": 171,
+    "interfaceExpected": 13,
+    "nativeReaderPhasesExpected": 18,
+    "integrationComplete": false,
+    "status": "superseded_after_native_pass_and_batch_ui_failure",
+    "nativePassed": 171,
+    "nativeReaderPhasesPassed": 18,
+    "commandContractsPassed": 48,
+    "nativeSeconds": 190.86271375,
+    "nativeArtifact": 12144944730,
+    "nativeArtifactSHA256": "7a41f7c4107241770b4511be5b6ef4a8cf2bb0738ff5af0bf34d3c53b819b3df"
   }
 }

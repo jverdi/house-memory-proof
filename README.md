@@ -2,7 +2,7 @@
 
 Personal, local-first native iPhone construction record. SwiftUI + ARKit + SceneKit/Metal, SQLite, a portable C++ depth-fusion core, and an offline bundled IFC parser. No application server, account system, billing, or runtime reconstruction service.
 
-**The source now contains a substantial experimental application. It does not yet satisfy the production/precision gates in the [architecture runbook](docs/architecture-runbook.md).** The owner installed delivery proof 2.1; requested current-state snapshot 161.1 is available in internal TestFlight. Later implementation commits remain validation-only.
+**The source now contains a substantial experimental application. It does not yet satisfy the production/precision gates in the [architecture runbook](docs/architecture-runbook.md).** The requested current-state snapshot **216.1** is available in internal TestFlight, with Apple processing and owner access verified. Later implementation commits remain validation-only.
 
 ## Implemented paths
 
@@ -34,7 +34,7 @@ The managed macOS workflow compiles the app, launches the iPhone simulator, runs
 
 ## Delivery
 
-The repository and hosted macOS runner delivered signed **House Xray build 2.1**, and later snapshot **161.1**, to the owner's internal TestFlight group. The owner confirmed installing build 2.1 on October 17, 2026; physical installation of snapshot 161.1 remains unverified. [Proof evidence](docs/evidence/testflight-delivery-2.1.json) is separate from application acceptance.
+The repository and hosted macOS runner delivered signed **House Xray build 216.1**, source `f2a3d40cac`, to the owner's **Personal iPhone** group on October 18, 2026. Apple reports **VALID / IN_BETA_TESTING**, and owner access is verified. Open TestFlight → House Xray → Update. Physical installation remains unverified. [Delivery evidence](docs/evidence/testflight-216-1-summary.json) records the exact source and independently verified artifact hashes; it is separate from full application acceptance. The owner previously confirmed installing delivery proof 2.1.
 
 - App ID: `6823862609`
 - Bundle: `com.jverdi.housememoryproof`
