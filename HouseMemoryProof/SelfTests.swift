@@ -1502,9 +1502,74 @@ import simd
             await check("No tour across absent captured rooms"){let empty=House.empty("Uncaptured");let plan=TourDirector.plan(empty);return plan.shots.isEmpty && plan.excluded.count==1}
             await check("Service tours retain stage identity and exact frame timeline") {
                 for preset in [TourPreset.services] {
-                    let plan=TourDirector.plan(house,duration:10,preset:preset)
+                    var reviewed=house
+                    for index in reviewed.features.indices where !reviewed.features[index].route.isEmpty {reviewed.features[index].reviewed=true}
+                    let plan=TourDirector.plan(reviewed,duration:10,preset:preset)
                     guard !plan.shots.isEmpty,plan.shots.allSatisfy({$0.duration<=5 && $0.layerMode != nil && $0.tradeNames != nil}),plan.shots.reduce(0,{ $0+Int(($1.duration*30).rounded()) })==300 else{return false}
                 }
+                return true
+            }
+            await check("Reviewed service tours inspect endpoints and never infer crossing connections") {
+                let fixture=serviceTourFixture(),first=fixture.features[0],second=fixture.features[1],link=fixture.connections[0]
+                let plan=TourDirector.plan(fixture,duration:10,preset:.services)
+                guard plan.shots.count==6,plan.shots.reduce(0,{$0+Int(($1.duration*30).rounded())})==300,
+                  plan.shots.allSatisfy({$0.endPosition==nil && $0.serviceInspection != nil && $0.layerMode==ViewMode.rough.rawValue}) else{return false}
+                for feature in fixture.features {
+                    let shots=plan.shots.filter{$0.subject?.featureID==feature.id}
+                    guard Set(shots.compactMap{$0.serviceInspection?.endpoint})==Set([0,1]),Set(shots.compactMap{$0.serviceInspection?.routeIndex})==Set(feature.route.indices) else{return false}
+                    for shot in shots {
+                        let scene=try TourReveal.scene(fixture,shot:shot,options:SceneOptions())
+                        guard abs(Double(scene.rootNode.childNode(withName:feature.id.uuidString,recursively:false)?.opacity ?? 1)-0.35)<1e-6,
+                          scene.rootNode.childNode(withName:"service-inspection-marker",recursively:false) != nil,
+                          TourFraming.inFrame(shot.subject!.point,camera:TourDirector.camera(shot,phase:0)) else{return false}
+                    }
+                }
+                guard plan.shots.filter({$0.serviceInspection?.confirmedLinkIDs==[link.id]}).count==2 else{return false}
+                var ambiguous=fixture;ambiguous.connections.append(link)
+                guard TourDirector.plan(ambiguous,duration:10,preset:.services).shots.isEmpty else{return false}
+                var uncertain=fixture;uncertain.connections[0].confirmed=false
+                let disconnected=TourDirector.plan(uncertain,duration:10,preset:.services)
+                guard disconnected.shots.count==6,disconnected.shots.allSatisfy({$0.serviceInspection?.confirmedLinkIDs.isEmpty==true}) else{return false}
+                let subject=plan.shots.first(where:{$0.subject?.featureID==first.id})!
+                var stale=fixture;stale.features[0].revision+=1
+                do{_=try TourReveal.scene(stale,shot:subject,options:SceneOptions());return false}catch{}
+                let linked=plan.shots.first(where:{$0.subject?.featureID==second.id && $0.serviceInspection?.endpoint==0})!
+                do{_=try TourReveal.scene(uncertain,shot:linked,options:SceneOptions());return false}catch{}
+                var plannedPeer=fixture;plannedPeer.features[0].kind = .planned
+                do{_=try TourReveal.scene(plannedPeer,shot:linked,options:SceneOptions());return false}catch{}
+                for fault in 0..<4 {
+                    var bad=fixture
+                    switch fault {
+                    case 0:for index in bad.features.indices{bad.features[index].reviewed=false}
+                    case 1:for index in bad.features.indices{bad.features[index].kind = .planned}
+                    case 2:var segment=Segment(roomID:bad.rooms[0].id,stageID:bad.stages[0].id);segment.registration=nil;bad.segments=[segment];for index in bad.features.indices{bad.features[index].segmentID=segment.id}
+                    default:bad.features.append(Feature(name:"Captured obstruction",trade:.structure,roomID:bad.rooms[0].id,stageID:bad.stages[0].id,kind:.synthetic,mesh:.box(center:V3(0,2,1.6),size:V3(4,0.2,3))))
+                    }
+                    guard TourDirector.plan(bad,duration:10,preset:.services).shots.isEmpty else{return false}
+                }
+                var sized=fixture
+                sized.features.append(try ServiceEnvelope.feature(source:first,interval:0,section:.round,width:0.1,height:nil,widthAxis:nil,tolerance:nil,evidence:"Synthetic size",house:sized))
+                let sizedPlan=TourDirector.plan(sized,duration:10,preset:.services)
+                guard sizedPlan.shots.filter({$0.subject?.featureID==first.id}).count==3 else{return false}
+                var selectedScope=SceneOptions();selectedScope.trades=[.plumbing]
+                guard TourDirector.plan(fixture,duration:10,options:selectedScope,preset:.services).shots.isEmpty else{return false}
+                var registered=fixture
+                var segment=Segment(roomID:registered.rooms[0].id,stageID:registered.stages[0].id);segment.registration=Rigid()
+                segment.registration!.values[3]=0.1;registered.segments=[segment]
+                for index in registered.features.indices{registered.features[index].segmentID=segment.id}
+                let shifted=TourDirector.plan(registered,duration:10,preset:.services)
+                guard !shifted.shots.isEmpty else{return false}
+                for shot in shifted.shots {
+                    let feature=registered.features.first{$0.id==shot.subject?.featureID}!
+                    let point=feature.route[shot.serviceInspection!.routeIndex]+V3(0.1,0,0)
+                    guard (shot.subject!.point-point).length<1e-9 else{return false}
+                }
+                let reduced=TourDirector.plan(fixture,duration:5,preset:.services)
+                guard reduced.shots.count==5,reduced.excluded.contains(where:{$0.contains("duration budget")}) else{return false}
+                let archive=try Exporter.archive(fixture,repo:repo),target=mainRepo.root.appendingPathComponent("command-services.hxray")
+                try? FileManager.default.removeItem(at:target);try FileManager.default.moveItem(at:archive,to:target)
+                let report:[String:Any]=["passed":true,"analyticOnly":true,"routes":2,"endpointInspections":4,"frames":300,"confirmedLinksOnly":true,"sourceChangesRefused":true,"unsupportedInputsRefused":true,"durationOmissionsExplicit":true,"physicalQualification":false]
+                try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]).write(to:mainRepo.root.appendingPathComponent("native-service-tour.json"))
                 return true
             }
             await check("Matched before-after reveal keeps one camera and restores captured finish context") {
@@ -2246,6 +2311,11 @@ import simd
                     let started=ProcessInfo.processInfo.systemUptime
                     let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:10,width:1920,height:1080,encoderRecovery:{encoderRecoveries.append($0.diagnostics)}){model.progress=$0}
                     if let issue=await MovieExporter.clipIssue(movie,frames:300,width:1920,height:1080,decodeAllFrames:true) {throw HouseError.message("Complete movie decode: "+issue)}
+                    let metadata=movie.deletingPathExtension().appendingPathExtension("json")
+                    let savedPlan=try JSONDecoder().decode(TourPlan.self,from:Data(contentsOf:metadata))
+                    guard savedPlan.sourceRevision==house.revision,ShareSheet(url:movie).items==[movie,metadata],
+                      savedPlan.shots.reduce(0,{$0+Int(($1.duration*30).rounded())})==300 else{throw HouseError.message("Movie share omitted its source/timeline metadata.")}
+
                     let directory=repo.root.appendingPathComponent("tours"),all=FileManager.default.enumerator(at:directory,includingPropertiesForKeys:[.contentModificationDateKey])!
                     var dates:[URL:Date]=[:]
                     for case let url as URL in all where url.pathExtension=="mp4" {dates[url]=try url.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate}
@@ -2300,6 +2370,17 @@ extension SelfTests {
           let context=CGContext(data:nil,width:16,height:16,bitsPerComponent:8,bytesPerRow:64,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue|CGBitmapInfo.byteOrder32Big.rawValue),let data=context.data else{throw HouseError.message("Cannot sample encoded reveal frame.")}
         context.draw(crop,in:CGRect(x:0,y:0,width:16,height:16));let bytes=data.assumingMemoryBound(to:UInt8.self)
         return (0..<3).map{channel in (0..<256).reduce(0.0){$0+Double(bytes[$1*4+channel])}/256}
+    }
+    static func serviceTourFixture()->House {
+        var house=House.empty("Reviewed service fixture");house.isDemo=true
+        house.rooms[0].origin=V3(-2,-1,0);house.rooms[0].size=V3(4,4,3.2)
+        let a=[V3(-0.8,3,1.2),V3(-0.8,3,2),V3(-0.2,3,2)],b=[V3(0.2,3,2),V3(0.8,3,2),V3(0.8,3,1.2)]
+        for (index,points) in [a,b].enumerated() {
+            var feature=Feature(name:"Reviewed route \(index+1)",trade:.electrical,roomID:house.rooms[0].id,stageID:house.stages[0].id,kind:.synthetic,mesh:.route(points,radius:0.025),route:points)
+            feature.reviewed=true;house.features.append(feature)
+        }
+        house.connections=[ServiceConnection(fromFeature:house.features[0].id,fromEnd:1,toFeature:house.features[1].id,toEnd:0,confirmed:true,notes:"Synthetic explicit connection; unseen gap remains a camera cut")]
+        return house
     }
     static func matchedRevealFixture()->House {
         var fixture=House.empty("Matched reveal fixture");fixture.isDemo=true

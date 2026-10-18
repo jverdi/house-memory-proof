@@ -1,8 +1,16 @@
+## Reviewed service-tour continuation
+
+The matched-reveal/IFC candidate was published as **74b8740b1d** after current-chat approval. Run 39137801029 failed at compilation on an ambiguous trailing-closure expression in the reveal round-trip test; pinned IFC preflight passed. **fe9855458b / 207.1** repairs that expression and passes **162/162 native checks** in 225.866 seconds, plus all 13 native-phase readers/commands. The SHA-verified checkpoint retains the encoded reveal/restoration result and all four zero-error IFC geometry cases (`docs/evidence/native-fe985-summary.json`). Its remaining UI run is superseded by this combined candidate. The last complete native/UI integration remains dfec13ee61 / 205.1.
+
+The next candidate replaces generic trade views with reviewed route-point and endpoint inspections, deterministic ordering through explicit confirmed links, source revision/index metadata, scoped trade selection, frame/visibility checks, and explicit omissions/camera cuts. It never infers connections from crossings, colors, proximity, or camera motion. A route's own measured envelope is treated as part of that route; other geometry still obstructs it. Unreviewed/planned/stale/unregistered routes refuse inspection. No physical route or accuracy claim is enabled.
+
+Bounds: at most 128 visible route candidates per room, 4,096 connections and route points, 16 selected route points, and at least one second per inspection. Uncovered points/endpoints remain explicitly omitted. Native tests cover both endpoints, uncertain links, stale source/link rejection, registrations, obstruction, measured envelopes, selected-trade scope and short-duration omissions. A new interface flow checks trade selection and useful/empty previews; the native CLI retains a private source package and an independent route/link reader. Expected **163 native / 12 UI**; **36 local Python contracts and nine GLB reader contracts pass**. Native service validation remains pending. Movie sharing now includes the already-generated JSON sidecar; the existing full-decode movie check verifies its source revision, exact frame timeline and share inventory.
+
 # Current continuation — October 18, 2026
 
 The recovered latest main source **dfec13ee61 / 205.1** completed native, UI, recovery and export integration successfully (run 39131633332). All 159 native checks passed; the complete artifact SHA-256 is independently verified. TestFlight remains the requested 161.1 snapshot; no intermediate upload.
 
-This candidate integrates the unfinished matched-camera reveal and IFC mapping/opening work recovered from the prior session. Expected native count: **162**, with 11 existing UI flows. Local checks pass: 50 portable C++ cases, 34 Python command/reader tests, nine GLB camera contracts, IFC property contracts, nine existing actual-WASM cases and four geometry cases. Native movie, scene fade/restoration, CLI reveal and IFC adapter checks remain pending. Accuracy gates and exhausted detector iteration budget are unchanged.
+This candidate integrates the unfinished matched-camera reveal and IFC mapping/opening work recovered from the prior session. Expected native count: **162**, with 11 existing UI flows. Local checks pass: 50 portable C++ cases, 34 Python command/reader tests, nine GLB camera contracts, IFC property contracts, nine existing actual-WASM cases and four geometry cases. Native movie, scene fade/restoration, CLI reveal and IFC adapter checks passed at fe9855458b. Accuracy gates and exhausted detector iteration budget are unchanged.
 
 ## Publication and validation
 
@@ -14,7 +22,7 @@ Source **dfec13ee61 / 205.1** passes **159/159 native checks**, all twelve nativ
 
 The next candidate repairs a missing `IfcRelVoidsElement` source relationship found by an actual parser fixture. Four shared private cases verify nested placement, mapped rotation/uniform scale, nonuniform scale and opening subtraction, including declared bounds, solid volume, material/type identity and the original relationship graph. All four pass pinned web-ifc 0.0.72 locally with zero bounds/volume error; the existing nine real parser cases and JS property contracts still pass. The iOS check consumes the same fixtures; **162 native / 11 UI checks are expected with the matched-reveal additions**. Raw cases remain private in CI; only aggregate results are retained.
 
-The bounded importer requirements in runbook §17.2/P8.4 have native coverage for nested placements, georeferences, malformed GUIDs, large coordinates, unsupported geometry and refusal/source preservation. Section 17.3 explicitly excludes complete authoring-grade BIM round trips; this is not an additional release requirement. The new mapped/opening cases require native validation. Signed cross-version and large-device/provider acceptance remain open.
+The bounded importer requirements in runbook §17.2/P8.4 have native coverage for nested placements, georeferences, malformed GUIDs, large coordinates, unsupported geometry and refusal/source preservation. Section 17.3 explicitly excludes complete authoring-grade BIM round trips; this is not an additional release requirement. The new mapped/opening cases pass native validation at fe9855458b. Signed cross-version and large-device/provider acceptance remain open.
 
 # Implementation ledger
 

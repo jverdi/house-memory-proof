@@ -87,7 +87,9 @@ enum TourReveal {
   }
   static func scene(_ house:House,shot:TourShot,options:SceneOptions,assetRoot:URL?=nil)throws->SCNScene {
     let scope=SceneOptions(mode:shot.layerMode.flatMap(ViewMode.init(rawValue:)) ?? options.mode,trades:shot.tradeNames.map{Set($0.compactMap(Trade.init(rawValue:)))} ?? options.trades,ceilings:options.ceilings,room:shot.roomID,stage:shot.layerMode==nil ? options.stage:nil)
+    try TourServices.validate(shot,house:house,scope:scope)
     let scene=SceneBuilder.scene(house,options:scope,assetRoot:assetRoot)
+    TourServices.decorate(scene,shot:shot,house:house)
     guard let event=shot.reveal else{return scene}
     for feature in house.features where feature.kind != .observed && !(house.isDemo && feature.kind == .synthetic) {
       scene.rootNode.childNode(withName:feature.id.uuidString,recursively:false)?.removeFromParentNode()

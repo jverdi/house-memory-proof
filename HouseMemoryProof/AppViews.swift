@@ -104,8 +104,13 @@ struct RootView: View {
 }
 struct ShareSheet: UIViewControllerRepresentable {
   var url: URL
+  var items:[URL] {
+    let metadata=url.deletingPathExtension().appendingPathExtension("json")
+    if url.pathExtension.lowercased()=="mp4",FileManager.default.fileExists(atPath:metadata.path) {return [url,metadata]}
+    return [url]
+  }
   func makeUIViewController(context: Context) -> UIActivityViewController {
-    UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    UIActivityViewController(activityItems: items, applicationActivities: nil)
   }
   func updateUIViewController(_ c: UIActivityViewController, context: Context) {}
 }

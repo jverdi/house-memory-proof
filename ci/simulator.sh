@@ -128,7 +128,7 @@ if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build
 if [ -f "$app_root/photo-curve-viewer.html" ]; then cp "$app_root/photo-curve-viewer.html" build/command-private/photo-curve-viewer.html; fi
 cp -R "$app_root/incremental-v2" build/evidence/incremental-v2
 # Retain diagnostics before failing if the encoder did not produce a movie.
-for media in native-ifc-geometry.json native-tour-reveal.json native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
+for media in native-service-tour.json native-ifc-geometry.json native-tour-reveal.json native-tour-framing.json test-tour.mp4 test-tour-frame.png metal-target.png large-house-render.png drawing-baseline.png drawing-rotated-90.png drawing-rotated-180.png drawing-rotated-270.png native-coverage-guidance.json; do
   if [ -f "$app_root/$media" ]; then cp "$app_root/$media" "build/evidence/$media"; fi
 done
 xcrun simctl io "$device_id" screenshot build/evidence/simulator.png
@@ -181,6 +181,8 @@ except Exception as error:
 pathlib.Path('build/evidence/cli-command-validation.json').write_text(json.dumps(report,indent=2)+'\n')
 assert report['passed'],report
 PYCOMMAND
+  native_check service-tour-command python3 tooling/hm tour --scene "$app_root/command-services.hxray" --preset services --duration 10 --simulator "$device_id" --output build/command-private/service-tour > build/command-private/service-tour-result.json
+  native_check service-tour-reader python3 tooling/check_tour_services.py "$app_root/command-services.hxray" build/command-private/service-tour/tour.json build/evidence/service-tour-validation.json
   native_check reconstruction-command python3 tooling/hm reconstruct --bundle "$app_root/command-capture.hxray" --kind points --simulator "$device_id" --output build/command-private/reconstruction > build/command-private/reconstruction-result.json
   native_check reconstruction-result python3 - <<'PYRECONSTRUCTION'
 import json,pathlib

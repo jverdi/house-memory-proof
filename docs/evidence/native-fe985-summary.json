@@ -1,0 +1,141 @@
+{
+  "build": "207.1",
+  "date": "2026-10-18T15:04:07Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 225.86643104166671,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1473576960,
+    "physicalFootprintBytes": 133210752,
+    "residentBytes": 364331008
+  },
+  "sourceRevision": "fe9855458b",
+  "systemVersion": "26.5",
+  "source": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
+  "run": 39138005226,
+  "nativeChecks": 162,
+  "nativePassed": 162,
+  "nativeFailures": [],
+  "artifact": {
+    "id": 12141066100,
+    "sha256": "1b150dae9503a9699e1f29f1751b7b75c1cfcd0b095f68be49f9f25c3516d9b9",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": false,
+  "interfaceExpected": 11,
+  "interfaceStatus": "Superseded by reviewed-service candidate after native checkpoint",
+  "additionalTestFlightUpload": false,
+  "physicalQualification": false,
+  "nativeReaderStatus": [
+    {
+      "check": "ifc-coordinate-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-source-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "drawing-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "envelope-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "archive-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "command-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reveal-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-result",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-result",
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "tourReveal": {
+    "analyticOnly": true,
+    "fadeAndRestoreVerified": true,
+    "frames": 300,
+    "passed": true,
+    "physicalQualification": false,
+    "rawSourceRecordsPublished": false,
+    "refusalCases": 6,
+    "renderedRevealDiffers": true,
+    "restoredRenderMatches": true,
+    "sameCameraThroughout": true
+  },
+  "ifcGeometry": {
+    "analyticOnly": true,
+    "cases": 4,
+    "maximumBoundsErrorMetres": 0,
+    "maximumSolidVolumeErrorCubicMetres": 0,
+    "passed": true,
+    "physicalQualification": false,
+    "rawFixturesPublished": false,
+    "typeMaterialAndOpeningRelationsPreserved": true
+  },
+  "revealReader": {
+    "passed": true,
+    "reader": "Independent Python matched-reveal reader",
+    "shots": 1,
+    "frames": 150,
+    "comparisons": 1,
+    "sourceIdentitiesVerified": true,
+    "sameCameraVerified": true,
+    "fadeTimelineVerified": true,
+    "rawSourceRecordsPublished": false,
+    "physicalQualification": false
+  },
+  "commandContractTests": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 34,
+    "seconds": 4.3135972500000435,
+    "exitCode": 0
+  }
+}

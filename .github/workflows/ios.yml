@@ -79,6 +79,8 @@ jobs:
             build/evidence/native-tour-reveal.json
             build/evidence/tour-reveal-validation.json
             build/evidence/native-ifc-geometry.json
+            build/evidence/native-service-tour.json
+            build/evidence/service-tour-validation.json
             build/evidence/command-tests.json
             build/evidence/cli-command-validation.json
             build/evidence/cli-reconstruction-validation.json

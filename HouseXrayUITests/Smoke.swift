@@ -1,6 +1,31 @@
 import XCTest
 
 final class HouseXraySmoke: XCTestCase {
+  @MainActor func testReviewedServiceTourPreviewAndTradeScope() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--service-tour-demo"];app.launch()
+    defer{app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["Tools"].waitForExistence(timeout:20));app.tabBars.buttons["Tools"].tap()
+    func reveal(_ element:XCUIElement) {
+      for _ in 0..<16 {
+        if element.exists && element.isHittable && element.frame.maxY<app.frame.maxY-40 {return}
+        app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.65)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.45)))
+      }
+      XCTAssertTrue(element.exists && element.isHittable)
+    }
+    let preset=app.descendants(matching:.any)["tour-preset"].firstMatch;reveal(preset);preset.tap()
+    app.buttons["Service systems"].tap()
+    let trade=app.descendants(matching:.any)["tour-trade"].firstMatch;reveal(trade);trade.tap();app.buttons["Plumbing"].tap()
+    let preview=app.buttons["Preview shot list"];reveal(preview);preview.tap()
+    let missing=app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","no reviewed service routes")).firstMatch
+    XCTAssertTrue(missing.waitForExistence(timeout:15));screenshot("28-service-tour-omission")
+    app.navigationBars["Automatic shots"].buttons.firstMatch.tap()
+    reveal(trade);trade.tap();app.buttons["Electrical"].tap();reveal(preview);preview.tap()
+    let endpoint=app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","start endpoint")).firstMatch
+    XCTAssertTrue(endpoint.waitForExistence(timeout:15))
+    XCTAssertTrue(app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","identity unconfirmed")).firstMatch.exists)
+    screenshot("29-service-tour-endpoints")
+  }
   @MainActor func testMeasuredEnvelopeSaveAndRelaunch() throws {
     continueAfterFailure=false
     let app=XCUIApplication();app.launchArguments=["--envelope-demo","--envelope-demo-reset"];app.launch()

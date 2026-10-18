@@ -12,10 +12,16 @@ struct ToolsPage: View {
   @State private var ceilings = true
   @State private var duration = 20.0
   @State private var tourPreset:TourPreset = .overview
+  @State private var tourTrade:Trade?
   @State private var exportRoom:UUID?
   @State private var exportStage:UUID?
   @State private var diagnostics = ""
   var options: SceneOptions { SceneOptions(mode: mode, ceilings: ceilings,room:exportRoom,stage:exportStage) }
+  var tourOptions:SceneOptions {
+    var scope=options
+    if tourPreset == .services,let tourTrade {scope.trades=[tourTrade]}
+    return scope
+  }
   var body: some View {
     NavigationStack {
       Form {
@@ -69,23 +75,30 @@ struct ToolsPage: View {
           ).font(.caption)
         }
         Section("Automatic tour") {
-          Picker("Film",selection:$tourPreset){ForEach(TourPreset.allCases){Text($0.rawValue).tag($0)}}
+          Picker("Film",selection:$tourPreset){ForEach(TourPreset.allCases){Text($0.rawValue).tag($0)}}.accessibilityIdentifier("tour-preset")
+          if tourPreset == .services {
+            Picker("Service trade",selection:$tourTrade) {
+              Text("All service trades").tag(Optional<Trade>.none)
+              ForEach(Trade.allCases.filter{TourServices.trades.contains($0)}) {Text($0.rawValue).tag(Optional($0))}
+            }.accessibilityIdentifier("tour-trade")
+          }
           if tourPreset == .beforeAfter {Text("Comparison films use both rough-in and finished stages.").font(.caption)}
+          if tourPreset == .services {Text("Service films inspect reviewed routes and endpoints. Cuts preserve gaps; only verified endpoint links establish connectivity.").font(.caption)}
           Slider(value: $duration, in: 10...60, step: 5)
           Text("\(Int(duration)) seconds · 1080p · 30 fps")
           Button("Create fly-through video") {
             guard let repo = model.repository else { return }
             model.perform("Rendering automatic tour") {
               try await MovieExporter.render(
-                house, repo: repo, options: options, duration: duration,preset:tourPreset
+                house, repo: repo, options: tourOptions, duration: duration,preset:tourPreset
               ) { model.progress = $0 }
             }
           }.disabled(model.busy)
           NavigationLink("Preview shot list") {
-            TourShotPreviewPage(house:house,options:options,preset:tourPreset,duration:duration)
+            TourShotPreviewPage(house:house,options:tourOptions,preset:tourPreset,duration:duration)
           }
           Text(
-            "Shots frame visible geometry from captured viewpoints. Rooms and interrupted paths use cuts; the shot list explains omitted views. Keep the app open. Completed shots resume on retry."
+            "Shots frame visible geometry from captured viewpoints. Rooms and interrupted paths use cuts; the shot list explains omitted views. Sharing includes the source and shot metadata JSON. Keep the app open. Completed shots resume on retry."
           ).font(.footnote).foregroundStyle(.secondary)
         }
         Section("Reusable 3D") {

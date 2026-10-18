@@ -14,6 +14,10 @@ import Darwin
         }
         #endif
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--service-tour-demo"),model.repository != nil {
+          if let existing=model.houses.first(where:{$0.name=="Reviewed service fixture" && $0.isDemo}) {model.selected=existing.id}
+          else {model.commit(SelfTests.serviceTourFixture())}
+        }
         if ProcessInfo.processInfo.arguments.contains("--envelope-demo"),model.repository != nil {
           if let existing=model.houses.first(where:{$0.name=="Service envelope fixture" && $0.isDemo}) {
             model.selected=existing.id

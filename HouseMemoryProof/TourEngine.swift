@@ -25,6 +25,7 @@ struct TourShot: Codable {
   var subject:TourSubject?=nil
   var includesPlannedGeometry:Bool?=nil
   var reveal:TourRevealEvent?=nil
+  var serviceInspection:TourServiceInspection?=nil
 }
 struct TourPlan: Codable {
   var schema = 1
@@ -43,30 +44,7 @@ enum TourDirector {
     -> TourPlan
   {
     if preset == .beforeAfter {return TourReveal.plan(h,duration:duration,options:options,aspect:aspect)}
-    if preset != .overview {
-      var variants:[(String,SceneOptions)]=[]
-      for trade in [Trade.electrical,.lowVoltage,.plumbing,.hvac] {var scope=options;scope.mode = .rough;scope.trades=[trade];variants.append((trade.rawValue,scope))}
-      var shots:[TourShot]=[],excluded:[String]=[]
-      for (label,scope) in variants {
-        let part=plan(h,duration:20,options:scope,aspect:aspect)
-        excluded += part.excluded.map{label+": "+$0}
-        for var shot in part.shots {shot.layerMode=scope.mode.rawValue;shot.tradeNames=scope.trades.map{$0.rawValue}.sorted();shot.caption += " · "+label;shots.append(shot)}
-      }
-      // Group the comparison by room, retaining explicit cuts and frames.
-      let roomOrder=Dictionary(h.rooms.enumerated().map{($0.element.id,$0.offset)},uniquingKeysWith:{a,_ in a})
-      shots=shots.enumerated().sorted{a,b in
-        let ar=roomOrder[a.element.roomID] ?? 0,br=roomOrder[b.element.roomID] ?? 0
-        return ar==br ? a.offset<b.offset:ar<br
-      }.map{$0.element}
-      let frames=max(150,Int((min(60,max(5,duration))*30).rounded()))
-      // Every selected shot has at least one frame and the timeline is exact.
-      if shots.count>frames {excluded.append("Tour duration omitted \(shots.count-frames) shots.");shots=Array(shots.prefix(frames))}
-      let count=max(1,shots.count),base=frames/count,remainder=frames%count
-      for i in shots.indices {shots[i].duration=Double(base+(i<remainder ? 1:0))/30}
-      let bounded=boundedMotion(shots);if bounded.cuts>0 {excluded.append("\(bounded.cuts) movements replaced by viewpoint cuts to keep camera motion within the requested duration.")}
-      let framed=TourFraming.apply(bounded.shots,house:h,options:options,aspect:aspect)
-      return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:chunk(framed.shots),excluded:excluded+framed.excluded)
-    }
+    if preset == .services {return TourServices.plan(h,duration:duration,options:options,aspect:aspect)}
     let observations=PoseRefinement.selectedForHouse(h)
     var shots: [TourShot] = []
     var excluded: [String] = []
@@ -241,7 +219,7 @@ struct MovieEncoderTimeout: LocalizedError {
     var data = try encoder.encode(house)
     data.append(try encoder.encode(plan))
     let selection = [
-      "renderer-v16-matched-reveal", options.mode.rawValue,
+      "renderer-v17-reviewed-services", options.mode.rawValue,
       options.trades.map { $0.rawValue }.sorted().joined(separator: ","), String(options.ceilings),
       options.room?.uuidString ?? "all", options.stage?.uuidString ?? "all",
     ].joined(separator: "|")

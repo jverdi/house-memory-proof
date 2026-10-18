@@ -104,3 +104,23 @@ assets. Validation reports cannot overwrite their input package.
 The presence of command names is not a claim that every runbook interface or
 product acceptance gate has passed. Generic structural validation alone cannot
 prove source completeness, geometry equivalence or physical measurement accuracy.
+
+## Reviewed service-route plans
+
+The services preset inspects reviewed rough-in route points and endpoints. The
+native UI can restrict it to one service trade. Deterministic route ordering uses
+only explicit confirmed endpoint links; disconnected, occluded or omitted points
+are explained as cuts or exclusions. Source feature revisions, original route
+indices, endpoint identities and confirmed-link IDs are retained in TourPlan.
+Unreviewed, planned, stale or unregistered routes are not promoted into observed
+system tours. Camera motion never supplies evidence of physical connectivity.
+
+The current service candidate is bounded to 128 route candidates per room, 4,096
+connection records, 4,096 points per route and 16 inspections per route; duration
+allows at least one second per inspection. Endpoint targets are prioritized.
+These are implementation limits, not a whole-house or phone qualification.
+
+Service shots label the recorded centerline and mark its inspected point. Only
+the selected route and its own measured envelope are translucent; other captured
+obstructions retain normal depth. This schematic display does not claim that
+an opaque pipe interior was photographed or that marker size is a measurement.

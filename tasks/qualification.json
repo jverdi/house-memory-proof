@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "dfec13ee619a0d0735292948cc29115a1455615b",
+  "currentImplementationCommit": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,19 +15,17 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
-    "passed": 133,
+    "source": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
+    "passed": 162,
     "failed": 0,
-    "artifact": 12124679724,
-    "sha256": "b6b6a3e0a353579dc773c51d71e03397d86014bcca04852deedde7aa95727e7d",
-    "searchP95Milliseconds": 49.58287500005554,
-    "distinctPhotoNotes": 50000,
-    "completeIntegratedPass": true
+    "artifact": 12141066100,
+    "sha256": "1b150dae9503a9699e1f29f1751b7b75c1cfcd0b095f68be49f9f25c3516d9b9",
+    "completeIntegratedPass": false
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "dfec13 passes 159 native checks, every native-phase reader/command and three process recoveries. Complete eleven-flow UI and remaining reader results are pending. Next IFC candidate adds four shared analytic geometry cases and opening source relationships (160 native/11 UI expected)."
+      "remaining": "dfec13 is the last complete 159-native/11-UI integration. fe985 passes 162 native checks and all 13 native-phase readers/commands; its UI run is superseded by the reviewed service-tour follow-up (163 native/12 UI expected)."
     },
     {
       "area": "finished localization",
@@ -55,18 +53,18 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Retain the complete dfec13 integration result, then validate the bounded IFC geometry/relationship follow-up. Continue matched-camera tour choreography and remaining software acceptance. No sixth detector attempt or intermediate upload.",
+  "nextAction": "Validate the combined reveal, IFC, reviewed service-route and movie-sharing candidate (163 native/12 UI expected), retain exact-source evidence, and continue unresolved software/device qualification without changing precision gates or uploading another snapshot.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "dfec13ee619a0d0735292948cc29115a1455615b",
-    "run": 39131633332,
-    "status": "159 native checks, all twelve native-phase readers/commands and three process recoveries passed; interface and remaining readers running",
-    "nativePassed": 159,
-    "nativeFailed": 0,
-    "nativeExpected": 159,
+    "source": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
+    "run": 39138005226,
+    "status": "162/162 native checks and all 13 native-phase readers/commands passed; UI superseded by service follow-up",
+    "nativeExpected": 162,
     "interfaceExpected": 11,
     "integrationComplete": false,
-    "evidence": "docs/evidence/native-dfec-summary.json"
+    "nativePassed": 162,
+    "nativeFailed": 0,
+    "evidence": "docs/evidence/native-fe985-summary.json"
   },
   "previousIntegratedAttempt": {
     "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -106,22 +104,22 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
-    "run": 39097334972,
-    "nativePassed": 133,
+    "source": "dfec13ee619a0d0735292948cc29115a1455615b",
+    "run": 39131633332,
+    "nativePassed": 159,
     "nativeFailed": 0,
-    "interfacePassed": 6,
-    "uiSeconds": 627.423,
+    "interfacePassed": 11,
+    "uiSeconds": 852.713,
     "processKillPassed": 3,
-    "independentReaderReportsPassed": 22,
+    "independentReaderReportsPassed": 26,
     "completeIntegratedPass": true,
     "fullArtifact": {
-      "id": 12125239332,
-      "sha256": "afa3be9b69e8bce29da708d756728060a456c5566776c1269ec052b01523d7a4",
+      "id": 12138497711,
+      "sha256": "f52791b6c6147b7ee850ed33532e41937f41f248d7b6dcfc69c2f4a10fbda889",
       "sha256IndependentlyVerified": true
     },
     "portableCasesPassed": 50,
-    "commandContractTestsPassed": 23,
+    "commandContractTestsPassed": 32,
     "nativeTourCLIValidated": true,
     "nativeReconstructionCLIValidated": true
   },
@@ -666,6 +664,23 @@
     "physicalQualification": false,
     "portableCasesPassed": 50,
     "remoteCommitBlocked": false,
-    "publicationAuthorized": true
+    "publicationAuthorized": true,
+    "nativeRevealIFC": {
+      "source": "fe9855458b09a48f5e1b5f68dfea0e507db8e5d7",
+      "run": 39138005226,
+      "passed": 162,
+      "failed": 0,
+      "evidence": "docs/evidence/native-fe985-summary.json"
+    }
+  },
+  "serviceTourCandidate": {
+    "profile": "reviewed-route-v1",
+    "nativeExpected": 163,
+    "uiExpected": 12,
+    "localCommandContractsPassed": 36,
+    "nativeValidationPending": true,
+    "physicalQualification": false,
+    "wholeHouseRouteCoverageQualified": false,
+    "sourceRoutesAndLinksRetained": true
   }
 }
