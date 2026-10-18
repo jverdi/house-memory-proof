@@ -1,0 +1,35 @@
+name: Inspect release health
+on:
+  push:
+    branches: [main]
+    paths:
+      - ci/release_health.py
+      - ci/test_release_health.py
+      - ci/release-policy.json
+      - .github/workflows/release-health.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify read-only health and release-command contracts
+        run: python3 -m unittest discover -s ci -p 'test_*.py'
+      - name: Read Apple availability and current source CI
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_BUNDLE_ID: com.jverdi.housememoryproof
+        run: python3 ci/release_health.py --output build/evidence/release-health.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-health-aggregate
+          path: build/evidence/release-health.json
+          retention-days: 14
