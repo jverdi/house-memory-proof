@@ -53,7 +53,7 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Continue independent full-house navigation/streaming, mixed-stage coverage, curved-envelope and cross-version acceptance. Preserve the original finished-localization failures and exhausted five-attempt budget. Owner-device/provider and measured field qualification remain required; no intermediate TestFlight upload.",
+  "nextAction": "Continue independent full-house navigation/streaming, mixed-stage coverage, curved-envelope and cross-version acceptance. Preserve the original finished-localization failures and exhausted five-attempt budget. Owner-device/provider and measured field qualification remain required; deliver the newly owner-requested current-state TestFlight snapshot, then continue implementation.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
@@ -714,5 +714,15 @@
     "interfacePassed": true,
     "completeIntegratedPass": true,
     "interfaceFlowSeconds": 50.902
+  },
+  "requestedSnapshot": {
+    "status": "requested_not_yet_uploaded",
+    "implementationSource": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
+    "validatedRun": 39138960576,
+    "ownerRequest": "Also please trigger a new TestFlight",
+    "fullyQualifiedRelease": false,
+    "appleProcessingVerified": false,
+    "internalTesterAccessVerified": false,
+    "physicalInstallationVerified": false
   }
 }

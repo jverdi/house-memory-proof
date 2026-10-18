@@ -135,7 +135,7 @@ jobs:
       group: personal-apple-upload
       cancel-in-progress: false
     # One owner-requested snapshot; subsequent implementation commits do not upload.
-    if: (github.event_name == 'push' && github.event.head_commit.message == '[release] Ship current-state TestFlight e08d4768') || (github.event_name == 'workflow_dispatch' && inputs.ship && github.ref == 'refs/tags/personal-beta')
+    if: (github.event_name == 'push' && github.event.head_commit.message == '[release] Ship current-state TestFlight d7f5b79e') || (github.event_name == 'workflow_dispatch' && inputs.ship && github.ref == 'refs/tags/personal-beta')
     runs-on: macos-26
     timeout-minutes: 60
     steps:

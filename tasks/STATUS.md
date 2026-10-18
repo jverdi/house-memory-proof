@@ -1,3 +1,7 @@
+# Newly requested TestFlight snapshot
+
+The owner requested another current-state TestFlight on 2026-10-18. The one-shot release trigger targets the app implementation validated at d7f5b79e31 (163 native checks, 12 UI flows). The pipeline must pass again, sign/upload, and verify Apple processing and internal tester availability. This snapshot does not mark whole-house, physical-device, or field acceptance complete. Independent implementation continues.
+
 # Current completed checkpoint — d7f5b79e31 / 208.1
 
 The combined source completed run **39138960576** successfully: **163/163 native checks**, **12/12 interface workflows**, **three process-kill recoveries**, **50 portable cases** and **all 32 validation reports**. All 15 native-phase readers/commands pass, including 36 command contracts and the reveal, service-tour and reconstruction CLI paths. Native execution took 127.101 seconds; the twelve UI flows took 1,004.189 seconds. Both native and full evidence archives are independently SHA-256 verified in `docs/evidence/native-d7f5-summary.json`.
