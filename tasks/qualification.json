@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18",
+  "updatedUTC": "2026-10-18T16:44:08.067747Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
@@ -56,18 +56,16 @@
   "nextAction": "Continue independent full-house navigation/streaming, mixed-stage coverage, curved-envelope and cross-version acceptance. Preserve the original finished-localization failures and exhausted five-attempt budget. Owner-device/provider and measured field qualification remain required; deliver the newly owner-requested current-state TestFlight snapshot, then continue implementation.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
-    "run": 39138960576,
-    "status": "Complete integration passed: 163 native, 12 UI, three process recoveries, 50 portable cases and all 32 validation reports",
-    "nativeExpected": 163,
-    "interfaceExpected": 12,
-    "integrationComplete": true,
-    "nativePassed": 163,
-    "nativeFailed": 0,
-    "evidence": "docs/evidence/native-d7f5-summary.json",
-    "interfacePassed": 12,
-    "interfaceFailed": 0,
-    "workflowConclusion": "success"
+    "source": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+    "run": 39144715405,
+    "nativeExpected": 170,
+    "nativePassed": 169,
+    "nativeFailed": 1,
+    "interfaceExpected": 13,
+    "interfacePending": true,
+    "integrationComplete": false,
+    "status": "Debug/Release compilation passed; 169/170 native checks pass; ZIP64 diagnostic reader repair prepared",
+    "evidence": "docs/evidence/native-5b4-summary.json"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -716,7 +714,7 @@
     "interfaceFlowSeconds": 50.902
   },
   "requestedSnapshot": {
-    "status": "replacement_validation_requested_after_release_source_audit",
+    "status": "replacement_requested_after_native_zip64_diagnostic_failure",
     "implementationSource": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
     "validatedRun": 39138960576,
     "ownerRequest": "Also please trigger a new TestFlight",
@@ -733,8 +731,28 @@
       "nativeArtifact": 12142631146,
       "nativeArtifactSHA256": "eabf0e0fada4b69088c0b1ae9a8145ef839c6e68fbf1a585cc7b46144d625276",
       "appleUploadVerified": false,
-      "sourceAuditIssue": "Release self-tests reference a DEBUG-only drawing fixture"
-    }
+      "sourceAuditIssue": "Release self-tests reference a DEBUG-only drawing fixture",
+      "interfacePassed": 12,
+      "interfaceSeconds": 1115.907,
+      "fullArtifact": 12143085564,
+      "fullArtifactSHA256": "018a1b6bcee565544f7b5913d825739ddd95232ea3c943b778a4307447e72b4b",
+      "distributionArchivePassed": false,
+      "confirmedFailure": "Release compiler cannot find DrawingMarkTestFixture; repaired in da549f2bf1"
+    },
+    "replacementAttempt": {
+      "source": "da549f2bf1fa4c34a3796f5fcd5b56dbd1bafbb5",
+      "run": 39143448196,
+      "build": "211.1",
+      "releaseCompilePassed": true,
+      "nativePassed": 166,
+      "nativeExpected": 167,
+      "nativeArtifact": 12142991893,
+      "nativeArtifactSHA256": "fb38748e4ca786ee8478dd6664c68ae812f7443930146f8e83713f2f9c0def6e",
+      "failedCheck": "Authentic earlier-writer diagnostic calls ZIP32 reader on ZIP64 archive",
+      "appleUploadVerified": false
+    },
+    "latestImplementationSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+    "latestRepair": "Use production ZIP64 inspection in the compatibility diagnostic; no changed fixture or restore assertions"
   },
   "pendingContinuation": {
     "scope": [
@@ -773,10 +791,12 @@
     "reportIncludesImagesOrCoordinates": false,
     "incompleteSessionsPreserved": true,
     "displayPresentedFPSMeasured": false,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "physicalQualification": false,
     "expectedNativeChecks": 169,
-    "localCommandContractsPassed": 44
+    "localCommandContractsPassed": 44,
+    "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+    "independentReaderPending": true
   },
   "drawingBenchmarkCandidate": {
     "prepared": true,
@@ -789,10 +809,20 @@
     "contrasts": 2,
     "negativeCases": 3,
     "independentBoxScoring": true,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "accuracyQualified": false,
     "realPlanQualification": false,
-    "physicalQualification": false
+    "physicalQualification": false,
+    "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+    "independentReaderPassed": true,
+    "OCRMatches": 24,
+    "OCRTruth": 24,
+    "OCRFalsePositive": 0,
+    "rectanglePrecisionBySize": {
+      "small": 0.32,
+      "large": 0.5
+    },
+    "negativeCaseProposals": 2
   },
   "closureReviewCandidate": {
     "prepared": true,
@@ -800,9 +830,10 @@
     "missingStagesAndUnassignedEvidenceExplicit": true,
     "staleObservedObjectsSeparated": true,
     "closureVerified": false,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "interfaceValidationPending": true,
     "expectedNativeChecks": 170,
-    "expectedUIFlows": 13
+    "expectedUIFlows": 13,
+    "nativeValidatedSource": "5b4d6017b78bc054792fe84336dfbcd98c98613b"
   }
 }

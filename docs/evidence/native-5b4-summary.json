@@ -1,0 +1,147 @@
+{
+  "source": "5b4d6017b78bc054792fe84336dfbcd98c98613b",
+  "run": 39144715405,
+  "build": "213.1",
+  "nativeExecuted": 170,
+  "nativePassed": 169,
+  "nativeFailed": [
+    {
+      "error": "Unsupported, truncated or compressed archive. Import a House Xray archive created by this app.",
+      "passed": false,
+      "seconds": 0.0319907499999772,
+      "test": "Authentic earlier TestFlight-source archive restores and reexports without losing geometry or originals"
+    }
+  ],
+  "nativeSeconds": 269.7212045000001,
+  "artifact": 12143382565,
+  "artifactSHA256": "51ee84afbe4389d7e5b90979e5abdc23692bd65eb7c60119eeebe2b6c0631793",
+  "artifactSHA256Verified": true,
+  "debugAndReleaseCompiled": true,
+  "newChecks": [
+    {
+      "passed": true,
+      "seconds": 0.03621795833339547,
+      "test": "Capture workload reports preserve incomplete sessions, counters and resource unknowns"
+    },
+    {
+      "passed": true,
+      "seconds": 0.2838247916666887,
+      "test": "Closure review separates stages, stale evidence, missing photos and unassigned records"
+    },
+    {
+      "passed": true,
+      "seconds": 8.554006041666753,
+      "test": "Drawing fallback benchmark reports class and size counts without granting accuracy"
+    }
+  ],
+  "drawingMetrics": {
+    "passed": true,
+    "reader": "Independent analytic drawing suggestion scorer",
+    "profileHash": "9f858468f850556e2d7799d6389e839e53bf6c16ef58e5af5d3c92e85893dc36",
+    "cases": 11,
+    "classSizeCounts": [
+      {
+        "category": "rectangular-outline",
+        "size": "large",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 8,
+        "recall": 1.0,
+        "precision": 0.5
+      },
+      {
+        "category": "rectangular-outline",
+        "size": "small",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 17,
+        "recall": 1.0,
+        "precision": 0.32
+      },
+      {
+        "category": "room-name-text",
+        "size": "18px",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "room-name-text",
+        "size": "36px",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "service-label-text",
+        "size": "18px",
+        "truth": 4,
+        "matched": 4,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "service-label-text",
+        "size": "36px",
+        "truth": 4,
+        "matched": 4,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      }
+    ],
+    "methodSizeMetrics": [
+      {
+        "method": "OCR",
+        "size": "18px",
+        "truth": 12,
+        "matched": 12,
+        "falsePositive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "method": "OCR",
+        "size": "36px",
+        "truth": 12,
+        "matched": 12,
+        "falsePositive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "method": "rectangle",
+        "size": "large",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 8,
+        "precision": 0.5,
+        "recall": 1.0
+      },
+      {
+        "method": "rectangle",
+        "size": "small",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 17,
+        "precision": 0.32,
+        "recall": 1.0
+      }
+    ],
+    "negativeCaseProposals": 2,
+    "accuracyQualified": false,
+    "physicalQualification": false,
+    "protectedBenchmark": false,
+    "limitations": "Counts scored on eleven analytic development rasters only. OCR semantic subtype precision is unavailable; text/rectangle precision and recall are reported separately by size. No thresholds, model or operating envelope changed."
+  },
+  "physicalQualification": false,
+  "completeIntegrationPassed": false,
+  "readerPhasesSkippedAfterNativeFailure": true,
+  "interfacePending": true,
+  "repair": "Read the frozen genuine ZIP64 archive and the current re-export through StreamingArchive.index/read. Preserve all restore/reexport/future-schema assertions."
+}

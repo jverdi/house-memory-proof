@@ -4,6 +4,8 @@ Updated during the October 17–18, 2026 implementation session. This document r
 
 ## Release state
 
+- Current owner-requested snapshot is being rebuilt after two retained failures: 209.1's Release-only drawing fixture dependency (repaired) and 211.1/213.1's diagnostic ZIP32 reader on an authentic ZIP64 archive (repair prepared). Source 5b4d6017b7 passes Debug/Release compilation and 169/170 native checks, including capture workload reports and dated closure review. OCR/rectangle metrics are retained without qualifying accuracy (`docs/evidence/native-5b4-summary.json`). Apple upload/processing is not yet verified for this continuation.
+
 - Prior delivery proof: build 2.1 was installed by the owner.
 - Last complete integration: **d7f5b79e31 / 208.1**, run 39138960576, passed **163/163 native checks**, **12/12 UI flows**, three process-kill recoveries, 50 portable cases and all 32 validation reports. Both evidence archives are SHA-256 verified (`docs/evidence/native-d7f5-summary.json`). This includes matched-camera reveal/restoration, reviewed service-route/endpoint inspections and trade scope, four additional IFC mapping/opening cases, and sharing of the movie metadata sidecar.
 - The requested current-state TestFlight snapshot **161.1**, source **2fae54ff2d**, is uploaded and verified **VALID / IN_BETA_TESTING**, with owner access in Personal iPhone (delivery run 39078429529; readiness run 39080146782). Physical installation is unverified. Subsequent development commits do not upload.

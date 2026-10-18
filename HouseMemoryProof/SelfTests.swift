@@ -1351,8 +1351,11 @@ import simd
                 let input=Bundle.main.url(forResource:"IFC",withExtension:nil)!.appendingPathComponent("compatibility-161-1.hxray")
                 let expectedHash="7d0e5428b7f4649a94325ed5097df617b9e06156d7967929b93fab2ed55ec5c5"
                 guard try StreamingArchive.digest(input).sha==expectedHash else{return false}
-                let entries=try StoredZip.read(input)
-                guard let metadata=entries.first(where:{$0.name=="house.json"})?.data else{return false}
+                // The genuine earlier writer and current exporter both emit
+                // ZIP64. Inspect through the same bounded reader as restore.
+                let entries=try StreamingArchive.index(input)
+                guard let metadataEntry=entries["house.json"] else{return false}
+                let metadata=try StreamingArchive.read(metadataEntry,from:input)
                 let original=try JSONDecoder().decode(House.self,from:metadata)
                 guard original.features.count==217,original.rooms.count==3,original.stages.count==2,original.drawings.count==1,original.assets.count==1 else{return false}
                 let target=try Repository(root:folder.appendingPathComponent("authentic-legacy-restore"))
@@ -1366,7 +1369,10 @@ import simd
                 let exported=try Exporter.archive(restored,repo:target),fresh=try Repository(root:folder.appendingPathComponent("authentic-current-restore"))
                 let again=try Exporter.restore(exported,repo:fresh)
                 guard sameEvidence(again,restored),try fresh.integrity(again)==1 else{return false}
-                var future=try StoredZip.read(exported)
+                let exportedEntries=try StreamingArchive.index(exported)
+                var future=try exportedEntries.values.sorted{$0.name<$1.name}.map{record in
+                    StoredZip.Entry(name:record.name,data:try StreamingArchive.read(record,from:exported,limit:2_000_000))
+                }
                 guard let hi=future.firstIndex(where:{$0.name=="house.json"}),let mi=future.firstIndex(where:{$0.name=="manifest.json"}) else{return false}
                 var value=try JSONSerialization.jsonObject(with:future[hi].data) as! [String:Any];value["schema"]=999
                 future[hi].data=try JSONSerialization.data(withJSONObject:value,options:[.sortedKeys])
