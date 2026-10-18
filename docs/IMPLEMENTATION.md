@@ -8,6 +8,8 @@ Updated during the October 17–18, 2026 implementation session. This document r
 - The next native candidate adds a 284-step continuous analytic controller route through six rooms and sixteen stair treads, plus seven topology/refusal cases and an independent trace reader. Local command contracts pass (48); expected 171 native checks and 18 reader phases remain pending. This expands connected-navigation software evidence; reconstructed-house topology and device performance remain open.
 - Source c835925d412d also completed its interface/export work: 12/13 UI workflows pass, with batch switch selection timing out; all 34 independent export reports, three recoveries and 50 portable cases pass. Both this failure and the outer native timeout block delivery.
 
+The 215.1 batch failure retains its screen recording and accessibility/event evidence. A follow-up exposes Done on the object filter and requires keyboard dismissal before the same selection/assertion sequence. This repair awaits native/UI validation.
+
 Earlier release checkpoints follow.
 
 - Owner-requested source **c835925d412d / 215.1** passes all **170 native checks**, **17 reader/command phases** and 44 command contracts. Both native repairs are verified (`docs/evidence/native-c835-summary.json`). The outer native step timed out because its ten minutes also included 173 seconds of simulator migration; upload is blocked. The replacement separates bounded simulator startup into its own step, retaining the app's 300-second limit, ten-minute native-phase limit and sixty-minute job cap. Interface/export work continues on c835; the replacement must pass the complete workflow before signing and Apple readiness. Superseded 214.1 is confirmed cancelled before upload.

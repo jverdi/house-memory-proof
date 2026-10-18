@@ -49,7 +49,7 @@ def read_report(report):
     require(report.get('passed') is True and report.get('sourceGeometryUnchanged') is True, 'Native movement or source preservation failed')
     for key in ('physicalQualification', 'reconstructionQualified', 'protectedBenchmark'):
         require(report.get(key) is False, 'Analytic evidence cannot grant qualification')
-    for key, expected in dict(rooms=9, levels=2, routeSpaces=7, doorways=4, stairTreads=16, routeLengthMetres=56.8).items():
+    for key, expected in dict(rooms=9, levels=2, routeSpaces=7, doorways=4, stairTreads=16, horizontalRouteLengthMetres=56.8).items():
         require(report.get(key) == expected, 'Fixture inventory changed: '+key)
     cases = report.get('cases', [])
     require(len(cases) == 8 and [c.get('name') for c in cases] == NAMES, 'Missing or reordered topology cases')
@@ -71,14 +71,27 @@ def read_report(report):
         previous_x = point['x']
     require(cases[0].get('attemptedSteps') == 284 and cases[0].get('completedSteps') == 284, 'Native route counter differs')
     require(number(cases[0].get('maximumPositionErrorMetres')) and 0 <= cases[0]['maximumPositionErrorMetres'] < 0.0001, 'Native route error exceeds tolerance')
-    for case, limit in zip(cases[1:5], (-0.25, 6.6, 5.8, -0.2)):
+    for case, start, limit in zip(cases[1:5], (-1.4, 5.6, 4.6, -2), (-0.25, 6.6, 5.8, -0.2)):
         require(type(case.get('movedSteps')) is int and type(case.get('refusedSteps')) is int and
                 0 < case['movedSteps'] < 16 and case['movedSteps']+case['refusedSteps'] == 16, 'Refusal must follow useful movement')
         require(case.get('maximumAllowedX') == limit and number(case.get('finalX')) and case['finalX'] <= limit, 'Refused route crossed its declared barrier')
+        positions = case.get('positions', [])
+        require(case.get('startX') == start and len(positions) == 16, 'Missing refusal trace')
+        previous = start
+        moved = 0
+        for point in positions:
+            require(all(number(point.get(k)) for k in ('x', 'y', 'z')), 'Invalid refusal trace')
+            delta = point['x']-previous
+            require(-0.00001 <= delta <= 0.2001 and abs(point['y']-2) < 0.0001 and point['x'] <= limit, 'Refusal trace crossed an obstacle or teleported')
+            if delta > 0.00001:
+                require(abs(delta-0.2) < 0.0001, 'Unexpected step length')
+                moved += 1
+            previous = point['x']
+        require(moved == case['movedSteps'] and abs(previous-case['finalX']) < 0.00001, 'Refusal counters differ from trace')
     require(type(cases[5].get('visibleFeatures')) is int and cases[5]['visibleFeatures'] > 0 and
             type(cases[5].get('cameraPositions')) is int and cases[5]['cameraPositions'] > 0, 'Separate frame was not exercised')
     return dict(passed=True, reader='Independent Python connected-walk trace scorer', profile=report['profile'],
-                cases=len(cases), tracedSteps=len(trace), routeMetres=56.8, maximumCoordinateErrorMetres=worst,
+                cases=len(cases), tracedSteps=len(trace), horizontalRouteMetres=56.8, maximumCoordinateErrorMetres=worst,
                 physicalQualification=False, reconstructionQualified=False, protectedBenchmark=False,
                 limitations='Analytic native-controller topology only; not reconstructed-house, field or sustained rendering qualification.')
 

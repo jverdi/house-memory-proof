@@ -106,13 +106,17 @@ import simd
       let start=V3(startX,2,floorHeight(startX+0.2)+1.6)
       let walk=prepared(changed,start);defer{walk.stop()}
       var moved=0,refused=0
+      var positions:[[String:Double]]=[]
       for _ in 0..<16 {
         let before=V3(ar:walk.camera.simdPosition);walk.stepMove(SIMD2(1,0))
-        if (V3(ar:walk.camera.simdPosition)-before).length<0.00001 {refused+=1}else{moved+=1}
+        let after=V3(ar:walk.camera.simdPosition)
+        if (after-before).length<0.00001 {refused+=1}else{moved+=1}
+        positions.append(["x":after.x,"y":after.y,"z":after.z])
       }
       let end=V3(ar:walk.camera.simdPosition)
-      cases.append(["name":name,"passed":moved>0 && refused>0 && end.x<=limitX,
-        "movedSteps":moved,"refusedSteps":refused,"finalX":end.x,"maximumAllowedX":limitX])
+      cases.append(["name":name,"passed":moved>0 && refused>0 && positions.allSatisfy{($0["x"] ?? .infinity)<=limitX},
+        "movedSteps":moved,"refusedSteps":refused,"startX":startX,"positions":positions,
+        "finalX":end.x,"maximumAllowedX":limitX])
     }
     var blocked=h
     blocked.features.append(Feature(name:"Closed door",trade:.structure,roomID:h.rooms[1].id,
@@ -147,7 +151,7 @@ import simd
     let unchanged=controller.house==h
     return ["version":1,"profile":"analytic-connected-walk-v1","passed":cases.allSatisfy{$0["passed"] as? Bool==true} && unchanged,
       "rooms":h.rooms.count,"levels":2,"routeSpaces":original.routeRooms.count,"doorways":4,"stairTreads":16,
-      "routeLengthMetres":56.8,"cases":cases,"trace":trace,"sourceGeometryUnchanged":unchanged,
+      "horizontalRouteLengthMetres":56.8,"cases":cases,"trace":trace,"sourceGeometryUnchanged":unchanged,
       "physicalQualification":false,"reconstructionQualified":false,"protectedBenchmark":false,
       "limitations":"Public analytic source geometry and camera positions through the actual native walking controller. This checks connected movement and refusals; it does not qualify reconstructed topology, localization, display performance or physical safety."]
   }

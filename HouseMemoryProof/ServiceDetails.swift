@@ -83,6 +83,7 @@ struct BatchServiceEditor:View {
   @State private var classification=ServiceClass.unknown
   @State private var trade=Trade.unknown
   @State private var query=""
+  @FocusState private var filterFocused:Bool
   @State private var limit=200
   private var matches:[Feature] {
     let terms=EvidenceSearch.normalized(query).split(whereSeparator:{$0.isWhitespace})
@@ -100,7 +101,8 @@ struct BatchServiceEditor:View {
           Text("Changes apply only to the selected objects. Source evidence, identity confirmation, geometry and connections are preserved. The batch is saved as one project revision.").font(.footnote)
         }
         Section("Objects · \(selected.count) selected") {
-          TextField("Filter objects",text:$query).onChange(of:query){_,_ in limit=200}
+          TextField("Filter objects",text:$query).focused($filterFocused).submitLabel(.done)
+            .onSubmit{filterFocused=false}.onChange(of:query){_,_ in limit=200}
           let found=matches
           ForEach(Array(found.prefix(limit))){feature in
             Toggle(isOn:Binding(get:{selected.contains(feature.id)},set:{if $0{selected.insert(feature.id)}else{selected.remove(feature.id)}})) {

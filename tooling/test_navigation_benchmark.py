@@ -1,4 +1,3 @@
-import copy
 import unittest
 from check_navigation_benchmark import read_report, InvalidNavigation, NAMES
 
@@ -12,11 +11,12 @@ def fixture():
         trace.append(dict(x=x, y=2.0, z=1.6+max(heights), requestedX=x))
     cases = [dict(name=name, passed=True) for name in NAMES]
     cases[0].update(attemptedSteps=284, completedSteps=284, maximumPositionErrorMetres=0.0)
-    for case, limit in zip(cases[1:5], (-0.25, 6.6, 5.8, -0.2)):
-        case.update(movedSteps=3, refusedSteps=13, finalX=limit-0.1, maximumAllowedX=limit)
+    for case, start, limit in zip(cases[1:5], (-1.4, 5.6, 4.6, -2), (-0.25, 6.6, 5.8, -0.2)):
+        positions=[dict(x=start+min(index+1,3)*0.2,y=2,z=1.6) for index in range(16)]
+        case.update(movedSteps=3, refusedSteps=13, startX=start,positions=positions,finalX=start+0.6, maximumAllowedX=limit)
     cases[5].update(visibleFeatures=4, cameraPositions=20)
     return dict(version=1, profile='analytic-connected-walk-v1', passed=True, sourceGeometryUnchanged=True,
-                rooms=9, levels=2, routeSpaces=7, doorways=4, stairTreads=16, routeLengthMetres=56.8,
+                rooms=9, levels=2, routeSpaces=7, doorways=4, stairTreads=16, horizontalRouteLengthMetres=56.8,
                 cases=cases, trace=trace, physicalQualification=False, reconstructionQualified=False, protectedBenchmark=False)
 
 
@@ -40,6 +40,8 @@ class NavigationTraceReader(unittest.TestCase):
             report=fixture();report['cases'][1][field]=value
             with self.subTest(field=field),self.assertRaises(InvalidNavigation):read_report(report)
         report=fixture();report['cases'].pop()
+        with self.assertRaises(InvalidNavigation):read_report(report)
+        report=fixture();report['cases'][1]['positions'][5]['x']=0.1
         with self.assertRaises(InvalidNavigation):read_report(report)
 
     def test_qualification_or_changed_source_refused(self):

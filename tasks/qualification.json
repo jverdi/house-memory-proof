@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T17:48:55.415414Z",
+  "updatedUTC": "2026-10-18T17:50:46.602894Z",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "d7f5b79e31e11488859eab8e4f0036dfe54ae266",
@@ -930,7 +930,6 @@
     "doorways": 4,
     "stairTreads": 16,
     "attemptedControllerSteps": 284,
-    "roundTripMetres": 56.8,
     "refusalCases": 7,
     "expectedNativeChecks": 171,
     "expectedReaderPhases": 18,
@@ -939,6 +938,18 @@
     "nativeValidationPending": true,
     "independentTraceReaderPending": true,
     "reconstructedTopologyQualified": false,
-    "physicalQualification": false
+    "physicalQualification": false,
+    "horizontalRoundTripMetres": 56.8,
+    "perStepRefusalTraces": true
+  },
+  "batchSelectionRecovery": {
+    "failedSource": "c835925d412db66ec204825e1f2cec4093917394",
+    "failedRun": 39147161265,
+    "recordedSwitchTap": true,
+    "expectedValueNotReached": true,
+    "keyboardVisibleAfterFailure": true,
+    "repair": "Expose Done for the object filter and explicitly finish text entry before selection; preserve both switch-state and applied-classification assertions.",
+    "nativeValidationPending": true,
+    "interfaceValidationPending": true
   }
 }
