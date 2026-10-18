@@ -1,3 +1,7 @@
+## Dated closure review candidate
+
+Runbook §9.5 review now separates rooms and construction stages, shows actual first/latest photo dates, missing-stage evidence, unassigned documentary records, interrupted/unregistered sessions, current/reviewed versus stale observed objects, planned/synthetic objects and unconfirmed links. The report is tied to source project/revision, exports locally and clears on source/selection changes. A link opens the separate wall/ceiling gap check. Notes cannot overwrite a concurrently changed note. No photo/object count grants closure verification. A native mixed-stage/stale-source check and a thirteenth UI flow are prepared: 170 native / 13 UI expected. Exact-source validation is pending.
+
 ## OCR and geometric proposal measurement candidate
 
 Eleven analytic drawing rasters exercise the unmodified shipping Vision OCR/rectangle fallback across two font families, 18/36-pixel text and two contrasts, with blank/open-line/circle negative cases. The native report retains expected/predicted boxes and an image/profile hash. An independent reader recomputes one-to-one matches and precision/recall by method and size, plus semantic-subtype recall; it does not invent semantic precision for OCR, which has no semantic classifier. All proposals must remain unreviewed. This completes a broader measurement harness, not the real-plan or resource qualification gate. No model, threshold or accuracy acceptance changed. Native evidence is pending.

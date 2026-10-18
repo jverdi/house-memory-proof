@@ -1,6 +1,26 @@
 import XCTest
 
 final class HouseXraySmoke: XCTestCase {
+  @MainActor func testClosureReviewKeepsMissingStageEvidenceExplicit() throws {
+    continueAfterFailure=false
+    let app=XCUIApplication();app.launchArguments=["--demo"];app.launch()
+    defer{app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["House"].waitForExistence(timeout:20));app.tabBars.buttons["House"].tap()
+    func reveal(_ element:XCUIElement) {
+      for _ in 0..<16 {
+        if element.exists && element.isHittable && element.frame.maxY<app.frame.maxY-40 {return}
+        app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.7)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.45)))
+      }
+      XCTAssertTrue(element.exists && element.isHittable)
+    }
+    let open=app.buttons["Closure review and notes"];reveal(open);open.tap()
+    let review=app.buttons["Review dated evidence"];XCTAssertTrue(review.waitForExistence(timeout:10));review.tap()
+    let export=app.buttons["Export dated review inventory"];XCTAssertTrue(export.waitForExistence(timeout:20))
+    let missing=app.staticTexts.matching(identifier:"No photographs assigned to this room and stage.").firstMatch;reveal(missing)
+    XCTAssertTrue(missing.isHittable)
+    XCTAssertFalse(app.staticTexts["Closure verified"].exists);screenshot("30-closure-review-missing-evidence")
+  }
+
   @MainActor func testReviewedServiceTourPreviewAndTradeScope() throws {
     continueAfterFailure=false
     let app=XCUIApplication();app.launchArguments=["--service-tour-demo"];app.launch()

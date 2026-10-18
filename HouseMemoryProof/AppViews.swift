@@ -968,26 +968,65 @@ struct ClosureReview: View {
   @EnvironmentObject var model: AppModel
   var house: House
   @State private var notes = ""
+  @State private var savedNotes = ""
+  @State private var initializedProject:UUID?
+  @State private var roomID:UUID?
+  @State private var stageID:UUID?
+  @State private var inventory:ClosureInventory?
   var body: some View {
     Form {
       Section("Before walls close") {
-        Text(
-          "No automatic closure certificate. Camera positions and mesh coverage do not verify the contents of an occluded cavity."
-        )
-        ForEach(house.rooms) { r in
-          VStack(alignment: .leading) {
-            Text(r.name).font(.headline)
-            Text(
-              "\(house.observations.filter{$0.roomID==r.id}.count) photographs · \(house.segments.filter{$0.roomID==r.id}.count) sessions"
-            ).font(.caption)
+        Text("No automatic closure certificate. Review the dates, unresolved gaps and changes since capture. An acknowledged obstruction remains blocked.")
+        Picker("Room",selection:$roomID){Text("Choose").tag(Optional<UUID>.none);ForEach(house.rooms){Text($0.name+" · level "+String($0.level)).tag(Optional($0.id))}}
+        Picker("Construction stage",selection:$stageID){Text("All stages").tag(Optional<UUID>.none);ForEach(house.stages){Text($0.name).tag(Optional($0.id))}}
+        Button("Review dated evidence") {
+          guard let roomID else{return};let snapshot=house,selectedStage=stageID
+          model.perform("Reviewing saved evidence") {
+            let result=try await LocalWorker.run{try ClosureInventory.build(house:snapshot,roomID:roomID,stageID:selectedStage)}
+            guard model.house?.id==snapshot.id,model.house?.revision==snapshot.revision,self.roomID==roomID,self.stageID==selectedStage else{throw HouseError.message("The review selection or project changed. Review the evidence again.")}
+            inventory=result;return nil
           }
+        }.disabled(roomID==nil || model.busy)
+        NavigationLink("Check wall and ceiling gaps"){CoveragePage(house:house)}
+      }
+      if let inventory {
+        Section("Source assignment") {
+          Text("\(inventory.documentaryPhotosWithoutStage) room photos have no stage · \(inventory.houseDocumentaryPhotosWithoutRoom) house photos have no room")
+          if inventory.syntheticProject {Text("Demonstration evidence; this is not a construction review.")}
+          Button("Export dated review inventory") {
+            do {
+              let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys,.prettyPrinted]
+              let file=Exporter.destination("House-Xray-closure-inventory.json")
+              try DurableFiles.write(encoder.encode(inventory),to:file);model.shareURL=file
+            }catch{model.error=error.localizedDescription}
+          }
+        }.font(.footnote)
+        ForEach(inventory.stages){stage in
+          Section(stage.name+" · "+stage.phase) {
+            Text("Declared stage date: \(stage.declaredDate.formatted(date:.abbreviated,time:.omitted)) · \(stage.kind)")
+            if let first=stage.firstPhotoDate,let last=stage.lastPhotoDate {
+              Text("Photographs: \(first.formatted(date:.abbreviated,time:.shortened)) to \(last.formatted(date:.abbreviated,time:.shortened))")
+            }else{Text("No photographs assigned to this room and stage.").foregroundStyle(.orange)}
+            Text("\(stage.posedPhotos) capture photos · \(stage.documentaryPhotos) documentary photos · \(stage.poseIneligiblePhotos) capture photos excluded from spatial use")
+            Text("\(stage.sessions) sessions · \(stage.interruptedSessions) interrupted · \(stage.unregisteredSessions) not registered to the house")
+            Text("Observed objects: \(stage.reviewedCurrentObservedFeatures) current and reviewed · \(stage.unreviewedCurrentObservedFeatures) current and unreviewed · \(stage.staleObservedFeatures) stale")
+            Text("\(stage.plannedFeatures) design objects · \(stage.syntheticFeatures) synthetic objects · \(stage.boundaryCount) saved boundaries")
+            Text("\(stage.unconfirmedConnections) endpoint links await confirmation")
+            Text("New work after the latest photographs needs another visit. These counts do not establish coverage or confirm hidden contents.")
+          }.font(.footnote)
         }
       }
       Section("Gaps, blocked areas and late changes") {
         TextEditor(text: $notes).frame(minHeight: 180)
-        Button("Save review notes") { model.edit { $0.closureNotes = notes } }
+        Button("Save review notes") {
+          guard model.house?.id==house.id,model.house?.closureNotes==savedNotes else{model.error="Review notes changed elsewhere. Reopen this page before saving.";return}
+          if model.edit(projectID:house.id,{$0.closureNotes=notes}) {savedNotes=notes}
+        }
       }
-    }.navigationTitle("Closure review").onAppear { notes = house.closureNotes }
+    }.navigationTitle("Closure review").onAppear {if initializedProject != house.id {initializedProject=house.id;notes=house.closureNotes;savedNotes=house.closureNotes;roomID=house.rooms.first?.id}}
+      .onChange(of:house.id){_,_ in inventory=nil;initializedProject=house.id;notes=house.closureNotes;savedNotes=house.closureNotes;roomID=house.rooms.first?.id;stageID=nil}
+      .onChange(of:house.revision){_,_ in inventory=nil}
+      .onChange(of:roomID){_,_ in inventory=nil}
+      .onChange(of:stageID){_,_ in inventory=nil}
   }
 }
-

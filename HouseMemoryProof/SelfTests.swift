@@ -74,6 +74,35 @@ import simd
                 try Data(contentsOf:exported).write(to:mainRepo.root.appendingPathComponent("native-capture-runtime.json"))
                 return true
             }
+            await check("Closure review separates stages, stale evidence, missing photos and unassigned records") {
+                var h=try SimulatedCapture.make(repo:repo);h.isDemo=false
+                for i in h.stages.indices {h.stages[i].kind = .observed}
+                let room=h.rooms[0].id,rough=h.stages[0].id,finished=h.stages[1].id
+                h.observations=Array(h.observations.prefix(2))
+                h.observations[0].date=Date(timeIntervalSinceReferenceDate:100)
+                h.observations[1].date=Date(timeIntervalSinceReferenceDate:200);h.observations[1].tracking="limited"
+                h.segments[0].interrupted=true
+                let original=h.features[0]
+                h.features=[original];h.features[0].kind = .observed;h.features[0].reviewed=true
+                var stale=h.features[0];stale.id=UUID();stale.artifactValid=false;h.features.append(stale)
+                var planned=original;planned.id=UUID();planned.stageID=finished;planned.segmentID=nil;planned.kind = .planned;h.features.append(planned)
+                h.documentaryPhotos=[DocumentaryPhoto(image:h.observations[0].image,date:Date(timeIntervalSinceReferenceDate:300),roomID:room,stageID:rough),
+                  DocumentaryPhoto(image:h.observations[0].image,roomID:room,stageID:nil),DocumentaryPhoto(image:h.observations[0].image,roomID:nil,stageID:nil)]
+                h.connections=[ServiceConnection(fromFeature:h.features[0].id,fromEnd:0,toFeature:stale.id,toEnd:1)]
+                h.closureNotes="Back of pipe blocked; revisit after late electrical change."
+                let report=try ClosureInventory.build(house:h,roomID:room)
+                guard !report.closureVerified,report.documentaryPhotosWithoutStage==1,report.houseDocumentaryPhotosWithoutRoom==1,
+                  let row=report.stages.first(where:{$0.id==rough}),let empty=report.stages.first(where:{$0.id==finished}),
+                  row.posedPhotos==2,row.documentaryPhotos==1,row.poseIneligiblePhotos==1,row.reviewedCurrentObservedFeatures==1,row.staleObservedFeatures==1,
+                  row.interruptedSessions==1,row.unconfirmedConnections==1,row.lastPhotoDate==Date(timeIntervalSinceReferenceDate:300),
+                  empty.posedPhotos==0,empty.documentaryPhotos==0,empty.lastPhotoDate==nil,empty.plannedFeatures==1 else{return false}
+                let bytes=try JSONEncoder().encode(h);let restored=try JSONDecoder().decode(House.self,from:bytes)
+                let one=try ClosureInventory.build(house:restored,roomID:room,stageID:rough)
+                guard one.stages.count==1,one.notes==h.closureNotes,one.sourceRevision==h.revision else{return false}
+                h.features[0].artifactValid=false
+                let changed=try ClosureInventory.build(house:h,roomID:room)
+                return changed.stages.first{$0.id==rough}?.staleObservedFeatures==2 && !changed.closureVerified
+            }
             await check("Capture buffer copies reject mismatched formats and preserve row padding") {
                 for format in [kCVPixelFormatType_DepthFloat32,kCVPixelFormatType_OneComponent8] {
                     let strideBytes=format==kCVPixelFormatType_DepthFloat32 ? 4:1

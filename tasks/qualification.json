@@ -793,5 +793,16 @@
     "accuracyQualified": false,
     "realPlanQualification": false,
     "physicalQualification": false
+  },
+  "closureReviewCandidate": {
+    "prepared": true,
+    "sourceRevisionBound": true,
+    "missingStagesAndUnassignedEvidenceExplicit": true,
+    "staleObservedObjectsSeparated": true,
+    "closureVerified": false,
+    "nativeValidationPending": true,
+    "interfaceValidationPending": true,
+    "expectedNativeChecks": 170,
+    "expectedUIFlows": 13
   }
 }
