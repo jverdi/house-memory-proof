@@ -117,7 +117,7 @@ cp "$app_root/test.glb" build/evidence/test.glb
 cp "$app_root/test.usdz" build/evidence/test.usdz
 cp "$app_root/test-render.png" build/evidence/test-render.png
 mkdir -p build/command-private
-for name in ifc-source.glb ifc-registered.glb ifc-source.csv ifc-source.json; do
+for name in ifc-source.glb ifc-registered.glb ifc-source.csv ifc-source.json ifc-properties.hxray ifc-properties.glb ifc-properties.csv; do
   if [ -f "$app_root/$name" ]; then cp "$app_root/$name" "build/command-private/$name"; fi
 done
 if [ -f "$app_root/photo-curve.glb" ]; then cp "$app_root/photo-curve.glb" build/command-private/photo-curve.glb; fi
@@ -139,7 +139,9 @@ PYTEST
 if [ "$native_failed" -eq 0 ]; then
   mkdir -p build/command-private
   node tooling/ifc/test_coordinates.cjs || native_failed=1
+  node tooling/ifc/test_properties.cjs || native_failed=1
   python3 tooling/ifc/check_source.py build/command-private build/evidence || native_failed=1
+  python3 tooling/ifc/check_properties.py build/command-private build/evidence || native_failed=1
   python3 tooling/hm export-check --package build/evidence/test.hxray --output build/evidence/portable-package-validation.json || native_failed=1
   python3 tooling/hm test --suite commands --output build/evidence/command-tests.json || native_failed=1
   python3 tooling/hm tour --scene build/evidence/test.hxray --preset before-after --duration 5 --simulator "$device_id" --output build/command-private/tour > build/command-private/tour-result.json || native_failed=1

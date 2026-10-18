@@ -14,6 +14,7 @@ import stat
 import struct
 import zipfile
 from package_check import require, identity, json_bytes, rigid, service_check, coordinate_declaration_check, ifc_coordinates_check
+import ifc_properties_check
 
 MAX_MODEL=512*1024*1024
 COLUMNS='schema_version house_id house_revision record_type id parent_id index name room_id room_name level stage_id stage_name stage_date evidence_kind trade coordinate_frame segment_id registration_json x_m y_m z_m x2_m y2_m z2_m length_m endpoint_label from_feature_id from_end to_feature_id to_end confirmed reviewed hidden date source source_ids_json provenance_json notes'.split()
@@ -159,6 +160,13 @@ def semantic_csv(path):
             ifc_coordinates_check(provenance.get('ifcSourceCoordinates'))
             if provenance.get('ifcSourceCoordinates') is not None:
                 identity(provenance.get('sourceDrawingID'));identity(provenance.get('segmentID'))
+            if provenance.get('ifcObject') is not None:
+                properties=provenance.get('ifcSourceProperties')
+                require(isinstance(properties,dict) and provenance.get('ifcSourceCoordinates') is not None and provenance.get('kind')=='planned','IFC object source provenance missing')
+                try:
+                    ifc_properties_check.object_check(provenance['ifcObject'])
+                    ifc_properties_check.reference_check(properties,str(properties.get('sourceSHA256'))+'.ifc')
+                except (ValueError,TypeError,KeyError,AttributeError) as error:require(False,str(error))
             if provenance.get('importedCoordinates') is not None:
                 identity(provenance.get('sourceDrawingID'));identity(provenance.get('segmentID'))
             features[row['id']]=row

@@ -12,6 +12,7 @@ import re
 import stat
 import uuid
 import zipfile
+import ifc_properties_check
 
 MAX_METADATA = 100_000_000
 MAX_ARCHIVE = 500_000_000_000
@@ -128,11 +129,13 @@ def required_assets(house):
         for item in house.get(group, []):
             for key in keys:
                 add(item.get(key))
+    for drawing in house.get('drawings',[]):
+        add((drawing.get('ifcProperties') or {}).get('asset'))
     return assets
 
 
 def semantic_check(house):
-    require(type(house.get('schema')) is int and house['schema'] in (1,2,3), 'Unsupported house schema')
+    require(type(house.get('schema')) is int and house['schema'] in (1,2,3,4), 'Unsupported house schema')
     identity(house.get('id'))
     require(type(house.get('revision')) is int and house['revision'] >= 0, 'Invalid source revision')
     tables = {}
@@ -148,6 +151,10 @@ def semantic_check(house):
         if drawing.get('ifcCoordinates') is not None:
             require(str(drawing.get('asset','')).endswith('.ifc'),'IFC frame requires its original source')
             ifc_coordinates_check(drawing['ifcCoordinates'])
+        if drawing.get('ifcProperties') is not None:
+            require(drawing.get('ifcCoordinates') is not None,'IFC properties require source coordinates')
+            try:ifc_properties_check.reference_check(drawing['ifcProperties'],drawing.get('asset'))
+            except (ValueError,TypeError,KeyError,AttributeError) as error:raise InvalidPackage(str(error)) from error
     def reference(item, key, table, optional=False):
         if optional and item.get(key) is None:
             return
@@ -164,6 +171,11 @@ def semantic_check(house):
         reference(feature, 'roomID', 'rooms'); reference(feature, 'stageID', 'stages')
         reference(feature, 'segmentID', 'segments', True)
         service_check(feature.get('service'))
+        if feature.get('ifcObject') is not None:
+            reference(feature,'sourceDrawingID','drawings');reference(feature,'segmentID','segments')
+            require(feature.get('kind')=='planned' and tables['drawings'][identity(feature['sourceDrawingID'])].get('ifcProperties') is not None,'IFC object requires planned source properties')
+            try:ifc_properties_check.object_check(feature['ifcObject'])
+            except (ValueError,TypeError,KeyError,AttributeError) as error:raise InvalidPackage(str(error)) from error
         declared=feature.get('importedCoordinates')
         if declared is not None:
             coordinate_declaration_check(declared)
@@ -285,6 +297,16 @@ def check_package(path):
         counts = semantic_check(house)
         assets = required_assets(house)
         require({'assets/'+key for key in assets} == {n for n in names if n.startswith('assets/')}, 'Referenced/original asset inventory mismatch')
+        property_bytes=0
+        for drawing in house.get('drawings',[]):
+            reference=drawing.get('ifcProperties')
+            if reference is None:continue
+            path='assets/'+reference['asset'];size=archive.getinfo(path).file_size;property_bytes+=size
+            require(size<=4_000_000 and property_bytes<=64_000_000,'IFC property read budget')
+            data=archive.read(path)
+            require(json_bytes(data).get('sourceSchema')==drawing['ifcCoordinates']['sourceSchema'],'IFC source schema differs')
+            try:ifc_properties_check.validate(data,reference,drawing['asset'],[f for f in house['features'] if f.get('sourceDrawingID')==drawing['id'] and f.get('ifcObject') is not None])
+            except (ValueError,TypeError,KeyError,AttributeError) as error:raise InvalidPackage(str(error)) from error
         # The JSON round trip is independent of Codable and excludes NaN/Infinity.
         require(json_bytes(json.dumps(house, allow_nan=False).encode()) == house, 'Metadata JSON round trip differs')
         return dict(passed=True, reader='Python standard library independent archive reader', archiveVersion=1,

@@ -131,6 +131,7 @@ enum IncrementalSnapshots {
       }
       if let coordinationError {throw coordinationError};if let operationError {throw operationError}
     }
+    try repo.verifyIFCProperties(house)
     house.id=UUID();house.name += " · restored";house.revision=0
     return house
   }

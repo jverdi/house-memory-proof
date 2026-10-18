@@ -132,14 +132,20 @@ enum IFCSourceEvidence {
       let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
       input.append(Data("|source-coordinates-v1|".utf8));input.append(try encoder.encode(reference))
     }
+    if let properties=drawing.ifcProperties {
+      guard properties.valid,drawing.asset==properties.sourceSHA256+".ifc" else{throw HouseError.message("The IFC property source is invalid.")}
+      let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+      input.append(Data("|source-properties-v1|".utf8));input.append(try encoder.encode(properties))
+    }
     return SHA256.hash(data:input).map{String(format:"%02x",$0)}.joined()
   }
-  static func applying(_ features:[Feature],source:Drawing,stage:Stage,roomID:UUID,coordinates:IFCCoordinateReference?=nil,to house:House)throws->House {
+  static func applying(_ features:[Feature],source:Drawing,stage:Stage,roomID:UUID,coordinates:IFCCoordinateReference?=nil,properties:IFCPropertyReference?=nil,to house:House)throws->House {
     guard !features.isEmpty,house.drawings.contains(source),house.rooms.contains(where:{$0.id==roomID}),house.stages.contains(stage),stage.kind == .planned,
       features.allSatisfy({$0.kind == .planned && $0.roomID==roomID && $0.stageID==stage.id && $0.segmentID==nil && $0.sourceDrawingID==nil}),
       Set(features.map{$0.id}).isDisjoint(with:Set(house.features.map{$0.id})) else{throw HouseError.message("The IFC source, room or stage changed. Reopen the saved original before importing geometry.")}
     var updated=house,referenced=source
     if let coordinates {guard coordinates.valid else{throw HouseError.message("The IFC source frame is invalid.")};referenced.ifcCoordinates=coordinates}
+    if let properties {guard properties.valid,source.asset==properties.sourceSHA256+".ifc",features.allSatisfy({$0.ifcObject != nil}),Set(features.compactMap{$0.ifcObject?.expressID}).count==properties.summary.convertedProducts else{throw HouseError.message("The IFC property graph does not match this conversion.")};referenced.ifcProperties=properties}
     let fingerprint=try Self.fingerprint(referenced),segment=Segment(roomID:roomID,stageID:stage.id)
     guard let index=updated.drawings.firstIndex(of:source) else{throw HouseError.message("The IFC source changed.")}
     updated.drawings[index]=referenced

@@ -21,6 +21,7 @@ on:
       - HouseMemoryProof/VisualMapping.swift
       - HouseMemoryProof/EvidenceModels.swift
       - HouseMemoryProof/Domain.swift
+      - HouseMemoryProof/IFCProperties.swift
       - HouseMemoryProof/ServiceDetails.swift
       - HouseMemoryProof/PointCloudImport.swift
       - HouseMemoryProof/PoseRefinement.swift

@@ -42,7 +42,7 @@ struct ServiceDetails:Codable,Equatable {
 import SwiftUI
 struct ServiceDetailsFields:View {
   @Binding var details:ServiceDetails
-  @FocusState private var focusedField:String?
+  @FocusState.Binding var focusedField:String?
   let boundaries:[RevealBoundary]
   private func text(_ key:WritableKeyPath<ServiceDetails,String?>)->Binding<String> {
     Binding(get:{details[keyPath:key] ?? ""},set:{details[keyPath:key]=$0.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty ? nil:$0})
@@ -71,11 +71,7 @@ struct ServiceDetailsFields:View {
       TextField("Identity evidence or test notes",text:text(\.identityEvidence),axis:.vertical).focused($focusedField,equals:"Identity evidence or test notes")
       Text("Leave unavailable details blank. Sizes are recorded descriptions, not measured geometry. Appearance alone does not prove gauge, contents, circuit identity or route continuity.").font(.footnote)
       if !details.valid {Text("Use a valid YYYY-MM-DD date, keep each field within 4,096 UTF-8 bytes, and describe the evidence for an owner-confirmed identity.").font(.footnote).foregroundStyle(.red)}
-    }.submitLabel(.done).onSubmit{focusedField=nil}.toolbar {
-      ToolbarItemGroup(placement:.keyboard) {
-        if focusedField != nil {Spacer();Button("Done"){focusedField=nil}.accessibilityIdentifier("service-keyboard-done")}
-      }
-    }
+    }.submitLabel(.done).onSubmit{focusedField=nil}
   }
 }
 

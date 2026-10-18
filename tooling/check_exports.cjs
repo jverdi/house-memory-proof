@@ -49,7 +49,7 @@ if(require.main===module)(async()=>{for(const name of ['test','textured','points
   const structure=inspect(bytes);fs.writeFileSync('build/evidence/'+name+'-interchange.json',JSON.stringify(structure,null,2));console.log(name,JSON.stringify(structure));
 }
 const ifcCases=[];
-for(const name of ['ifc-source','ifc-registered']){
+for(const name of ['ifc-source','ifc-registered','ifc-properties']){
  const bytes=fs.readFileSync('build/command-private/'+name+'.glb');
  const result=await validator.validateBytes(new Uint8Array(bytes),{uri:name+'.glb',maxIssues:10000});
  assert.equal(result.issues.numErrors,0);ifcCases.push({case:name,errors:result.issues.numErrors,warnings:result.issues.numWarnings,...inspect(bytes)});

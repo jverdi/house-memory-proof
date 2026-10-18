@@ -1,5 +1,44 @@
 # Implementation ledger
 
+## IFC coordinates verified; property sidecars and keyboard-toolbar repair
+
+Source **fa9785efe79**, build **201.1**, passed **140/140 native checks** in
+**170.977 seconds**, three process-kill recoveries, **eight of nine UI flows**
+(562.783 seconds), 50 portable cases, 28 command/reader contracts and **24 independent
+readers**. Both artifacts were independently SHA-256 verified. Actual far-origin
+IFC4/CRS and registered/unregistered GLB coordinate recovery pass, along with saved
+source persistence. The service edit flow found **11 copies of the keyboard Done
+button**, so its tap failed before port editing/save/relaunch. This is a failed
+integration; last complete integration remains 0e191bca22. Evidence:
+`docs/evidence/native-fa978-summary.json`.
+
+The next candidate moves keyboard toolbar ownership to the parent Form, passes
+its focus binding into service fields and requires exactly one Done button. The
+full edit/save/relaunch/search assertions remain. It also adds bounded IFC
+property/storey/relationship graphs, source-scoped EXPRESS identities, GUID
+warnings and a conversion-omission census. Checksummed sidecars survive archive,
+snapshot and GLB/CSV handoff; source strings and raw units remain documentary.
+A source-record inspector and share action are available. Schema **4** prevents
+older writers dropping property assets. Mesh-part/label budgets prevent many
+small meshes from multiplying large labels. Original IFCs always survive refusal.
+
+Local JS contracts and **29 command/reader contracts** pass. **146 native checks,
+nine UI flows and expanded property readers are prepared, not yet accepted**.
+Actual fixtures cover raw property/storey units, forged metadata/ref refusals,
+point-only representation omissions, duplicate/missing/malformed GUIDs, and
+conversion-based feet/inches. New raw export fixtures remain private in CI.
+Broader IFC4x3 scaled CRS, representation fidelity and signed cross-version
+qualification remain open.
+
+All **11** fa978 baseline/appearance/sensor/visual/frozen artifacts were verified.
+Original finished accuracy, rough-to-finished availability and finished depth-edge
+mapping failures are unchanged. Aggregate reports: `docs/evidence/host-fa978-summary.json`
+and `docs/evidence/appearance-fa978-summary.json`. The exhausted AKAZE sampling
+workflow was retired at 033c217; a documentation-triggered duplicate was cancelled
+before evaluation. No sixth repair experiment or additional TestFlight upload.
+Precision remains disabled; full-house/protected, geometry/uncertainty and
+owner-device/provider/field acceptance remain open.
+
 ## Retained spatial outcomes and reversible IFC candidate
 
 Source **ec315c98d6**, build **200.1**, passed **137/137 native checks** in **115.588 seconds**, three recoveries, **eight of nine UI flows** (658.551 seconds), 50 portable cases, 27 command/reader contracts and **22 independent readers**. Both artifacts are independently SHA-256 verified. Batch, PLY, saved IFC and curve feedback interfaces passed; service edit/search lost the Port field during one-direction scrolling after label entry, before save/relaunch verification. This remains a failed integration; the preceding complete pass is 0e191bca22. Evidence: `docs/evidence/native-ec315-summary.json`. The next candidate adds explicit keyboard dismissal and bounded bidirectional field reveal while retaining the full persistence/search assertions.

@@ -175,7 +175,7 @@ enum Exporter {
       if !textGeometry {
         // JSON control-character escaping can expand one UTF-8 byte to six;
         // include simultaneous encoder/container copies before admitting GLB.
-        let fields=[feature.name,feature.notes,feature.endpoint]+(feature.service?.textValues ?? [])
+        let fields=[feature.name,feature.notes,feature.endpoint]+(feature.service?.textValues ?? [])+(feature.ifcObject.map{[$0.guid,$0.typeName]} ?? [])
         estimate += fields.reduce(Int64(0)){$0+Int64($1.utf8.count)}*24
         estimate += Int64(feature.sourceIDs.count)*192+Int64(feature.annotationSources?.count ?? 0)*1024
       }
@@ -208,7 +208,7 @@ enum Exporter {
   static func glb(_ h: House, options: SceneOptions) throws -> URL {
     let features = canonicalFeatures(h, options: options)
     guard !features.isEmpty else{throw HouseError.message("No geometry selected.")}
-    struct IFCSource:Encodable {var id:UUID;var asset:String;var coordinates:IFCCoordinateReference}
+    struct IFCSource:Encodable {var id:UUID;var asset:String;var coordinates:IFCCoordinateReference;var properties:IFCPropertyReference?}
     let sourceIDs=Set(features.compactMap{$0.sourceDrawingID})
     var ifcSources:[IFCSource]=[],sourceBudget:Int64=0
     for drawing in h.drawings where sourceIDs.contains(drawing.id) {
@@ -217,7 +217,7 @@ enum Exporter {
         let strings=[coordinates.converter,coordinates.sourceSchema,coordinates.sourceLengthUnit]+coordinates.mapConversions.flatMap{Array($0.targetCRS.values)}
         sourceBudget += strings.reduce(Int64(0)){$0+Int64($1.utf8.count)}*24+Int64(coordinates.mapConversions.count)*8192+4096
         guard sourceBudget<256_000_000 else{throw HouseError.message("IFC source metadata exceeds the model export budget.")}
-        ifcSources.append(IFCSource(id:drawing.id,asset:drawing.asset,coordinates:coordinates))
+        ifcSources.append(IFCSource(id:drawing.id,asset:drawing.asset,coordinates:coordinates,properties:drawing.ifcProperties))
       }
     }
     let assets=try exportAssets(features,textGeometry:false,budget:256_000_000-sourceBudget)
@@ -330,6 +330,7 @@ enum Exporter {
           "importedCoordinates": try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.importedCoordinates),options:.fragmentsAllowed),
           "sourceDrawing": f.sourceDrawingID?.uuidString ?? "",
           "sourceDrawingFingerprint": f.sourceDrawingFingerprint ?? "",
+          "ifcObject":try JSONSerialization.jsonObject(with:JSONEncoder().encode(f.ifcObject),options:.fragmentsAllowed),
           "sourceSegment":f.segmentID?.uuidString ?? "",
           "exportCoordinateFrame":exportedFrame,
           "sourceToHouseRegistration":try JSONSerialization.jsonObject(with:JSONEncoder().encode(registration),options:.fragmentsAllowed),
@@ -535,6 +536,7 @@ enum Exporter {
   }
   static func archive(_ h: House, repo: Repository) throws -> URL {
     try h.validate()
+    try repo.verifyIFCProperties(h)
     let metadata = try JSONEncoder().encode(h)
     guard metadata.count <= 100_000_000 else {
       throw HouseError.message(
@@ -671,6 +673,7 @@ enum Exporter {
         guard coordinates.valid else{throw HouseError.message("Invalid IFC source frame.")}
         var payload=try JSONSerialization.jsonObject(with:Data(try json(provenance).utf8)) as! [String:Any]
         payload["ifcSourceCoordinates"]=try JSONSerialization.jsonObject(with:JSONEncoder().encode(coordinates))
+        if let properties=h.drawings.first(where:{$0.id==id})?.ifcProperties {payload["ifcSourceProperties"]=try JSONSerialization.jsonObject(with:JSONEncoder().encode(properties))}
         values["provenance_json"]=String(decoding:try JSONSerialization.data(withJSONObject:payload,options:.sortedKeys),as:UTF8.self)
       } else {values["provenance_json"]=try json(provenance)}
       try row(values)

@@ -260,6 +260,7 @@ enum ChunkedSnapshots {
         guard try StreamingArchive.digest(destination).sha==String(asset.key.prefix(64)) else{throw HouseError.message("Existing local original is corrupt; it was preserved for recovery.")}
       } else{try FileManager.default.moveItem(at:temporary,to:destination)}
     }
+    try repo.verifyIFCProperties(house)
     house.id=UUID();house.name += " · restored";house.revision=0;return house
   }
 }

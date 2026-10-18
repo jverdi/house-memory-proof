@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-18",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
+  "currentImplementationCommit": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -27,7 +27,7 @@
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "ec315c98d6 passes 137 native/8 of 9 UI/22 readers. Repair service editing keyboard/scroll interaction and validate reversible IFC-origin/CRS/schema-3 candidate (140 native/nine UI expected)."
+      "remaining": "fa9785efe79 passes 140 native, eight of nine UI and 24 independent readers. The service editor produced 11 duplicated keyboard Done buttons. Next candidate moves keyboard toolbar ownership to the parent Form and adds IFC property/identity/sidecar checks (146 native/nine UI expected)."
     },
     {
       "area": "finished localization",
@@ -55,18 +55,20 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Commit and validate the service keyboard/reveal repair and reversible IFC coordinates; then continue independent coverage/navigation/geometry and persistence work. No sixth detector attempt or intermediate upload.",
+  "nextAction": "Commit and validate the parent-form keyboard toolbar repair plus IFC property/identity/sidecar candidate. Continue independent whole-house/geometry/persistence work; no sixth detector attempt or intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "source": "ec315c98d625af528fcab2d36cf0b3b8683f3eee",
-    "run": 39100177707,
-    "status": "completed with service-edit interface failure",
-    "nativePassed": 137,
+    "source": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
+    "run": 39101587482,
+    "status": "completed with duplicated keyboard-toolbar failure",
+    "nativePassed": 140,
+    "integrationComplete": false,
+    "evidence": "docs/evidence/native-fa978-summary.json",
     "interfacePassed": 8,
     "interfaceExecuted": 9,
-    "independentReadersPassed": 22,
-    "integrationComplete": false,
-    "evidence": "docs/evidence/native-ec315-summary.json"
+    "independentReadersPassed": 24,
+    "commandReaderContracts": 28,
+    "processKillPassed": 3
   },
   "previousIntegratedAttempt": {
     "source": "0e191bca22b522b489e38877bd7c196b98bd5cd3",
@@ -488,7 +490,21 @@
     "currentPassed": false,
     "budgetExhausted": true,
     "currentSource": "82f4d081d17c8aadb5a49eba2dcc3d0a1f6cac36",
-    "evidence": "docs/evidence/akaze-sampling-82f4-summary.json"
+    "evidence": "docs/evidence/akaze-sampling-82f4-summary.json",
+    "automaticReplayRetired": {
+      "source": "033c21702054f3425d3de83a20ac5c18350e854b",
+      "run": 39101648276,
+      "replayJobSkipped": true
+    },
+    "cancelledDocumentationTrigger": {
+      "run": 39101587485,
+      "reason": "Result README matched the original broad experiment trigger",
+      "buildJob": 117598791626,
+      "buildCancelled": true,
+      "evaluationStepSkipped": true,
+      "secondJobCancelled": true,
+      "additionalEvaluations": 0
+    }
   },
   "IFCCoordinateCandidate": {
     "prepared": true,
@@ -499,9 +515,38 @@
     "schema": 3,
     "localCommandReaderContracts": 28,
     "expectedNativeChecks": 140,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "independentExportValidationPending": true,
     "rawFixturePublished": false,
-    "scaledCRSAndBroaderRepresentationsQualified": false
+    "scaledCRSAndBroaderRepresentationsQualified": false,
+    "nativeValidatedSource": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
+    "interfaceValidationPending": false,
+    "independentReadersPassed": true,
+    "savedSourceInterfacePassed": true
+  },
+  "IFCPropertyCandidate": {
+    "schema": 4,
+    "nativeChecksExpected": 146,
+    "interfaceFlowsExpected": 9,
+    "localCommandReaderContracts": 29,
+    "localJSContractsPassed": true,
+    "rawSourceUnitsPreserved": true,
+    "propertyGraphSourceBound": true,
+    "sourceIdentity": "original SHA-256 + EXPRESS ID",
+    "nativeValidationPending": true,
+    "rawExportFixturesPublished": false,
+    "remaining": [
+      "Full IFC4x3 scaled CRS",
+      "Conversion-based unit interoperability",
+      "Broader representation and BIM authoring fidelity"
+    ]
+  },
+  "serviceToolbarRepair": {
+    "failedSource": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
+    "duplicateButtonsObserved": 11,
+    "repair": "Parent Form owns one keyboard toolbar and passes its FocusState binding into service fields",
+    "singleButtonAssertionPrepared": true,
+    "saveRelaunchSearchAssertionsRetained": true,
+    "validationPending": true
   }
 }

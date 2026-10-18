@@ -20,3 +20,12 @@ CRS records are documentary and are not applied. Unknown house alignment remains
 unknown. Mesh positions themselves remain in the archive/GLB; this CSV remains a
 semantic summary. The independent reader validates these optional records and
 requires the original source/segment identities.
+
+
+IFC objects with a retained property graph also carry `ifcObject` (EXPRESS ID,
+source type, GUID and warning status) and `ifcSourceProperties` (sidecar asset,
+original SHA-256 and conversion census). EXPRESS IDs are scoped to that original
+checksum. A duplicate/malformed/missing GUID is not a unique identity. The
+sidecar's raw units and property relationships remain in the archive or shared
+property JSON; they are not duplicated into every CSV row. No source property
+establishes observed identity, connectivity or calibrated geometry.

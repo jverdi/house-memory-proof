@@ -528,6 +528,7 @@ struct FeatureEditor: View {
   @State private var original:Feature?
   @State private var projectID:UUID?
   @State private var service=ServiceDetails()
+  @FocusState private var focusedServiceField:String?
   var body: some View {
     NavigationStack {
       Form {
@@ -539,7 +540,7 @@ struct FeatureEditor: View {
         TextField("Notes", text: $feature.notes, axis: .vertical)
         Toggle("Reviewed by me", isOn: $feature.reviewed)
         Toggle("Hide from scene", isOn: $feature.hidden)
-        ServiceDetailsFields(details:$service,boundaries:(model.house?.boundaries ?? []).filter{boundary in
+        ServiceDetailsFields(details:$service,focusedField:$focusedServiceField,boundaries:(model.house?.boundaries ?? []).filter{boundary in
           model.house?.segments.contains(where:{$0.id==boundary.segmentID && $0.roomID==feature.roomID && $0.stageID==feature.stageID}) ?? false
         })
         Section("Evidence") {
@@ -547,6 +548,10 @@ struct FeatureEditor: View {
           if let coordinates=feature.importedCoordinates {Text("Imported coordinates: \(coordinates.unit.rawValue), \(coordinates.upright.rawValue). Owner-declared; placement is not independently calibrated.").font(.caption)}
           else if feature.notes.hasPrefix("Imported PLY; units declared metres") {Text("This older PLY import assumed metres. It has no recorded unit or upright-axis confirmation; verify its source before using dimensions.").font(.caption)}
           if let sources=feature.annotationSources {Text("Traced on \(sources.count) source objects. Changes to their revisions or registration make this annotation stale.").font(.caption)}
+          if let object=feature.ifcObject,let source=model.house?.drawings.first(where:{$0.id==feature.sourceDrawingID}),let properties=source.ifcProperties {
+            Text("IFC #\(object.expressID) · \(object.typeName) · GUID \(object.guidStatus)").font(.caption)
+            NavigationLink("Inspect this source object's properties") {IFCPropertiesPage(reference:properties,initialExpressID:object.expressID)}
+          }
           Text(
             "Geometry is approximate. Reviewed identity does not certify route continuity or placement."
           ).font(.footnote)
@@ -575,6 +580,9 @@ struct FeatureEditor: View {
         }
       }.scrollDismissesKeyboard(.immediately).sheet(item: $sourcePhoto) { PhotoDetail(observation: $0) }.navigationTitle("Object details")
         .toolbar {
+          ToolbarItemGroup(placement:.keyboard) {
+            if focusedServiceField != nil {Spacer();Button("Done"){focusedServiceField=nil}.accessibilityIdentifier("service-keyboard-done")}
+          }
           ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
           ToolbarItem(placement: .confirmationAction) {
             Button("Save") {

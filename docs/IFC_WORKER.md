@@ -76,10 +76,72 @@ IFC4 millimetre far-origin conversion, real CRS parsing, archive restoration,
 source invalidation and GLB/CSV handoff. A separate Python reader decodes the
 actual Swift GLB vertices and adds the retained origin to recover known project
 bounds; pinned Khronos validation also includes this GLB. The small IFC export fixture stays private in CI; only aggregate reader reports
-are retained. Native validation of this candidate is pending (140 checks expected); no physical claim is made.
+are retained. Source fa9785efe79 passed all 140 native checks and both added independent IFC
+readers; the saved-source UI also passed. Its separate service UI failure remains
+retained. No physical claim is made.
 
 Primary API basis: pinned `ThatOpen/engine_web-ifc` tag `0.72`,
 `src/ts/web-ifc-api.ts` (`GetLineIDsWithType`, `GetLine`, `GetModelSchema`) and
 `src/cpp/web-ifc/geometry/IfcGeometryProcessor.cpp` (placed geometry transforms).
 IFC field definitions: buildingSMART IFC4.3 `IfcMapConversion` and
 `IfcMapConversionScaled`. No newer web-ifc API is assumed.
+
+
+## Bounded source property graph candidate
+
+Source fa9785efe79a36b5ca16b4159e76eccc1b32d960 passed all 140 native checks,
+including actual IFC4 far-origin and CRS parsing, recovery and source metadata
+roundtrips. Its saved-source interface and all 24 independent readers also passed. The full
+integration still failed on duplicated service keyboard controls (eight of nine
+UI flows passed).
+See `docs/evidence/native-fa978-summary.json` for the retained checkpoint.
+
+The next candidate enumerates IFC products, storeys and projects plus spatial
+containment, aggregation, property/type and material associations through the
+pinned 0.0.72 reader. It retains their bounded forward property graph, raw
+values and reference identities in a JSON sidecar. Ownership, representation
+and representation-map forward graphs remain in the original IFC; this is not
+an editable or complete BIM authoring model. Source quantities and storey
+heights keep original units. They are never assigned automatically to house
+levels or observed service identities.
+
+Every emitted mesh records its EXPRESS ID, source type and GUID warning status.
+The identity is original SHA-256 plus EXPRESS ID; duplicate, malformed or
+missing GUIDs never merge products. The source page reports represented products
+not emitted as meshes, which may include intentionally non-mesh representations;
+it does not claim all omissions are unsupported geometry. The user can inspect
+or share source records and open a source object's record from its feature.
+Source strings remain data, never HTML or executable code.
+
+JS and native checks enforce 10,000 products, 100 storeys, 20,000 records, 4 MB
+per sidecar, 4,096-byte strings and bounded nesting/value counts. Mesh admission
+also caps 10,000 parts and 16 MB of retained labels/identity metadata, so many
+small meshes cannot multiply large source strings past the geometry budget. Forward graph
+traversal is iterative and permits cycles without recursive expansion. Native
+validation recomputes counts, GUID warnings, references, source hashes and the
+emitted-product census. Import, property inspection, integrity checks, archive export and archive/snapshot
+restore verify linked sidecars; the project read budget is 64 MB. Ordinary metadata
+editing does not reread every asset or make the entire house inaccessible when
+a documentary sidecar is missing. Inspection/export reports the fault while
+retaining the original IFC and property reference. The immutable IFC is saved before
+conversion and survives refusal, cancellation and stale publication.
+
+Schema 4 protects these essential asset references from older writers. Archives
+include the full graph and original. GLB/CSV carry source-object references and
+the checksummed sidecar reference, not all property records inside each mesh;
+use the archive or shared properties for the complete retained documentary
+subset. The source dependency fingerprint includes the graph reference.
+
+Local JS contracts and 29 command/reader contracts pass. Six additional native
+checks are prepared (146 total): actual IFC property/storey/unit relationships;
+forged native boundary refusals; archive/source/GLB/CSV handoff; a point-only
+representation plus duplicate GUIDs; malformed/missing GUID preservation; and actual conversion-based feet/inches with retained raw factors.
+The saved-source UI flow also inspects a property record and verifies persistence.
+All new raw IFC export fixtures stay ephemeral in CI; only allowlisted aggregate
+reader results are retained. These new native/UI checks are not yet validated.
+
+Full IFC4x3 scaled CRS, broader conversion-based unit coverage and representation/BIM
+interoperability remain open. This work makes no capture-accuracy claim.
+
+Primary representation definition: buildingSMART IFC4 ADD1 `IfcGeometricSet`
+permits points, curves and surfaces without solid/topological mesh structure.

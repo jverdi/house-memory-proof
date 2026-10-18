@@ -9,6 +9,7 @@ on:
       - packages/visual-core/**
       - HouseMemoryProof/VisualMapping.swift
       - HouseMemoryProof/Domain.swift
+      - HouseMemoryProof/IFCProperties.swift
       - HouseMemoryProof/ServiceDetails.swift
       - HouseMemoryProof/PointCloudImport.swift
   workflow_dispatch:

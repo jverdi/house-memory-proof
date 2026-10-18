@@ -281,7 +281,21 @@ final class Repository: EvidenceAssetReader {
       }
       count += 1
     }
+    try verifyIFCProperties(h)
     return count
+  }
+  func verifyIFCProperties(_ house:House)throws {
+    let grouped=Dictionary(grouping:house.features.filter{$0.ifcObject != nil},by:{$0.sourceDrawingID})
+    var total=0
+    for drawing in house.drawings {if let reference=drawing.ifcProperties {
+      let size=try assetURL(reference.asset).resourceValues(forKeys:[.fileSizeKey]).fileSize ?? 4_000_001
+      guard size<=4_000_000,total<=64_000_000-size else{throw HouseError.message("IFC property graphs exceed the project read budget.")};total+=size
+      let verified=try IFCProperties.read(reference,repo:self)
+      guard verified.sourceSchema==drawing.ifcCoordinates?.sourceSchema else{throw HouseError.message("IFC properties and coordinates use different source schemas.")}
+      // Multiple conversions of one immutable source may coexist in stages.
+      // Every linked feature must refer to an emitted product in that source.
+      for feature in grouped[drawing.id] ?? [] {guard let object=feature.ifcObject,verified.objects[object.expressID]==object,verified.converted.contains(object.expressID) else{throw HouseError.message("IFC object no longer matches its original property graph.")}}
+    }}
   }
   func jobData(_ id:String)throws->Data? {
     lock.lock();defer{lock.unlock()}

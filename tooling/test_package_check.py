@@ -54,9 +54,9 @@ class PortablePackageContracts(unittest.TestCase):
         self.assertEqual(list(Path(self.temp.name).iterdir()),[self.path])
 
     def test_project_reader_versions_are_explicit_and_sources_remain_unchanged(self):
-        for schema in [1,2,3,0,4,999]:
+        for schema in [1,2,3,4,0,5,999]:
             self.house['schema']=schema;archive(self.path,self.house,self.parts);before=self.path.read_bytes()
-            if schema in [1,2,3]:self.assertTrue(check_package(self.path)['passed'])
+            if schema in [1,2,3,4]:self.assertTrue(check_package(self.path)['passed'])
             else:
                 with self.assertRaisesRegex(InvalidPackage,'schema'):check_package(self.path)
             self.assertEqual(self.path.read_bytes(),before)
@@ -70,6 +70,41 @@ class PortablePackageContracts(unittest.TestCase):
         for mutate in mutations:
             bad=copy.deepcopy(self.house);mutate(bad['drawings'][0]['ifcCoordinates']);archive(self.path,bad,self.parts)
             with self.assertRaises(InvalidPackage):check_package(self.path)
+
+    def test_ifc_property_graph_archive_links_raw_units_and_forgery_refusal(self):
+        raw=b'Original IFC retained verbatim';source_hash=hashlib.sha256(raw).hexdigest();source_key=source_hash+'.ifc'
+        summary=dict(products=2,representedProducts=1,convertedProducts=1,unconvertedRepresentedProducts=0,storeys=1,records=3,malformedGUIDs=0,missingGUIDs=0,duplicateGUIDs=0)
+        obj=dict(expressID=22,typeName='IFCBUILDINGELEMENTPROXY',guid='1J$yPqHBD2TuLf$X2etp$1',guidStatus='valid')
+        storey=dict(expressID=40,typeName='IFCBUILDINGSTOREY',guid='2J$yPqHBD2TuLf$X2etp$2',guidStatus='valid')
+        value=lambda text:dict(type=1,value=text)
+        ref=lambda key:dict(type=5,value=key)
+        graph=dict(version=1,converter='web-ifc-0.0.72',sourceSchema='IFC4',sourceSHA256=source_hash,rawSourceValues=True,excludedForwardFields=['OwnerHistory','Representation','RepresentationMaps'],summary=summary,
+            products=[dict(**obj,represented=True,converted=True),dict(**storey,represented=False,converted=False)],
+            storeys=[dict(expressID=40,name='Upper floor',elevation=3000)],records=[
+                dict(expressID=22,typeName=obj['typeName'],fields=dict(GlobalId=value(obj['guid']),Representation=ref(21),OwnerHistory=ref(5))),
+                dict(expressID=40,typeName=storey['typeName'],fields=dict(GlobalId=value(storey['guid']),Name=value('Upper floor'),Elevation=dict(type=4,value=3000))),
+                dict(expressID=41,typeName='IFCRELCONTAINEDINSPATIALSTRUCTURE',fields=dict(RelatedElements=[ref(22)],RelatingStructure=ref(40)))])
+        self.parts['assets/'+source_key]=raw;drawing_id=str(uuid.uuid4())
+        self.house['schema']=4
+        self.house['drawings']=[dict(id=drawing_id,asset=source_key,ifcCoordinates=dict(version=1,converter='web-ifc-0.0.72',sourceSchema='IFC4',sourceLengthUnit='MILLI METRE',originMetres=dict(x=0,y=0,z=0),mapConversions=[]))]
+        self.house['features'][0].update(kind='planned',sourceDrawingID=drawing_id,ifcObject=obj)
+        def write(candidate):
+            data=json.dumps(candidate).encode();key=hashlib.sha256(data).hexdigest()+'.json'
+            house=copy.deepcopy(self.house);house['drawings'][0]['ifcProperties']=dict(asset=key,sourceSHA256=source_hash,summary=candidate['summary'])
+            archive(self.path,house,{**self.parts,'assets/'+key:data});return house
+        write(graph);before=self.path.read_bytes();self.assertTrue(check_package(self.path)['passed']);self.assertEqual(self.path.read_bytes(),before)
+        mutations=[lambda g:g['summary'].update(convertedProducts=2),
+            lambda g:g['records'][2]['fields'].update(RelatingStructure=ref(999)),
+            lambda g:g['products'].append(copy.deepcopy(g['products'][0])),
+            lambda g:g['products'][0].update(guidStatus='missing'),
+            lambda g:g.update(sourceSHA256='0'*64),lambda g:g.update(version=True),
+            lambda g:g['records'][0]['fields'].update(Text='é'*2049),
+            lambda g:g['storeys'][0].update(elevation=3)]
+        for mutate in mutations:
+            candidate=copy.deepcopy(graph);mutate(candidate);write(candidate)
+            with self.assertRaises(InvalidPackage):check_package(self.path)
+        self.house['features'][0]['ifcObject']=storey;write(graph)
+        with self.assertRaises(InvalidPackage):check_package(self.path)
 
     def test_changed_original_and_incomplete_manifest_fail(self):
         for mutate in [lambda p:p.__setitem__(next(iter(self.parts)),b'changed'),

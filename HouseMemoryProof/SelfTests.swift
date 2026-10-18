@@ -1061,9 +1061,11 @@ import simd
                 guard decoded.schema==House.currentSchema,decoded.id==house.id,decoded.references.isEmpty,decoded.features==house.features,old==before else{return false}
                 let upgraded=try JSONSerialization.jsonObject(with:JSONEncoder().encode(decoded)) as! [String:Any]
                 guard upgraded["schema"] as? Int==House.currentSchema else{return false}
-                json["schema"]=2
-                let previous=try JSONDecoder().decode(House.self,from:JSONSerialization.data(withJSONObject:json))
-                guard previous.schema==House.currentSchema,previous.features==house.features else{return false}
+                for version in 2..<House.currentSchema {
+                    json["schema"]=version
+                    let previous=try JSONDecoder().decode(House.self,from:JSONSerialization.data(withJSONObject:json))
+                    guard previous.schema==House.currentSchema,previous.features==house.features else{return false}
+                }
                 for version in [0,House.currentSchema+1,999] {
                     json["schema"]=version
                     do{_=try JSONDecoder().decode(House.self,from:JSONSerialization.data(withJSONObject:json));return false}catch{}
@@ -1545,13 +1547,17 @@ import simd
             }
             await check("IFC total geometry budget and complete transaction boundary") {
                 let room=UUID(),stage=UUID()
-                let valid:[String:Any]=["name":"Triangle","guid":"fixture","vertices":[[0.0,0,0],[1.0,0,0],[0.0,1,0]],"indices":[Int32(0),1,2]]
+                let valid:[String:Any]=["name":"Triangle","guid":"fixture","object":["expressID":22,"typeName":"IFCBUILDINGELEMENTPROXY","guid":"fixture","guidStatus":"malformed"],"vertices":[[0.0,0,0],[1.0,0,0],[0.0,1,0]],"indices":[Int32(0),1,2]]
                 let feature=try IFCImporter.decodeMesh(valid,roomID:room,stageID:stage,currentVertices:199997,currentIndices:1199997)
                 guard feature.kind == .planned,feature.mesh.vertices[2]==V3(0,0,1) else{return false}
+                for counts in [(10000,0),(-1,0),(0,16_000_000),(0,-1)] {
+                    do {_ = try IFCImporter.decodeMesh(valid,roomID:room,stageID:stage,currentVertices:0,currentIndices:0,currentParts:counts.0,currentMetadataBytes:counts.1);return false}catch{}
+                }
+                _ = try IFCImporter.decodeMesh(valid,roomID:room,stageID:stage,currentVertices:0,currentIndices:0,currentParts:9999,currentMetadataBytes:16_000_000-IFCImporter.metadataCost(feature))
                 for counts in [(199998,0),(0,1199998),(-1,0),(0,-1)] {
                     do {_ = try IFCImporter.decodeMesh(valid,roomID:room,stageID:stage,currentVertices:counts.0,currentIndices:counts.1);return false}catch{}
                 }
-                for field in ["vertices","indices","name","guid"] {
+                for field in ["vertices","indices","name","guid","object"] {
                     var malformed=valid;malformed.removeValue(forKey:field)
                     do {_ = try IFCImporter.decodeMesh(malformed,roomID:room,stageID:stage,currentVertices:0,currentIndices:0);return false}catch{}
                 }
@@ -1603,6 +1609,94 @@ import simd
                 let recovered=try await importer.load(input,roomID:roomID,stageID:stageID)
                 let retainedInput=try Data(contentsOf:path)
                 results.append(["test":"IFC out-of-envelope coordinates refuse atomically and importer recovers","passed":refused && !recovered.isEmpty && retainedInput==input])
+
+                let additions="""
+                #40=IFCBUILDINGSTOREY('2J$yPqHBD2TuLf$X2etp$2',#5,'Upper storey',$,$,#15,$,$,.ELEMENT.,3000.);
+                #41=IFCRELCONTAINEDINSPATIALSTRUCTURE('3J$yPqHBD2TuLf$X2etp$3',#5,$,$,(#22),#40);
+                #42=IFCPROPERTYSINGLEVALUE('Circuit',$,IFCLABEL('=literal source label'),$);
+                #43=IFCPROPERTYSINGLEVALUE('NominalDiameter',$,IFCLENGTHMEASURE(25.),#11);
+                #44=IFCPROPERTYSET('0J$yPqHBD2TuLf$X2etp$4',#5,'Pset_HouseXray',$,(#42,#43));
+                #45=IFCRELDEFINESBYPROPERTIES('1J$yPqHBD2TuLf$X2etp$5',#5,$,$,(#22),#44);
+                """
+                let withProperties=millimetres.replacingOccurrences(of:"ENDSEC;\nEND-ISO",with:additions+"\nENDSEC;\nEND-ISO")
+                var propertyHouse=House.empty("IFC property handoff")
+                let propertyRoom=propertyHouse.rooms[0].id,propertyStage=Stage(name:"Source design",kind:.planned,phase:.other)
+                propertyHouse.stages.append(propertyStage)
+                let propertyInput=Data(withProperties.utf8),propertyFeatures=try await importer.load(propertyInput,roomID:propertyRoom,stageID:propertyStage.id)
+                guard let graph=importer.propertyGraph,let propertyCoordinates=importer.coordinateReference else{throw HouseError.message("Missing source property graph.")}
+                let document=try JSONSerialization.jsonObject(with:graph.data) as! [String:Any],records=document["records"] as! [[String:Any]]
+                let rawDiameter=(records.first{$0["expressID"] as? Int==43}?["fields"] as? [String:Any])?["NominalValue"] as? [String:Any]
+                let storeys=document["storeys"] as! [[String:Any]]
+                results.append(["test":"Pinned IFC properties preserve raw units storeys relationships and source object identity","passed":graph.summary.products==2 && graph.summary.convertedProducts==1 && graph.summary.representedProducts==1 && graph.summary.storeys==1 && graph.matches(propertyFeatures) && rawDiameter?["value"] as? Double==25 && storeys.first?["elevation"] as? Double==3000 && records.contains{$0["expressID"] as? Int==41} && records.contains{$0["expressID"] as? Int==45} && propertyFeatures.allSatisfy{$0.ifcObject?.expressID==22}])
+                await check("IFC property boundary refuses forged summaries references identities and byte budgets") {
+                    for fault in 0..<6 {
+                        var bad=document
+                        if fault==0 {var summary=bad["summary"] as! [String:Any];summary["convertedProducts"]=99;bad["summary"]=summary}
+                        if fault==1 {var rows=bad["records"] as! [[String:Any]];rows.append(rows[0]);bad["records"]=rows}
+                        if fault==2 {bad["sourceSHA256"]=String(repeating:"0",count:64)}
+                        if fault==3 {var products=bad["products"] as! [[String:Any]];products[0]["guidStatus"]="duplicate";bad["products"]=products}
+                        if fault==4 {var rows=bad["records"] as! [[String:Any]];rows[0]["fields"]=["Missing":["type":5,"value":99999]];bad["records"]=rows}
+                        if fault==5 {bad["extra"]=String(repeating:"é",count:2049)}
+                        do{_=try IFCProperties.decode(bad,sourceSHA256:graph.sourceSHA256);return false}catch{}
+                    }
+                    var changed=propertyFeatures;changed[0].ifcObject?.expressID=40
+                    return !graph.matches(changed) && graph.matches(propertyFeatures)
+                }
+                await check("IFC property sidecars survive archive source edits and independent semantic handoff") {
+                    let originalKey=try repo.put(propertyInput,ext:"ifc"),propertyReference=try graph.store(in:repo)
+                    let drawing=Drawing(name:"Properties.ifc",asset:originalKey)
+                    propertyHouse.drawings=[drawing]
+                    let imported=try IFCSourceEvidence.applying(propertyFeatures,source:drawing,stage:propertyStage,roomID:propertyRoom,coordinates:propertyCoordinates,properties:propertyReference,to:propertyHouse)
+                    try repo.save(imported)
+                    let archive=try Exporter.archive(imported,repo:repo),target=try Repository(root:folder.appendingPathComponent("ifc-property-restore")),restored=try Exporter.restore(archive,repo:target)
+                    guard restored.drawings==imported.drawings,restored.features==imported.features,try target.read(originalKey)==propertyInput,try target.read(propertyReference.asset)==graph.data,try target.integrity(restored)==2 else{return false}
+                    var changed=imported;changed.drawings[0].ifcProperties?.asset=String(repeating:"0",count:64)+".json"
+                    guard DerivedEvidence.currentIDs(changed).isDisjoint(with:Set(imported.features.map{$0.id})) else{return false}
+                    do{try repo.verifyIFCProperties(changed);return false}catch{}
+                    changed=imported;changed.features[0].ifcObject?.expressID=40
+                    do{try repo.verifyIFCProperties(changed);return false}catch{}
+                    changed=imported;changed.drawings[0].notes="Owner source note"
+                    try repo.save(changed)
+                    guard try repo.read(propertyReference.asset)==graph.data else{return false}
+                    var options=SceneOptions();options.stage=propertyStage.id
+                    try Data(contentsOf:archive).write(to:mainRepo.root.appendingPathComponent("ifc-properties.hxray"))
+                    try Data(contentsOf:Exporter.glb(imported,options:options)).write(to:mainRepo.root.appendingPathComponent("ifc-properties.glb"))
+                    try Data(contentsOf:Exporter.semanticCSV(imported)).write(to:mainRepo.root.appendingPathComponent("ifc-properties.csv"))
+                    return true
+                }
+                let omitted="""
+                #47=IFCBUILDINGELEMENTPROXY('1J$yPqHBD2TuLf$X2etp$1',#5,'Point-only source product',$,$,#15,#48,$,.NOTDEFINED.);
+                #48=IFCPRODUCTDEFINITIONSHAPE($,$,(#50));
+                #49=IFCGEOMETRICSET((#6));
+                #50=IFCSHAPEREPRESENTATION(#10,'Body','GeometricSet',(#49));
+                """
+                let partial=withProperties.replacingOccurrences(of:"ENDSEC;\nEND-ISO",with:omitted+"\nENDSEC;\nEND-ISO")
+                let partialFeatures=try await importer.load(Data(partial.utf8),roomID:propertyRoom,stageID:propertyStage.id)
+                guard let partialGraph=importer.propertyGraph else{throw HouseError.message("Missing partial-conversion census.")}
+                results.append(["test":"IFC point-only representations and duplicate GUIDs remain distinct source products","passed":partialGraph.summary.products==3 && partialGraph.summary.representedProducts==2 && partialGraph.summary.convertedProducts==1 && partialGraph.summary.unconvertedRepresentedProducts==1 && partialGraph.summary.duplicateGUIDs==2 && partialGraph.matches(partialFeatures) && partialGraph.objects[22]?.guidStatus=="duplicate" && partialGraph.objects[47]?.guidStatus=="duplicate"])
+                var warningsPassed=true
+                for (replacement,status) in [("'bad-guid'","malformed"),("$","missing")] {
+                    let malformed=partial.replacingOccurrences(of:"'1J$yPqHBD2TuLf$X2etp$1'",with:replacement)
+                    let output=try await importer.load(Data(malformed.utf8),roomID:propertyRoom,stageID:propertyStage.id)
+                    warningsPassed = warningsPassed && importer.propertyGraph?.objects[22]?.guidStatus==status && importer.propertyGraph?.objects[47]?.guidStatus==status && !output.isEmpty
+                }
+                results.append(["test":"IFC malformed and missing GUIDs retain EXPRESS identities without merging","passed":warningsPassed])
+                var conversionUnitsPassed=true
+                for (name,factor) in [("foot",0.3048),("inch",0.0254)] {
+                    let units="""
+                    #51=IFCDIMENSIONALEXPONENTS(1,0,0,0,0,0,0);
+                    #52=IFCMEASUREWITHUNIT(IFCLENGTHMEASURE(\(factor)),#11);
+                    #53=IFCCONVERSIONBASEDUNIT(#51,.LENGTHUNIT.,'\(name)',#52);
+                    """
+                    let convertedSource=source.replacingOccurrences(of:"IFC2X3",with:"IFC4").replacingOccurrences(of:".ELEMENT.",with:".NOTDEFINED.").replacingOccurrences(of:"IFCUNITASSIGNMENT((#11,#12))",with:"IFCUNITASSIGNMENT((#53,#12))").replacingOccurrences(of:"ENDSEC;\nEND-ISO",with:units+"\nENDSEC;\nEND-ISO")
+                    let unitFeatures=try await importer.load(Data(convertedSource.utf8),roomID:propertyRoom,stageID:propertyStage.id)
+                    let points=unitFeatures.flatMap{$0.mesh.vertices},size=V3((points.map{$0.x}.max() ?? 0)-(points.map{$0.x}.min() ?? 0),(points.map{$0.y}.max() ?? 0)-(points.map{$0.y}.min() ?? 0),(points.map{$0.z}.max() ?? 0)-(points.map{$0.z}.min() ?? 0))
+                    guard let unitGraph=importer.propertyGraph else{throw HouseError.message("Missing conversion-based source units.")}
+                    let unitDocument=try JSONSerialization.jsonObject(with:unitGraph.data) as! [String:Any],unitRecords=unitDocument["records"] as! [[String:Any]]
+                    let retainedFactor=(unitRecords.first{$0["expressID"] as? Int==52}?["fields"] as? [String:Any])?["ValueComponent"] as? [String:Any]
+                    conversionUnitsPassed = conversionUnitsPassed && (size-V3(factor,2*factor,3*factor)).length<0.00001 && importer.coordinateReference?.sourceLengthUnit==name && retainedFactor?["value"] as? Double==factor
+                }
+                results.append(["test":"IFC conversion-based feet and inches retain raw factors and produce metric geometry","passed":conversionUnitsPassed])
 
             }catch{results.append(["test":"Bundled IFC2x3 conversion and axes","passed":false,"error":error.localizedDescription])}
             do {

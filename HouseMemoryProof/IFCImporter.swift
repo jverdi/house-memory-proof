@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import CryptoKit
 
 @MainActor
 final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, WKNavigationDelegate
@@ -9,11 +10,13 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   private var continuation: CheckedContinuation<[Feature], Error>?
   private var features: [Feature] = []
   private var vertexCount=0, indexCount=0
+  private var metadataBytes=0
   private var roomID = UUID(), stageID = UUID()
   private var timeout: Task<Void, Never>?
   private var activeRequest:UUID?
   private(set) var phases:[String]=[]
   private(set) var coordinateReference:IFCCoordinateReference?
+  private(set) var propertyGraph:IFCProperties.Verified?
   func load(_ data: Data, roomID: UUID, stageID: UUID) async throws -> [Feature] {
     guard data.count <= 50_000_000 else {
       throw HouseError.message("IFC input exceeds 50 MB. The source can still be archived.")
@@ -21,12 +24,12 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     guard activeRequest==nil else{throw HouseError.message("An IFC import is already active.")}
     try Task.checkCancellation()
     let request=UUID();activeRequest=request
-    phases=["created"];coordinateReference=nil
+    phases=["created"];coordinateReference=nil;propertyGraph=nil
     defer{if activeRequest==request {activeRequest=nil;input=Data()}}
     self.input = data
     self.roomID = roomID
     self.stageID = stageID
-    features = [];vertexCount=0;indexCount=0
+    features = [];vertexCount=0;indexCount=0;metadataBytes=0
     return try await withTaskCancellationHandler(operation:{
       try Task.checkCancellation()
       return try await withCheckedThrowingContinuation { continuation in
@@ -65,7 +68,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
     web?.stopLoading()
     web?.configuration.userContentController.removeScriptMessageHandler(forName: "ifc")
     web = nil
-    input = Data();activeRequest=nil;features=[];vertexCount=0;indexCount=0
+    input = Data();activeRequest=nil;features=[];vertexCount=0;indexCount=0;metadataBytes=0
     let c = continuation
     continuation = nil
     if c != nil {switch result {case .success:phases.append("complete");case .failure(let error):phases.append(error is CancellationError ? "cancelled":"failed")}}
@@ -83,8 +86,9 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
         guard let phase=body["phase"] as? String,["initializing","source","parsing","geometry"].contains(phase),phases.count<8 else{throw HouseError.message("Invalid IFC converter phase.")}
         phases.append(phase)
       } else if type == "mesh" {
-        let feature=try Self.decodeMesh(body,roomID:roomID,stageID:stageID,currentVertices:vertexCount,currentIndices:indexCount)
+        let feature=try Self.decodeMesh(body,roomID:roomID,stageID:stageID,currentVertices:vertexCount,currentIndices:indexCount,currentParts:features.count,currentMetadataBytes:metadataBytes)
         vertexCount += feature.mesh.vertices.count;indexCount += feature.mesh.triangles.count
+        metadataBytes += Self.metadataCost(feature)
         features.append(feature)
       } else if type == "done" {
         guard Self.complete(body,parts:features.count,vertices:vertexCount,indices:indexCount) else {
@@ -93,6 +97,10 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
         guard let raw=body["coordinateReference"] else{throw HouseError.message("IFC source frame is missing.")}
         let reference=try JSONDecoder().decode(IFCCoordinateReference.self,from:JSONSerialization.data(withJSONObject:raw))
         guard reference.valid else{throw HouseError.message("IFC source frame is invalid.")}
+        guard let graph=body["propertyGraph"] as? [String:Any],graph["sourceSchema"] as? String==reference.sourceSchema else{throw HouseError.message("IFC properties are missing or use a different source schema.")}
+        let verified=try IFCProperties.decode(graph,sourceSHA256:SHA256.hash(data:input).map{String(format:"%02x",$0)}.joined())
+        guard verified.matches(features) else{throw HouseError.message("IFC property coverage does not match emitted geometry.")}
+        propertyGraph=verified
         coordinateReference=reference
         finish(.success(features))
       } else if type == "error" {
@@ -104,20 +112,26 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
   }
   // Enforce totals again at the native boundary, before retaining another mesh.
   // A per-mesh index cap alone permits many small meshes to exhaust memory.
-  static func decodeMesh(_ body:[String:Any],roomID:UUID,stageID:UUID,currentVertices:Int,currentIndices:Int)throws->Feature {
+  static func metadataCost(_ feature:Feature)->Int {feature.name.utf8.count+feature.notes.utf8.count+(feature.ifcObject?.guid.utf8.count ?? 0)+(feature.ifcObject?.typeName.utf8.count ?? 0)+1024}
+  static func decodeMesh(_ body:[String:Any],roomID:UUID,stageID:UUID,currentVertices:Int,currentIndices:Int,currentParts:Int=0,currentMetadataBytes:Int=0)throws->Feature {
     guard let points=body["vertices"] as? [[Double]],let indices=body["indices"] as? [Int32],
       !points.isEmpty,!indices.isEmpty,points.count<=200000,indices.count<=1200000,
       currentVertices>=0,currentVertices<=200000-points.count,
       currentIndices>=0,currentIndices<=1200000-indices.count,
+      currentParts>=0,currentParts<10000,
       points.allSatisfy({$0.count==3}),
       let name=body["name"] as? String,name.utf8.count<=4096,
-      let guid=body["guid"] as? String,guid.utf8.count<=256
+      let guid=body["guid"] as? String,guid.utf8.count<=4096,let object=body["object"] as? [String:Any]
     else {throw HouseError.message("IFC geometry is malformed or exceeds its total admission budget.")}
     // web-ifc applies its coordination transform to a Y-up rendering frame.
     let mesh=Mesh(vertices:points.map{V3($0[0],-$0[2],$0[1])},triangles:indices)
     guard mesh.valid else{throw HouseError.message("IFC produced invalid geometry.")}
     var feature=Feature(name:name,trade:.structure,roomID:roomID,stageID:stageID,kind:.planned,mesh:mesh)
+    let identity=try JSONDecoder().decode(IFCObjectReference.self,from:JSONSerialization.data(withJSONObject:object))
+    guard identity.valid,identity.guid==guid else{throw HouseError.message("IFC mesh identity is malformed.")}
+    feature.ifcObject=identity
     feature.notes="IFC design geometry · GUID \(guid.isEmpty ? "unknown":guid). Original units and placements are handled by web-ifc 0.0.72. Design is not observed construction."
+    guard currentMetadataBytes>=0,currentMetadataBytes<=16_000_000-Self.metadataCost(feature) else{throw HouseError.message("IFC mesh labels exceed their total metadata budget. Original source remains preserved.")}
     return feature
   }
   static func complete(_ body:[String:Any],parts:Int,vertices:Int,indices:Int)->Bool {
@@ -140,7 +154,7 @@ final class IFCImporter: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, W
         mime = "application/octet-stream"
       } else {
         let name = url.lastPathComponent
-        guard ["index.html", "coordinates.js", "web-ifc-api-iife.js", "web-ifc.wasm"].contains(name),
+        guard ["index.html", "coordinates.js", "properties.js", "web-ifc-api-iife.js", "web-ifc.wasm"].contains(name),
           let folder = Bundle.main.url(forResource: "IFC", withExtension: nil)
         else { throw HouseError.message("Bundled IFC dependency missing.") }
         data = try Data(contentsOf: folder.appendingPathComponent(name))

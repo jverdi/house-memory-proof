@@ -1,0 +1,259 @@
+{
+  "build": "201.1",
+  "date": "2026-10-18T05:55:24Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 170.97680529166672,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1525710848,
+    "physicalFootprintBytes": 65544768,
+    "residentBytes": 294764544
+  },
+  "sourceRevision": "fa9785efe7",
+  "systemVersion": "26.5",
+  "source": "fa9785efe79a36b5ca16b4159e76eccc1b32d960",
+  "run": 39101587482,
+  "nativeChecks": 140,
+  "nativePassed": 140,
+  "nativeFailures": 0,
+  "artifact": {
+    "id": 12126987131,
+    "sha256": "04e474c98e3dcdf076edc6aa739c5ea3816648b552ef60e180f22c433e8846a5",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": false,
+  "interfaceExpected": 9,
+  "interfaceStatus": "completed with one failure",
+  "newChecks": [
+    {
+      "passed": true,
+      "seconds": 0.028698333333295523,
+      "test": "IFC source dependency preserves a separate design frame and refuses stale publication"
+    },
+    {
+      "passed": true,
+      "seconds": 0.06568654166665056,
+      "test": "Reversible IFC source metadata survives archive GLB CSV and dependency invalidation"
+    },
+    {
+      "passed": true,
+      "seconds": 0.00015429166671765415,
+      "test": "IFC total geometry budget and complete transaction boundary"
+    },
+    {
+      "passed": true,
+      "phases": [
+        "created",
+        "initializing",
+        "source",
+        "parsing",
+        "geometry",
+        "complete"
+      ],
+      "test": "Bundled IFC2x3 conversion and axes"
+    },
+    {
+      "passed": true,
+      "test": "IFC4 millimetres and nested placement"
+    },
+    {
+      "passed": true,
+      "test": "IFC rotated nested placement preserves metric axes"
+    },
+    {
+      "passed": true,
+      "test": "IFC far-origin rebasing recovers project metres without house alignment"
+    },
+    {
+      "passed": true,
+      "test": "IFC CRS rotation scale and offsets are retained without altering project geometry"
+    },
+    {
+      "passed": true,
+      "test": "IFC out-of-envelope coordinates refuse atomically and importer recovers"
+    }
+  ],
+  "additionalTestFlightUpload": false,
+  "physicalQualification": false,
+  "fullArtifact": {
+    "id": 12127536594,
+    "sha256": "337a749ad85f6990560b93f292e29a5da4d5027ee65e029080f5b1b2bcbc2279",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 9,
+  "interfacePassed": 8,
+  "interfaceSeconds": 562.783,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "passed": true,
+      "seconds": 84.342
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "passed": false,
+      "seconds": 29.515
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "passed": true,
+      "seconds": 32.538
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "passed": true,
+      "seconds": 45.752
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "passed": true,
+      "seconds": 186.706
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "passed": true,
+      "seconds": 44.403
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "passed": true,
+      "seconds": 25.002
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "passed": true,
+      "seconds": 40.279
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "passed": true,
+      "seconds": 74.247
+    }
+  ],
+  "interfaceFailure": "Service label entry succeeded, but the keyboard toolbar exposed 11 copies of service-keyboard-done. XCTest refused an ambiguous tap before port editing, save or relaunch verification.",
+  "processRecovery": [
+    {
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3,
+      "fault": "SIGKILL after capture row commit, before project checkpoint",
+      "passed": true,
+      "powerLossQualified": false
+    },
+    {
+      "powerLossQualified": false,
+      "passed": true,
+      "verifiedAssets": 3,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "recoveredExactlyOnce": true
+    },
+    {
+      "fault": "SIGKILL inside schema transaction before COMMIT",
+      "verifiedAssets": 19,
+      "powerLossQualified": false,
+      "passed": true
+    }
+  ],
+  "portableCases": 50,
+  "commandReaderContracts": 28,
+  "independentReaders": {
+    "ifc-source-gltf-validation": {
+      "passed": true
+    },
+    "photo-curve-gltf-validation": {
+      "passed": true
+    },
+    "points-gltf-validation": {
+      "passed": true
+    },
+    "general-textured-usd-validation": {
+      "passed": true
+    },
+    "general-points-usd-validation": {
+      "passed": true
+    },
+    "test-usd-validation": {
+      "passed": true
+    },
+    "offline-viewer-validation": {
+      "passed": true
+    },
+    "general-glb-validation": {
+      "passed": true
+    },
+    "mesh-interchange-validation": {
+      "passed": true
+    },
+    "general-obj-validation": {
+      "passed": true
+    },
+    "ifc-source-validation": {
+      "passed": true
+    },
+    "portable-package-validation": {
+      "passed": true
+    },
+    "textured-usd-validation": {
+      "passed": true
+    },
+    "general-semantic-validation": {
+      "passed": true
+    },
+    "photo-curve-viewer-validation": {
+      "passed": true
+    },
+    "points-usd-validation": {
+      "passed": true
+    },
+    "semantic-csv-validation": {
+      "passed": true
+    },
+    "archive-validation": {
+      "passed": true
+    },
+    "general-test-usd-validation": {
+      "passed": true
+    },
+    "chunked-snapshot-validation": {
+      "passed": true
+    },
+    "test-gltf-validation": {
+      "passed": true
+    },
+    "general-ply-validation": {
+      "passed": true
+    },
+    "house-surface-gltf-validation": {
+      "passed": true
+    },
+    "textured-gltf-validation": {
+      "passed": true
+    }
+  },
+  "readerCount": 24,
+  "cliTour": {
+    "passed": true,
+    "command": "production native tour via CLI",
+    "shots": 12,
+    "frames": 150,
+    "previews": 8,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "cliReconstruction": {
+    "passed": true,
+    "command": "production native reconstruction via CLI",
+    "sessions": 1,
+    "originalsVerified": 19,
+    "vertices": 10956,
+    "independentArchivePassed": true,
+    "sourceModified": false,
+    "physicalQualification": false
+  },
+  "visualInspection": {
+    "savedIFCResultAndSourceCoordinatesVisible": true
+  }
+}
