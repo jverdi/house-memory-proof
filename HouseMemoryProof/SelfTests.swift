@@ -1214,10 +1214,12 @@ import simd
                 mark("100-space scene capacity")
                 do{results.append(try await largeSceneReport(repo:mainRepo))}
                 catch{results.append(["test":"100-space two-stage capacity and native streamed render","passed":false,"error":error.localizedDescription])}
+                var encoderRecoveries:[[String:Any]]=[]
                 do {
                     mark("1080p30 movie encode and cache reuse")
                     let started=ProcessInfo.processInfo.systemUptime
-                    let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:10,width:1920,height:1080){model.progress=$0}
+                    let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:10,width:1920,height:1080,encoderRecovery:{encoderRecoveries.append($0.diagnostics)}){model.progress=$0}
+                    if let issue=await MovieExporter.clipIssue(movie,frames:300,width:1920,height:1080,decodeAllFrames:true) {throw HouseError.message("Complete movie decode: "+issue)}
                     let directory=repo.root.appendingPathComponent("tours"),all=FileManager.default.enumerator(at:directory,includingPropertiesForKeys:[.contentModificationDateKey])!
                     var dates:[URL:Date]=[:]
                     for case let url as URL in all where url.pathExtension=="mp4" {dates[url]=try url.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate}
@@ -1226,15 +1228,19 @@ import simd
                     let target=mainRepo.root.appendingPathComponent("test-tour.mp4");try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:movie,to:target)
                     let generator=AVAssetImageGenerator(asset:AVURLAsset(url:target));let frame=try await generator.image(at:CMTime(seconds:1,preferredTimescale:30))
                     try UIImage(cgImage:frame.image).pngData()?.write(to:mainRepo.root.appendingPathComponent("test-tour-frame.png"))
-                    results.append(["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":reused,"width":1920,"height":1080,"durationSeconds":10,"seconds":ProcessInfo.processInfo.systemUptime-started])
+                    results.append(["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":reused,"width":1920,"height":1080,"durationSeconds":10,"decodedFrames":300,"seconds":ProcessInfo.processInfo.systemUptime-started,"recoveredEncoderStalls":encoderRecoveries])
                 }catch{
                     var failure:[String:Any]=["test":"1080p30 MP4 encode, decode and verified chunk reuse","passed":false,"error":error.localizedDescription]
                     if let timeout=error as? MovieEncoderTimeout {failure["encoderDiagnostics"]=timeout.diagnostics}
+                    failure["encoderRetryEvents"]=encoderRecoveries
                     results.append(failure)
                 }
                 mark("Movie interruption and final-publication recovery")
                 do {results.append(try await movieRecoveryReport(repo:Repository(root:folder.appendingPathComponent("movie-recovery"))))}
                 catch{results.append(["test":"Movie interruption and final-publication recovery","passed":false,"error":error.localizedDescription])}
+                mark("Bounded movie encoder retry")
+                do {results.append(try await movieEncoderRetryReport(root:folder.appendingPathComponent("movie-encoder-retry")))}
+                catch{results.append(["test":"Movie encoder retries one unfinished shot and stops after a second stall","passed":false,"error":error.localizedDescription])}
             }
         }catch{results.append(["test":"Test harness setup","passed":false,"error":error.localizedDescription])}
         #if targetEnvironment(simulator)
@@ -1321,6 +1327,65 @@ extension SelfTests {
             "sessions":20,"independentlyMovedControlsRefused":refused,"incorrectScaleRefused":scaleRefused,"descendantsInvalidated":19,
             "maximumAnalyticWitnessErrorMetres":worst,"physicalDeviceQualified":false,
             "limitations":"Exact analytic reference poses; not image-based house, sensor-scale or physical precision qualification."]
+    }
+    static func movieEncoderRetryReport(root:URL) async throws->[String:Any] {
+        let repo=try Repository(root:root.appendingPathComponent("recover")),house=DemoFactory.make()
+        func completedShots(_ repository:Repository)throws->[URL:String] {
+            guard let files=FileManager.default.enumerator(at:repository.root.appendingPathComponent("tours"),includingPropertiesForKeys:[.contentModificationDateKey]) else{return [:]}
+            var result:[URL:String]=[:]
+            for case let url as URL in files where url.pathExtension=="mp4" && !url.lastPathComponent.contains("partial") {
+                let date=try url.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                result[url]=try StreamingArchive.digest(url).sha+"|"+String(date.timeIntervalSince1970)
+            }
+            return result
+        }
+        func timeout()->MovieEncoderTimeout {
+            // Inject the failure after real frame submission; no artificial
+            // 15-second sleep or claim of observed encoder latency is needed.
+            MovieEncoderTimeout(shot:1,frame:3,expectedFrames:50,width:320,height:180,writerStatus:AVAssetWriter.Status.writing.rawValue,waitedSeconds:15)
+        }
+        var finished=0,frames=0,retries=0,injected=false,retained:[URL:String]=[:]
+        let movie=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:5,width:320,height:180,checkpoint:{phase in
+            if phase=="shot-committed" {finished+=1;if finished==1 {retained=try completedShots(repo)}}
+            if phase=="frame-encoded",finished==1 {
+                frames+=1
+                if frames==3 && !injected {injected=true;throw timeout()}
+            }
+        },encoderRecovery:{_ in retries+=1}){_ in}
+        let after=try completedShots(repo)
+        guard injected,retries==1,retained.count==1,retained.allSatisfy({after[$0.key]==$0.value}),
+          await MovieExporter.clipIssue(movie,frames:150,width:320,height:180,decodeAllFrames:true)==nil else{throw HouseError.message("Encoder retry failed or rewrote a completed shot.")}
+        try FileManager.default.removeItem(at:movie)
+        try FileManager.default.removeItem(at:movie.deletingPathExtension().appendingPathExtension("json"))
+        let damaged=after.keys.sorted{$0.path<$1.path}[0]
+        try DurableFiles.write(Data(repeating:65,count:65),to:damaged.appendingPathExtension("sha256"))
+        var repairedFrames=0
+        let repaired=try await MovieExporter.render(house,repo:repo,options:SceneOptions(),duration:5,width:320,height:180,
+            checkpoint:{if $0=="frame-encoded" {repairedFrames+=1}}){_ in}
+        let repairedShots=try completedShots(repo)
+        let repairedChecksum=try DurableFiles.read(damaged.appendingPathExtension("sha256"),limit:64)
+        guard repairedFrames>0,repairedFrames<150,
+          after.filter({$0.key != damaged}).allSatisfy({repairedShots[$0.key]==$0.value}),
+          String(data:repairedChecksum,encoding:.utf8)==(try StreamingArchive.digest(damaged).sha) else{throw HouseError.message("Invalid movie checksum did not rebuild only the affected shot.")}
+        try FileManager.default.removeItem(at:repaired)
+        try FileManager.default.removeItem(at:repaired.deletingPathExtension().appendingPathExtension("json"))
+        let exhausted=try Repository(root:root.appendingPathComponent("exhausted"))
+        let exports=Exporter.destination("probe").deletingLastPathComponent()
+        let originalExports=Set(try FileManager.default.contentsOfDirectory(atPath:exports.path))
+        var attempts=0,exhaustedRetries=0,refused=false
+        do {
+            _=try await MovieExporter.render(house,repo:exhausted,options:SceneOptions(),duration:5,width:320,height:180,checkpoint:{phase in
+                if phase=="frame-encoded" {attempts+=1;throw timeout()}
+            },encoderRecovery:{_ in exhaustedRetries+=1}){_ in}
+        }catch is MovieEncoderTimeout {refused=true}
+        guard refused,attempts==2,exhaustedRetries==1,try completedShots(exhausted).isEmpty,
+          Set(try FileManager.default.contentsOfDirectory(atPath:exports.path))==originalExports else{throw HouseError.message("A repeated encoder stall did not stop after one retry without publishing output.")}
+        if let files=FileManager.default.enumerator(at:exhausted.root.appendingPathComponent("tours"),includingPropertiesForKeys:nil) {
+            for case let url as URL in files where url.pathExtension=="mp4" {throw HouseError.message("A failed encoder retained an unfinished movie.")}
+        }
+        return ["test":"Movie encoder retries one unfinished shot and stops after a second stall","passed":true,
+            "injectedFailures":3,"successfulRetryCount":retries,"persistentFailureAttempts":attempts,
+            "completedShotsPreserved":retained.count,"corruptChecksumRebuiltFrames":repairedFrames,"physicalDeviceQualified":false]
     }
     static func movieRecoveryReport(repo:Repository) async throws->[String:Any] {
         let house=DemoFactory.make(),options=SceneOptions(),exports=Exporter.destination("probe").deletingLastPathComponent()

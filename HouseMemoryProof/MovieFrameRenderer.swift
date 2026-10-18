@@ -87,27 +87,32 @@ private final class MovieGPUCompletion: @unchecked Sendable {
   }
   func frame(at time:Double,pool:CVPixelBufferPool) async throws->CVPixelBuffer {
     try Task.checkCancellation()
-    var buffer:CVPixelBuffer?
-    let attributes=[kCVPixelBufferPoolAllocationThresholdKey as String:8] as CFDictionary
-    guard CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault,pool,attributes,&buffer)==kCVReturnSuccess,let buffer else{throw HouseError.message("Movie frame pool is full. Completed shots are saved; export again to resume.")}
-    var reference:CVMetalTexture?
-    let textureAttributes=[kCVMetalTextureUsage as String:MTLTextureUsage.renderTarget.rawValue] as CFDictionary
-    guard CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,cache,buffer,textureAttributes,.bgra8Unorm,width,height,0,&reference)==kCVReturnSuccess,
-      let reference,let color=CVMetalTextureGetTexture(reference),let command=queue.makeCommandBuffer() else{throw HouseError.message("Movie frame could not become a Metal render target.")}
-    let pass=MTLRenderPassDescriptor()
-    pass.colorAttachments[0].texture=color;pass.colorAttachments[0].loadAction = .clear;pass.colorAttachments[0].storeAction = .store
-    pass.colorAttachments[0].clearColor=MTLClearColor(red:0,green:0,blue:0,alpha:1)
-    pass.depthAttachment.texture=depth;pass.depthAttachment.loadAction = .clear;pass.depthAttachment.storeAction = .dontCare;pass.depthAttachment.clearDepth=renderer.usesReverseZ ? 0:1
-    pass.stencilAttachment.texture=depth;pass.stencilAttachment.loadAction = .clear;pass.stencilAttachment.storeAction = .dontCare;pass.stencilAttachment.clearStencil=0
-    renderer.render(atTime:time,viewport:CGRect(x:0,y:0,width:width,height:height),commandBuffer:command,passDescriptor:pass)
-    let captionPass=MTLRenderPassDescriptor()
-    captionPass.colorAttachments[0].texture=color
-    captionPass.colorAttachments[0].loadAction = .load
-    captionPass.colorAttachments[0].storeAction = .store
-    guard let encoder=command.makeRenderCommandEncoder(descriptor:captionPass) else{throw HouseError.message("Movie caption render pass is unavailable.")}
-    encoder.setRenderPipelineState(captionPipeline);encoder.setViewport(captionViewport)
-    encoder.setFragmentTexture(captionTexture,index:0)
-    encoder.drawPrimitives(type:.triangleStrip,vertexStart:0,vertexCount:4);encoder.endEncoding()
+    // Drain Objective-C/Metal temporaries for each submitted frame. The three
+    // returned owners remain alive explicitly until GPU completion below.
+    let (buffer,reference,command)=try autoreleasepool { () throws -> (CVPixelBuffer,CVMetalTexture,MTLCommandBuffer) in
+      var buffer:CVPixelBuffer?
+      let attributes=[kCVPixelBufferPoolAllocationThresholdKey as String:8] as CFDictionary
+      guard CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(kCFAllocatorDefault,pool,attributes,&buffer)==kCVReturnSuccess,let buffer else{throw HouseError.message("Movie frame pool is full. Completed shots are saved; export again to resume.")}
+      var reference:CVMetalTexture?
+      let textureAttributes=[kCVMetalTextureUsage as String:MTLTextureUsage.renderTarget.rawValue] as CFDictionary
+      guard CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,cache,buffer,textureAttributes,.bgra8Unorm,width,height,0,&reference)==kCVReturnSuccess,
+        let reference,let color=CVMetalTextureGetTexture(reference),let command=queue.makeCommandBuffer() else{throw HouseError.message("Movie frame could not become a Metal render target.")}
+      let pass=MTLRenderPassDescriptor()
+      pass.colorAttachments[0].texture=color;pass.colorAttachments[0].loadAction = .clear;pass.colorAttachments[0].storeAction = .store
+      pass.colorAttachments[0].clearColor=MTLClearColor(red:0,green:0,blue:0,alpha:1)
+      pass.depthAttachment.texture=depth;pass.depthAttachment.loadAction = .clear;pass.depthAttachment.storeAction = .dontCare;pass.depthAttachment.clearDepth=renderer.usesReverseZ ? 0:1
+      pass.stencilAttachment.texture=depth;pass.stencilAttachment.loadAction = .clear;pass.stencilAttachment.storeAction = .dontCare;pass.stencilAttachment.clearStencil=0
+      renderer.render(atTime:time,viewport:CGRect(x:0,y:0,width:width,height:height),commandBuffer:command,passDescriptor:pass)
+      let captionPass=MTLRenderPassDescriptor()
+      captionPass.colorAttachments[0].texture=color
+      captionPass.colorAttachments[0].loadAction = .load
+      captionPass.colorAttachments[0].storeAction = .store
+      guard let encoder=command.makeRenderCommandEncoder(descriptor:captionPass) else{throw HouseError.message("Movie caption render pass is unavailable.")}
+      encoder.setRenderPipelineState(captionPipeline);encoder.setViewport(captionViewport)
+      encoder.setFragmentTexture(captionTexture,index:0)
+      encoder.drawPrimitives(type:.triangleStrip,vertexStart:0,vertexCount:4);encoder.endEncoding()
+      return (buffer,reference,command)
+    }
     try await withCheckedThrowingContinuation { (continuation:CheckedContinuation<Void,Error>) in
       let completion=MovieGPUCompletion(continuation)
       command.addCompletedHandler { [buffer,reference] finished in

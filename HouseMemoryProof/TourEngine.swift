@@ -208,7 +208,7 @@ struct MovieEncoderTimeout: LocalizedError {
     data.append(Data(selection.utf8))
     return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
   }
-  static func clipIssue(_ url:URL,frames:Int,width:Int,height:Int) async -> String? {
+  static func clipIssue(_ url:URL,frames:Int,width:Int,height:Int,decodeAllFrames:Bool=false) async -> String? {
     do {
       let asset=AVURLAsset(url:url)
       guard let track=try await asset.loadTracks(withMediaType:.video).first else{return "No video track"}
@@ -219,7 +219,8 @@ struct MovieEncoderTimeout: LocalizedError {
       // Inspect actual compressed sample timestamps as well as advertised FPS.
       // This detects gaps/duplicates at shot joins that duration alone misses.
       let reader=try AVAssetReader(asset:asset)
-      let output=AVAssetReaderTrackOutput(track:track,outputSettings:nil)
+      let settings:[String:Any]?=decodeAllFrames ? [kCVPixelBufferPixelFormatTypeKey as String:kCVPixelFormatType_32BGRA]:nil
+      let output=AVAssetReaderTrackOutput(track:track,outputSettings:settings)
       output.alwaysCopiesSampleData=false
       guard reader.canAdd(output) else{return "Cannot inspect video samples"}
       reader.add(output)
@@ -227,11 +228,15 @@ struct MovieEncoderTimeout: LocalizedError {
       defer{reader.cancelReading()}
       var times:[Double]=[],buffers=0
       let inspectionDeadline=ProcessInfo.processInfo.systemUptime+20
-      while let sample=output.copyNextSampleBuffer(){
+      while let sample=autoreleasepool(invoking:{output.copyNextSampleBuffer()}) {
         try Task.checkCancellation();buffers+=1
         guard buffers<=frames*2+32,ProcessInfo.processInfo.systemUptime<inspectionDeadline else{return "Video sample inspection made insufficient progress"}
         let count=CMSampleBufferGetNumSamples(sample)
         guard count>=0,count<=frames-times.count else{return "Too many video frames: more than \(frames)"}
+        if decodeAllFrames,count>0 {
+          guard count==1,let decoded=CMSampleBufferGetImageBuffer(sample),
+            CVPixelBufferGetWidth(decoded)==width,CVPixelBufferGetHeight(decoded)==height else{return "Video frame did not decode at the expected dimensions"}
+        }
         // Core Media may pack multiple samples into a buffer or return an
         // empty timing marker. Inspect each actual sample, not each buffer.
         for index in 0..<count {
@@ -261,7 +266,8 @@ struct MovieEncoderTimeout: LocalizedError {
   static func render(
     _ house: House, repo: Repository, options: SceneOptions, duration: Double = 20,
     width: Int = 1920, height: Int = 1080, preset:TourPreset = .overview,
-    checkpoint:((String)throws->Void)?=nil, progress: @escaping (Double) -> Void
+    checkpoint:((String)throws->Void)?=nil, encoderRecovery:((MovieEncoderTimeout)->Void)?=nil,
+    progress: @escaping (Double) -> Void
   ) async throws -> URL {
     try Task.checkCancellation()
     var plan = TourDirector.plan(house, duration: duration, options: options,preset:preset)
@@ -294,7 +300,8 @@ struct MovieEncoderTimeout: LocalizedError {
       let frames = Int((shot.duration * 30).rounded())
       let checksumURL=url.appendingPathExtension("sha256")
       if FileManager.default.fileExists(atPath:url.path),
-        let expected=try? String(contentsOf:checksumURL,encoding:.utf8),
+        let checksum=try? DurableFiles.read(checksumURL,limit:64),checksum.count==64,
+        let expected=String(data:checksum,encoding:.utf8),
         let actual=try? StreamingArchive.digest(url).sha,actual==expected,
         await validClip(url,frames:frames,width:width,height:height)
       {
@@ -307,95 +314,112 @@ struct MovieEncoderTimeout: LocalizedError {
       try? FileManager.default.removeItem(at: url)
       let candidate = folder.appendingPathComponent("shot-\(shotIndex).partial.mp4")
       try? FileManager.default.removeItem(at: candidate)
-      let scene = SceneBuilder.scene(
-        house,
-        options: SceneOptions(
-          mode: shot.layerMode.flatMap(ViewMode.init(rawValue:)) ?? options.mode, trades: shot.tradeNames.map{Set($0.compactMap(Trade.init(rawValue:)))} ?? options.trades, ceilings: options.ceilings, room: shot.roomID,
-          stage: shot.layerMode==nil ? options.stage:nil))
-      let camera = SceneBuilder.camera(at: shot.position, yaw: shot.yaw, pitch: shot.pitch)
-      scene.rootNode.addChildNode(camera)
-      let provenance=(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
-      let renderer=try MovieFrameRenderer(scene:scene,camera:camera,width:width,height:height,title:shot.caption,provenance:provenance)
-      let writer = try AVAssetWriter(outputURL: candidate, fileType: .mp4)
-      let input = AVAssetWriterInput(
-        mediaType: .video,
-        outputSettings: [
-          AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
-          AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 6_000_000,AVVideoExpectedSourceFrameRateKey:30,AVVideoMaxKeyFrameIntervalKey:60,AVVideoAllowFrameReorderingKey:false],
-        ])
-      input.expectsMediaDataInRealTime = false
-      let adaptor = AVAssetWriterInputPixelBufferAdaptor(
-        assetWriterInput: input,
-        sourcePixelBufferAttributes: [
-          kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-          kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,
-          kCVPixelBufferMetalCompatibilityKey as String: true,
-          kCVPixelBufferIOSurfacePropertiesKey as String: [:],
-        ])
-      guard writer.canAdd(input) else { throw HouseError.message("H.264 export is unavailable.") }
-      writer.add(input)
-      guard writer.startWriting() else {
-        throw writer.error ?? HouseError.message("Could not start movie encoder.")
-      }
-      writer.startSession(atSourceTime: .zero)
-      do {
-        for frame in 0..<frames {
-          try Task.checkCancellation()
-          guard UIApplication.shared.applicationState != .background,
-            ProcessInfo.processInfo.thermalState != .critical
-          else {
-            throw HouseError.message(
-              "Movie checkpoint saved. Keep the app open and cool, then export again to resume.")
-          }
-          let readyStarted=ProcessInfo.processInfo.systemUptime,readyDeadline=readyStarted+15
-          while !input.isReadyForMoreMediaData {
-            guard writer.status == .writing else {
-              throw writer.error ?? HouseError.message("Movie encoder stopped.")
+      var encoderAttempt=0
+      while true {
+        try Task.checkCancellation()
+        let scene = SceneBuilder.scene(
+          house,
+          options: SceneOptions(
+            mode: shot.layerMode.flatMap(ViewMode.init(rawValue:)) ?? options.mode, trades: shot.tradeNames.map{Set($0.compactMap(Trade.init(rawValue:)))} ?? options.trades, ceilings: options.ceilings, room: shot.roomID,
+            stage: shot.layerMode==nil ? options.stage:nil))
+        let camera = SceneBuilder.camera(at: shot.position, yaw: shot.yaw, pitch: shot.pitch)
+        scene.rootNode.addChildNode(camera)
+        let provenance=(house.isDemo ? "SYNTHETIC DEMONSTRATION · ":"Approximate captured geometry · ")+"House Xray · revision \(house.revision) · \(shot.layerMode ?? options.mode.rawValue)"
+        let renderer=try MovieFrameRenderer(scene:scene,camera:camera,width:width,height:height,title:shot.caption,provenance:provenance)
+        let writer = try AVAssetWriter(outputURL: candidate, fileType: .mp4)
+        let input = AVAssetWriterInput(
+          mediaType: .video,
+          outputSettings: [
+            AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
+            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 6_000_000,AVVideoExpectedSourceFrameRateKey:30,AVVideoMaxKeyFrameIntervalKey:60,AVVideoAllowFrameReorderingKey:false],
+          ])
+        input.expectsMediaDataInRealTime = false
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+          assetWriterInput: input,
+          sourcePixelBufferAttributes: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,
+            kCVPixelBufferMetalCompatibilityKey as String: true,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:],
+          ])
+        guard writer.canAdd(input) else { throw HouseError.message("H.264 export is unavailable.") }
+        writer.add(input)
+        guard writer.startWriting() else {
+          throw writer.error ?? HouseError.message("Could not start movie encoder.")
+        }
+        writer.startSession(atSourceTime: .zero)
+        do {
+          for frame in 0..<frames {
+            try Task.checkCancellation()
+            guard UIApplication.shared.applicationState != .background,
+              ProcessInfo.processInfo.thermalState != .critical
+            else {
+              throw HouseError.message(
+                "Movie checkpoint saved. Keep the app open and cool, then export again to resume.")
             }
-            guard ProcessInfo.processInfo.systemUptime<readyDeadline else {
-              throw MovieEncoderTimeout(shot:shotIndex,frame:frame,expectedFrames:frames,width:width,height:height,
-                writerStatus:writer.status.rawValue,waitedSeconds:ProcessInfo.processInfo.systemUptime-readyStarted)
+            let readyStarted=ProcessInfo.processInfo.systemUptime,readyDeadline=readyStarted+15
+            while !input.isReadyForMoreMediaData {
+              guard writer.status == .writing else {
+                throw writer.error ?? HouseError.message("Movie encoder stopped.")
+              }
+              guard ProcessInfo.processInfo.systemUptime<readyDeadline else {
+                throw MovieEncoderTimeout(shot:shotIndex,frame:frame,expectedFrames:frames,width:width,height:height,
+                  writerStatus:writer.status.rawValue,waitedSeconds:ProcessInfo.processInfo.systemUptime-readyStarted)
+              }
+              try await Task.sleep(nanoseconds: 10_000_000)
             }
-            try await Task.sleep(nanoseconds: 10_000_000)
+            let phase =
+              shot.startPhase + (shot.endPhase - shot.startPhase) * Double(frame)
+              / Double(max(1, frames - 1))
+            let pose = TourDirector.camera(shot, phase: phase)
+            camera.simdPosition = pose.0.render
+            camera.eulerAngles = SCNVector3(Float(pose.2), Float(pose.1), 0)
+            guard let pool=adaptor.pixelBufferPool else{throw HouseError.message("Movie encoder did not provide a reusable frame pool.")}
+            let buffer=try await renderer.frame(at:Double(frame)/30,pool:pool)
+            guard adaptor.append(buffer,withPresentationTime:CMTime(value:Int64(frame),timescale:30)) else{throw writer.error ?? HouseError.message("Movie frame was rejected.")}
+            try checkpoint?("frame-encoded")
+            progress(Double(complete + frame + 1) / Double(total))
+            await Task.yield()
           }
-          let phase =
-            shot.startPhase + (shot.endPhase - shot.startPhase) * Double(frame)
-            / Double(max(1, frames - 1))
-          let pose = TourDirector.camera(shot, phase: phase)
-          camera.simdPosition = pose.0.render
-          camera.eulerAngles = SCNVector3(Float(pose.2), Float(pose.1), 0)
-          guard let pool=adaptor.pixelBufferPool else{throw HouseError.message("Movie encoder did not provide a reusable frame pool.")}
-          let buffer=try await renderer.frame(at:Double(frame)/30,pool:pool)
-          guard adaptor.append(buffer,withPresentationTime:CMTime(value:Int64(frame),timescale:30)) else{throw writer.error ?? HouseError.message("Movie frame was rejected.")}
-          try checkpoint?("frame-encoded")
-          progress(Double(complete + frame + 1) / Double(total))
-          await Task.yield()
+          // Close the timeline after the last frame's full display interval.
+          // Without this the writer may end at (frames-1)/fps and short clips
+          // accumulate missing frame durations during passthrough assembly.
+          writer.endSession(atSourceTime:CMTime(value:Int64(frames),timescale:30))
+          input.markAsFinished()
+          let finishWatchdog=Task {
+            do{try await Task.sleep(nanoseconds:30_000_000_000);writer.cancelWriting()}catch{}
+          }
+          await withTaskCancellationHandler(operation:{await writer.finishWriting()},onCancel:{writer.cancelWriting()})
+          finishWatchdog.cancel()
+          guard writer.status == .completed else {
+            throw writer.error ?? HouseError.message("Movie segment did not finish.")
+          }
+          if let issue=await clipIssue(candidate,frames:frames,width:width,height:height){throw HouseError.message("Encoded shot: "+issue)}
+          try FileManager.default.moveItem(at: candidate, to: url)
+          try DurableFiles.write(Data(try StreamingArchive.digest(url).sha.utf8),to:checksumURL)
+          files.append(url)
+          complete += frames
+          try repo.job(hash, state: "checkpointed", data: planData)
+          try checkpoint?("shot-committed")
+          break
+        } catch {
+          writer.cancelWriting()
+          try? FileManager.default.removeItem(at: candidate)
+          try? repo.job(hash, state: "checkpointed", data: planData)
+          // A stalled encoder is replaced once, from the start of this uncommitted
+          // shot. Completed, checksummed shots are untouched. Never retry other
+          // errors, cancellation, backgrounding, or a critical thermal condition.
+          if let timeout=error as? MovieEncoderTimeout,encoderAttempt==0,
+            !FileManager.default.fileExists(atPath:url.path),
+            UIApplication.shared.applicationState != .background,
+            ProcessInfo.processInfo.thermalState != .critical {
+            try Task.checkCancellation()
+            encoderAttempt+=1;encoderRecovery?(timeout)
+            await Task.yield()
+            continue
+          }
+          throw error
         }
-        // Close the timeline after the last frame's full display interval.
-        // Without this the writer may end at (frames-1)/fps and short clips
-        // accumulate missing frame durations during passthrough assembly.
-        writer.endSession(atSourceTime:CMTime(value:Int64(frames),timescale:30))
-        input.markAsFinished()
-        let finishWatchdog=Task {
-          do{try await Task.sleep(nanoseconds:30_000_000_000);writer.cancelWriting()}catch{}
-        }
-        await withTaskCancellationHandler(operation:{await writer.finishWriting()},onCancel:{writer.cancelWriting()})
-        finishWatchdog.cancel()
-        guard writer.status == .completed else {
-          throw writer.error ?? HouseError.message("Movie segment did not finish.")
-        }
-        if let issue=await clipIssue(candidate,frames:frames,width:width,height:height){throw HouseError.message("Encoded shot: "+issue)}
-        try FileManager.default.moveItem(at: candidate, to: url)
-        try DurableFiles.write(Data(try StreamingArchive.digest(url).sha.utf8),to:checksumURL)
-        files.append(url)
-        complete += frames
-        try repo.job(hash, state: "checkpointed", data: planData)
-        try checkpoint?("shot-committed")
-      } catch {
-        writer.cancelWriting()
-        try? FileManager.default.removeItem(at: candidate)
-        try? repo.job(hash, state: "checkpointed", data: planData)
-        throw error
       }
     }
     let output = Exporter.destination("House-Xray-tour.mp4")
