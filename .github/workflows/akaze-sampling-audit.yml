@@ -4,7 +4,9 @@ on:
     branches: [main]
     paths:
       - .github/workflows/akaze-sampling-audit.yml
-      - experiments/akaze-sampling-audit/**
+      - experiments/akaze-sampling-audit/prepare.py
+      - experiments/akaze-sampling-audit/run.py
+      - experiments/akaze-sampling-audit/test_aggregate.py
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,7 +14,13 @@ concurrency:
   group: akaze-sampling-audit
   cancel-in-progress: true
 jobs:
+  retired:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "The fifth repair budget is exhausted. Reports are retained; no replay is authorized by this workflow."
   replay:
+    # Retain the reproducer without spending another bounded repair attempt.
+    if: ${{ false }}
     strategy:
       fail-fast: false
       max-parallel: 1
