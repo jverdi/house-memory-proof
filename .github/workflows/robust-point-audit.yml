@@ -1,0 +1,101 @@
+name: Audit robust repeated-point localization
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/robust-point-audit.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: robust-point-audit
+  cancel-in-progress: true
+jobs:
+  replay:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: f8259c889397a5c0b7e898e1c9a99f30b1344b7a
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Build isolated candidate without changing shipping source
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p=pathlib.Path('HouseMemoryProof/VisualMapping.swift')
+          s=p.read_text()
+          before='supported.reduce(V3()){$0+$1.0}*(1/Double(supported.count))'
+          assert s.count(before)==2
+          s=s.replace(before,'robustPoint(supported.map{$0.0})')
+          helper='''  static func robustPoint(_ points:[V3])->V3 {
+            guard !points.isEmpty else{return V3()}
+            var estimate=points.reduce(V3()){$0+$1}*(1/Double(points.count))
+            for _ in 0..<24 {
+              var sum=V3(),weights=0.0
+              for point in points {
+                let weight=1/max(0.000001,(point-estimate).length)
+                sum=sum+point*weight;weights+=weight
+              }
+              let next=sum*(1/weights)
+              if (next-estimate).length<0.0000001{return next}
+              estimate=next
+            }
+            return estimate
+          }
+          '''
+          marker='  static func fusedPoints('
+          assert s.count(marker)==1
+          p.write_text(s.replace(marker,helper+marker))
+          PY
+          mkdir -p build/robust-point-evidence
+          git rev-parse HEAD > build/robust-point-evidence/source.txt
+          git diff -- HouseMemoryProof/VisualMapping.swift > build/robust-point-evidence/candidate.diff
+          bash tooling/opencv/build-host.sh
+          shasum -a 256 build/vision-replay > build/robust-point-evidence/binary.txt
+          python3 -m venv build/vision-env
+          build/vision-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+      - name: Preserve low-resolution failures and all existing house protocols
+        run: |
+          failed=0
+          for width in 384 768; do
+            for seed in 905771 683431; do
+              build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/finished-$seed-$width" --seed "$seed" --paired --staggered --finished-capture --width "$width"
+              build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/finished-$seed-$width" --output "build/robust-point-evidence/finished-$seed-$width.json" --refine --bundle --house || failed=1
+            done
+          done
+          for spec in 'rough-a 905771' 'rough-b 683431' 'paired 905771 --paired' 'staggered 905771 --paired --staggered'; do
+            read -r name seed arg1 arg2 <<< "$spec"
+            build/vision-env/bin/python tooling/simulation/house_layout_fixture.py "build/$name" --seed "$seed" ${arg1:-} ${arg2:-}
+            build/vision-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "build/$name" --output "build/robust-point-evidence/$name.json" --refine --bundle --house || failed=1
+          done
+          exit "$failed"
+      - name: Report aggregate acceptance without spatial replay details
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          keys=['passed','positiveQueries','positiveAccepted','negativeQueries','falseAccepts','p95Metres','worstAcceptedPositionErrorMetres','oracleReadDenied','scenarioMetrics','mapCount','optimizedCameraCount','maximumOptimizedCameraPositionErrorMetres']
+          for path in sorted(pathlib.Path('build/robust-point-evidence').glob('*.json')):
+              report=json.loads(path.read_text())
+              print('ROBUST_POINT_AGGREGATE '+json.dumps(dict(case=path.stem,**{k:report[k] for k in keys if k in report})),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: robust-point-development-diagnostics
+          path: build/robust-point-evidence/
+          retention-days: 14
