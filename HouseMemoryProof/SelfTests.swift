@@ -1279,14 +1279,14 @@ extension SelfTests {
         let base=Observation(roomID:room,stageID:stage,segmentID:segment.id,timestamp:0,image:"search-fixture.jpg",width:64,height:64,camera:Rigid().values,intrinsics:[32,0,32,0,32,32,0,0,1],tracking:"synthetic metadata",light:500,sharpness:0.1)
         var expected=Set<UUID>()
         for i in 0..<50000 {
-            var o=base;o.id=UUID();o.timestamp=Double(i);o.note=i%1000==0 ? "Supply valve":"Electrical outlet"
+            var o=base;o.id=UUID();o.timestamp=Double(i);o.note=(i%1000==0 ? "Supply valve":"Electrical outlet")+" · photograph \(i)"
             if i%1000==0 {expected.insert(o.id)}
             house.observations.append(o)
         }
         house.features=[Feature(name:"Panel A",trade:.electrical,roomID:room,stageID:stage,kind:.observed,mesh:Mesh())]
         let start=ProcessInfo.processInfo.systemUptime,index=try EvidenceSearch.Index(house:house)
         let build=(ProcessInfo.processInfo.systemUptime-start)*1000
-        let first=try index.find("",limit:200),valves=try index.find("CAFE valve"),panel=try index.find("café panel")
+        let first=try index.find("",limit:200),valves=try index.find("CAFE valve"),panel=try index.find("cafe\u{301} panel")
         guard first.observationCount==50000,first.observations.count==200,first.observations.first?.id==house.observations.last?.id,
           valves.observationCount==50,Set(valves.observations.map{$0.id})==expected,panel.featureCount==1,panel.observationCount==0 else{throw HouseError.message("Search lost room metadata, word matching, ordering or result pagination.")}
         var times:[Double]=[]
@@ -1304,7 +1304,7 @@ extension SelfTests {
         guard named.documentaryPhotos.map({$0.id})==[known.id],named.photographCount==1,
           all.photographCount==2,all.documentaryPhotos.count==1,all.documentaryPhotos[0].id==unknown.id,
           all.observations.isEmpty else{throw HouseError.message("Documentary search lost labels or fabricated room/stage metadata.")}
-        return ["test":"Fifty-thousand photograph metadata search","passed":p95<=300,"photographs":50000,"defaultPageSize":200,"indexBuildMilliseconds":build,"queryP95Milliseconds":p95,"queries":times.count,"imageFilesRead":0,"limitations":"Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone."]
+        return ["test":"Fifty-thousand photograph metadata search","passed":p95<=300,"photographs":50000,"uniquePhotoMetadata":50000,"defaultPageSize":200,"indexBuildMilliseconds":build,"queryP95Milliseconds":p95,"queries":times.count,"imageFilesRead":0,"limitations":"Synthetic metadata workload. Simulator results do not qualify sustained performance on the owner's phone."]
     }
     nonisolated static func memorySample()->[String:UInt64] {
         var info=task_vm_info_data_t()

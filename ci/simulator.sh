@@ -156,13 +156,18 @@ done
 fi
 if [ "$mode" = recovery ]; then exit 0; fi
 
+set +e
 python3 ci/run_bounded.py 600 xcodebuild test -project HouseMemoryProof.xcodeproj -scheme HouseMemoryProof \
   -configuration Debug -destination "platform=iOS Simulator,id=$device_id" \
   -derivedDataPath build/DerivedData -resultBundlePath build/evidence/ui-tests.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES \
   2>&1 | tee build/evidence/ui-tests.log
+ui_failed=${PIPESTATUS[0]}
+set -e
 
-xcrun xcresulttool export attachments --path build/evidence/ui-tests.xcresult --output-path build/evidence/ui-attachments
+if [ -d build/evidence/ui-tests.xcresult ]; then
+  xcrun xcresulttool export attachments --path build/evidence/ui-tests.xcresult --output-path build/evidence/ui-attachments || true
+fi
 
 # Preserve a readable, SDK-formatted source package for the next reviewed checkpoint.
 mkdir -p build/formatted-source
@@ -170,5 +175,6 @@ cp -R HouseMemoryProof HouseXrayUITests build/formatted-source/
 rm -rf build/formatted-source/HouseMemoryProof/IFC build/formatted-source/HouseMemoryProof/Assets.xcassets
 xcrun swift-format format --in-place --recursive build/formatted-source
 tar -czf build/evidence/formatted-source.tgz -C build/formatted-source .
-exit "$native_failed"
+if [ "$native_failed" -ne 0 ]; then exit "$native_failed"; fi
+exit "$ui_failed"
 

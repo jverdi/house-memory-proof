@@ -121,9 +121,9 @@ final class HouseXraySmoke: XCTestCase {
     defer {XCUIDevice.shared.orientation = .portrait;app.terminate()}
     XCTAssertTrue(app.tabBars.buttons["Explore"].waitForExistence(timeout:20));app.tabBars.buttons["Explore"].tap()
     app.buttons["Layers"].tap()
-    let toggle=app.switches["Step and snap-turn buttons"]
-    XCTAssertTrue(toggle.waitForExistence(timeout:5));if toggle.value as? String != "1" {toggle.tap()}
+    setSwitch(app.switches["Step and snap-turn buttons"],to:true)
     app.buttons["Done"].tap()
+    screenshot("13-portrait-step-navigation")
     let names=["Step left","Step forward","Step backward","Step right","Turn left 15 degrees","Look up 15 degrees","Look down 15 degrees","Turn right 15 degrees"]
     for orientation in [UIDeviceOrientation.portrait,.landscapeLeft] {
       XCUIDevice.shared.orientation=orientation
@@ -133,12 +133,24 @@ final class HouseXraySmoke: XCTestCase {
         XCTAssertTrue(app.frame.contains(button.frame));button.tap()
       }
     }
-    screenshot("13-landscape-step-navigation")
-    app.buttons["Layers"].tap();app.switches["Orbit overview"].tap();app.buttons["Done"].tap()
+    screenshot("14-landscape-step-navigation")
+    app.buttons["Layers"].tap();setSwitch(app.switches["Orbit overview"],to:true);app.buttons["Done"].tap()
     XCTAssertFalse(app.buttons["Step forward"].isEnabled)
-    app.buttons["Layers"].tap();app.switches["Orbit overview"].tap();app.buttons["Done"].tap()
+    app.buttons["Layers"].tap();setSwitch(app.switches["Orbit overview"],to:false);app.buttons["Done"].tap()
     XCTAssertTrue(app.buttons["Step forward"].isEnabled)
-    app.buttons["Layers"].tap();app.switches["Step and snap-turn buttons"].tap();app.buttons["Done"].tap()
+    app.buttons["Layers"].tap();setSwitch(app.switches["Step and snap-turn buttons"],to:false);app.buttons["Done"].tap()
+  }
+  @MainActor private func setSwitch(_ row:XCUIElement,to enabled:Bool) {
+    XCTAssertTrue(row.waitForExistence(timeout:5))
+    let expected=enabled ? "1":"0"
+    if row.value as? String != expected {
+      // SwiftUI exposes the labeled Form row and its UISwitch separately.
+      // A center tap on the row can hit the label without changing the switch.
+      let control=row.switches.firstMatch
+      (control.exists ? control:row).tap()
+    }
+    let changed=expectation(for:NSPredicate(format:"value == %@",expected),evaluatedWith:row)
+    wait(for:[changed],timeout:5)
   }
   func screenshot(_ name: String) {
     let a = XCTAttachment(screenshot: XCUIScreen.main.screenshot())

@@ -180,57 +180,74 @@ enum EvidenceSearch {
     var photographCount:Int {observationCount+documentaryCount}
   }
   struct Index {
-    struct Photo {var value:Observation;var text:String}
-    struct Object {var value:Feature;var text:String}
-    struct Documentary {var value:DocumentaryPhoto;var text:String}
+    struct Photo {var value:Observation;var group:Int}
+    struct Object {var value:Feature;var group:Int}
+    struct Documentary {var value:DocumentaryPhoto;var group:Int}
     let id=UUID();var houseID:UUID;var revision:Int
     private var photos:[Photo]=[],objects:[Object]=[],documentary:[Documentary]=[]
+    private var textBytes:[Data]=[]
     init(house:House)throws {
       houseID=house.id;revision=house.revision
       let rooms=Dictionary(house.rooms.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
       let stages=Dictionary(house.stages.map{($0.id,EvidenceSearch.normalized($0.name))},uniquingKeysWith:{a,_ in a})
+      var groups:[String:Int]=[:]
+      func group(_ text:String)->Int {
+        if let existing=groups[text] {return existing}
+        let id=textBytes.count;textBytes.append(Data(text.utf8));groups[text]=id;return id
+      }
       for (index,o) in house.observations.reversed().enumerated() {
         if index%256==0 {try Task.checkCancellation()}
-        photos.append(Photo(value:o,text:EvidenceSearch.normalized(o.note)+" "+(rooms[o.roomID] ?? "")+" "+(stages[o.stageID] ?? "")))
+        let text=EvidenceSearch.normalized(o.note)+" "+(rooms[o.roomID] ?? "")+" "+(stages[o.stageID] ?? "")
+        let id=group(text);photos.append(Photo(value:o,group:id))
       }
       for (index,f) in house.features.enumerated() {
         if index%256==0 {try Task.checkCancellation()}
-        objects.append(Object(value:f,text:EvidenceSearch.normalized(f.name+" "+f.notes+" "+f.endpoint+" "+f.trade.rawValue+" "+f.kind.rawValue)+" "+(rooms[f.roomID] ?? "")+" "+(stages[f.stageID] ?? "")))
+        let text=EvidenceSearch.normalized(f.name+" "+f.notes+" "+f.endpoint+" "+f.trade.rawValue+" "+f.kind.rawValue)+" "+(rooms[f.roomID] ?? "")+" "+(stages[f.stageID] ?? "")
+        let id=group(text);objects.append(Object(value:f,group:id))
       }
       for (index,p) in house.documentaryPhotos.reversed().enumerated() {
         if index%256==0 {try Task.checkCancellation()}
-        documentary.append(Documentary(value:p,text:EvidenceSearch.normalized(p.note)+" "+(p.roomID.flatMap{rooms[$0]} ?? "")+" "+(p.stageID.flatMap{stages[$0]} ?? "")))
+        let text=EvidenceSearch.normalized(p.note)+" "+(p.roomID.flatMap{rooms[$0]} ?? "")+" "+(p.stageID.flatMap{stages[$0]} ?? "")
+        let id=group(text);documentary.append(Documentary(value:p,group:id))
       }
     }
     func find(_ query:String,limit:Int=200)throws->Result {
       guard (1...50000).contains(limit) else{throw HouseError.message("Search result limit is outside the supported range.")}
-      let terms=EvidenceSearch.normalized(String(query.prefix(500))).split(whereSeparator:{$0.isWhitespace}).map(String.init)
+      let terms=EvidenceSearch.normalized(String(query.prefix(500))).split(whereSeparator:{$0.isWhitespace}).map{Data($0.utf8)}
+      // Both sides are case/diacritic folded and canonically composed once.
+      // Native byte search avoids repeated grapheme work in every record;
+      // shared metadata is matched once without caching a previous query.
+      var matches=[Bool](repeating:false,count:textBytes.count)
+      for index in textBytes.indices {
+        if index%256==0 {try Task.checkCancellation()}
+        matches[index]=terms.allSatisfy{textBytes[index].range(of:$0) != nil}
+      }
       var result=Result()
-      for (index,row) in photos.enumerated() {
+      for index in photos.indices {
         if index%256==0 {try Task.checkCancellation()}
-        if terms.allSatisfy({row.text.contains($0)}) {
+        if matches[photos[index].group] {
           result.observationCount+=1
-          if result.observations.count<limit {result.observations.append(row.value)}
+          if result.observations.count<limit {result.observations.append(photos[index].value)}
         }
       }
-      for (index,row) in objects.enumerated() {
+      for index in objects.indices {
         if index%256==0 {try Task.checkCancellation()}
-        if terms.allSatisfy({row.text.contains($0)}) {
+        if matches[objects[index].group] {
           result.featureCount+=1
-          if result.features.count<limit {result.features.append(row.value)}
+          if result.features.count<limit {result.features.append(objects[index].value)}
         }
       }
-      for (index,row) in documentary.enumerated() {
+      for index in documentary.indices {
         if index%256==0 {try Task.checkCancellation()}
-        if terms.allSatisfy({row.text.contains($0)}) {
+        if matches[documentary[index].group] {
           result.documentaryCount+=1
-          if result.documentaryPhotos.count<limit {result.documentaryPhotos.append(row.value)}
+          if result.documentaryPhotos.count<limit {result.documentaryPhotos.append(documentary[index].value)}
         }
       }
       return result
     }
   }
   static func normalized(_ text:String)->String {
-    text.folding(options:[.caseInsensitive,.diacriticInsensitive],locale:Locale(identifier:"en_US_POSIX"))
+    text.folding(options:[.caseInsensitive,.diacriticInsensitive],locale:Locale(identifier:"en_US_POSIX")).precomposedStringWithCanonicalMapping
   }
 }
