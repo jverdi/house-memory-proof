@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T22:27:59.565311Z",
+  "updatedUTC": "2026-10-18T22:43:48.119726Z",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "3883931263a2861a28cd354f190bbc3d8d71f178",
+  "currentImplementationCommit": "bf0a75c353953233c6a517fca7a71693cae37f1e",
   "testflight": {
     "build": "216.1",
     "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -67,7 +67,7 @@
   "nextAction": "Validate the combined movement/settings and room-map candidate with all 19 interface workflows and 178 native checks. Inspect screenshots 34/38/40\u201346. Then continue broader software acceptance while retaining localization failures, the exhausted detector budget and all device/provider/field gates. TestFlight remains 216.1 without an intermediate upload.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "prepared",
+    "status": "native_diagnostics_in_progress",
     "precedingSource": "3883931263a2861a28cd354f190bbc3d8d71f178",
     "nativeExpected": 178,
     "interfaceExpected": 19,
@@ -80,7 +80,13 @@
     "uiRunnerBudgetSeconds": 2100,
     "uiStepTimeoutMinutes": 37,
     "nativeAppBudgetSeconds": 300,
-    "wholeJobTimeoutMinutes": 60
+    "wholeJobTimeoutMinutes": 60,
+    "source": "bf0a75c353953233c6a517fca7a71693cae37f1e",
+    "run": 39172396220,
+    "build": "225.1",
+    "debugCompilationPassed": true,
+    "unsignedReleaseCompilationPassed": true,
+    "simulatorJob": 117808007897
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",

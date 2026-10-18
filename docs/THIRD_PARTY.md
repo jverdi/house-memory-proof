@@ -20,3 +20,9 @@ OpenCV 4.13.0, official source commit `fe38fc608f6acb8b68953438a62305d8318f4fcd`
 
 Ceres Solver 2.2.0 (BSD-3-Clause), official source commit `85331393dc0dff09f6fb9903ab0c4bfa3e134b01`, and Eigen 3.4.0 (MPL-2.0), official commit `3147391d946bb4b6c68edd901f2add6ac1f31f8c`, are statically compiled with `EIGEN_MPL2_ONLY`, minimal Ceres logging, and no CUDA, SuiteSparse, LAPACK or external logging dependency. Unmodified library source: https://github.com/ceres-solver/ceres-solver/tree/2.2.0 and https://gitlab.com/libeigen/eigen/-/tree/3.4.0 . Both complete license files are included in the app's IFC resources. Packaging and native integration are under qualification; no field-precision claim follows from using this solver.
 
+## Coded reference detection
+
+AprilTag **3.4.5**, official source commit `94be783968e5091bcc9972c72c84fd63efce2935`, is statically compiled for the host, iOS and iOS simulator by `tooling/references/build.sh`. The upstream source is unmodified; `packages/reference-core/hx_tags.c` is the project's separate bounded bridge. The library supplies tag36h11 detection for printed reference boards, with no runtime download.
+
+Its [pinned upstream license](https://github.com/AprilRobotics/apriltag/blob/94be783968e5091bcc9972c72c84fd63efce2935/LICENSE.md) is BSD 2-Clause, copyright 2013–2016 The Regents of The University of Michigan. The build script preserves the complete notice as `build/apriltag/APRILTAG-LICENSE.txt`; both `ci/simulator.sh` and `ci/testflight.sh` copy it into the app's `IFC` resource folder. This documents the existing packaging path; it does not claim a new inspection of the final signed bundle or physical marker accuracy.
+
