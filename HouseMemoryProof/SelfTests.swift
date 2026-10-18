@@ -955,12 +955,48 @@ import simd
                 h.features=[source]
                 let round=try ServiceEnvelope.feature(source:source,interval:0,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:0.001,evidence:"=literal synthetic dimension evidence",house:h)
                 let rectangle=try ServiceEnvelope.feature(source:source,interval:0,section:.rectangular,width:0.2,height:0.1,widthAxis:V3(0,1,0),tolerance:nil,evidence:"Synthetic duct section",house:h)
-                h.features += [round,rectangle];try repo.save(h)
+                let bentLine=[V3(0,0,2),V3(1,0,2),V3(1,1,2),V3(1,2,3)]
+                let curved=Feature(name:"Recorded bent route",trade:.plumbing,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.synthetic,mesh:Mesh(vertices:bentLine,triangles:[]),route:bentLine)
+                h.features.append(curved)
+                let bent=try ServiceEnvelope.feature(source:curved,interval:0,endInterval:2,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:0.001,evidence:"Synthetic constant diameter measured along all three intervals",house:h)
+                h.features += [round,rectangle,bent];try repo.save(h)
                 let archive=try Exporter.archive(h,repo:repo),target=try Repository(root:folder.appendingPathComponent("envelope-restore")),restored=try Exporter.restore(archive,repo:target)
                 guard restored.features==h.features,restored.rooms==h.rooms else{return false}
                 try Data(contentsOf:archive).write(to:mainRepo.root.appendingPathComponent("service-envelopes.hxray"))
                 try Data(contentsOf:Exporter.glb(h,options:SceneOptions())).write(to:mainRepo.root.appendingPathComponent("service-envelopes.glb"))
                 try Data(contentsOf:Exporter.semanticCSV(h)).write(to:mainRepo.root.appendingPathComponent("service-envelopes.csv"))
+                return true
+            }
+            await check("Connected circular envelopes preserve measured radius and reject tight reversing overlapping or forged routes") {
+                let routes=[[V3(),V3(1,0,0),V3(1,1,0)],[V3(),V3(0,0,1),V3(0,1,1)],
+                  [V3(),V3(1,0,0),V3(2,0,0)],[V3(),V3(1,0,0),V3(1,1,0),V3(1,2,1)]]
+                for route in routes {
+                    var h=House.empty("Connected envelope");h.isDemo=true
+                    let source=Feature(name:"Recorded route",trade:.plumbing,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.synthetic,mesh:Mesh(vertices:route,triangles:[]),route:route)
+                    h.features=[source]
+                    let envelope=try ServiceEnvelope.feature(source:source,interval:0,endInterval:route.count-2,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:nil,evidence:"Measured along every interval",house:h)
+                    guard envelope.route==route,envelope.envelope?.version==2,envelope.mesh.vertices.count==route.count*64+2 else{return false}
+                    for i in route.indices {for vertex in envelope.mesh.vertices[(i*64)..<((i+1)*64)] {
+                        let offset=vertex-route[i]
+                        for j in max(0,i-1)..<min(route.count-1,i+1) {
+                            let tangent=(route[j+1]-route[j]).normalized
+                            guard abs((offset-tangent*offset.dot(tangent)).length-0.025)<1e-10 else{return false}
+                        }
+                    }}
+                    h.features.append(envelope);try h.validate()
+                    var tampered=h;tampered.features[1].route[0].z += 0.2
+                    tampered.features[1].mesh=try envelope.envelope!.mesh(along:tampered.features[1].route)
+                    do{try tampered.validate();return false}catch{}
+                    var stale=h;stale.features[0].revision+=1
+                    guard !DerivedEvidence.currentIDs(stale).contains(envelope.id) else{return false}
+                }
+                let refused=[[V3(),V3(),V3(1,0,0)],[V3(),V3(1,0,0),V3()],
+                  [V3(),V3(0.01,0,0),V3(0.01,0.01,0)],
+                  [V3(),V3(1,0,0),V3(1,1,0),V3(0,1,0),V3()]]
+                for route in refused {
+                    let value=ServiceEnvelope(version:2,sourceFeatureID:UUID(),sourceRevision:1,sourceInterval:0,sourceEndInterval:route.count-2,section:.round,widthMetres:0.05,evidence:"Synthetic refusal")
+                    do{_=try value.mesh(along:route);return false}catch{}
+                }
                 return true
             }
             await check("Drawing marks preserve suggestion provenance and refuse crossed boundaries or stale edits") {
@@ -1624,6 +1660,26 @@ import simd
                 return true
             }
             await check("Deterministic tour source revision"){let a=try JSONEncoder().encode(TourDirector.plan(house)),b=try JSONEncoder().encode(TourDirector.plan(house));let p=try JSONDecoder().decode(TourPlan.self,from:a),q=try JSONDecoder().decode(TourPlan.self,from:b);return Set(p.shots.map{$0.roomID}).count==3 && p.shots.allSatisfy{$0.duration<=5} && p.sourceRevision==q.sourceRevision && p.shots.map{$0.position}==q.shots.map{$0.position}}
+            await check("Tour provenance binds exact source assets settings and deterministic profiles while preserving legacy plans") {
+                let plan=TourDirector.plan(house)
+                guard let original=plan.provenance,original==TourDirector.plan(house).provenance,
+                  original.sourceAssets==house.assets.sorted(),original.deterministicSeed==0,
+                  original.sourceMetadataSHA256==TourProvenance.digest(try TourProvenance.metadata(house)) else{return false}
+                var changed=house;changed.notes += "Metadata edit without revision increment"
+                guard let other=TourDirector.plan(changed).provenance,other.sourcePackageSHA256 != original.sourcePackageSHA256,
+                  other.profileSHA256==original.profileSHA256 else{return false}
+                var options=SceneOptions();options.trades=Set(Trade.allCases.reversed())
+                guard TourDirector.plan(house,options:options).provenance==original else{return false}
+                let variants=[TourDirector.plan(house,duration:21),TourDirector.plan(house,options:SceneOptions(mode:.finished)),
+                  TourDirector.plan(house,preset:.services),TourDirector.plan(house,preset:.beforeAfter),TourDirector.plan(house,aspect:1)]
+                guard variants.allSatisfy({$0.provenance?.sourcePackageSHA256==original.sourcePackageSHA256 && $0.provenance?.profileSHA256 != original.profileSHA256}),
+                  TourDirector.plan(house,duration:.nan).shots.isEmpty,TourDirector.plan(house,aspect:.infinity).shots.isEmpty else{return false}
+                let bytes=try JSONEncoder().encode(plan)
+                var legacy=try JSONSerialization.jsonObject(with:bytes) as! [String:Any];legacy.removeValue(forKey:"provenance")
+                guard try JSONDecoder().decode(TourPlan.self,from:JSONSerialization.data(withJSONObject:legacy)).provenance==nil else{return false}
+                let decoded=try JSONDecoder().decode(TourPlan.self,from:bytes)
+                return decoded.provenance==original
+            }
             await check("Clearance handles parallel rays and rejects incomplete indexes"){
                 let box=SpatialClearance.Bounds(low:V3(),high:V3(1,1,1))
                 let f=Feature(name:"wall",trade:.structure,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:V3(),size:V3(1,1,1)))
@@ -2313,7 +2369,7 @@ import simd
                     if let issue=await MovieExporter.clipIssue(movie,frames:300,width:1920,height:1080,decodeAllFrames:true) {throw HouseError.message("Complete movie decode: "+issue)}
                     let metadata=movie.deletingPathExtension().appendingPathExtension("json")
                     let savedPlan=try JSONDecoder().decode(TourPlan.self,from:Data(contentsOf:metadata))
-                    guard savedPlan.sourceRevision==house.revision,ShareSheet(url:movie).items==[movie,metadata],
+                    guard savedPlan.sourceRevision==house.revision,savedPlan.provenance==TourDirector.plan(house,duration:10).provenance,ShareSheet(url:movie).items==[movie,metadata],
                       savedPlan.shots.reduce(0,{$0+Int(($1.duration*30).rounded())})==300 else{throw HouseError.message("Movie share omitted its source/timeline metadata.")}
 
                     let directory=repo.root.appendingPathComponent("tours"),all=FileManager.default.enumerator(at:directory,includingPropertiesForKeys:[.contentModificationDateKey])!

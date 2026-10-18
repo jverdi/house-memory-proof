@@ -266,9 +266,15 @@ struct House:Codable,Identifiable,Equatable {
             }) else{throw HouseError.message("Invalid photograph point provenance: every control must identify an original photograph in the feature's capture session.")}
         }}
         for feature in features {if let envelope=feature.envelope {
-            guard envelope.valid,[EvidenceKind.observed,.synthetic].contains(feature.kind),feature.route.count==2,
+            guard envelope.valid,[EvidenceKind.observed,.synthetic].contains(feature.kind),
               let dependencies=feature.annotationSources,dependencies.count==1,dependencies[0].featureID==envelope.sourceFeatureID,dependencies[0].revision==envelope.sourceRevision,
               try envelope.mesh(along:feature.route)==feature.mesh else{throw HouseError.message("Invalid measured service envelope or source dependency.")}
+            if let original=features.first(where:{$0.id==envelope.sourceFeatureID && $0.revision==envelope.sourceRevision}) {
+                let end=envelope.sourceEndInterval ?? envelope.sourceInterval
+                guard original.envelope==nil,end<original.route.count-1,
+                  feature.route==Array(original.route[envelope.sourceInterval...(end+1)]),
+                  feature.roomID==original.roomID,feature.stageID==original.stageID,feature.segmentID==original.segmentID else{throw HouseError.message("The measured envelope does not match its recorded source intervals.")}
+            }
         }}
         for f in features {if let sources=f.annotationSources {guard !sources.isEmpty,sources.count<=64,Set(sources.map{$0.featureID}).count==sources.count,sources.allSatisfy({$0.featureID != f.id && $0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid annotation source relationships.")}}}
         for d in dimensions {guard d.a.finite,d.b.finite,roomIDs.contains(d.roomID),(d.segmentID==nil || segmentIDs.contains(d.segmentID!)),d.sourceGeometry==nil || (!d.sourceGeometry!.isEmpty && d.sourceGeometry!.count<=64 && d.sourceGeometry!.allSatisfy{$0.revision>0 && ($0.registration==nil || $0.registration!.valid)}) else{throw HouseError.message("Invalid measurement reference.")}}

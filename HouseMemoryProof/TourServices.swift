@@ -3,7 +3,7 @@ import SceneKit
 import UIKit
 
 struct TourServiceInspection:Codable,Equatable {
-  var profile="reviewed-route-v1"
+  var profile=TourServices.profile
   var routeIndex:Int
   var endpoint:Int?
   var confirmedLinkIDs:[UUID]
@@ -12,6 +12,7 @@ struct TourServiceInspection:Codable,Equatable {
 // A service tour inspects reviewed source routes. Camera cuts never assert a
 // physical connection; only explicitly confirmed links order neighboring routes.
 enum TourServices {
+  static let profile="reviewed-route-v1"
   static let trades:Set<Trade>=[.electrical,.lowVoltage,.plumbing,.hvac]
   static func plan(_ house:House,duration:Double,options:SceneOptions,aspect:Double)->TourPlan {
     var scope=options;scope.mode = .rough;scope.stage=nil

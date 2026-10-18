@@ -3,7 +3,7 @@ import SceneKit
 import UIKit
 
 struct TourRevealEvent:Codable,Equatable {
-  var profile="matched-reveal-v1"
+  var profile=TourReveal.profile
   var finishes:[TourSubject]
   var roughStageID:UUID
   var finishedStageIDs:[UUID]
@@ -16,6 +16,7 @@ struct TourRevealEvent:Codable,Equatable {
 }
 
 enum TourReveal {
+  static let profile="matched-reveal-v1"
   static func plan(_ house:House,duration:Double,options:SceneOptions,aspect:Double)->TourPlan {
     var roughScope=options;roughScope.mode = .rough;roughScope.stage=nil
     let source=TourDirector.plan(house,duration:duration,options:roughScope,aspect:aspect)

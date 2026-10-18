@@ -171,11 +171,12 @@ import json,pathlib,struct
 root=pathlib.Path('build/command-private/tour')
 try:
     result=json.loads((root/'result.json').read_text());plan=json.loads((root/'tour.json').read_text())
+    assert result['independentProvenanceCheck']['passed']
     assert result['passed'] and result['frames']==150 and result['shots']==len(plan['shots'])>0
     assert sum(round(s['duration']*30) for s in plan['shots'])==150
     for name in result['previews']:
         image=(root/name).read_bytes();assert image[:8]==b'\x89PNG\r\n\x1a\n' and struct.unpack('>II',image[16:24])==(640,360)
-    report=dict(passed=True,command='production native tour via CLI',shots=result['shots'],frames=result['frames'],previews=len(result['previews']),sourceModified=False,physicalQualification=False)
+    report=dict(passed=True,provenance=result['independentProvenanceCheck'],command='production native tour via CLI',shots=result['shots'],frames=result['frames'],previews=len(result['previews']),sourceModified=False,physicalQualification=False)
 except Exception as error:
     report=dict(passed=False,command='production native tour via CLI',errorClass=type(error).__name__,physicalQualification=False)
 pathlib.Path('build/evidence/cli-command-validation.json').write_text(json.dumps(report,indent=2)+'\n')

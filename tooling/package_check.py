@@ -169,7 +169,7 @@ def drawing_mark_check(mark):
 
 def envelope_check(value,feature=None,*,iso_dates=False):
     if value is None:return
-    require(isinstance(value,dict) and type(value.get('version')) is int and value['version']==1,'Invalid envelope version')
+    require(isinstance(value,dict) and type(value.get('version')) is int and value['version'] in (1,2),'Invalid envelope version')
     source=identity(value.get('sourceFeatureID'))
     require(type(value.get('sourceRevision')) is int and value['sourceRevision']>0 and type(value.get('sourceInterval')) is int and 0<=value['sourceInterval']<127,'Invalid envelope dependency')
     width=value.get('widthMetres');height=value.get('heightMetres');axis=value.get('widthAxis');section=value.get('section')
@@ -178,6 +178,9 @@ def envelope_check(value,feature=None,*,iso_dates=False):
     else:
         require(section=='Rectangular' and numeric(height) and .001<=height<=4 and vector(axis),'Invalid measured cross section')
         require(abs(math.sqrt(sum(axis[k]**2 for k in ['x','y','z']))-1)<1e-6,'Invalid width axis')
+    end=value.get('sourceEndInterval')
+    if value['version']==1:require(end is None,'Legacy envelope has a connected interval range')
+    else:require(section=='Round' and type(end) is int and value['sourceInterval']<end<127,'Invalid connected envelope range')
     tolerance=value.get('dimensionToleranceMetres')
     require(tolerance is None or (numeric(tolerance) and 0<tolerance<min(width,height or width)/2),'Invalid size tolerance')
     evidence=value.get('evidence');require(isinstance(evidence,str) and bool(evidence.strip()) and len(evidence.encode('utf-8'))<=4096 and '\0' not in evidence,'Missing envelope measurement evidence')
@@ -191,7 +194,11 @@ def envelope_check(value,feature=None,*,iso_dates=False):
     require(feature.get('kind') in ['observed','synthetic'] and source!=identity(feature['id']),'Invalid envelope evidence kind or self-reference')
     dependencies=feature.get('annotationSources')
     require(isinstance(dependencies,list) and len(dependencies)==1 and identity(dependencies[0].get('featureID'))==source and type(dependencies[0].get('revision')) is int and dependencies[0]['revision']==value['sourceRevision'],'Envelope dependency differs')
-    route=feature.get('route');require(isinstance(route,list) and len(route)==2 and all(vector(p) for p in route),'Invalid envelope centerline')
+    route=feature.get('route');expected_points=2 if value['version']==1 else end-value['sourceInterval']+2
+    require(isinstance(route,list) and len(route)==expected_points and all(vector(p) for p in route),'Invalid envelope centerline')
+    if value['version']==2:
+        connected_envelope_geometry(feature,width)
+        return
     # Independently inspect the cross section, cap placement and mesh topology.
     xyz=lambda p:[p[k] for k in ['x','y','z']]
     dot=lambda a,b:sum(x*y for x,y in zip(a,b))
@@ -214,6 +221,43 @@ def envelope_check(value,feature=None,*,iso_dates=False):
     topology=[]
     for i in range(n):j=(i+1)%n;topology += [i,j,i+n,j,j+n,i+n,2*n,j,i,2*n+1,i+n,j+n]
     require(indices==topology,'Envelope cap or side topology differs')
+
+
+def connected_envelope_geometry(feature,width):
+    """Check circles on both incident cylinders, rather than replaying the writer."""
+    xyz=lambda p:[p[k] for k in ['x','y','z']]
+    dot=lambda a,b:sum(x*y for x,y in zip(a,b))
+    sub=lambda a,b:[x-y for x,y in zip(a,b)]
+    cross=lambda a,b:[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]
+    unit=lambda v:[x/math.sqrt(dot(v,v)) for x in v]
+    route=list(map(xyz,feature['route']));deltas=[sub(b,a) for a,b in zip(route,route[1:])]
+    require(all(dot(v,v)>1e-10 for v in deltas),'Zero connected envelope interval')
+    tangents=list(map(unit,deltas));vertices=list(map(xyz,feature['mesh']['vertices']));n=64;r=width/2
+    require(len(vertices)==len(route)*n+2,'Connected ring count differs')
+    require(vertices[-2:]==[route[0],route[-1]],'Connected end cap differs')
+    extensions=[0]
+    for a,b in zip(tangents,tangents[1:]):
+        cosine=dot(a,b);require(cosine>=-1e-12,'Connected turn exceeds 90 degrees')
+        extensions.append(r*math.sqrt(max(0,(1-cosine)/(1+cosine))))
+    extensions.append(0)
+    require(all(math.sqrt(dot(v,v))>extensions[i]+extensions[i+1]+1e-5 for i,v in enumerate(deltas)),'Connected bend is too tight')
+    for i,center in enumerate(route):
+        incident=tangents[max(0,i-1):min(len(tangents),i+1)]
+        normal=unit([sum(t[k] for t in incident) for k in range(3)])
+        offsets=[sub(v,center) for v in vertices[i*n:(i+1)*n]]
+        require(all(abs(dot(p,normal))<1e-8 for p in offsets),'Ring left its bisector plane')
+        for tangent in incident:
+            ring=[[p[k]-tangent[k]*dot(p,tangent) for k in range(3)] for p in offsets]
+            require(all(abs(math.sqrt(dot(p,p))-r)<1e-8 for p in ring),'Ring disagrees with measured outer radius')
+            for a,b in zip(ring,ring[1:]+ring[:1]):
+                require(abs(dot(a,b)/r**2-math.cos(2*math.pi/n))<1e-7 and dot(cross(a,b),tangent)>0,'Ring ordering or sampling differs')
+    topology=[]
+    for i in range(len(route)-1):
+        for j in range(n):
+            a=i*n+j;b=i*n+(j+1)%n;topology += [a,b,a+n,b,b+n,a+n]
+    first=len(route)*n;last=(len(route)-1)*n
+    for j in range(n):k=(j+1)%n;topology += [first,k,j,first+1,last+j,last+k]
+    require(feature['mesh']['triangles']==topology,'Connected side or cap topology differs')
 
 
 def semantic_check(house):
@@ -286,6 +330,14 @@ def semantic_check(house):
         if feature.get('uv') is not None:
             require(len(feature['uv']) == len(points) and all(numeric(p.get('u')) and numeric(p.get('v')) for p in feature['uv']), 'Invalid texture coordinates')
         envelope_check(feature.get('envelope'),feature)
+        envelope=feature.get('envelope')
+        if envelope:
+            original=tables['features'].get(identity(envelope['sourceFeatureID']))
+            if original and original.get('revision')==envelope['sourceRevision']:
+                end=envelope.get('sourceEndInterval',envelope['sourceInterval'])
+                route=original.get('route',[])
+                require(original.get('envelope') is None and end<len(route)-1 and feature['route']==route[envelope['sourceInterval']:end+2], 'Envelope source interval differs')
+                require(all(feature.get(key)==original.get(key) for key in ['roomID','stageID','segmentID']), 'Envelope source frame differs')
         vertices += len(points); triangles += len(indices)//3
     for observation in tables['observations'].values():
         for key, table in [('roomID','rooms'), ('stageID','stages'), ('segmentID','segments')]:

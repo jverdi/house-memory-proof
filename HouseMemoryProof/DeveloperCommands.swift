@@ -52,6 +52,7 @@ import UIKit
     let output=folder.appendingPathComponent("output")
     try FileManager.default.createDirectory(at:output,withIntermediateDirectories:true)
     try DurableFiles.write(planBytes,to:output.appendingPathComponent("tour.json"))
+    try DurableFiles.write(TourProvenance.metadata(house),to:output.appendingPathComponent("source-metadata.json"))
     guard !plan.shots.isEmpty else{return ["passed":false,"command":"tour","houseSHA256":hash,"sourceRevision":house.revision,"excluded":plan.excluded,"error":"No supported tour viewpoint. Inspect the excluded regions in tour.json.","physicalQualification":false]}
     var previews:[String]=[]
     // Bounded storyboard; the complete deterministic timeline stays in JSON.

@@ -8,8 +8,8 @@ root,out=map(Path,sys.argv[1:])
 report=check_package(root/'service-envelopes.hxray')
 with zipfile.ZipFile(root/'service-envelopes.hxray') as archive:house=json.loads(archive.read('house.json'))
 features={f['id']:f for f in house['features']};envelopes=[f for f in features.values() if f.get('envelope')]
-assert len(envelopes)==2 and {f['envelope']['section'] for f in envelopes}=={'Round','Rectangular'}
-assert all(f['envelope']['sourceFeatureID'] in features and len(f['route'])==2 for f in envelopes)
+assert len(envelopes)==3 and {f['envelope']['section'] for f in envelopes}=={'Round','Rectangular'}
+assert all(f['envelope']['sourceFeatureID'] in features and len(f['route'])==(2 if f['envelope']['version']==1 else f['envelope']['sourceEndInterval']-f['envelope']['sourceInterval']+2) for f in envelopes)
 data=(root/'service-envelopes.glb').read_bytes();length=struct.unpack_from('<I',data,12)[0]
 model=json.loads(data[20:20+length]);binary=data[28+length:];maximum=0;seen=set()
 for node in model['nodes']:
@@ -41,6 +41,6 @@ for row in rows:
     assert abs(recorded-(original.pop('recorded')+978307200))<1
     assert exported==original
 aggregate=dict(passed=True,reader='Independent Python service-envelope archive GLB and CSV readers',
-    sections=2,sourceCenterlinesPreserved=True,declaredDimensionsVerified=True,sourceDependenciesPreserved=True,
+    sections=2,connectedCircularEnvelopes=sum(f['envelope']['version']==2 for f in envelopes),sourceCenterlinesPreserved=True,declaredDimensionsVerified=True,sourceDependenciesPreserved=True,
     maximumExportCoordinateErrorMetres=maximum,csvDateResolutionSeconds=1,measurementInstantPreserved=True,toleranceIsSizeOnly=True,sourceRecordsPublished=False,physicalQualification=False)
 out.write_text(json.dumps(aggregate,indent=2)+'\n');print(json.dumps(aggregate))

@@ -1,3 +1,13 @@
+# Source-bound tours and connected measured envelopes candidate
+
+Prepared after the owner-requested TestFlight 209.1 snapshot trigger (f0fbc7444b, run 39142067295). That delivery remains independent and must finish its own validation/upload/readiness gates.
+
+Tour sidecars now bind canonical house metadata, the sorted content-addressed original inventory, the directing profile/settings, and deterministic seed 0. All three presets retain the hashes; legacy sidecars remain readable without acquiring invented provenance. The production CLI emits canonical source metadata privately and an independent reader verifies the package/profile hashes and preservation of supplied input fields.
+
+Version-2 circular measured envelopes follow selected connected source intervals with bisector miter sections and parallel-transported ring ordering. They preserve recorded centerlines and measured radius on both incident intervals, cap only the recorded range, and refuse zero-length, reversing, over-90-degree, tight and nonadjacent-overlap cases. The owner confirms a constant measured diameter throughout the selected range. Old straight round/rectangular envelopes remain supported. Unknown fittings, hidden continuation, variable diameter and rectangular bend orientation are not inferred. Exact source intervals are now checked against the matching source revision.
+
+39 local Python command/reader contracts pass, including an independent analytic elbow and mutated radius/range/topology failures. Two new native checks and expanded archive/GLB/CSV interchange are prepared: 165 native / 12 UI expected, not yet validated. This does not complete whole-house, physical uncertainty or device acceptance.
+
 # Newly requested TestFlight snapshot
 
 The owner requested another current-state TestFlight on 2026-10-18. The one-shot release trigger targets the app implementation validated at d7f5b79e31 (163 native checks, 12 UI flows). The pipeline must pass again, sign/upload, and verify Apple processing and internal tester availability. This snapshot does not mark whole-house, physical-device, or field acceptance complete. Independent implementation continues.

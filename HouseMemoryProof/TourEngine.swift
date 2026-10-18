@@ -38,13 +38,57 @@ struct TourPlan: Codable {
   var height = 1080
   var motionProfile:String?="camera-motion-v1"
   var framingProfile:String?=TourFraming.profile
+  var provenance:TourProvenance?=nil
+}
+// Content-addressed originals are named in House.assets. The package digest binds
+// that sorted inventory and the canonical metadata, without loading raw captures.
+// Old sidecars remain readable, but do not gain provenance retroactively.
+struct TourProvenance:Codable,Equatable {
+  var schema=1
+  var metadataEncoding="swift-json-sorted-keys-v1"
+  var sourceMetadataSHA256:String
+  var sourceAssets:[String]
+  var sourcePackageSHA256:String
+  var profileDescriptor:String
+  var profileSHA256:String
+  var deterministicSeed=0
+  static let planner="tour-director-v2-source-bound"
+  static func digest(_ bytes:Data)->String {SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()}
+  static func metadata(_ house:House)throws->Data {
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    return try encoder.encode(house)
+  }
+  static func make(_ house:House,duration:Double,options:SceneOptions,preset:TourPreset,aspect:Double)throws->TourProvenance {
+    guard duration.isFinite,aspect.isFinite,aspect>0 else{throw HouseError.message("Tour duration and framing must be finite.")}
+    let metadataHash=digest(try metadata(house)),assets=house.assets.sorted()
+    let package="tour-package-v1\n"+metadataHash+"\n"+assets.joined(separator:"\n")+"\n"
+    let frames=Int((max(5,min(60,duration))*30).rounded())
+    let descriptor=[planner,"camera-motion-v1",TourFraming.profile,TourReveal.profile,TourServices.profile,
+      "renderer-v17-reviewed-services","preset="+preset.rawValue,"mode="+options.mode.rawValue,
+      "trades="+options.trades.map{$0.rawValue}.sorted().joined(separator:","),
+      "ceilings="+String(options.ceilings),"room="+(options.room?.uuidString ?? "all"),
+      "stage="+(options.stage?.uuidString ?? "all"),"aspect-f64="+String(aspect.bitPattern,radix:16),
+      "requested-frames="+String(frames),"fps=30","seed=0"].joined(separator:"\n")+"\n"
+    return TourProvenance(sourceMetadataSHA256:metadataHash,sourceAssets:assets,
+      sourcePackageSHA256:digest(Data(package.utf8)),profileDescriptor:descriptor,profileSHA256:digest(Data(descriptor.utf8)))
+  }
 }
 enum TourDirector {
   static func plan(_ h: House, duration: Double = 20, options: SceneOptions = SceneOptions(),preset:TourPreset = .overview,aspect:Double=16.0/9)
     -> TourPlan
   {
-    if preset == .beforeAfter {return TourReveal.plan(h,duration:duration,options:options,aspect:aspect)}
-    if preset == .services {return TourServices.plan(h,duration:duration,options:options,aspect:aspect)}
+    guard duration.isFinite,aspect.isFinite,aspect>0 else{return TourPlan(sourceRevision:h.revision,synthetic:h.isDemo,shots:[],excluded:["Invalid tour duration or image shape"])}
+    var result:TourPlan
+    switch preset {
+    case .beforeAfter:result=TourReveal.plan(h,duration:duration,options:options,aspect:aspect)
+    case .services:result=TourServices.plan(h,duration:duration,options:options,aspect:aspect)
+    case .overview:result=overview(h,duration:duration,options:options,aspect:aspect)
+    }
+    do {result.provenance=try TourProvenance.make(h,duration:duration,options:options,preset:preset,aspect:aspect)}
+    catch {result.shots=[];result.excluded.append("Source metadata could not be bound to this tour")}
+    return result
+  }
+  private static func overview(_ h:House,duration:Double,options:SceneOptions,aspect:Double)->TourPlan {
     let observations=PoseRefinement.selectedForHouse(h)
     var shots: [TourShot] = []
     var excluded: [String] = []

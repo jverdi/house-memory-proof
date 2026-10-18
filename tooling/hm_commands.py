@@ -176,11 +176,14 @@ def tour(scene, preset, duration, simulator, bundle, output, timeout=180):
             return result
         if result.get('houseSHA256') != digest:raise ValueError('Native result does not identify the staged scene')
         plan = json_bytes((source/'tour.json').read_bytes())
+        from check_tour_provenance import check as check_provenance
+        result['independentProvenanceCheck'] = check_provenance(plan, (source/'source-metadata.json').read_bytes(),
+            json_bytes((source.parent/'input/house.json').read_bytes()))
         previews = result.get('previews',[])
         if not 1 <= len(previews) <= 8 or not all(isinstance(n,str) and re.fullmatch(r'preview-\d+\.png',n) for n in previews):
             raise ValueError('Invalid native storyboard inventory')
         output.mkdir(parents=True)
-        for name in ['tour.json',*previews]:shutil.copyfile(source/name,output/name)
+        for name in ['tour.json','source-metadata.json',*previews]:shutil.copyfile(source/name,output/name)
         (output/'result.json').write_text(json.dumps(result,indent=2)+'\n')
         cards = []
         for name in previews:

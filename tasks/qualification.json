@@ -724,5 +724,17 @@
     "appleProcessingVerified": false,
     "internalTesterAccessVerified": false,
     "physicalInstallationVerified": false
+  },
+  "pendingContinuation": {
+    "scope": [
+      "source-and-profile-bound deterministic TourPlan",
+      "connected circular measured envelope geometry and selection",
+      "independent package/profile and envelope readers"
+    ],
+    "localCommandContractsPassed": 39,
+    "expectedNativeChecks": 165,
+    "expectedUIFlows": 12,
+    "nativeValidated": false,
+    "physicalQualification": false
   }
 }
