@@ -6,11 +6,66 @@ import CryptoKit
 // still possible, so restoration verifies every referenced byte again.
 enum ChunkedSnapshots {
   static let chunkLimit=16*1024*1024
+  private static let writeLock=NSRecursiveLock()
   struct Slice:Codable,Equatable {var chunk:String;var offset:Int;var length:Int}
   struct Asset:Codable,Equatable {var key:String;var bytes:UInt64;var slices:[Slice]}
   struct Manifest:Codable {
     var version=2;var projectID:UUID;var metadata:String;var deviceID:UUID
     var parentMetadata:String?;var assets:[Asset]
+  }
+  struct LocalLineage:Codable {
+    var version=1;var projectID:UUID;var deviceID:UUID;var metadata:String
+  }
+  static func lineageURL(projectID:UUID,deviceID:UUID,repo:Repository,folder:URL)->URL {
+    let scope=folder.standardizedFileURL.path+"\n"+projectID.uuidString+"\n"+deviceID.uuidString
+    return repo.root.appendingPathComponent("snapshot-lineage",isDirectory:true).appendingPathComponent(IncrementalSnapshots.hash(Data(scope.utf8))+".json")
+  }
+  static func localParent(projectID:UUID,deviceID:UUID,repo:Repository,folder:URL)throws->String? {
+    let url=lineageURL(projectID:projectID,deviceID:deviceID,repo:repo,folder:folder)
+    guard FileManager.default.fileExists(atPath:url.path) else{return nil}
+    let saved=try JSONDecoder().decode(LocalLineage.self,from:DurableFiles.read(url,limit:4096))
+    guard saved.version==1,saved.projectID==projectID,saved.deviceID==deviceID,IncrementalSnapshots.safe(saved.metadata) else{throw HouseError.message("Local snapshot history could not be verified. Existing snapshots and originals remain intact.")}
+    return saved.metadata
+  }
+  static func remember(_ revision:SnapshotRevision,deviceID:UUID,repo:Repository,folder:URL)throws {
+    let url=lineageURL(projectID:revision.projectID,deviceID:deviceID,repo:repo,folder:folder)
+    try FileManager.default.createDirectory(at:url.deletingLastPathComponent(),withIntermediateDirectories:true)
+    try DurableFiles.write(encode(LocalLineage(projectID:revision.projectID,deviceID:deviceID,metadata:revision.metadata)),to:url)
+  }
+  struct BranchSummary {
+    var heads:Set<UUID>=[];var branchedProjects=0;var incomplete=false
+    var message:String {
+      if incomplete {return "Snapshot branch history is incomplete. Some manifests may still be downloading or damaged. Available revisions remain listed; no branch was merged or removed."}
+      if branchedProjects>0 {return "\(branchedProjects) house(s) have separate snapshot branches. Restore the revision you want as a separate local house; both branches are preserved."}
+      return ""
+    }
+  }
+  static func branches(_ catalog:SnapshotCatalog,folder:URL)throws->BranchSummary {
+    var result=BranchSummary();result.incomplete = !catalog.unreadableRecords.isEmpty
+    let records=catalog.revisions.filter{$0.version==2}
+    guard records.count<=1000 else{result.incomplete=true;return result}
+    for group in Dictionary(grouping:records,by:{$0.projectID}).values {
+      var parents:[String:String]=[:],byMetadata:[String:UUID]=[:]
+      for record in group {
+        try Task.checkCancellation()
+        do {
+          let m=try manifest(record,base:IncrementalSnapshots.root(folder))
+          if byMetadata.updateValue(record.id,forKey:record.metadata) != nil {result.incomplete=true}
+          if let parent=m.parentMetadata {parents[record.metadata]=parent}
+        } catch is CancellationError {throw CancellationError()}
+        catch {result.incomplete=true}
+      }
+      for start in byMetadata.keys {
+        var visited:Set<String>=[],node=start
+        while let parent=parents[node] {
+          guard visited.insert(node).inserted,byMetadata[parent] != nil else{result.incomplete=true;break}
+          node=parent
+        }
+      }
+      let referenced=Set(parents.values),heads=byMetadata.filter{!referenced.contains($0.key)}.map{$0.value}
+      result.heads.formUnion(heads);if heads.count>1 {result.branchedProjects+=1}
+    }
+    return result
   }
   static func encode<T:Encodable>(_ value:T)throws->Data {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys];return try encoder.encode(value)
@@ -35,6 +90,7 @@ enum ChunkedSnapshots {
     guard IncrementalSnapshots.hash(data)==String(key.prefix(64)) else{throw HouseError.message("Snapshot chunk manifest checksum mismatch.")}
     let m=try JSONDecoder().decode(Manifest.self,from:data)
     guard m.version==2,m.projectID==revision.projectID,m.metadata==revision.metadata,m.assets.count==revision.assets.count,
+      m.parentMetadata==nil || (m.parentMetadata != m.metadata && IncrementalSnapshots.safe(m.parentMetadata!)),
       m.assets.map({$0.key}).sorted()==revision.assets.sorted() else{throw HouseError.message("Snapshot chunk manifest and revision disagree.")}
     var references=0
     for asset in m.assets {
@@ -69,6 +125,7 @@ enum ChunkedSnapshots {
     }
   }
   static func write(house:House,repo:Repository,folder:URL,deviceID:UUID,checkpoint:((String)throws->Void)?=nil)throws->SnapshotRevision {
+    writeLock.lock();defer{writeLock.unlock()}
     try house.validate();let base=IncrementalSnapshots.root(folder)
     for name in ["chunks","manifests","metadata","revisions"] {try FileManager.default.createDirectory(at:base.appendingPathComponent(name),withIntermediateDirectories:true)}
     let data=try encode(house)
@@ -84,10 +141,20 @@ enum ChunkedSnapshots {
       guard try IncrementalSnapshots.read(base.appendingPathComponent("metadata").appendingPathComponent(metadata),limit:100_000_000)==data else{throw HouseError.message("Snapshot metadata failed readback.")}
       return record
     }
-    if let result=try existing(){return result}
+    if let result=try existing(){try remember(result,deviceID:deviceID,repo:repo,folder:folder);return result}
     // Reuse whole immutable asset references from one parent. Adding a small
     // original never repacks all the old assets into different chunk hashes.
     let catalog=try IncrementalSnapshots.inspectCatalog(folder:folder)
+    // Remote arrival order does not establish ancestry. This device continues
+    // only the snapshot it previously saved/read back for this local project.
+    // With no local history (including older app versions), start a new root.
+    let parentMetadata=try localParent(projectID:house.id,deviceID:deviceID,repo:repo,folder:folder)
+    if let parentMetadata {
+      guard let record=catalog.revisions.first(where:{$0.projectID==house.id && $0.version==2 && $0.metadata==parentMetadata}) else{throw HouseError.message("The previous snapshot from this device is not available in the folder yet. Retry after Files finishes syncing. Local originals remain intact.")}
+      _=try manifest(record,base:base)
+    }
+    // Reusing immutable bytes from another branch is safe; it does not merge
+    // that branch or change the explicitly tracked parent above.
     let parent=catalog.revisions.first{$0.projectID==house.id && $0.version==2}
     let prior=try parent.map{try manifest($0,base:base)}
     var known:[String:Asset]=[:]
@@ -118,7 +185,7 @@ enum ChunkedSnapshots {
       try checkpoint?("asset-verified")
     }
     try flush()
-    let m=Manifest(projectID:house.id,metadata:metadata,deviceID:deviceID,parentMetadata:parent?.metadata,assets:assets)
+    let m=Manifest(projectID:house.id,metadata:metadata,deviceID:deviceID,parentMetadata:parentMetadata,assets:assets)
     try verify(m,base:base)
     _=try object(data,kind:"metadata",extension:"json",base:base);try checkpoint?("metadata-verified")
     let manifestData=try encode(m)
@@ -129,7 +196,8 @@ enum ChunkedSnapshots {
     try encode(revision).write(to:temporary,options:.atomic)
     try checkpoint?("manifest-verified")
     do {try IncrementalSnapshots.publish(source:temporary,destination:recordURL)}
-    catch {let errorToReturn=error;if let result=try existing(){return result};throw errorToReturn}
+    catch {let errorToReturn=error;if let result=try existing(){try remember(result,deviceID:deviceID,repo:repo,folder:folder);return result};throw errorToReturn}
+    try remember(revision,deviceID:deviceID,repo:repo,folder:folder)
     try checkpoint?("revision-committed");return revision
   }
   struct TransferSummary {

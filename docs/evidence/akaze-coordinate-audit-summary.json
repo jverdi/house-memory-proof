@@ -1,0 +1,160 @@
+{
+  "source": "1e23e0c13a5ef1a4c841ef88e68f5de086ddbf62",
+  "run": 39090856223,
+  "adopted": false,
+  "decision": "Retained finished-384 accuracy failures in both development layouts; shipping estimator unchanged",
+  "reports": [
+    {
+      "source": "1e23e0c13a5ef1a4c841ef88e68f5de086ddbf62",
+      "candidateSHA256": "4e1b4682451c7b5c3e309040e0c78d303938082bf00529a220a8ef48278ac665",
+      "cases": [
+        {
+          "stage": "rough",
+          "width": 384,
+          "passed": true,
+          "complete": true,
+          "positiveQueries": 12,
+          "positiveAccepted": 12,
+          "negativeQueries": 8,
+          "falseAccepts": 0,
+          "p95Metres": 0.004455077312092759,
+          "worstAcceptedPositionErrorMetres": 0.004455077312092759,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0038630884654687215
+        },
+        {
+          "stage": "finished",
+          "width": 384,
+          "passed": false,
+          "complete": true,
+          "positiveQueries": 20,
+          "positiveAccepted": 20,
+          "negativeQueries": 20,
+          "falseAccepts": 0,
+          "p95Metres": 0.011316428155081652,
+          "worstAcceptedPositionErrorMetres": 0.013420193133438051,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "maximumOptimizedCameraPositionErrorMetres": 0.005377266508939162
+        },
+        {
+          "stage": "finished",
+          "width": 768,
+          "passed": true,
+          "complete": true,
+          "positiveQueries": 20,
+          "positiveAccepted": 19,
+          "negativeQueries": 20,
+          "falseAccepts": 0,
+          "p95Metres": 0.006270069640104932,
+          "worstAcceptedPositionErrorMetres": 0.006270069640104932,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0036059593129482608
+        }
+      ],
+      "complete": true,
+      "passed": false,
+      "physicalQualification": false,
+      "limitations": [
+        "Development-only detector variant, not adopted into the app",
+        "Original failures are retained; unchanged availability, accuracy and ambiguity gates",
+        "Raw source evidence and oracle remain ephemeral in CI"
+      ],
+      "artifact": {
+        "id": 12122646749,
+        "sha256": "a6fce11006b68ab35788c5682928364c4a690db8601bd6c47b0a74f15380858d",
+        "sha256IndependentlyVerified": true
+      }
+    },
+    {
+      "source": "1e23e0c13a5ef1a4c841ef88e68f5de086ddbf62",
+      "candidateSHA256": "4e1b4682451c7b5c3e309040e0c78d303938082bf00529a220a8ef48278ac665",
+      "cases": [
+        {
+          "stage": "rough",
+          "width": 384,
+          "passed": true,
+          "complete": true,
+          "positiveQueries": 12,
+          "positiveAccepted": 12,
+          "negativeQueries": 8,
+          "falseAccepts": 0,
+          "p95Metres": 0.004622482620238004,
+          "worstAcceptedPositionErrorMetres": 0.004622482620238004,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "maximumOptimizedCameraPositionErrorMetres": 0.00466805543262325
+        },
+        {
+          "stage": "finished",
+          "width": 384,
+          "passed": false,
+          "complete": true,
+          "positiveQueries": 20,
+          "positiveAccepted": 20,
+          "negativeQueries": 20,
+          "falseAccepts": 0,
+          "p95Metres": 0.019415408569382828,
+          "worstAcceptedPositionErrorMetres": 0.033439133938276064,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "maximumOptimizedCameraPositionErrorMetres": 0.008556048540958051
+        },
+        {
+          "stage": "finished",
+          "width": 768,
+          "passed": true,
+          "complete": true,
+          "positiveQueries": 20,
+          "positiveAccepted": 20,
+          "negativeQueries": 20,
+          "falseAccepts": 0,
+          "p95Metres": 0.004817985324974266,
+          "worstAcceptedPositionErrorMetres": 0.006340299259533276,
+          "oracleReadDenied": true,
+          "queryLabelsExcluded": true,
+          "expectedMapCount": 4,
+          "mapCount": 4,
+          "mapViews": 24,
+          "optimizedCameraCount": 24,
+          "maximumOptimizedCameraPositionErrorMetres": 0.0034138976825078883
+        }
+      ],
+      "complete": true,
+      "passed": false,
+      "physicalQualification": false,
+      "limitations": [
+        "Development-only detector variant, not adopted into the app",
+        "Original failures are retained; unchanged availability, accuracy and ambiguity gates",
+        "Raw source evidence and oracle remain ephemeral in CI"
+      ],
+      "artifact": {
+        "id": 12123135812,
+        "sha256": "6c58b2399e96d091ce6b9737811a65b63bd02d71ac62e9e79ea870f68dc85170",
+        "sha256IndependentlyVerified": true
+      }
+    }
+  ]
+}

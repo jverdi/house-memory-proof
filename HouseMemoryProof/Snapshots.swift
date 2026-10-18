@@ -164,6 +164,7 @@ struct SnapshotSettings: View {
   @State private var revisions:[SnapshotRevision]=[]
   @State private var catalogMessage:String?
   @State private var catalogIncomplete=false
+  @State private var branchHeads:Set<UUID>=[]
   @State private var automatic = UserDefaults.standard.bool(forKey: SnapshotService.automaticKey)
   @State private var status = SnapshotService.status
   var body: some View {
@@ -207,10 +208,14 @@ struct SnapshotSettings: View {
         Button("List saved revisions") {
           model.perform("Reading snapshot catalog") {
             do {
-              let catalog=try await SnapshotService.inFolder{try IncrementalSnapshots.inspectCatalog(folder:$0)}
-              revisions=catalog.revisions;catalogMessage=catalog.message;catalogIncomplete = !catalog.unreadableRecords.isEmpty
+              let (catalog,branches)=try await SnapshotService.inFolder {folder in
+                let catalog=try IncrementalSnapshots.inspectCatalog(folder:folder)
+                return (catalog,try ChunkedSnapshots.branches(catalog,folder:folder))
+              }
+              revisions=catalog.revisions;branchHeads=branches.branchedProjects>0 ? branches.heads:[]
+              catalogMessage=[catalog.message,branches.message].filter{!$0.isEmpty}.joined(separator:" ");catalogIncomplete = !catalog.unreadableRecords.isEmpty || branches.incomplete
             } catch {
-              revisions=[];catalogMessage="The snapshot folder could not be read. Choose it again in Files and retry.";catalogIncomplete=true
+              revisions=[];branchHeads=[];catalogMessage="The snapshot folder could not be read. Choose it again in Files and retry.";catalogIncomplete=true
               throw error
             }
             return nil
@@ -218,7 +223,7 @@ struct SnapshotSettings: View {
         }.disabled(model.busy)
         if let catalogMessage {Text(catalogMessage).font(.footnote).foregroundStyle(catalogIncomplete ? .orange:.secondary)}
         ForEach(revisions){revision in
-          Button("Restore \(revision.name) · r\(revision.revision) · \(revision.date.formatted())") {
+          Button("Restore \(revision.name) · r\(revision.revision) · \(revision.date.formatted())\(branchHeads.contains(revision.id) ? " · branch tip":"")") {
             guard let repo=model.repository else{return}
             model.perform("Verifying and restoring snapshot") {
               let restored=try await SnapshotService.inFolder{try IncrementalSnapshots.restore(revision,repo:repo,folder:$0)}
@@ -239,7 +244,7 @@ struct SnapshotSettings: View {
         if let url = try result.get().first {
           try SnapshotService.select(url)
           status = SnapshotService.status
-          revisions=[];catalogMessage=nil;catalogIncomplete=false
+          revisions=[];branchHeads=[];catalogMessage=nil;catalogIncomplete=false
         }
       } catch { model.error = error.localizedDescription }
     }

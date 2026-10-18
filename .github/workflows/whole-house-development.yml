@@ -13,6 +13,12 @@ on:
       - tooling/simulation/house.py
       - tooling/simulation/replay_fixture.py
       - tooling/simulation/test_render_contract.py
+      - tooling/simulation/pose_metrics.py
+      - tooling/simulation/test_pose_metrics.py
+      - tooling/simulation/whole_house_qualification.py
+      - tooling/simulation/test_whole_house_qualification.py
+      - tooling/simulation/summarize_whole_house.py
+      - tooling/simulation/test_whole_house_summary.py
       - tooling/simulation/VisionReplay.swift
       - tooling/opencv/build-host.sh
       - tooling/solver/**
@@ -65,7 +71,10 @@ jobs:
           build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_house_topology.py
           build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_sensor_degradation.py
           build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_render_contract.py
-          mkdir -p build/whole-house-evidence
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_pose_metrics.py
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_whole_house_qualification.py
+          build/whole-env/bin/python -m unittest discover -s tooling/simulation -p test_whole_house_summary.py
+          mkdir -p build/whole-house-evidence build/whole-house-private
           git rev-parse HEAD > build/whole-house-evidence/source.txt
           shasum -a 256 build/vision-replay > build/whole-house-evidence/binary.txt
       - name: Score each observed stage with complete room and query denominators
@@ -74,23 +83,20 @@ jobs:
           for stage in rough finished; do
             fixture="build/whole-house-inputs/${stage}"
             if python3 ci/run_bounded.py 600 build/whole-env/bin/python tooling/simulation/whole_house_fixture.py "$fixture" --seed ${{ matrix.seed }} --width 384 --stage "$stage"; then
-              build/whole-env/bin/python tooling/simulation/check_whole_house_bundle.py "$fixture" > "build/whole-house-evidence/${stage}-bundle-check.json" || failed=1
-              cp "$fixture/generator-summary.json" "build/whole-house-evidence/${stage}-generator.json"
-              python3 ci/run_bounded.py 660 build/whole-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "$fixture" --output "build/whole-house-evidence/${stage}-replay.json" --refine --bundle --house || failed=1
+              build/whole-env/bin/python tooling/simulation/check_whole_house_bundle.py "$fixture" > "build/whole-house-private/${stage}-bundle-check.json" || failed=1
+              cp "$fixture/generator-summary.json" "build/whole-house-private/${stage}-generator.json"
+              python3 ci/run_bounded.py 660 build/whole-env/bin/python tooling/simulation/replay_fixture.py --executable build/vision-replay --fixture "$fixture" --output "build/whole-house-private/${stage}-replay.json" --refine --bundle --house || failed=1
             else
               failed=1
             fi
           done
           exit "$failed"
+      - name: Reduce private source records to aggregate evidence
+        if: always() && !cancelled()
+        run: python3 tooling/simulation/summarize_whole_house.py build/whole-house-private build/whole-house-evidence/summary.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: whole-house-development-${{ matrix.seed }}
+          name: whole-house-development-aggregate-${{ matrix.seed }}
           path: build/whole-house-evidence/
-          retention-days: 30
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: whole-house-development-inputs-${{ matrix.seed }}
-          path: build/whole-house-inputs/
           retention-days: 30

@@ -46,6 +46,35 @@ rooms on one, two and three floors) in both stages at 384 pixels. It is a new
 qualification attempt, not a passed release gate. Wider 50-development / 20-
 protected candidate evaluation, sensor-profile sweeps, continuous doorway/stair
 capture, closed-loop guidance, coverage scoring, reconstructed navigation and
-thin-service metric accuracy remain open. Detailed inputs and results belong in
-bounded CI artifacts; permanent evidence is aggregate only. No synthetic result
+thin-service metric accuracy remain open. New runs retain raw inputs and derived
+spatial records only in the ephemeral CI workspace; uploaded and permanent
+evidence is aggregate only. No synthetic result
 enables physical precision.
+
+## Fixed-frame metrics and frozen-candidate inventory
+
+The evaluator now measures rotation as well as translation. For connected-house
+queries it samples up to 48 oracle-visible surface pixels, retains their true
+optical-axis depth outside candidate inputs, and scores both world displacement
+and pixel reprojection under the accepted camera pose. No alignment or scale fit
+to truth is performed. These additional metrics are diagnostic; existing gates
+are unchanged. Each room is still an independent unregistered capture frame, so
+these metrics do not establish cross-room registration. A local 128-pixel fixture
+self-projected all 768 nominal surface samples with negligible numerical error.
+Five analytic tests cover translation, rotation, origin invariance, invalid
+transforms and points behind the estimated camera.
+
+A frozen-candidate runner prepares 50 development and 20 protected distinct
+layouts after the binary hash is fixed. Fourteen shards retain both stages for
+every house; aggregation checks exact split/case identities, every query/error
+count, finite metrics, map counts, oracle controls, source identity and unchanged
+accuracy gates. Six evaluator tests reject missing/duplicate cases, changed
+binaries, relabelled splits and forged passing metrics. Whole-house paired-stage
+bootstrap intervals are reported. Exception text is excluded from public logs
+because subprocess arguments can disclose protected seeds.
+
+This is prepared evaluation infrastructure, not a completed 50/20 run. It has no
+automatic launch workflow yet: known development failures remain open, and a
+separate restricted job context is required before drawing protected plans. Its
+initial nominal corner/upper-wall captures do not cover the remaining material,
+sensor, continuous-path, full-coverage or navigation requirements.

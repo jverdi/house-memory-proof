@@ -1,0 +1,153 @@
+{
+  "source": "44d73ad55aacab63134dc96a04df41ff5176b571",
+  "run": 39090407229,
+  "artifact": {
+    "id": 12122891169,
+    "sha256": "5b9c16926211853800121c8a0bb589e1f3f06ca8fc47cc5a4b8b56530cc285ff",
+    "sha256IndependentlyVerified": true
+  },
+  "shippingEstimatorChanged": false,
+  "rawEvidencePublished": false,
+  "cases": [
+    {
+      "case": "development-A",
+      "candidateBinarySHA256": "dccbc639602eeae96d15d4234739e171ec4ab1c1f1ea3f7cd3b50849ec2e9260",
+      "inputManifestSHA256": "741a6d3d875f06ff5ee7143b48df065d1c60b9c0bda807923a2a8b0b773cc0e0",
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "criticalQueries": 20,
+      "criticalFalseAccepts": 0,
+      "originalGatePassed": false,
+      "sourceCameraPositionErrorMetres": {
+        "count": 24,
+        "p50": 0.002112806334218071,
+        "p95": 0.00460336263820244,
+        "maximum": 0.004841341096779399
+      },
+      "sourceCameraAngleErrorDegrees": {
+        "count": 24,
+        "p50": 0.05963389642748429,
+        "p95": 0.12949683418122224,
+        "maximum": 0.13439450674551667
+      },
+      "mapFeatureErrorFromSourceRayMetres": {
+        "count": 4649,
+        "p50": 0.0020936691829798446,
+        "p95": 0.005545978026037317,
+        "maximum": 0.027734944309615126
+      },
+      "sourceRaysIntersectingTruth": 4649,
+      "sourceRaysWithoutTruth": 0,
+      "queryPositionErrorMetres": {
+        "count": 20,
+        "p50": 0.00402504464879738,
+        "p95": 0.011225926925754847,
+        "maximum": 0.011660114677089325
+      },
+      "queryAngleErrorDegrees": {
+        "count": 20,
+        "p50": 0.10387306997541491,
+        "p95": 0.2922455264135803,
+        "maximum": 0.331460936526164
+      },
+      "descriptorCorrespondences": 12251,
+      "mapPointReprojectionErrorPixels": {
+        "count": 12251,
+        "p50": 0.3380527217166318,
+        "p95": 1.0715345483508278,
+        "maximum": 390.92046696878157
+      },
+      "sourceRayCorrespondenceErrorPixels": {
+        "count": 12251,
+        "p50": 0.3752177640765998,
+        "p95": 1.207739425064701,
+        "maximum": 391.0992307958249
+      },
+      "correspondenceBiasWithinExistingPixelThreshold": {
+        "count": 11944,
+        "meanPixels": [
+          0.0394840391385638,
+          0.03362976724721425
+        ]
+      },
+      "limitations": [
+        "Development analysis only; no shipping estimator or gate changed",
+        "Source-ray correspondence errors precede runtime RANSAC inlier selection",
+        "Ray intersections are an analytic diagnostic, not physical feature truth or a precision certificate",
+        "No source identities, poses, images or point arrays are included in this report"
+      ]
+    },
+    {
+      "case": "development-B",
+      "candidateBinarySHA256": "dccbc639602eeae96d15d4234739e171ec4ab1c1f1ea3f7cd3b50849ec2e9260",
+      "inputManifestSHA256": "7a7463edc52def3d263cdfb6d660e7fdf9798c7b089b04fd088e855976080cdd",
+      "oracleReadDenied": true,
+      "queryLabelsExcluded": true,
+      "positiveQueries": 20,
+      "positiveAccepted": 20,
+      "criticalQueries": 20,
+      "criticalFalseAccepts": 0,
+      "originalGatePassed": false,
+      "sourceCameraPositionErrorMetres": {
+        "count": 24,
+        "p50": 0.0036484054823597467,
+        "p95": 0.00787949439077867,
+        "maximum": 0.008506454488777342
+      },
+      "sourceCameraAngleErrorDegrees": {
+        "count": 24,
+        "p50": 0.07916903013762033,
+        "p95": 0.1691697856393989,
+        "maximum": 0.18408293114426225
+      },
+      "mapFeatureErrorFromSourceRayMetres": {
+        "count": 4786,
+        "p50": 0.0026213536292916174,
+        "p95": 0.00630196877880466,
+        "maximum": 0.0280466492219999
+      },
+      "sourceRaysIntersectingTruth": 4786,
+      "sourceRaysWithoutTruth": 0,
+      "queryPositionErrorMetres": {
+        "count": 20,
+        "p50": 0.005512535386351668,
+        "p95": 0.020859879102066665,
+        "maximum": 0.03348820788345665
+      },
+      "queryAngleErrorDegrees": {
+        "count": 20,
+        "p50": 0.1394942553991034,
+        "p95": 0.5668361153263649,
+        "maximum": 0.7058997895627452
+      },
+      "descriptorCorrespondences": 12568,
+      "mapPointReprojectionErrorPixels": {
+        "count": 12568,
+        "p50": 0.38320392092013333,
+        "p95": 1.2296366837829682,
+        "maximum": 395.1093496347462
+      },
+      "sourceRayCorrespondenceErrorPixels": {
+        "count": 12568,
+        "p50": 0.36996620426275606,
+        "p95": 1.3015075029864787,
+        "maximum": 395.28670402406885
+      },
+      "correspondenceBiasWithinExistingPixelThreshold": {
+        "count": 12240,
+        "meanPixels": [
+          -0.007530960981398682,
+          0.004905014083102396
+        ]
+      },
+      "limitations": [
+        "Development analysis only; no shipping estimator or gate changed",
+        "Source-ray correspondence errors precede runtime RANSAC inlier selection",
+        "Ray intersections are an analytic diagnostic, not physical feature truth or a precision certificate",
+        "No source identities, poses, images or point arrays are included in this report"
+      ]
+    }
+  ]
+}

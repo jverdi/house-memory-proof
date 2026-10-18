@@ -1,5 +1,15 @@
 # Implementation ledger
 
+## Snapshot ancestry, evaluator metrics and latest integration
+
+The complete simulator integration at **14eabc7281**, build **191.1**, passed **125 native checks**, **five UI flows**, **three process-kill recoveries**, **50 portable cases** and **12 independent readers**. Both artifacts were downloaded and SHA-256 verified. Search p95 was **77.595 ms**; its 300 ms limit is unchanged. Evidence: `docs/evidence/native-14ea-summary.json`.
+
+The new candidate fixes snapshot ancestry: each device continues its own verified parent instead of treating the newest remote arrival as its ancestor. Concurrent edits retain separate branch tips and both restore independently. Missing manifests and corrupt local lineage preserve existing evidence. A new native scenario is pending CI; the expected native count is 126.
+
+Five new evaluator tests check fixed-frame camera rotation and visible-surface world/reprojection error; six protect complete 50/20-house denominators and source identity. The frozen-house runner is prepared but has not drawn protected plans or run qualification. Existing acceptance gates remain unchanged.
+
+The native-resolution AKAZE coordinate experiment failed both finished 384-pixel cases (p95 **11.316 / 19.415 mm**, worst **13.420 / 33.439 mm**) and is **not adopted**. Source-map/query diagnostic aggregates and the failed experiment are retained under `docs/evidence`. Four- and seven-room 768-pixel comparisons pass both stages; the eleven-room comparison is still running. Original 384-pixel failures remain open.
+
 ## Varied-house result at 14eabc7281 — finished accuracy remains open
 
 The new isolated replay built every expected map in all six cases. Rough-stage localization passed in four-, seven- and eleven-room layouts: **88/88** nominal queries accepted, per-layout p95 **3.973 / 5.513 / 4.952 mm**, and no false accepts. Finished-stage availability was **16/16, 27/28 and 40/44**, but p95 **15.094 / 15.632 / 22.486 mm** fails the unchanged 10 mm gate; the eleven-room worst error **29.161 mm** also exceeds 25 mm. All **352** wrong-room/floor challenges across both stages abstained. Source poses stayed within the existing 15 mm check, so this is a retained localization-accuracy failure. Original artifact hashes and aggregate results are in `docs/evidence/whole-house-14ea-summary.json`.

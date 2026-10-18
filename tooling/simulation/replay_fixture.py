@@ -2,6 +2,7 @@
 """Run exact Swift/C++ map/query code with the oracle denied by the OS sandbox."""
 import argparse,hashlib,json,math,shutil,subprocess,tempfile,zipfile
 from pathlib import Path
+from pose_metrics import pose_errors,overlay_errors,distribution
 p=argparse.ArgumentParser();p.add_argument('--executable',type=Path,required=True);p.add_argument('--fixture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--refine',action='store_true');p.add_argument('--bundle',action='store_true');p.add_argument('--house',action='store_true');p.add_argument('--coded',action='store_true');a=p.parse_args()
 exe=a.executable.resolve();fixture=a.fixture.resolve();oracle=json.loads((fixture/'vision-queries.json').read_text())
 with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
@@ -54,10 +55,15 @@ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
   if q['shouldMatch'] is None:
    r['exploratoryScenario']=q.get('scenario','unscored query');continue
   if r['accepted'] and q['shouldMatch']:
-   positive_accepted+=1;pose=r['worldFromARCamera'];truth=q['expectedCamera'];error=sum((pose[i]-truth[i])**2 for i in (3,7,11))**.5;r['evaluatorPositionErrorMetres']=error;worst=max(worst,error)
+   positive_accepted+=1;pose=r['worldFromARCamera'];truth=q['expectedCamera'];metric=pose_errors(pose,truth);error=metric['positionMetres'];r['evaluatorPositionErrorMetres']=error;r['evaluatorRotationErrorDegrees']=metric['rotationDegrees'];worst=max(worst,error)
+   if 'visibleSurfaceSamples' in q:
+    r['evaluatorOverlay']=overlay_errors(pose,truth,q['truthIntrinsics'],q['visibleSurfaceSamples'])
   elif r['accepted']:false_accepts+=1
  ambiguity_cases=sum(x.get('ambiguityCases',0) for x in report['queries']);ambiguity_rejected=a.house or all(x.get('ambiguousRoomAndFloorRejected',False) for x in report['queries'] if x['accepted'])
  report.update(ambiguityCases=ambiguity_cases,ambiguityRejected=ambiguity_rejected,oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),positiveAccepted=positive_accepted,positiveQueries=sum(q['shouldMatch'] is True for q in oracle['queries']),falseAccepts=false_accepts,negativeQueries=sum(q['shouldMatch'] is False for q in oracle['queries']),worstAcceptedPositionErrorMetres=worst,passed=positive_accepted>=2 and false_accepts==0 and worst<.03 and ambiguity_rejected,productionQualified=False,limitations=[oracle.get('renderer','Analytic textured-corner fixture'),'Perfectly synchronized analytic rendering','Not an iPhone sensor model','Does not qualify wrong-room rejection or field accuracy'])
+ report['rotationErrorDegrees']=distribution([q['evaluatorRotationErrorDegrees'] for q in report['queries'] if 'evaluatorRotationErrorDegrees' in q])
+ overlays=[q['evaluatorOverlay'] for q in report['queries'] if 'evaluatorOverlay' in q]
+ report['visibleSurfaceOverlay']=dict(scoredAcceptedQueries=len(overlays),worldMetres=distribution([x for q in overlays for x in q['worldErrorsMetres']]),reprojectionPixels=distribution([x for q in overlays for x in q['reprojectionErrorsPixels']]),behindCamera=sum(q['behindCamera'] for q in overlays),samples=sum(q['samples'] for q in overlays),diagnosticOnly=True,alignmentToTruth=False)
  if a.house:
   accepted_errors=sorted(q['evaluatorPositionErrorMetres'] for q in report['queries'] if 'evaluatorPositionErrorMetres' in q)
   p95=accepted_errors[max(0,math.ceil(len(accepted_errors)*.95)-1)] if accepted_errors else None

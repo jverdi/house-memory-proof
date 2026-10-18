@@ -79,7 +79,12 @@ def make(dest,seed,width=384,profile_name='nominal',map_stage='rough'):
                 rgb,depth,confidence,m,k,thin=photograph(i,stage,shift,math.radians(angle),elevation)
                 sample=query_degrader.observe(rgb,depth,confidence,m,k,timestamp=number/3,index=number,thin_mask=thin)
                 filename=f'query-{i}-{stage}-{number}.jpg';(dest/filename).write_bytes(sample['image'])
-                q=dict(image=filename,width=width,height=height,intrinsics=sample['intrinsics'],segmentID=sid,shouldMatch=True,expectedCamera=(canonical@m).flatten().tolist(),scenario=stage+' selected room');queries.append(q)
+                visible=[]
+                for row in np.linspace(height*.15,height*.85,6).astype(int):
+                    for col in np.linspace(width*.15,width*.85,8).astype(int):
+                        if confidence[row,col]==2 and .15<float(depth[row,col])<5:
+                            visible.append([int(col),int(row),float(depth[row,col])])
+                q=dict(image=filename,width=width,height=height,intrinsics=sample['intrinsics'],segmentID=sid,shouldMatch=True,expectedCamera=(canonical@m).flatten().tolist(),scenario=stage+' selected room',truthIntrinsics=k,visibleSurfaceSamples=visible);queries.append(q)
                 # Different selected spaces use identical query bytes. Truth
                 # labels and filename semantics are removed by the OS sandbox.
                 other=next(j for j in range(len(rooms)) if j!=i and rooms[j]['level']==rooms[i]['level'])

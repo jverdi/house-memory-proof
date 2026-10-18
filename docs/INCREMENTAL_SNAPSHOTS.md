@@ -20,3 +20,21 @@ Transfer inspection checks every required file and distinguishes reported upload
 For a selected iCloud folder, an account identity change stops access at operation checkpoints and requires selecting the folder again. The identity token stays in local preferences and is not included in snapshots or diagnostics. Other Files providers expose only the capabilities and state reported by iOS; changed or stale folder permission is refused.
 
 Native qualification includes packing and boundary splitting, incremental reuse, legacy reading, interruption before and after publication, retry identity, missing/corrupt arrivals, invalid ranges and contradictory indexes. A separate Python reader reconstructs known originals from actual Swift output. These checks do not qualify real iCloud quota/account transitions, background transfer, sudden power loss, or owner-device capacity.
+
+## Concurrent edit ancestry
+
+Chunked snapshot ancestry is now tracked per local project, destination and device.
+A writer uses its own last verified snapshot as the parent. The newest remotely
+arrived revision can supply reusable immutable chunks, but cannot become the
+parent merely because its timestamp is newer. A successful content-idempotent
+retry records the shared revision locally. Missing or corrupt local ancestry is
+not replaced with a guessed remote parent.
+
+Existing archives/manifests remain readable. An installation without this local
+history starts a new root, preserving older revisions. Restores already create a
+new local project. The revision list identifies branch tips and explains that
+both branches are preserved; incomplete manifests produce an incomplete-history
+message. There is no automatic merge or deletion. A native scenario exercises
+two independent writers, later edits, both restores, missing manifests and
+corrupt local history. Actual concurrent Files/iCloud behavior still requires a
+provider/device run.

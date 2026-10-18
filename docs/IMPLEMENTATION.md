@@ -5,7 +5,7 @@ Updated during the October 17–18, 2026 implementation session. This document r
 ## Release state
 
 - Prior delivery proof: build 2.1 was installed by the owner.
-- Current native result: **543dd5f742**, run **39088505305**, passed **125/125 checks**, including search at **43.804 ms p95**, capture/EXIF durability, strict depth inputs and a fully decoded 300-frame movie. The full workflow also passed **five UI flows, three actual process-kill recoveries, 50 portable cases and all 12 independent reader reports**, with the complete artifact downloaded and SHA-256 verified. This is the latest complete simulator integration pass. These are simulator results, not product or physical qualification.
+- Current complete native result: **14eabc7281**, run **39089565505**, passed **125/125 checks**, five UI flows, three actual process-kill recoveries, 50 portable cases and all twelve independent reader reports. Both artifacts were downloaded and SHA-256 verified. Search p95 was **77.595 ms**. New snapshot branch ancestry and evaluator changes are awaiting their own exact-source integration. These are simulator results, not physical qualification.
 - The requested current-state TestFlight snapshot **161.1**, source **2fae54ff2d**, is uploaded and verified **VALID / IN_BETA_TESTING**, with owner access in Personal iPhone (delivery run 39078429529; readiness run 39080146782). Physical installation is unverified. Subsequent development commits do not upload.
 - Production readiness: **not established**.
 - Field precision profile: **disabled**. No synthetic metric enables one.

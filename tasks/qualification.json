@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-18T02:27:31.390868+00:00",
+  "updatedUTC": "2026-10-18T02:45:36.059553+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
+  "currentImplementationCommit": "14eabc7281e4c712350e8b367ca44252bd9bb612",
   "testflight": {
     "build": "161.1",
     "source": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
@@ -15,19 +15,19 @@
     "additionalIntermediateUploads": false
   },
   "verifiedNative": {
-    "source": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
+    "source": "14eabc7281e4c712350e8b367ca44252bd9bb612",
     "passed": 125,
     "failed": 0,
-    "artifact": 12122330257,
-    "sha256": "a29b773408c9243c6c41e4408c05b9dbd86316cd056b08bcffcf1bbd32c7f9da",
-    "searchP95Milliseconds": 43.80441666671686,
+    "artifact": 12121324929,
+    "sha256": "9c9445cfcaf80d416d30af7574b0d1d5c877bed8015a4cad832fbc7a612dc707",
+    "searchP95Milliseconds": 77.5952916666256,
     "distinctPhotoNotes": 50000,
     "completeIntegratedPass": true
   },
   "softwareAcceptanceOpen": [
     {
       "area": "integrated candidate",
-      "remaining": "The complete 543dd5f742 workflow passed 125 native checks, five UI flows, three process-kill recoveries, 50 portable cases and all independent readers. Validate the next connected-house simulation and evaluator changes."
+      "remaining": "14eabc7281 passed 125 native, five UI, three process-kill, 50 portable and twelve reader checks. New snapshot branch ancestry and evaluator metrics require exact-source validation."
     },
     {
       "area": "finished localization",
@@ -55,19 +55,19 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Inspect the sealed development source-map and query evidence without changing estimators or gates; continue native integration on 14eabc7281 and then repair the demonstrated finished-localization error.",
+  "nextAction": "Validate snapshot ancestry/restore branches and new pose/overlay metrics. Finish the three-house 768-pixel comparison. AKAZE coordinate refinement failed both 384-pixel development cases and was not adopted; those failures remain open.",
   "publication": "Aggregate results only; detailed spatial replay data remains in bounded CI artifacts.",
   "currentValidation": {
-    "run": 39088505305,
-    "status": "passed",
-    "nativeExpected": 125,
-    "nativePassed": 125,
-    "nativeFailed": 0,
+    "run": null,
+    "status": "pending snapshot branch-history candidate",
+    "nativeExpected": 126,
+    "nativePassed": null,
+    "nativeFailed": null,
     "interfaceExpected": 5,
     "physicalQualification": false,
-    "interfacePassed": 5,
-    "processKillPassed": 3,
-    "independentReadersPassed": true
+    "interfacePassed": null,
+    "processKillPassed": null,
+    "independentReadersPassed": null
   },
   "previousIntegratedAttempt": {
     "source": "6045475e6192601687279df064d349a5686a0385",
@@ -102,15 +102,15 @@
     "analyticOnly": true
   },
   "latestIntegratedPass": {
-    "source": "543dd5f742822b04ce21576d59376ff0ffdb08c7",
-    "run": 39088505305,
+    "source": "14eabc7281e4c712350e8b367ca44252bd9bb612",
+    "run": 39089565505,
     "nativePassed": 125,
     "interfacePassed": 5,
     "processKillPassed": 3,
     "independentReadersPassed": true,
     "fullArtifact": {
-      "id": 12122385876,
-      "sha256": "ecfd9670946e5d96f32e63df40f3c87ac863c147247306c2ff9a361252060da1",
+      "id": 12122731979,
+      "sha256": "02c5dce69c188b2bf4de0504ff5ebce7328dc8f1f85966b68d5abeb0a3e278da",
       "sha256IndependentlyVerified": true
     }
   },
@@ -133,5 +133,20 @@
     "criticalFalseAccepts": 0,
     "criticalAttempts": 352,
     "protectedQualification": false
+  },
+  "preparedWholeHouseInventory": {
+    "developmentHouses": 50,
+    "protectedHouses": 20,
+    "shards": 14,
+    "stagesPerHouse": 2,
+    "executed": false,
+    "testsPassed": 6,
+    "protectedPlansDrawn": false
+  },
+  "coordinateRefinementExperiment": {
+    "run": 39090856223,
+    "adopted": false,
+    "finished384Passed": 0,
+    "finished384Cases": 2
   }
 }

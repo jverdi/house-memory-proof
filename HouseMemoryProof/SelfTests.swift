@@ -497,13 +497,14 @@ import simd
                 var h=House.empty("Range refusal");let key=try source.put(Data("bounded immutable range".utf8),ext:"jpg"),healthy=House.empty("Healthy")
                 h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)];try target.save(healthy)
                 let revision=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:UUID()),base=IncrementalSnapshots.root(destination),m=try ChunkedSnapshots.manifest(revision,base:base)
-                for fault in 0..<5 {
+                for fault in 0..<6 {
                     var changed=m,record=revision
                     switch fault {
                     case 0:changed.assets[0].slices[0].offset=Int.max
                     case 1:changed.assets[0].bytes=UInt64.max
                     case 2:changed.assets.append(changed.assets[0])
                     case 3:changed.assets[0].slices[0].chunk="../outside.chunk"
+                    case 4:changed.parentMetadata=changed.metadata
                     default:changed.assets[0].slices[0].offset=1
                     }
                     record.chunkManifest=try ChunkedSnapshots.object(ChunkedSnapshots.encode(changed),kind:"manifests",extension:"json",base:base)
@@ -512,6 +513,50 @@ import simd
                 var future=revision;future.version=99
                 do{_=try IncrementalSnapshots.restore(future,repo:target,folder:destination);return false}catch{}
                 return try target.all().map({$0.id})==[healthy.id]
+            }
+            await check("Concurrent snapshot edits retain independent ancestry and restorable branches") {
+                let a=try Repository(root:folder.appendingPathComponent("branch-a")),b=try Repository(root:folder.appendingPathComponent("branch-b")),target=try Repository(root:folder.appendingPathComponent("branch-restore"))
+                let destination=folder.appendingPathComponent("branch-snapshots"),deviceA=UUID(),deviceB=UUID()
+                var original=House.empty("Independent branch history")
+                let bytes=Data("Shared immutable source".utf8),key=try a.put(bytes,ext:"jpg")
+                guard try b.put(bytes,ext:"jpg")==key else{return false}
+                original.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:original.rooms[0].id,stageID:original.stages[0].id)]
+                let root=try ChunkedSnapshots.write(house:original,repo:a,folder:destination,deviceID:deviceA)
+                // Both devices read back the same starting revision before
+                // independently editing it. The later writer cannot adopt A's
+                // newly arrived metadata as B's parent just because it is newer.
+                guard try ChunkedSnapshots.write(house:original,repo:b,folder:destination,deviceID:deviceB).id==root.id else{return false}
+                var left=original,right=original;left.revision=1;right.revision=1;left.notes="Device A edit";right.notes="Device B edit"
+                let first=try ChunkedSnapshots.write(house:left,repo:a,folder:destination,deviceID:deviceA)
+                let second=try ChunkedSnapshots.write(house:right,repo:b,folder:destination,deviceID:deviceB)
+                let base=IncrementalSnapshots.root(destination)
+                guard try ChunkedSnapshots.manifest(first,base:base).parentMetadata==root.metadata,
+                    try ChunkedSnapshots.manifest(second,base:base).parentMetadata==root.metadata else{return false}
+                var catalog=try IncrementalSnapshots.inspectCatalog(folder:destination)
+                var branches=try ChunkedSnapshots.branches(catalog,folder:destination)
+                guard catalog.revisions.count==3,branches.branchedProjects==1,!branches.incomplete,branches.heads==Set([first.id,second.id]) else{return false}
+                let restoredA=try IncrementalSnapshots.restore(first,repo:target,folder:destination),restoredB=try IncrementalSnapshots.restore(second,repo:target,folder:destination)
+                guard restoredA.id != restoredB.id,restoredA.notes==left.notes,restoredB.notes==right.notes,try target.integrity(restoredA)==1,try target.integrity(restoredB)==1 else{return false}
+                // A subsequent edit advances only A's tip, preserving B's tip.
+                left.revision=2;left.notes="Device A later edit"
+                let later=try ChunkedSnapshots.write(house:left,repo:a,folder:destination,deviceID:deviceA)
+                guard try ChunkedSnapshots.manifest(later,base:base).parentMetadata==first.metadata else{return false}
+                catalog=try IncrementalSnapshots.inspectCatalog(folder:destination);branches=try ChunkedSnapshots.branches(catalog,folder:destination)
+                guard branches.heads==Set([later.id,second.id]),branches.branchedProjects==1 else{return false}
+                // Missing manifest visibility cannot be reported as a merged
+                // or complete history. A healthy older branch remains readable.
+                let manifestURL=base.appendingPathComponent("manifests").appendingPathComponent(later.chunkManifest!)
+                let manifestBytes=try Data(contentsOf:manifestURL);try FileManager.default.removeItem(at:manifestURL)
+                guard try ChunkedSnapshots.branches(catalog,folder:destination).incomplete else{return false}
+                try manifestBytes.write(to:manifestURL,options:.atomic)
+                // Corrupt local ancestry is preserved, with no guessed parent
+                // and no new remote revision committed.
+                let lineage=ChunkedSnapshots.lineageURL(projectID:left.id,deviceID:deviceA,repo:a,folder:destination),savedLineage=try Data(contentsOf:lineage)
+                try Data("incomplete local history".utf8).write(to:lineage,options:.atomic);left.revision=3
+                do{_=try ChunkedSnapshots.write(house:left,repo:a,folder:destination,deviceID:deviceA);return false}catch{}
+                guard try IncrementalSnapshots.catalog(folder:destination).count==4,try Data(contentsOf:lineage)==Data("incomplete local history".utf8) else{return false}
+                try savedLineage.write(to:lineage,options:.atomic)
+                return try a.integrity(original)==1 && b.integrity(original)==1 && !ChunkedSnapshots.branches(catalog,folder:destination).incomplete
             }
             await check("Snapshot transfer status never promotes a local readback or a partial upload") {
                 let evidence=mainRepo.root.appendingPathComponent("incremental-v2"),device=UUID()
