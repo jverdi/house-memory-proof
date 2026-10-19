@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-19T02:42:52.384729+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
+  "currentImplementationCommit": "0c1da56aaab46bb5157ef6580425fe310741bb77",
   "testflight": {
     "build": "216.1",
     "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -15,7 +15,13 @@
     "deliveryRun": 39149363050,
     "evidence": "docs/evidence/testflight-216-1-summary.json",
     "acceptedRelease": false,
-    "automaticRenewalEnabled": false
+    "automaticRenewalEnabled": false,
+    "requestedSnapshot": {
+      "requestedUTC": "2026-10-19",
+      "scope": "Current continuation including homeowner guidance, movement controls, room map and saved-viewpoint recovery",
+      "acceptedRelease": false,
+      "releaseMarker": "[release] Ship homeowner-guidance TestFlight 20261019"
+    }
   },
   "verifiedNative": {
     "source": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
@@ -64,10 +70,10 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Publish the approved source and synthetic evidence directly to main, run native integration, then continue independent software qualification.",
+  "nextAction": "Validate and upload the owner-requested current-state TestFlight snapshot, verify Apple processing/access, and continue independent software qualification.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "publication_authorized_native_pending",
+    "status": "native_in_progress_release_requested",
     "precedingSource": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
     "nativeExpected": 182,
     "interfaceExpected": 19,
@@ -76,11 +82,14 @@
     "validationReportsExpected": 36,
     "integrationComplete": false,
     "evidencePending": true,
-    "appleUploadRequested": false,
+    "appleUploadRequested": true,
     "uiRunnerBudgetSeconds": 2100,
     "uiStepTimeoutMinutes": 37,
     "nativeAppBudgetSeconds": 300,
-    "wholeJobTimeoutMinutes": 60
+    "wholeJobTimeoutMinutes": 60,
+    "source": "0c1da56aaab46bb5157ef6580425fe310741bb77",
+    "run": 39191319328,
+    "build": "227.1"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",

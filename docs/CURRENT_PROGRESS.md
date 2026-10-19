@@ -6,7 +6,7 @@ Updated 19 October 2026 UTC (18 October in New York). The full plan is **in prog
 
 **TestFlight 216.1 is available to the owner's Personal iPhone group.** Apple processing and tester access are verified. Installation on the physical phone has not been verified. This is the requested development snapshot, not the completed app.
 
-216.1 does **not** include the new homeowner introduction, help guides, movement settings or room map. Later validation builds are not TestFlight uploads. The instruction to wait for completion before another upload remains in effect.
+216.1 does **not** include the new homeowner introduction, help guides, movement settings or room map. Later validation builds are not TestFlight uploads. The owner requested a new TestFlight snapshot on 19 October 2026 UTC. A dedicated release run will validate this continuation before uploading; availability remains 216.1 until Apple processing and owner access are verified.
 
 ## What has changed since that snapshot
 
@@ -26,7 +26,7 @@ Saved-viewpoint recovery, usable map-marker preservation, a bounded delayed/impe
 
 ## Publication authorization
 
-The owner approved publishing the prepared source and synthetic test evidence to the public `jverdi/house-memory-proof` repository and committing directly to `main` in this thread on 18 October 2026 at 22:42 New York time. The earlier automatic publication block is resolved by that explicit instruction. Native validation of this continuation is the next action; TestFlight remains 216.1 until an authorized delivery.
+The owner approved publishing the prepared source and synthetic test evidence to the public `jverdi/house-memory-proof` repository and committing directly to `main` in this thread on 18 October 2026 at 22:42 New York time. The earlier automatic publication block is resolved by that explicit instruction. The continuation is published as `0c1da56aaab46bb5157ef6580425fe310741bb77`, with validation run `39191319328` (227.1) in progress. The owner subsequently requested a new TestFlight snapshot in this thread; its dedicated release run retains the complete simulator gate before upload.
 
 Local verification passes: 52 command/reader tests, 41 release/recovery tests, 12 observer-preparation checks and 50 portable geometry cases. All 19 interface workflows remain unchanged; four native regression cases are added. These host checks do not establish Swift compilation or native acceptance. [Local results](evidence/continuation-local-summary.json).
 
@@ -50,7 +50,7 @@ The [proposed next localization diagnostic](LOCALIZATION_DIAGNOSTIC_PROPOSAL.md)
 
 ## Next steps
 
-1. Publish the owner-approved continuation and validate its 182 native checks and all 19 interface workflows.
+1. Validate the published continuation and requested TestFlight snapshot with 182 native checks and all 19 interface workflows, then verify Apple processing and owner access.
 2. Continue reconstructed whole-house navigation and software qualification with bounded diagnostics.
 3. Continue independent software work. Keep the exhausted accuracy-repair budget separate from implementation that can proceed.
 4. Use the [owner-device protocol](DEVICE_ACCEPTANCE.md) for checks that need the actual phone. Only run feature-specific checks on a build containing those features.
