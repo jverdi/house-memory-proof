@@ -191,6 +191,10 @@ struct ToolsPage: View {
             guard let repo=model.repository else{return}
             do{model.shareURL=try CaptureRuntimeRecorder.export(repository:repo)}catch{model.error=error.localizedDescription}
           }.disabled(model.captureInProgress)
+          Button("Export viewer performance") {
+            guard let repo=model.repository else{return}
+            do{model.shareURL=try ViewerRuntimeRecorder.export(repository:repo)}catch{model.error=error.localizedDescription}
+          }
           Text("Capture performance is sampled every 10 seconds for up to two hours per session. Up to 100 local reports are retained. An interrupted report remains incomplete; this does not qualify device accuracy.").font(.caption)
           if !diagnostics.isEmpty { Text(diagnostics).font(.footnote) }
           Text(

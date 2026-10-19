@@ -301,6 +301,23 @@ extension UIColor {
   private var comfort:ViewerComfort?
   private(set) var motionVelocity=SIMD3<Float>.zero
   @Published var navigationNotice = ""
+  @Published private(set) var recordingPerformance=false
+  private var performanceRecorder:ViewerRuntimeRecorder?
+  func startPerformance(repository:Repository)throws {
+    guard performanceRecorder==nil,let house,!isPreparingNavigation else{return}
+    let recorder=try ViewerRuntimeRecorder(repository:repository,house:house,state:{[weak self] in
+      guard let self else{return (0,0,0,false)}
+      var vertices=0
+      self.view.scene?.rootNode.enumerateChildNodes { node,_ in
+        if !node.isHidden,node.opacity>0 {vertices += node.geometry?.sources(for:.vertex).first?.vectorCount ?? 0}
+      }
+      return (vertices,self.stream?.nodes.count ?? 0,self.stream?.textures.count ?? 0,self.isPreparingNavigation)
+    },onError:{[weak self] message in self?.navigationNotice=message})
+    performanceRecorder=recorder;view.delegate=recorder.counter;recordingPerformance=true
+  }
+  func stopPerformance(reason:String="user-stopped") {
+    view.delegate=nil;performanceRecorder?.finish(reason:reason);performanceRecorder=nil;recordingPerformance=false
+  }
   var house: House?
   var options = SceneOptions()
   var revision = -1
@@ -361,6 +378,7 @@ extension UIColor {
     move = .zero;vertical=0;motionVelocity = .zero
   }
   func stop() {
+    stopPerformance(reason:"viewer-inactive")
     view.isPlaying=false
     timer?.invalidate()
     timer = nil
@@ -382,6 +400,7 @@ extension UIColor {
   }
   func load(_ h: House, _ o: SceneOptions) {
     guard revision != h.revision || house?.id != h.id || options != o else { return }
+    stopPerformance(reason:"scene-changed")
     let oldFrame = house.flatMap { SceneBuilder.activeUnregisteredSegment($0, options: options) }
     let fresh =
       house?.id != h.id || oldFrame != SceneBuilder.activeUnregisteredSegment(h, options: o)

@@ -64,3 +64,10 @@ Export field evidence with the original observation archive. Evaluate by device/
 ## Return evidence
 
 Share the unmodified exported JSON reports, movie/sidecar, relevant screenshots or screen recording, and the test archive through the existing project conversation. State which rows actually ran and which remain unavailable. The agent can analyze those files and repair reproducible defects; it cannot infer actions or sensor behavior on an inaccessible phone.
+
+
+## Viewer performance report (continuation candidate; not in 234.1)
+
+Once a build containing `ViewerDiagnostics.swift` has passed integration and is installed, open the declared project and scope in Explore. In Layers choose **Start performance recording**, close the sheet, then follow the sustained walkthrough workload above. Stop recording in Layers before changing scope. Leaving Explore, backgrounding, or changing scene/layers ends the report; a force-quit retains an incomplete checkpoint. Export it from Tools → **Export viewer performance**. Retain the source/build identity with the fixture, duration and starting thermal condition.
+
+The report measures completed-render callback intervals and sampled memory/thermal state, not display-presented FPS. Use the independent `tooling/check_viewer_runtime.py` reader to expose stalls and resource samples. Preserve overflow/unknown values and interrupted sessions. The report alone does not close the sustained-frame-rate, accessibility or actual-device qualification gates.

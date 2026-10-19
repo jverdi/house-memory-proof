@@ -90,6 +90,8 @@ jobs:
             build/evidence/native-boundary-source.json
             build/evidence/native-compatibility.json
             build/evidence/capture-runtime-validation.json
+            build/evidence/native-viewer-runtime.json
+            build/evidence/viewer-runtime-validation.json
             build/evidence/native-drawing-benchmark.json
             build/evidence/drawing-benchmark-validation.json
             build/evidence/native-navigation-benchmark.json

@@ -532,6 +532,15 @@ struct ExploreView: View {
                 Text("Move 20 cm per tap and turn 15 degrees without animation. These controls are always available with VoiceOver. Walking still checks floors and obstacles.").font(.footnote)
                 Text("In Orbit overview, drag to rotate and pinch to zoom. Turn it off to return to the saved view from inside the house.").font(.footnote)
               }
+              Section("Performance recording") {
+                Button(controller.recordingPerformance ? "Stop performance recording":"Start performance recording") {
+                  if controller.recordingPerformance {controller.stopPerformance()}
+                  else if let repo=model.repository {
+                    do{try controller.startPerformance(repository:repo);layers=false}catch{model.error=error.localizedDescription}
+                  }
+                }.disabled(controller.isPreparingNavigation).accessibilityIdentifier("viewer-performance-recording")
+                Text("Records rendering cadence, memory and thermal state locally. It stops when you leave Explore, change layers or background the app. Share the report from Tools → Export viewer performance. No photos or room coordinates are included.").font(.footnote)
+              }
               Section("Construction") {
                 Toggle("Show ceilings", isOn: $options.ceilings)
                 Picker("Scope", selection: $options.room) {

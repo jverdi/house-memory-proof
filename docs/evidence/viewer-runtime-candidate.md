@@ -1,0 +1,11 @@
+# Viewer runtime candidate — 19 October 2026
+
+Status: source prepared, five independent reader contract tests pass; native compile/integration pending. This feature is not included in requested TestFlight 234.1.
+
+Explore → Layers → Start performance recording begins a user-requested local report. Leaving Explore, app inactivity or a scene/layer change finalizes it. Tools → Export viewer performance shares bounded JSON. There is no automatic upload or deletion. Up to 100 sessions are retained, with ten-second checkpoints and 721 samples (about two hours). Force-quit retains the last incomplete report. Reports contain source/build/device/project identities, renderer completion interval histogram, current displayed vertices, resident tile/texture counts, navigation waiting, sampled process memory, memory warnings, thermal and low-power states. Photos, room names and coordinates are excluded.
+
+The interval histogram uses eight fixed upper bounds (1/120, 1/60, 1/30, 0.05, 0.1, 0.25, 0.5 and 1 second) plus overflow. This is completion-callback cadence, not display-presented FPS or GPU timing. The independent reader labels a p95 histogram upper bound and retains unknown for overflow/no intervals; sampled memory is not a continuous peak. Successful parsing never grants device acceptance. The unchanged sustained 30 fps qualification still requires actual-device evidence and appropriate presentation measurement.
+
+Native assertions exercise bounded histogram accumulation, invalid/nonmonotonic input, interrupted and finalized durable exports, forged metadata/counters/resource limits, corruption preservation, and real WalkController start/stop delegation. Independent Python tests cover incomplete sessions, missing resources, histogram overflow, corrupt counters, decreasing samples and invalid finalization. Native emitted evidence includes analytic callback injections and lifecycle checks, not a sustained rendering benchmark.
+
+Expected combined native suite: 192; interface suite: 19. Whole-house topology/streaming and the actual device workload remain open.

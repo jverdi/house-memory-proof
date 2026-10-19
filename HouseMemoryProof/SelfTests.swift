@@ -48,6 +48,9 @@ import simd
                 do {_=try isolated.read(key,limit:original.count);return false}catch{}
                 return try Data(contentsOf:file)==corrupt
             }
+            await check("Viewer cadence reports preserve interruptions, reject forged counters and finish when Explore stops") {
+                try ViewerDiagnosticsTests.run(house:house,folder:folder,output:mainRepo.root.appendingPathComponent("native-viewer-runtime.json"))
+            }
             await check("Capture workload reports preserve incomplete sessions, counters and resource unknowns") {
                 let isolated=try Repository(root:folder.appendingPathComponent("runtime-report"))
                 let counter=CaptureRenderCounter();var errors:[String]=[]
