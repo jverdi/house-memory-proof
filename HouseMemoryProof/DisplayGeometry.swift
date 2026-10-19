@@ -45,6 +45,17 @@ struct SpatialDisplayIndex {
   }
   struct Tile {var feature:Int;var primitives:[Int];var low:V3;var high:V3;var cost:Int}
   struct Allocation:Equatable {var tile:Int;var budget:Int;var textured:Bool;var near:Bool}
+  struct RoomPriority {
+    var current:UUID?
+    var connected:Set<UUID>=[]
+    var sameFloor:Set<UUID>=[]
+    func rank(_ room:UUID)->Int {
+      if room==current {return 0}
+      if connected.contains(room) {return 1}
+      if sameFloor.contains(room) {return 2}
+      return 3
+    }
+  }
   var features:[Feature]
   var tiles:[Tile]=[]
   init(features:[Feature],primitiveLimit:Int=2_000_000)throws {
@@ -73,7 +84,7 @@ struct SpatialDisplayIndex {
     // while standing still must not evict the geometry around the viewer.
     return velocity.normalized * min(6,velocity.length*2)
   }
-  func plan(camera:V3,velocity:V3=V3(),budget:Int=DisplayGeometry.sceneVertexBudget,residents:Int=512,previous:[Allocation]=[])->[Allocation] {
+  func plan(camera:V3,velocity:V3=V3(),budget:Int=DisplayGeometry.sceneVertexBudget,residents:Int=512,previous:[Allocation]=[],rooms:RoomPriority?=nil)->[Allocation] {
     guard camera.finite,budget>=3,residents>0 else{return []}
     func distance(_ tile:Tile,from point:V3)->Double {
       let dx=max(0,max(tile.low.x-point.x,point.x-tile.high.x)),dy=max(0,max(tile.low.y-point.y,point.y-tile.high.y)),dz=max(0,max(tile.low.z-point.z,point.z-tile.high.z))
@@ -81,7 +92,7 @@ struct SpatialDisplayIndex {
     }
     let ahead=camera+Self.prefetchOffset(velocity:velocity)
     let prior=Dictionary(previous.map{($0.tile,$0.near)},uniquingKeysWith:{_,new in new})
-    struct Ranked {var tile:Int;var distance:Double;var priority:Double;var requested:Int;var near:Bool}
+    struct Ranked {var tile:Int;var distance:Double;var priority:Double;var requested:Int;var near:Bool;var room:Int;var shell:Bool}
     var ranked:[Ranked]=[]
     for index in tiles.indices {
       let separation=distance(tiles[index],from:camera)
@@ -91,13 +102,19 @@ struct SpatialDisplayIndex {
       let near=separation<threshold,factor:Int=near ? 1:16
       let wanted=max(3,min(50000,tiles[index].cost/factor))
       let priority=min(separation,distance(tiles[index],from:ahead)+2)
-      ranked.append(Ranked(tile:index,distance:separation,priority:priority,requested:wanted,near:near))
+      let feature=features[tiles[index].feature]
+      ranked.append(Ranked(tile:index,distance:separation,priority:priority,requested:wanted,near:near,
+        room:rooms?.rank(feature.roomID) ?? 0,shell:[Trade.floor,.structure,.finish,.ceiling].contains(feature.trade)))
     }
     ranked.sort {a,b in
       // Always admit the current four-metre neighbourhood first. Prefetch
       // changes only display residency; it never creates a walking connection.
       let localA=a.distance<=4,localB=b.distance<=4
       if localA != localB {return localA}
+      if rooms != nil {
+        if a.room != b.room {return a.room<b.room}
+        if a.shell != b.shell {return a.shell}
+      }
       if !localA,a.priority != b.priority {return a.priority<b.priority}
       if a.distance==b.distance {return a.tile<b.tile}
       return a.distance<b.distance

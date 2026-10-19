@@ -202,6 +202,68 @@ import simd
     return moved>0 && refused>0 && tall.house==house
   }
 
+  static func checkedRoomLinks()throws->Bool {
+    let h=fixture().house
+    func graph(_ house:House,_ options:SceneOptions=SceneOptions(),limit:Int=256)throws->NavigationRoomGraph {
+      let index=try SpatialDisplayIndex(features:NavigationGeometry.collisionFeatures(house,options:options))
+      let result=try NavigationRoomGraph.build(house:house,options:options,navigation:index,candidateLimit:limit)
+      if limit==256,result.limited {throw HouseError.message("Room-link diagnostic exhausted its unchanged work budget after \(result.examinedCandidates) candidates.")}
+      return result
+    }
+    func pair(_ a:UUID,_ b:UUID)->String {[a.uuidString,b.uuidString].sorted().joined(separator:"/")}
+    let expected=Set((0..<6).map{pair(h.rooms[$0].id,h.rooms[$0+1].id)})
+    let baseline=try graph(h)
+    guard !baseline.limited,Set(baseline.links.map{pair($0.fromRoom,$0.toRoom)})==expected,
+      baseline.links.allSatisfy({link in h.observations.contains{$0.id==link.fromObservation} && h.observations.contains{$0.id==link.toObservation}}) else {
+      throw HouseError.message("Checked room graph did not retain the six observed room/stair transitions; links \(baseline.links.count), limited \(baseline.limited).")
+    }
+    var blocked=h
+    blocked.features.append(Feature(name:"Closed recorded door",trade:.structure,roomID:h.rooms[1].id,
+      stageID:h.stages[0].id,kind:.synthetic,mesh:.box(center:V3(0,2,1.2),size:V3(0.1,1,2.4)),segmentID:h.segments[1].id))
+    let forbidden=pair(h.rooms[1].id,h.rooms[2].id)
+    let closed=try graph(blocked)
+    guard Set(closed.links.map{pair($0.fromRoom,$0.toRoom)})==expected.subtracting([forbidden]) else{return false}
+    var hidden=SceneOptions();hidden.trades=[]
+    guard Set(try graph(blocked,hidden).links.map{pair($0.fromRoom,$0.toRoom)})==expected.subtracting([forbidden]) else{return false}
+    var gap=h;gap.observations.removeAll{abs($0.camera[3])<0.8}
+    guard !(try graph(gap).links.contains{pair($0.fromRoom,$0.toRoom)==forbidden}) else{return false}
+    var missing=h;missing.features.removeAll{$0.trade == .floor}
+    guard try graph(missing).links.isEmpty else{return false}
+    var planned=h
+    for i in planned.features.indices where planned.features[i].trade == .floor {planned.features[i].kind = .planned}
+    guard try graph(planned).links.isEmpty else{return false}
+    var separate=h;separate.segments[2].registration=nil
+    guard try graph(separate).links.isEmpty else{return false}
+    var mixed=h
+    let newSegments=h.rooms.map{Segment(roomID:$0.id,stageID:h.stages[1].id,registration:Rigid())}
+    mixed.segments+=newSegments
+    for original in h.observations {
+      var view=original;view.id=UUID();view.stageID=h.stages[1].id
+      view.segmentID=newSegments.first{$0.roomID==view.roomID}!.id;mixed.observations.append(view)
+    }
+    var all=SceneOptions();all.mode = .evidence
+    let mixedGraph=try graph(mixed,all)
+    guard mixedGraph.links.count==6,mixedGraph.links.allSatisfy({$0.stage==h.stages[0].id}) else{return false}
+    let limited=try graph(h,limit:1)
+    return limited.limited && limited.links.count<=1 && baseline.neighbours(of:h.rooms[7].id).isEmpty && baseline.neighbours(of:h.rooms[8].id).isEmpty
+  }
+
+  static func roomStreamingPriority()throws->Bool {
+    let rooms=(0..<4).map{_ in UUID()},stage=UUID()
+    let values:[(Int,Double,Trade)]=[(0,7,.structure),(1,6,.structure),(2,5,.structure),(3,4.5,.structure),(3,1,.structure),(0,6.5,.electrical)]
+    let features=values.map{room,x,trade in Feature(name:"Room priority source",trade:trade,roomID:rooms[room],stageID:stage,kind:.synthetic,
+      mesh:Mesh(vertices:[V3(x,0,1),V3(x,0.1,1),V3(x,0,1.1)],triangles:[0,1,2]))}
+    let index=try SpatialDisplayIndex(features:features)
+    let context=SpatialDisplayIndex.RoomPriority(current:rooms[0],connected:[rooms[1]],sameFloor:[rooms[0],rooms[1],rooms[2]])
+    let plan=index.plan(camera:V3(0,0,1),budget:18,residents:6,rooms:context)
+    guard plan.map{index.tiles[$0.tile].feature}==[4,0,5,1,2,3],plan.reduce(0,{$0+$1.budget})<=18 else{return false}
+    let tight=index.plan(camera:V3(0,0,1),budget:6,residents:2,rooms:context)
+    guard tight.map{index.tiles[$0.tile].feature}==[4,0] else{return false}
+    let other=SpatialDisplayIndex.RoomPriority(current:rooms[1],connected:[rooms[0]],sameFloor:[rooms[0],rooms[1],rooms[2]])
+    let moved=index.plan(camera:V3(0,0,1),budget:6,residents:2,rooms:other)
+    return moved.map{index.tiles[$0.tile].feature}==[4,1] && index.features==features
+  }
+
   static func sourcePickingSemantics()throws->Bool {
     let anchor=V3(50000,-40000,2),room=UUID(),stage=UUID(),scene=SceneBuilder.baseScene()
     var textures:[String:UIImage]=[:]

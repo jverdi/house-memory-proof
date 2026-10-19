@@ -5,6 +5,9 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"3870BBF3F40B8C4CC872710E" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "NavigationRoomGraph.swift"; "sourceTree" = "<group>"; };
+		"3993E4B288D46FDFBD427944" = { "isa" = "PBXBuildFile"; "fileRef" = "3870BBF3F40B8C4CC872710E"; };
+
 		"B619B1C7FA636B5132E806EE" = { "isa" = "PBXFileReference"; "lastKnownFileType" = "sourcecode.swift"; "path" = "RoomMap.swift"; "sourceTree" = "<group>"; };
 		"2F613EF2AA449B6975DEB574" = { "isa" = "PBXBuildFile"; "fileRef" = "B619B1C7FA636B5132E806EE"; };
 
@@ -294,6 +297,7 @@
 			"buildActionMask" = 2147483647;
 			"files" = (
 				"534A5F435ADDB25DA9F43232",
+				"3993E4B288D46FDFBD427944",
 				"2F613EF2AA449B6975DEB574",
 				"FE7286E5D4DC4650856CAFD3",
 				"E9CC7293A83C39B51894AB55",
@@ -385,6 +389,7 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"A33603BF79F74B056172D43B",
+				"3870BBF3F40B8C4CC872710E",
 				"B619B1C7FA636B5132E806EE",
 				"0967DCF2A92C257287D51709",
 				"33EF665276721B3F92E1EC66",

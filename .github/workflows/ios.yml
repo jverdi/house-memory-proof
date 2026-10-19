@@ -2,7 +2,7 @@ name: Build and deliver House Proof
 
 on:
   push:
-    branches: [main, continuation-evidence-20261017]
+    branches: [main, continuation-evidence-20261017, room-streaming-20261019]
     paths:
       - HouseMemoryProof/**
       - HouseXrayUITests/**

@@ -242,15 +242,19 @@ extension UIColor {
   var lastCamera:V3?
   var lastUpdate=0.0
   var renderOrigin=V3()
+  var roomContext:RoomStreamingContext? {didSet{lastCamera=nil}}
   private var lastPlan:[SpatialDisplayIndex.Allocation]=[]
   private var lastPrefetch=V3()
+  private var lastRoom:UUID?
   init(index:SpatialDisplayIndex,scene:SCNScene,options:SceneOptions){self.index=index;self.scene=scene;self.options=options}
   func update(camera:V3,time:Double,velocity:V3=V3()) {
     guard camera.finite,time.isFinite else{return}
     let prefetch=SpatialDisplayIndex.prefetchOffset(velocity:velocity)
-    if lastCamera==nil || (time-lastUpdate>=0.5 && ((camera-lastCamera!).length>=1 || (prefetch-lastPrefetch).length>=1)) {
+    let rooms=roomContext?.priority(at:camera)
+    if lastCamera==nil || rooms?.current != lastRoom || (time-lastUpdate>=0.5 && ((camera-lastCamera!).length>=1 || (prefetch-lastPrefetch).length>=1)) {
       lastCamera=camera;lastUpdate=time;lastPrefetch=prefetch
-      let plan=index.plan(camera:camera,velocity:velocity,previous:lastPlan),needed=Set(plan.map{$0.tile})
+      lastRoom=rooms?.current
+      let plan=index.plan(camera:camera,velocity:velocity,previous:lastPlan,rooms:rooms),needed=Set(plan.map{$0.tile})
       lastPlan=plan
       for id in Array(nodes.keys) where !needed.contains(id) {nodes.removeValue(forKey:id)?.removeFromParentNode();allocations.removeValue(forKey:id)}
       let textureKeys=Set(plan.filter{$0.textured}.compactMap{index.features[index.tiles[$0.tile].feature].texture})
@@ -414,8 +418,16 @@ extension UIColor {
           guard !Task.isCancelled,self.sceneRequest==request,self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
           self.navigationIndex=prepared.1;self.clearance=prepared.2;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
           self.stream?.renderOrigin=self.renderOrigin
+          let separate=SceneBuilder.activeUnregisteredSegment(h,options:o)
+          let separateRoom=h.segments.first{$0.id==separate}?.roomID
+          self.stream?.roomContext=RoomStreamingContext(rooms:h.rooms,graph:NavigationRoomGraph(),selectedRoom:o.room,separateRoom:separateRoom)
           self.navigationNotice=prepared.2.complete ? "Dense or distant surfaces may appear as source points. Select a room for more detail. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
           self.validateWalkPosition()
+          // Initial room detail is usable while the bounded graph is checked
+          // off the main actor. A stale/cancelled graph cannot update a new view.
+          let graph=try await LocalWorker.run {try NavigationRoomGraph.build(house:h,options:o,navigation:prepared.1)}
+          guard !Task.isCancelled,self.sceneRequest==request,self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
+          self.stream?.roomContext=RoomStreamingContext(rooms:h.rooms,graph:graph,selectedRoom:o.room,separateRoom:separateRoom)
         }catch is CancellationError {}catch {
           guard self.sceneRequest==request,self.view.scene===scene else{return}
           self.navigationNotice=error.localizedDescription

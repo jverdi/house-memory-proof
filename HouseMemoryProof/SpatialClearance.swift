@@ -80,12 +80,13 @@ struct SpatialClearance {
   }
   // Use original primitive bounds, not display LOD. The tile bounds include
   // crossing triangles whose centres lie outside this neighbourhood.
-  init(index: SpatialDisplayIndex, camera: V3, radius: Double = 4, limit: Int = 500000) throws {
+  init(index: SpatialDisplayIndex, camera: V3, radius: Double = 4, limit: Int = 500000,stageID:UUID?=nil) throws {
     coverageCentre = camera
     coverageRadius = radius
     guard camera.finite, radius.isFinite, radius > 0, limit > 0 else { complete = false; return }
     for tile in index.tiles {
       try Task.checkCancellation()
+      if let stageID,index.features[tile.feature].stageID != stageID {continue}
       let dx=max(0,max(tile.low.x-camera.x,camera.x-tile.high.x))
       let dy=max(0,max(tile.low.y-camera.y,camera.y-tile.high.y))
       let dz=max(0,max(tile.low.z-camera.z,camera.z-tile.high.z))

@@ -459,6 +459,12 @@ import simd
             await check("Displayed source picking respects nearest surfaces, visibility and residency") {
                 try NavigationBenchmark.sourcePickingSemantics()
             }
+            await check("Room adjacency requires stage-specific recorded corridors, floor support and body clearance") {
+                try NavigationBenchmark.checkedRoomLinks()
+            }
+            await check("Streaming prioritizes current-room shells and checked neighbours within unchanged budgets") {
+                try NavigationBenchmark.roomStreamingPriority()
+            }
             await check("Saved viewpoints retain displayed pose, actual floor and unaligned visit scope") {
                 try NavigationBenchmark.savedViewpointScope()
             }
