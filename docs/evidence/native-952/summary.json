@@ -1,0 +1,24 @@
+{
+  "source": "95218fd6253da5d939a50db67c0d1027622bbf0a",
+  "build": "240.1",
+  "run": 39280008507,
+  "artifact": 12201786014,
+  "artifactSHA256": "ea10e86244120bdef3cd545c9440935e0611bbacb2f4181330c5638d7ccd933f",
+  "digestVerified": true,
+  "debugCompilePassed": true,
+  "releaseCompilePassed": true,
+  "nativePassed": 193,
+  "nativeFailed": 0,
+  "nativeElapsedSeconds": 228.96736145833336,
+  "status": "cancelled_after_native_checks_before_independent_readers",
+  "nativeReaderPhaseComplete": false,
+  "interfacePassed": null,
+  "completeIntegrationPassed": false,
+  "physicalQualification": false,
+  "supersededBy": {
+    "build": "241.1",
+    "run": 39281579722,
+    "source": "777520e23ffc6930ce4118be2626c1634f0a045a"
+  },
+  "note": "Native taper geometry, exact legacy vertices and native archive/GLB/CSV assertions pass. The superseding execution-budget commit changed no application implementation; its complete integration remains required."
+}

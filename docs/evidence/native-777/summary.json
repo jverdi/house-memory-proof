@@ -1,0 +1,19 @@
+{
+  "source": "777520e23ffc6930ce4118be2626c1634f0a045a",
+  "build": "241.1",
+  "run": 39281579722,
+  "artifact": 12200814915,
+  "artifactSHA256": "bb45e65756aa8b96bb0bed323d275285c934555ad9144ee3fa2ff08baf206839",
+  "digestVerified": true,
+  "debugCompilePassed": true,
+  "releaseCompilePassed": true,
+  "nativePassed": 193,
+  "nativeFailed": 0,
+  "nativeElapsedSeconds": 177.31016154166673,
+  "nativeReaderPhasesPassed": 20,
+  "commandContractsPassed": 60,
+  "interfaceExpected": 20,
+  "interfaceStatus": "pending",
+  "completeIntegrationPassed": false,
+  "physicalQualification": false
+}

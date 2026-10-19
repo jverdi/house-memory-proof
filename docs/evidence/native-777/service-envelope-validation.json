@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "reader": "Independent Python service-envelope archive GLB and CSV readers",
+  "sections": 2,
+  "connectedCircularEnvelopes": 1,
+  "linearTapers": 2,
+  "sourceCenterlinesPreserved": true,
+  "declaredDimensionsVerified": true,
+  "sourceDependenciesPreserved": true,
+  "maximumExportCoordinateErrorMetres": 1.1813446221253798e-07,
+  "csvDateResolutionSeconds": 1,
+  "measurementInstantPreserved": true,
+  "toleranceIsSizeOnly": true,
+  "sourceRecordsPublished": false,
+  "physicalQualification": false
+}

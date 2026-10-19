@@ -13,7 +13,7 @@
   "commandContractsPassed": 52,
   "interfaceStatus": "passed",
   "interfaceExpected": 19,
-  "appleUploadVerified": false,
+  "appleUploadVerified": true,
   "completeIntegrationPassed": true,
   "physicalQualification": false,
   "fullArtifact": 12197734749,
@@ -37,7 +37,7 @@
   "uploadArtifact": 12200871198,
   "uploadArtifactSHA256": "23a5003cbfb284f066ad73dee2dd5acd9faed45e6df36b362be87bc999bf297b",
   "uploadArtifactDigestVerified": true,
-  "appleProcessingVerified": false,
-  "ownerAccessVerified": false,
-  "uploadedIPAHashIndependentlyVerified": false
+  "appleProcessingVerified": true,
+  "uploadedIPAHashIndependentlyVerified": false,
+  "readinessEvidence": "../testflight-234-1-summary.json"
 }
