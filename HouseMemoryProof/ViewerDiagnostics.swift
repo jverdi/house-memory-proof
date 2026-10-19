@@ -110,11 +110,12 @@ struct ViewerRuntimeReport:Codable {
     #else
     let platform="physical iPhone or iPad"
     #endif
-    report=ViewerRuntimeReport(projectID:house.id,projectRevision:house.revision,
+    let initial=ViewerRuntimeReport(projectID:house.id,projectRevision:house.revision,
       sourceRevision:Bundle.main.object(forInfoDictionaryKey:"ProofSourceRevision") as? String ?? "local",
       build:Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "local",
       hardware:hardware,systemVersion:UIDevice.current.systemVersion,platform:platform)
-    file=folder.appendingPathComponent(report.sessionID.uuidString+".json")
+    report=initial
+    file=folder.appendingPathComponent(initial.sessionID.uuidString+".json")
     sample()
     guard !errorReported else{throw HouseError.message("The initial viewer performance report could not be saved.")}
     observer=NotificationCenter.default.addObserver(forName:UIApplication.didReceiveMemoryWarningNotification,object:nil,queue:.main){[weak self] _ in Task { @MainActor in self?.warnings+=1 }}
