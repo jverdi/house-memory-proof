@@ -63,15 +63,16 @@ final class HouseXraySmoke: XCTestCase {
     let reset=app.buttons["viewer-reset-settings"];guidanceReveal(reset,in:app,horizontal:0.97);reset.tap();closeSettings()
     app.buttons["Layers"].tap();setSwitch(app.switches["Step and snap-turn buttons"],to:true)
     app.buttons["viewer-comfort-settings"].tap()
-    for id in ["viewer-speed","viewer-acceleration","viewer-turn-speed","viewer-sensitivity"] {
+    for (id,range,upper) in [("viewer-speed",0.2...2.0,false),("viewer-acceleration",0.2...4.0,false),
+      ("viewer-turn-speed",30.0...180.0,false),("viewer-sensitivity",0.25...2.0,true)] {
       let slider=app.sliders[id];guidanceReveal(slider,in:app,horizontal:0.97)
-      slider.adjust(toNormalizedSliderPosition:id=="viewer-sensitivity" ? 1:0)
+      setSliderEndpoint(slider,range:range,upper:upper)
     }
     let invert=app.switches["viewer-invert-y"],left=app.switches["viewer-left-handed"]
     guidanceReveal(invert,in:app,horizontal:0.97);setSwitch(invert,to:true)
     guidanceReveal(left,in:app,horizontal:0.97);setSwitch(left,to:true)
-    for id in ["viewer-field-of-view","viewer-eye-height"] {
-      let slider=app.sliders[id];guidanceReveal(slider,in:app,horizontal:0.97);slider.adjust(toNormalizedSliderPosition:0)
+    for (id,range) in [("viewer-field-of-view",45.0...90.0),("viewer-eye-height",0.8...2.2)] {
+      let slider=app.sliders[id];guidanceReveal(slider,in:app,horizontal:0.97);setSliderEndpoint(slider,range:range,upper:false)
     }
     XCTAssertTrue(app.staticTexts["Eye height: 0.8 m"].exists);screenshot("42-viewer-comfort-settings")
     closeSettings();XCTAssertTrue(settleOrientation(.landscapeLeft,in:app))
@@ -243,15 +244,15 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertTrue(app.buttons["help-settings"].waitForExistence(timeout: 10))
   }
   @MainActor private func guidanceReveal(_ element: XCUIElement, in app: XCUIApplication, horizontal: CGFloat = 0.5) {
+    let window=app.frame
     for _ in 0..<32 {
-      let window = app.frame
       let top = max(window.minY + 44, app.navigationBars.allElementsBoundByIndex.last?.frame.maxY ?? window.minY + 44) + 8
       var bottom = window.maxY - 45
       if app.keyboards.firstMatch.exists { bottom = min(bottom, app.keyboards.firstMatch.frame.minY - 8) }
       if app.tabBars.firstMatch.exists && app.tabBars.firstMatch.isHittable { bottom = min(bottom, app.tabBars.firstMatch.frame.minY - 8) }
-      let frame = element.exists ? element.frame : .zero
-      if element.exists && element.isHittable && frame.midY > top && frame.midY < bottom { return }
-      let moveDown = element.exists && frame.maxY > 0 && frame.midY < top
+      let found=element.exists,frame=found ? element.frame:.zero
+      if found && frame.midY > top && frame.midY < bottom && element.isHittable { return }
+      let moveDown=found && frame.maxY>0 && frame.midY<top
       let available = max(80, bottom - top)
       let fromY = top + available * (moveDown ? 0.25 : 0.8)
       let toY = top + available * (moveDown ? 0.8 : 0.25)
@@ -320,10 +321,15 @@ final class HouseXraySmoke: XCTestCase {
     for _ in 0..<20 {if open.exists && open.isHittable{break};app.swipeUp()}
     XCTAssertTrue(open.isHittable);open.tap()
     let width=app.textFields["envelope-width"];XCTAssertTrue(width.waitForExistence(timeout:10));width.tap();width.typeText("50")
-    app.buttons["envelope-keyboard-done"].tap()
+    func finishEntry() {
+      app.buttons["envelope-keyboard-done"].tap()
+      let closed=expectation(for:NSPredicate(format:"exists == false"),evaluatedWith:app.keyboards.firstMatch)
+      wait(for:[closed],timeout:5)
+    }
+    finishEntry()
     let evidence=app.descendants(matching:.any).matching(identifier:"envelope-evidence").firstMatch
     for _ in 0..<8 {if evidence.exists && evidence.isHittable{break};app.swipeUp()}
-    XCTAssertTrue(evidence.isHittable);evidence.tap();evidence.typeText("Synthetic 50 mm outer measurement");app.buttons["envelope-keyboard-done"].tap()
+    XCTAssertTrue(evidence.isHittable);evidence.tap();evidence.typeText("Synthetic 50 mm outer measurement");finishEntry()
     let confirm=app.switches["envelope-confirm"]
     for _ in 0..<8 {if confirm.exists && confirm.isHittable{break};app.swipeUp()}
     XCTAssertTrue(confirm.isHittable);setSwitch(confirm,to:true)
@@ -707,6 +713,22 @@ final class HouseXraySmoke: XCTestCase {
     screenshot("15a-single-photo-restored-image")
     reveal(count);XCTAssertEqual(count.label,"1 2D annotation")
     screenshot("15-single-photo-annotation-restored")
+  }
+  @MainActor private func setSliderEndpoint(_ slider:XCUIElement,range:ClosedRange<Double>,upper:Bool) {
+    func number()->Double? {
+      guard let raw=slider.value as? String,let first=raw.split(whereSeparator:{$0.isWhitespace}).first else{return nil}
+      return Double(first)
+    }
+    guard let current=number(),range.contains(current) else{XCTFail("Slider must expose its current numeric value and unit");return}
+    let fraction=(current-range.lowerBound)/(range.upperBound-range.lowerBound),expected=upper ? range.upperBound:range.lowerBound
+    // These controls expose meaningful units to VoiceOver. XCTest's normalized
+    // adjustment can undershoot with that value; drag the visible thumb to the
+    // endpoint and require the same exact numeric result instead.
+    let start=slider.coordinate(withNormalizedOffset:CGVector(dx:max(0.05,min(0.95,fraction)),dy:0.5))
+    let end=slider.coordinate(withNormalizedOffset:CGVector(dx:upper ? 1:0,dy:0.5))
+    start.press(forDuration:0.1,thenDragTo:end)
+    let reached=expectation(for:NSPredicate{_,_ in number().map{abs($0-expected)<0.000001} ?? false},evaluatedWith:slider)
+    wait(for:[reached],timeout:5)
   }
   @MainActor private func setSwitch(_ row:XCUIElement,to enabled:Bool) {
     XCTAssertTrue(row.waitForExistence(timeout:5))

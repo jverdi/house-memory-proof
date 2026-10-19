@@ -40,6 +40,7 @@ struct ServiceDetails:Codable,Equatable {
 
 #if canImport(UIKit)
 import SwiftUI
+import UIKit
 struct ServiceDetailsFields:View {
   @Binding var details:ServiceDetails
   @FocusState.Binding var focusedField:String?
@@ -85,6 +86,10 @@ struct BatchServiceEditor:View {
   @State private var query=""
   @FocusState private var filterFocused:Bool
   @State private var limit=200
+  private func dismissFilterKeyboard() {
+    filterFocused=false
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),to:nil,from:nil,for:nil)
+  }
   private var matches:[Feature] {
     let terms=EvidenceSearch.normalized(query).split(whereSeparator:{$0.isWhitespace})
     return house.features.filter{feature in
@@ -102,7 +107,7 @@ struct BatchServiceEditor:View {
         }
         Section("Objects · \(selected.count) selected") {
           TextField("Filter objects",text:$query).focused($filterFocused).submitLabel(.done)
-            .onSubmit{filterFocused=false}.onChange(of:query){_,_ in limit=200}
+            .onSubmit{dismissFilterKeyboard()}.onChange(of:query){_,_ in limit=200}
           let found=matches
           ForEach(Array(found.prefix(limit))){feature in
             Toggle(isOn:Binding(get:{selected.contains(feature.id)},set:{if $0{selected.insert(feature.id)}else{selected.remove(feature.id)}})) {
@@ -114,7 +119,7 @@ struct BatchServiceEditor:View {
       }.navigationTitle("Classify objects")
         .toolbar {
           ToolbarItemGroup(placement:.keyboard){
-            if filterFocused {Spacer();Button("Done"){filterFocused=false}.accessibilityIdentifier("batch-filter-done")}
+            if filterFocused {Spacer();Button("Done"){dismissFilterKeyboard()}.accessibilityIdentifier("batch-filter-done")}
           }
           ToolbarItem(placement:.cancellationAction){Button("Cancel"){dismiss()}}
           ToolbarItem(placement:.confirmationAction){Button("Apply to \(selected.count) objects"){
