@@ -11,9 +11,25 @@
   "nativeFailed": 0,
   "nativeReaderPhasesPassed": 19,
   "commandContractsPassed": 52,
-  "interfaceStatus": "in_progress",
+  "interfaceStatus": "passed",
   "interfaceExpected": 19,
   "appleUploadVerified": false,
-  "completeIntegrationPassed": false,
-  "physicalQualification": false
+  "completeIntegrationPassed": true,
+  "physicalQualification": false,
+  "fullArtifact": 12197734749,
+  "fullArtifactSHA256": "35df1e3f5a187348de163db94ceb5168a56ea2d958d802f79f4adff01be7152f",
+  "fullArtifactDigestVerified": true,
+  "interfacePassed": 19,
+  "interfaceFailed": 0,
+  "interfaceCaseSeconds": 1809.098,
+  "processRecoveriesPassed": 3,
+  "portableCasesPassed": 50,
+  "exportValidationReportsPassed": 36,
+  "visualFollowupsReviewed": [
+    "26-measured-envelope",
+    "42-viewer-comfort-settings",
+    "43-left-handed-viewer",
+    "45-room-map-records",
+    "46-mini-map-landscape"
+  ]
 }

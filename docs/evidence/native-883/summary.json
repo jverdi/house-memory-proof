@@ -1,0 +1,17 @@
+{
+  "source": "8831db8767338f2b485293a6dbaf1e9ff6188c11",
+  "build": "239.1",
+  "run": 39276168643,
+  "artifact": 12199671848,
+  "artifactSHA256": "1f75422d4b70d4b38026057a42ebcc5e6a357dc8236f7475dc314e9268cf905c",
+  "digestVerified": true,
+  "nativePassed": 192,
+  "nativeFailed": 0,
+  "nativeReaderPhasesPassed": 20,
+  "commandContractsPassed": 57,
+  "interfaceStatus": "in_progress",
+  "interfaceExpected": 19,
+  "completeIntegrationPassed": false,
+  "physicalQualification": false,
+  "viewerEvidence": "Analytic injected completion callbacks and actual controller lifecycle; not a sustained renderer workload."
+}

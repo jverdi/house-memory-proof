@@ -41,13 +41,17 @@
         "build": "234.1",
         "nativeExpected": 182,
         "interfaceExpected": 19,
-        "status": "interface_in_progress",
+        "status": "simulator_passed_apple_delivery_pending",
         "appleUploadVerified": false,
         "nativePassed": 182,
         "nativeFailed": 0,
         "nativeReaderPhasesPassed": 19,
         "commandContractsPassed": 52,
-        "evidence": "docs/evidence/native-cac/summary.json"
+        "evidence": "docs/evidence/native-cac/summary.json",
+        "interfacePassed": 19,
+        "interfaceFailed": 0,
+        "completeIntegrationPassed": true,
+        "fullEvidence": "docs/evidence/native-cac/summary.json"
       }
     }
   },
@@ -1514,7 +1518,7 @@
     "source": "8831db8767338f2b485293a6dbaf1e9ff6188c11",
     "nativeExpected": 192,
     "interfaceExpected": 19,
-    "nativeValidationPending": true,
+    "nativeValidationPending": false,
     "independentViewerReaderTestsPassed": 5,
     "wholeHouseQualified": false,
     "physicalQualification": false,
@@ -1524,6 +1528,23 @@
     ],
     "build": "239.1",
     "run": 39276168643,
-    "commandContractsPassed": 57
+    "commandContractsPassed": 57,
+    "nativePassed": 192,
+    "nativeFailed": 0,
+    "nativeReaderPhasesPassed": 20,
+    "interfaceValidationPending": true,
+    "nativeEvidence": "docs/evidence/native-883/summary.json"
+  },
+  "measuredTaperContinuation": {
+    "source": "95218fd6253da5d939a50db67c0d1027622bbf0a",
+    "build": "240.1",
+    "run": 39280008507,
+    "branch": "service-sections-20261019",
+    "nativeExpected": 193,
+    "interfaceExpected": 20,
+    "commandContractsPassed": 60,
+    "nativeValidationPending": true,
+    "physicalQualification": false,
+    "evidence": "docs/evidence/measured-taper-candidate.md"
   }
 }
