@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-19",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "1fee4cc117fc61baa5c8f8a6b8d531b56d68c5db",
+  "currentImplementationCommit": "8831db8767338f2b485293a6dbaf1e9ff6188c11",
   "testflight": {
     "build": "216.1",
     "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -104,7 +104,7 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Complete combined native and all 20 interface gates with bounded result-finalization headroom; verify exact 234.1 Apple readiness.",
+  "nextAction": "Verify 241.1 measured-taper native/interface evidence and exact 234.1 Apple readiness; validated 239.1 source is integrated on main.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1524,8 +1524,14 @@
     "nativePassed": 192,
     "nativeFailed": 0,
     "nativeReaderPhasesPassed": 20,
-    "interfaceValidationPending": true,
-    "nativeEvidence": "docs/evidence/native-883/summary.json"
+    "interfaceValidationPending": false,
+    "nativeEvidence": "docs/evidence/native-883/summary.json",
+    "interfacePassed": 19,
+    "interfaceFailed": 0,
+    "completeIntegrationPassed": true,
+    "processRecoveriesPassed": 3,
+    "exportValidationReportsPassed": 37,
+    "integratedToMain": true
   },
   "measuredTaperContinuation": {
     "source": "777520e23ffc6930ce4118be2626c1634f0a045a",
@@ -1582,5 +1588,14 @@
     "status": "validation_queued",
     "completeIntegrationPassed": false,
     "appleUploadRequested": false
+  },
+  "latestCompleteIntegration": {
+    "source": "8831db8767338f2b485293a6dbaf1e9ff6188c11",
+    "build": "239.1",
+    "run": 39276168643,
+    "nativePassed": 192,
+    "interfacePassed": 19,
+    "completeIntegrationPassed": true,
+    "evidence": "docs/evidence/native-883/summary.json"
   }
 }
