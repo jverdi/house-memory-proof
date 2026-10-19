@@ -1,3 +1,9 @@
+## Work resumed in a new thread — 19 October 2026
+
+The last pending builds are now reconciled: 231.1 failed its movement-settings interface check and skipped Apple upload; 233.1 failed tiny-triangle picking (187/188 native) and movement-settings adjustment (18/19 interface). Hash-verified 233.1 evidence is retained in `docs/evidence/restart-20261019/`.
+
+Release repair `cac8756b627474b65d2a8b1f912a73791b3225dc` is published to `requested-snapshot-20261019`; full validation and conditional delivery are queued in run `39272141287` / 234.1. All release gates remain. Main's picking failure and the broader specification remain open. `docs/CURRENT_PROGRESS.md` and `docs/RESTART_CHECKPOINT.md` give the resumed work order. Last verified TestFlight availability is 216.1.
+
 ## Requested TestFlight 228.1 passes native phase; combined continuation prepared
 
 The owner explicitly requested a new TestFlight in the current thread. Build **228.1**, source `f7123ca2ee6c556620b3f01cc3d6d88bc20d0597`, run `39191585115`, passes **182 native checks**, 19 reader phases, 52 command contracts and process recovery. Its native artifact is independently SHA-256 verified in `docs/evidence/native-f712-summary.json`. All 19 interface workflows are running. Upload remains gated on complete integration; Apple readiness is not yet claimed. Superseded 227.1 is retained as cancelled without native/interface acceptance.

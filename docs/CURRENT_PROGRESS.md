@@ -1,6 +1,16 @@
 # House Xray: current progress
 
-Updated 19 October 2026 UTC (18 October in New York). The full plan is **in progress**. Precision use and final release acceptance remain disabled.
+Updated 19 October 2026. Work has resumed in a new thread. The full plan remains **in progress**; precision use and final release acceptance remain disabled.
+
+## Restart status (supersedes older run status below)
+
+- Requested release **231.1** completed with a movement-settings interface failure; Apple upload was skipped.
+- Main **233.1**, source `8e8edb6`, completed with **187/188 native checks** and **18/19 interface workflows** passing. Small-triangle source picking and the movement-settings slider still fail. The complete artifact was downloaded and SHA-256 verified; the failure recording and accessibility description were inspected. [Retained evidence](evidence/restart-20261019/summary.json).
+- The snapshot accessibility repair is published as `cac8756b627474b65d2a8b1f912a73791b3225dc` on `requested-snapshot-20261019`. **234.1**, [run 39272141287](https://github.com/jverdi/house-memory-proof/actions/runs/39272141287), has been queued for the complete release validation and conditional Apple upload. A queued run is not an available TestFlight build.
+- **216.1 remains the last verified available TestFlight build.** No newer installation or delivery is claimed.
+- The recovery notes and exact next work are in [RESTART_CHECKPOINT.md](RESTART_CHECKPOINT.md). The new repair has not yet passed native/UI validation. All 19 interface workflows and exact setting/persistence assertions remain; no accuracy threshold or localization budget changed.
+
+Older sections below retain their historical checkpoints and outstanding specification work.
 
 ## What you can install
 

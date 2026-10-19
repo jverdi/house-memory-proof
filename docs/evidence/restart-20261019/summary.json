@@ -1,0 +1,29 @@
+{
+  "source": "8e8edb694bc327af224d042e1f56b034a118f753",
+  "run": 39228983220,
+  "build": "233.1",
+  "artifact": 12179315911,
+  "sha256": "5d90100ba029dc0c2503a3eba819b60d24eb2664de55f792b409ae79c3ec7e5f",
+  "hashVerified": true,
+  "native": {
+    "passed": 187,
+    "total": 188,
+    "failure": "Local render source picking failed from side -1.0; hits 0."
+  },
+  "interface": {
+    "passed": 18,
+    "total": 19,
+    "failure": "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout: turning speed remains 90 \u00b0/s after coordinate drag"
+  },
+  "upload": "skipped",
+  "accepted": false,
+  "recordingReviewed": true,
+  "release231": {
+    "source": "543bb566a052bc41718496eb8e73fe6dc4fcdf13",
+    "run": 39226613300,
+    "nativePassed": true,
+    "interfaceFailure": "viewer-invert-y switch did not reach value 1",
+    "upload": "skipped",
+    "evidence": "GitHub job 117974331326 logs; artifact not downloaded"
+  }
+}
