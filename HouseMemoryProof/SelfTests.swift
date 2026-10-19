@@ -2780,6 +2780,12 @@ import simd
                     try JSONSerialization.data(withJSONObject:navigation,options:[.sortedKeys]).write(to:mainRepo.root.appendingPathComponent("native-reconstructed-navigation.json"))
                     results.append(["test":"Production reconstructed floor supports classified walking and refuses missing depth","passed":navigation["passed"] as? Bool==true])
                 }catch {results.append(["test":"Production reconstructed floor supports classified walking and refuses missing depth","passed":false,"error":error.localizedDescription])}
+                do {
+                    mark("Registered reconstructed room-boundary navigation")
+                    let navigation=try await NavigationBenchmark.reconstructedRooms(repo:mainRepo)
+                    try JSONSerialization.data(withJSONObject:navigation,options:[.sortedKeys]).write(to:mainRepo.root.appendingPathComponent("native-reconstructed-rooms.json"))
+                    results.append(["test":"Reconstructed room transitions retain floor isolation and source geometry","passed":navigation["passed"] as? Bool==true])
+                }catch {results.append(["test":"Reconstructed room transitions retain floor isolation and source geometry","passed":false,"error":error.localizedDescription])}
                 var pointHouse=fixture;pointHouse.features=[feature]
                 let pointGLB=try Exporter.glb(pointHouse,options:SceneOptions()),pointUSD=try Exporter.usdz(pointHouse,options:SceneOptions())
                 for (from,name) in [(pointGLB,"points.glb"),(pointUSD,"points.usdz")]{let target=mainRepo.root.appendingPathComponent(name);try? FileManager.default.removeItem(at:target);try FileManager.default.copyItem(at:from,to:target)}

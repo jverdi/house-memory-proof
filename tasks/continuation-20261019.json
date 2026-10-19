@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-19T19:43:11.659562+00:00",
+  "updatedUTC": "2026-10-19T19:47:32.761327+00:00",
   "overall": "in_progress",
   "validatedApplicationSource": "777520e23ffc6930ce4118be2626c1634f0a045a",
   "validationBuild": "241.1",
@@ -44,7 +44,7 @@
     "Measured sensor timing/adapters, identifiable calibration and independent field validation"
   ],
   "nextLocalizationDiagnostic": {
-    "status": "authorized_pending_single_run",
+    "status": "running",
     "maximumJobs": 2,
     "maximumMinutesPerJob": 40,
     "maximumConcurrentJobs": 1,
@@ -52,7 +52,9 @@
     "estimatorOrThresholdChanges": false,
     "proposal": "docs/LOCALIZATION_DIAGNOSTIC_PROPOSAL.md",
     "authorization": "User instructed continuation after the explicit two-job, 40-minute-each proposal.",
-    "workflow": ".github/workflows/pose-observer-20261019.yml"
+    "workflow": ".github/workflows/pose-observer-20261019.yml",
+    "run": 39313356060,
+    "source": "b816d75d0ce3a23408512a2f92deacb3971feb2d"
   },
   "integrationCommit": "5404e776b6c032ee16282bb8889b025dccfc7104",
   "automaticReplayCancellations": {
@@ -80,5 +82,14 @@
       "workflowStatusMayLag": true
     },
     "qualificationResultClaimed": false
+  },
+  "registeredReconstructionNavigation": {
+    "status": "prepared_native_pending",
+    "evidence": "docs/evidence/reconstructed-rooms-candidate.md",
+    "commandContractsPassed": 63,
+    "ciContractsPassed": 47,
+    "maximumIntegrationJobs": 1,
+    "maximumMinutesPerJob": 70,
+    "wholeHouseQualified": false
   }
 }

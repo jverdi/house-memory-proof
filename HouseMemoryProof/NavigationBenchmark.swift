@@ -174,6 +174,82 @@ import simd
       "limitations":"Two bounded synthetic depth fragments through production reconstruction and walking. Explicit floor classification is supplied by the diagnostic. This does not qualify automatic floor recognition, whole-house registration/navigation, sustained rendering or physical accuracy."]
   }
 
+  // Three independent RGB-D fragments with explicitly supplied registration.
+  // This isolates reconstruction -> registered navigation, not registration
+  // estimation, whole-house diversity or protected/physical qualification.
+  static func reconstructedRooms(repo:Repository) async throws->[String:Any] {
+    var inputs:[House]=[],surfaces:[Feature]=[]
+    let offsets=[V3(),V3(1.2,0,0),V3(0,0,3.2)]
+    for index in offsets.indices {
+      var input=try SimulatedCapture.navigationFloor(repo:repo,missingStrip:false)
+      if let first=inputs.first {
+        input.stages=first.stages
+        input.segments[0].stageID=first.stages[0].id
+        for i in input.observations.indices {input.observations[i].stageID=first.stages[0].id}
+      }
+      input.rooms[0].name="Reconstructed fragment \(index+1)"
+      input.rooms[0].origin=offsets[index]+V3(-0.8,-0.6,0)
+      input.rooms[0].size=V3(1.6,1.2,3)
+      input.rooms[0].level=index==2 ? 1:0
+      var registration=Rigid();registration.values[3]=offsets[index].x;registration.values[11]=offsets[index].z
+      input.segments[0].registration=registration
+      guard input.features.isEmpty else{throw HouseError.message("Fixture supplied generator meshes.")}
+      var surface=try await SurfaceReconstruction.build(house:input,segment:input.segments[0],repo:repo){_ in}
+      guard surface.resolvedGeometrySource == .depthFusion,surface.trade == .unknown else{throw HouseError.message("Expected unclassified reconstruction output.")}
+      surface.trade = .floor
+      inputs.append(input);surfaces.append(surface)
+    }
+    var h=inputs[0];h.name="Registered reconstructed navigation fragments"
+    h.rooms=inputs.flatMap{$0.rooms};h.segments=inputs.flatMap{$0.segments}
+    h.observations=inputs.flatMap{$0.observations};h.features=surfaces;h.revision+=1
+    try h.validate()
+    guard h.features.reduce(0,{$0+DisplayGeometry.cost($1.mesh)})<=DisplayGeometry.sceneVertexBudget else {
+      throw HouseError.message("Registered-fragment fixture exceeds its synchronous display budget.")
+    }
+    func graph(_ house:House)throws->NavigationRoomGraph {
+      let navigation=try SpatialDisplayIndex(features:NavigationGeometry.collisionFeatures(house,options:SceneOptions()))
+      return try NavigationRoomGraph.build(house:house,options:SceneOptions(),navigation:navigation)
+    }
+    let links=try graph(h)
+    // Retain only room ordinals in the public report; raw capture IDs stay local.
+    let roomPairs=links.links.map{link in [h.rooms.firstIndex(where:{$0.id==link.fromRoom}) ?? -1,
+      h.rooms.firstIndex(where:{$0.id==link.toRoom}) ?? -1].sorted()}.sorted{$0.lexicographicallyPrecedes($1)}
+    var unsupported=h;unsupported.features[1].trade = .unknown;unsupported.revision+=1
+    let walk=WalkController();defer{walk.stop()};walk.load(h,SceneOptions())
+    walk.bookmark(Bookmark(name:"Reconstructed lower floor",position:V3(-0.2,0,2),yaw:0,pitch:0,roomID:h.rooms[0].id))
+    walk.setFlying(false)
+    let walkingEnabled = !walk.flying
+    func point(_ p:V3)->[String:Double] {["x":p.x,"y":p.y,"z":p.z]}
+    var trace:[[String:Double]]=[],completed=0
+    for direction in [1.0,-1.0] {for _ in 0..<8 {
+      let before=walk.canonicalPosition;walk.stepMove(SIMD2(Float(direction),0));let after=walk.canonicalPosition
+      if abs(after.x-before.x-direction*0.2)<0.0001,abs(after.y)<0.0001,abs(after.z-2)<0.003 {completed+=1}
+      trace.append(point(after))
+    }}
+    walk.jump(h.rooms[2]);walk.setFlying(false)
+    let upper=walk.canonicalPosition,upperWalkingEnabled = !walk.flying
+    let blocked=WalkController();defer{blocked.stop()};blocked.load(unsupported,SceneOptions())
+    blocked.bookmark(Bookmark(name:"Before unsupported room",position:V3(0.4,0,2),yaw:0,pitch:0,roomID:h.rooms[0].id));blocked.setFlying(false)
+    var missingFloorTrace:[[String:Double]]=[]
+    let refusalWalkingEnabled = !blocked.flying
+    for _ in 0..<3 {blocked.stepMove(SIMD2(1,0));missingFloorTrace.append(point(blocked.canonicalPosition))}
+    let missingFloorRefused=refusalWalkingEnabled && missingFloorTrace.allSatisfy{abs(($0["x"] ?? .infinity)-0.4)<0.0001 && abs($0["y"] ?? .infinity)<0.0001 && abs(($0["z"] ?? .infinity)-2)<0.003}
+    let preserved=walk.house==h && blocked.house==unsupported && zip(h.features,surfaces).allSatisfy{$0.mesh==$1.mesh} && h.observations==inputs.flatMap{$0.observations}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let package=try encoder.encode(h)
+    try DurableFiles.write(package,to:repo.root.appendingPathComponent("reconstructed-rooms-private.json"))
+    let passed=walkingEnabled && completed==16 && !links.limited && roomPairs==[[0,1]] &&
+      missingFloorRefused && upperWalkingEnabled && abs(upper.z-5.2)<0.003 && preserved
+    return ["version":1,"profile":"registered-reconstructed-fragments-v1","passed":passed,
+      "privatePackageSHA256":TourProvenance.digest(package),"fragments":3,"capturedViewsPerFragment":9,
+      "vertices":surfaces.map{$0.mesh.vertices.count},"generatorMeshesSupplied":0,
+      "registrationSupplied":true,"floorClassificationSupplied":true,"links":roomPairs,
+      "graphLimited":links.limited,"missingFloorRefused":missingFloorRefused,"missingFloorTrace":missingFloorTrace,
+      "walkingEnabled":walkingEnabled,"completedSteps":completed,"trace":trace,
+      "upperFloorJump":point(upper),"upperWalkingEnabled":upperWalkingEnabled,"sourceGeometryUnchanged":preserved,
+      "wholeHouseQualified":false,"physicalQualification":false,"protectedBenchmark":false]
+  }
+
   static func comfortWalk()throws->Bool {
     let sourceFixture=fixture(),house=sourceFixture.house
     for height in [0.8,1.7] {
