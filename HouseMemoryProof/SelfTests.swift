@@ -862,6 +862,69 @@ import simd
                 }
                 return true
             }
+            await check("Room wall-check summaries retain observed gaps and invalidate changed or foreign projects") {
+                var h=try SimulatedCapture.make(repo:repo)
+                for i in h.observations.indices {h.observations[i].intrinsics[0]*=2;h.observations[i].intrinsics[4]*=2;h.observations[i].sharpness=0.1}
+                let segment=h.segments[0],room=segment.roomID
+                let boundary=RevealBoundary(name:"Checked plane",segmentID:segment.id,origin:V3(-0.2,1.8,1.6),horizontal:V3(1,0,0),vertical:V3(0,0,-1),width:0.4,height:0.4,depth:0.2,finishOffset:0.01,sourceFingerprint:try VisualMapping.fingerprint(house:h,segment:segment))
+                var blocked=boundary;blocked.id=UUID();blocked.name="Overlapping blocked plane";blocked.depth=0.5
+                var unknown=boundary;unknown.id=UUID();unknown.name="Unchecked area";unknown.origin.x=100
+                h.boundaries=[boundary,blocked,unknown];let original=h
+                let supported=try BoundaryCoverage.analyze(house:h,boundary:boundary,repo:repo)
+                let gaps=try BoundaryCoverage.analyze(house:h,boundary:blocked,repo:repo)
+                var cache=CheckedBoundaryCoverage()
+                guard cache.record(supported,house:h),cache.record(gaps,house:h),cache.record(supported,house:h),
+                  let summary=try cache.summaries(house:h,options:SceneOptions())[room],summary.defined==3,summary.checked==2,
+                  summary.unchecked==1,summary.stale==0,summary.patches==32,summary.supported==16,summary.gaps==16,
+                  summary.explanation.contains("Other surfaces remain unassessed"),cache.entries.count==2 else{return false}
+                var changed=h;changed.revision+=1
+                guard try cache.summaries(house:changed,options:SceneOptions())[room]?.checked==0,
+                  !cache.record(supported,house:changed) else{return false}
+                var foreign=h;foreign.id=UUID()
+                guard try cache.summaries(house:foreign,options:SceneOptions())[room]?.checked==0 else{return false}
+                changed=h;changed.segments[0].registration=Rigid()
+                guard let stale=try cache.summaries(house:changed,options:SceneOptions())[room],
+                  stale.checked==0,stale.stale==3,stale.unchecked==0 else{return false}
+                var malformed=supported;malformed.cells.removeLast()
+                return !cache.record(malformed,house:h) && cache.entries.count==2 && h==original
+            }
+            await check("Room wall-check summaries isolate stages and unaligned visits with bounded retained results") {
+                var h=House.empty("Coverage summary scopes")
+                h.rooms.append(Room(name:"Second room",level:1,origin:V3(0,0,3),size:V3(4,4,3)))
+                h.segments=[Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id,registration:Rigid()),
+                  Segment(roomID:h.rooms[1].id,stageID:h.stages[0].id,registration:Rigid()),
+                  Segment(roomID:h.rooms[0].id,stageID:h.stages[1].id,registration:Rigid())]
+                func boundary(_ segment:Segment)throws->RevealBoundary {
+                  RevealBoundary(name:"Scope fixture",segmentID:segment.id,origin:V3(),horizontal:V3(1,0,0),vertical:V3(0,0,1),width:0.1,height:0.1,depth:0.2,finishOffset:0.01,sourceFingerprint:try VisualMapping.fingerprint(house:h,segment:segment))
+                }
+                func report(_ b:RevealBoundary)->BoundaryCoverageReport {
+                  // Aggregation fixture; support inference is covered by the
+                  // preceding test using production RGB/depth analysis.
+                  BoundaryCoverageReport(boundary:b,revision:h.revision,columns:1,rows:1,cells:[BoundaryCoverageCell()],cameraCount:0,consideredCameraCount:0)
+                }
+                h.boundaries=try h.segments.map{try boundary($0)}
+                var cache=CheckedBoundaryCoverage()
+                for b in h.boundaries {guard cache.record(report(b),house:h) else{return false}}
+                var options=SceneOptions()
+                let rough=try cache.summaries(house:h,options:options)
+                guard rough.count==2,rough.values.allSatisfy({$0.checked==1 && $0.gaps==1}) else{return false}
+                options.room=h.rooms[1].id
+                guard try cache.summaries(house:h,options:options).count==1 else{return false}
+                options=SceneOptions();options.mode = .finished
+                guard let finish=try cache.summaries(house:h,options:options)[h.rooms[0].id],finish.defined==1,finish.checked==1 else{return false}
+                let separate=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);h.segments.append(separate)
+                let isolated=try boundary(separate);h.boundaries.append(isolated);options=SceneOptions()
+                guard cache.record(report(isolated),house:h),let only=try cache.summaries(house:h,options:options)[separate.roomID],
+                  only.defined==1,only.checked==1,try cache.summaries(house:h,options:options).count==1 else{return false}
+                for _ in 0..<129 {
+                  var extra=isolated;extra.id=UUID();h.boundaries.append(extra)
+                  guard cache.record(report(extra),house:h) else{return false}
+                }
+                guard let bounded=try cache.summaries(house:h,options:options)[separate.roomID],cache.entries.count==128,
+                  bounded.defined==130,bounded.checked==128,bounded.unchecked==2,bounded.gaps==128 else{return false}
+                options.stage=h.stages[1].id
+                return try cache.summaries(house:h,options:options)[h.rooms[0].id]?.checked==0
+            }
             await check("Coverage advice distinguishes lighting blur sampling baseline depth and obstruction without false completeness") {
                 var baseline=try SimulatedCapture.make(repo:repo)
                 for i in baseline.observations.indices {baseline.observations[i].intrinsics[0]*=2;baseline.observations[i].intrinsics[4]*=2;baseline.observations[i].sharpness=0.1}

@@ -20,7 +20,11 @@
       "requestedUTC": "2026-10-19",
       "scope": "Current continuation including homeowner guidance, movement controls, room map and saved-viewpoint recovery",
       "acceptedRelease": false,
-      "releaseMarker": "[release] Ship homeowner-guidance TestFlight 20261019"
+      "releaseMarker": "[release] Ship homeowner-guidance TestFlight 20261019",
+      "build": "228.1",
+      "source": "f7123ca2ee6c556620b3f01cc3d6d88bc20d0597",
+      "run": 39191585115,
+      "status": "validating_before_upload"
     }
   },
   "verifiedNative": {
@@ -73,16 +77,16 @@
   "nextAction": "Validate and upload the owner-requested current-state TestFlight snapshot, verify Apple processing/access, and continue independent software qualification.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "native_in_progress_release_requested",
+    "status": "map_coverage_candidate_prepared",
     "precedingSource": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
-    "nativeExpected": 182,
+    "nativeExpected": 184,
     "interfaceExpected": 19,
     "nativeReaderPhasesExpected": 19,
     "commandContractsExpected": 52,
     "validationReportsExpected": 36,
     "integrationComplete": false,
     "evidencePending": true,
-    "appleUploadRequested": true,
+    "appleUploadRequested": false,
     "uiRunnerBudgetSeconds": 2100,
     "uiStepTimeoutMinutes": 37,
     "nativeAppBudgetSeconds": 300,
@@ -1381,5 +1385,12 @@
     "testflightUploadStarted": false,
     "localEvidence": "docs/evidence/continuation-local-summary.json",
     "approval": "2026-10-18T22:42:27-04:00: Approve. Continue and don\u2019t stop until done"
+  },
+  "roomMapCoverageCandidate": {
+    "status": "native_pending",
+    "evidence": "docs/evidence/room-map-coverage-candidate.md",
+    "retainedAreaLimit": 128,
+    "completeRoomCoverageClaimed": false,
+    "newNativeCases": 2
   }
 }

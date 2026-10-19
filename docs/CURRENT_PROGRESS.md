@@ -48,6 +48,10 @@ The original specification and its thresholds remain unchanged. Documentary and 
 
 The [proposed next localization diagnostic](LOCALIZATION_DIAGNOSTIC_PROPOSAL.md) defines a possible renewed budget: two serial jobs of at most 40 minutes each, using the unchanged estimator and already disclosed development cases. It is a proposal only; no new experiment has run.
 
+## Current map follow-up
+
+The room map now has a prepared follow-up for checked wall/ceiling areas, known gaps, unchecked areas and stale definitions. It retains bounded transient summaries and keeps stages and unaligned visits separate. It awaits 184 native checks and all 19 interface workflows. [Candidate details](evidence/room-map-coverage-candidate.md). The requested TestFlight snapshot is build **228.1**, source `f7123ca2ee6c556620b3f01cc3d6d88bc20d0597`, run `39191585115`, and excludes this follow-up. Its complete simulator validation must pass before upload.
+
 ## Next steps
 
 1. Validate the published continuation and requested TestFlight snapshot with 182 native checks and all 19 interface workflows, then verify Apple processing and owner access.

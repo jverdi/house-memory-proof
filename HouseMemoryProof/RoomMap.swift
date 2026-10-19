@@ -117,6 +117,7 @@ struct RoomMapDrawing:View {
 }
 
 struct RoomMapPage:View {
+  @EnvironmentObject var model:AppModel
   var house:House
   var options:SceneOptions
   @ObservedObject var controller:WalkController
@@ -126,7 +127,8 @@ struct RoomMapPage:View {
   @State private var snapshot:RoomMapSnapshot?
   @State private var level:Int?
   @State private var failure:String?
-  private var sourceKey:String {"\(house.id)-\(house.revision)-\(options.room?.uuidString ?? "all")-\(options.stage?.uuidString ?? "all")-\(options.mode.rawValue)"}
+  @State private var coverage:[UUID:CheckedBoundaryCoverage.Summary]=[:]
+  private var sourceKey:String {"\(house.id)-\(house.revision)-\(options.room?.uuidString ?? "all")-\(options.stage?.uuidString ?? "all")-\(options.mode.rawValue)-\(model.checkedCoverage.generation)"}
   var body:some View {
     Form {
       Section {
@@ -164,12 +166,13 @@ struct RoomMapPage:View {
               VStack(alignment:.leading) {
                 Text(room.name)
                 Text("Level \(room.level) · \(snapshot.viewCounts[room.id,default:0]) recorded photo positions").font(.caption)
+                Text(coverage[room.id,default:CheckedBoundaryCoverage.Summary()].explanation).font(.caption)
               }
             }.accessibilityIdentifier("map-room-\(room.id)")
               .disabled(!house.isDemo && snapshot.viewCounts[room.id,default:0]==0)
           }
           NavigationLink("Review capture coverage") {CoveragePage(house:house)}
-          Text("A room with no dots has no eligible saved photo positions in this scope. Imported ordinary photos may still be available in Evidence. Capture coverage checks surfaces and wall areas separately.").font(.footnote)
+          Text("A room with no dots has no eligible saved photo positions in this scope. Imported ordinary photos may still be available in Evidence. Review capture coverage to check a defined wall or ceiling area. Checks reset after a project change or app restart. Overlapping areas count separately; these counts do not establish complete room coverage.").font(.footnote)
         }
         Section("Saved viewpoints") {
           if snapshot.bookmarks.isEmpty {Text("No usable saved viewpoints in this map. In Explore, open Jump → Save viewpoint to keep a place you want to return to.")}
@@ -181,23 +184,26 @@ struct RoomMapPage:View {
         }
       }else if let failure {Text(failure)}else {ProgressView("Preparing room map…")}
     }.navigationTitle("Room map").task(id:sourceKey) {
-      snapshot=nil;failure=nil
-      do {let prepared=try await LocalWorker.run{try RoomMapSnapshot.build(house:house,options:options)}
-        try Task.checkCancellation();snapshot=prepared
-        if let level,!prepared.levels.contains(level) {self.level=nil}
+      snapshot=nil;failure=nil;coverage=[:]
+      let checked=model.checkedCoverage
+      do {let prepared=try await LocalWorker.run{(try RoomMapSnapshot.build(house:house,options:options),try checked.summaries(house:house,options:options))}
+        try Task.checkCancellation();snapshot=prepared.0;coverage=prepared.1
+        if let level,!prepared.0.levels.contains(level) {self.level=nil}
       }catch is CancellationError {}catch{failure="The map could not be prepared. You can still use Jump to choose a room or open Evidence to find the original photos."}
     }
   }
 }
 
 struct MiniRoomMap:View {
+  @EnvironmentObject var model:AppModel
   @Environment(\.verticalSizeClass) private var verticalSizeClass
   var house:House
   var options:SceneOptions
   @ObservedObject var controller:WalkController
   @State private var snapshot:RoomMapSnapshot?
   @State private var failed=false
-  private var sourceKey:String {"\(house.id)-\(house.revision)-\(options.room?.uuidString ?? "all")-\(options.stage?.uuidString ?? "all")-\(options.mode.rawValue)"}
+  @State private var coverage:[UUID:CheckedBoundaryCoverage.Summary]=[:]
+  private var sourceKey:String {"\(house.id)-\(house.revision)-\(options.room?.uuidString ?? "all")-\(options.stage?.uuidString ?? "all")-\(options.mode.rawValue)-\(model.checkedCoverage.generation)"}
   var body:some View {
     // Keep a concrete container alive while the snapshot is absent. A Group
     // containing only a nil conditional has no child to start its task.
@@ -208,21 +214,22 @@ struct MiniRoomMap:View {
           let pose=controller.roomMapPose,position=pose.position
           let room=snapshot.room(at:position),level=room?.level ?? snapshot.levels.first ?? 0
           let location=room.map{"\($0.name) · Level \($0.level)"} ?? "Outside room bounds"
+          let checked=room.flatMap{coverage[$0.id]} ?? CheckedBoundaryCoverage.Summary()
           ViewThatFits(in:.vertical) {
             VStack(alignment:.leading,spacing:4) {
               Text(location).font(.caption).lineLimit(1)
               RoomMapDrawing(snapshot:snapshot,position:position,yaw:pose.yaw,level:level).frame(width:verticalSizeClass == .compact ? 140:160,height:verticalSizeClass == .compact ? 64:120)
-              Text("Coverage unknown").font(.caption2)
+              Text(checked.shortLabel).font(.caption2).lineLimit(1)
             }.frame(width:verticalSizeClass == .compact ? 140:160,alignment:.leading).padding(8)
               .background(Color.black.opacity(0.85),in:RoundedRectangle(cornerRadius:12)).fixedSize(horizontal:false,vertical:true)
             VStack(alignment:.leading,spacing:4) {
               Text(location).font(.caption).lineLimit(1)
-              Text("Coverage unknown").font(.caption2).lineLimit(1)
+              Text(checked.shortLabel).font(.caption2).lineLimit(1)
             }.padding(8).background(Color.black.opacity(0.85),in:RoundedRectangle(cornerRadius:12)).fixedSize(horizontal:false,vertical:true)
             Color.clear.frame(height:0)
           }.frame(maxHeight:.infinity,alignment:.top).foregroundStyle(.white)
             .accessibilityElement(children:.ignore).accessibilityLabel(location).accessibilityIdentifier("mini-room-map")
-            .accessibilityValue(RoomMapSnapshot.heading(pose.yaw)+". Dots are photo positions; coverage is unknown.")
+            .accessibilityValue(RoomMapSnapshot.heading(pose.yaw)+". Dots are photo positions. "+checked.explanation)
         }
       }else {
         Text(failed ? "Map unavailable. Open Layers → Room map for help.":"Preparing room map…")
@@ -231,9 +238,10 @@ struct MiniRoomMap:View {
           .accessibilityIdentifier("mini-room-map-status")
       }
     }.task(id:sourceKey) {
-      snapshot=nil;failed=false
-      do {let prepared=try await LocalWorker.run{try RoomMapSnapshot.build(house:house,options:options)}
-        try Task.checkCancellation();snapshot=prepared
+      snapshot=nil;failed=false;coverage=[:]
+      let checked=model.checkedCoverage
+      do {let prepared=try await LocalWorker.run{(try RoomMapSnapshot.build(house:house,options:options),try checked.summaries(house:house,options:options))}
+        try Task.checkCancellation();snapshot=prepared.0;coverage=prepared.1
       }catch is CancellationError {}catch {failed=true}
     }
   }

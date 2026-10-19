@@ -53,6 +53,61 @@ struct BoundaryCoverageReport {
     return (0..<cells.count).map{($0+start)%cells.count}.first{!cells[$0].supported}
   }
 }
+// A transient index of checks the homeowner actually ran. It retains counts,
+// never depth buffers or a whole-room completion percentage. Project edits and
+// reopening the app require a fresh check; overlapping rectangles remain
+// separate samples rather than being added as unique surface area.
+struct CheckedBoundaryCoverage {
+  struct Entry {var boundary:RevealBoundary;var patches:Int;var supported:Int}
+  struct Summary {
+    var defined=0,stale=0,checked=0,patches=0,supported=0
+    var unchecked:Int {defined-stale-checked}
+    var gaps:Int {patches-supported}
+    var shortLabel:String {
+      if checked==0{return "Wall checks: none"}
+      return gaps>0 ? "Wall checks: \(gaps) gaps":"Checked patches supported"
+    }
+    var explanation:String {
+      if defined==0{return "No wall or ceiling areas defined. Surfaces remain unassessed."}
+      return "\(checked) of \(defined) defined areas checked · \(supported)/\(patches) sampled patches supported · \(gaps) gaps. \(unchecked) areas unchecked; \(stale) need redefining. Other surfaces remain unassessed."
+    }
+  }
+  private(set) var houseID:UUID?
+  private(set) var revision:Int?
+  private(set) var entries:[Entry]=[]
+  private(set) var generation:UInt64=0
+  @discardableResult mutating func record(_ report:BoundaryCoverageReport,house:House)->Bool {
+    guard report.revision==house.revision,house.boundaries.contains(report.boundary),
+      RevealVolumes.current(report.boundary,house:house),(1...64).contains(report.columns),(1...64).contains(report.rows),
+      report.cells.count==report.columns*report.rows else{return false}
+    if houseID != house.id || revision != house.revision {entries=[];houseID=house.id;revision=house.revision}
+    entries.removeAll{$0.boundary.id==report.boundary.id}
+    entries.append(Entry(boundary:report.boundary,patches:report.cells.count,supported:report.supported))
+    if entries.count>128 {entries.removeFirst(entries.count-128)}
+    generation &+= 1
+    return true
+  }
+  func summaries(house:House,options:SceneOptions)throws->[UUID:Summary] {
+    let stages=SceneBuilder.eligibleStages(house,options:options)
+    let separate=SceneBuilder.activeUnregisteredSegment(house,options:options)
+    let segments=Dictionary(uniqueKeysWithValues:house.segments.map{($0.id,$0)})
+    let checks=Dictionary(uniqueKeysWithValues:(houseID==house.id && revision==house.revision ? entries:[]).map{($0.boundary.id,$0)})
+    var result:[UUID:Summary]=[:]
+    for boundary in house.boundaries {
+      try Task.checkCancellation()
+      guard let segment=segments[boundary.segmentID],stages.contains(segment.stageID),
+        options.room==nil || options.room==segment.roomID,
+        separate==nil || separate==segment.id else{continue}
+      var summary=result[segment.roomID,default:Summary()];summary.defined+=1
+      if !RevealVolumes.current(boundary,house:house) {summary.stale+=1}
+      else if let check=checks[boundary.id],check.boundary==boundary {
+        summary.checked+=1;summary.patches+=check.patches;summary.supported+=check.supported
+      }
+      result[segment.roomID]=summary
+    }
+    return result
+  }
+}
 enum BoundaryCoverage {
   static func analyze(house:House,boundary:RevealBoundary,repo:Repository)throws->BoundaryCoverageReport {
     guard RevealVolumes.current(boundary,house:house),let source=house.segments.first(where:{$0.id==boundary.segmentID}) else{throw HouseError.message("Boundary inputs changed. Define the wall volume again.")}
@@ -132,7 +187,8 @@ struct BoundaryCoveragePanel:View {
         model.perform("Checking wall coverage and occlusion") {
           let result=try await LocalWorker.run{try BoundaryCoverage.analyze(house:snapshot,boundary:boundary,repo:repo)}
           guard selection==boundary.id else{return nil}
-          guard model.house?.id==snapshot.id,model.house?.revision==snapshot.revision else{throw HouseError.message("Capture changed; run boundary coverage again.")};report=result;selectedCell=nil;return nil
+          guard model.house?.id==snapshot.id,model.house?.revision==snapshot.revision else{throw HouseError.message("Capture changed; run boundary coverage again.")}
+          model.checkedCoverage.record(result,house:snapshot);report=result;selectedCell=nil;return nil
         }
       }.disabled(model.busy || selection==nil)
       if let r=report {

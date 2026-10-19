@@ -27,7 +27,9 @@ final class HouseXraySmoke: XCTestCase {
     let saved=app.buttons.matching(NSPredicate(format:"label MATCHES %@","View [0-9]+")).firstMatch
     guidanceReveal(saved,in:app,horizontal:0.97);XCTAssertTrue(saved.isEnabled);saved.tap()
     let mini=app.descendants(matching:.any)["mini-room-map"].firstMatch
-    XCTAssertTrue(mini.waitForExistence(timeout:10));screenshot("44-mini-map-saved-viewpoint")
+    XCTAssertTrue(mini.waitForExistence(timeout:10))
+    XCTAssertTrue((mini.value as? String)?.contains("unassessed") == true)
+    screenshot("44-mini-map-saved-viewpoint")
     openMap()
     let kitchen=app.buttons.matching(NSPredicate(format:"label BEGINSWITH %@","Kitchen")).firstMatch
     guidanceReveal(kitchen,in:app,horizontal:0.97);XCTAssertTrue(kitchen.isEnabled);kitchen.tap()

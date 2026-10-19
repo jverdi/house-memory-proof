@@ -387,6 +387,7 @@ enum StoreMigrationDiagnostics {
   @Published var status = "" {didSet {continuedProcessing.update(fraction:progress,detail:status)}}
   @Published var shareURL: URL?
   @Published var captureJobs:[CaptureWork]=[]
+  @Published var checkedCoverage=CheckedBoundaryCoverage()
   var foreground=false
   var activeCaptureJob:UUID?
   var processingPause=CaptureWork.State.paused
