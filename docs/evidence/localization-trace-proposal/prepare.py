@@ -84,11 +84,14 @@ void tracePose(const cv::Mat& r,const cv::Mat& t,int offset){for(int i=0;i<3;i++
     if CommandLine.arguments.contains("--pose-trace") {trace=try PoseTraceWriter(root:root)}else{trace=nil}
     defer{VisualMapping.poseObserver=nil}
     if let trace{VisualMapping.poseObserver={record in trace.record(record)}}""")
+    s = once(s, 'if CommandLine.arguments.contains("--house"){try runHouse(root:root,queriesURL:queriesURL);return}',
+      'if CommandLine.arguments.contains("--house"){do{try runHouse(root:root,queriesURL:queriesURL)}catch{if CommandLine.arguments.contains("--pose-trace"){PoseTraceFailure.emit(error)};throw error};return}')
     # Scope the remaining edits to runHouse, avoiding the coded/non-house loops.
     start = s.index(anchor)
     prefix, body = s[:start], s[start:]
+    body = once(body, "    for index in house.segments.indices {", '    PoseTraceFailure.phase="mapping"\n    for index in house.segments.indices {')
     body = once(body, "    for q in queries.queries {", """    for q in queries.queries {
-      trace?.begin(q.image)""")
+      PoseTraceFailure.phase="queries";trace?.begin(q.image)""")
     anchor = 'output.append(["image":q.image,"accepted":false,"reason":"Selected capture has no admitted map"]);continue'
     body = once(body, anchor, 'output.append(["image":q.image,"accepted":false,"reason":"Selected capture has no admitted map"]);trace?.end(accepted:false,reason:"no-map");continue')
     body = once(body, "      output.append(result)", '      output.append(result);trace?.end(accepted:pose != nil,reason:ambiguous ? "ambiguous":"evaluated")')
@@ -101,7 +104,7 @@ void tracePose(const cv::Mat& r,const cv::Mat& t,int offset){for(int i=0;i<3;i++
     if len(exports) != 1:
         raise ValueError("Retained private audit exporter changed")
     exports = exports[0].replace('contains("--audit")', 'contains("--pose-trace")')
-    body = once(body, anchor, "    try trace?.finish(expectedQueries:queries.queries.count)\n" + exports + anchor)
+    body = once(body, anchor, '    PoseTraceFailure.phase="trace-finalization"\n    try trace?.finish(expectedQueries:queries.queries.count)\n    PoseTraceFailure.phase="private-export"\n' + exports + '    PoseTraceFailure.phase="report"\n' + anchor)
     result[name] = prefix + body
     name = paths[4]
     s = once(result[name], "p.add_argument('--coded',action='store_true');a=p.parse_args()",
@@ -122,40 +125,60 @@ void tracePose(const cv::Mat& r,const cv::Mat& t,int offset){for(int i=0;i<3;i++
   shutil.copy2(fixture/'vision-map.hxray',audit/'input.hxray')
   (audit/'sealed-candidate.json').write_text(json.dumps(dict(candidateBinarySHA256=report['candidateBinarySHA256'],traceSHA256=candidate_trace_sha256,oracleReadDenied=report['oracleReadDenied'],queryLabelsExcluded=report['queryLabelsExcluded'])))
 """ + anchor)
-    result[name] = s
+    s = once(s, "candidateRejected=True,error=result.stderr[-5000:]", "candidateRejected=True,observerFailure=read_failure(result.stderr),error=result.stderr[-5000:]")
+    # The harness parses only a fixed marker before private stderr is truncated.
+    # This does not grant the native process access to any evaluator records.
+    result[name] = (Path(__file__).with_name("failure_contract.py").read_text()+"\n"+s)
     return originals, result
 
 
-SWIFT_WRITER = r'''// Private bounded JSONL trace. Failure marks the diagnostic incomplete after
+SWIFT_WRITER = r'''enum PoseTraceFailure {
+  static var phase="initialization",kind="unknown"
+  static func emit(_ error:Error) {
+    let native=error as NSError
+    let domain=["NSCocoaErrorDomain","NSPOSIXErrorDomain"].contains(native.domain) ? native.domain:"other"
+    let value:[String:Any]=["schema":1,"phase":phase,"kind":kind,"domain":domain,"code":native.code]
+    if let data=try? JSONSerialization.data(withJSONObject:value,options:[.sortedKeys]) {
+      try? FileHandle.standardError.write(contentsOf:Data("HX_POSE_OBSERVER_FAILURE ".utf8)+data+Data([10]))
+    }
+  }
+}
+// Private bounded JSONL trace. Failure marks the diagnostic incomplete after
 // candidate decisions, never changes acceptance, and cannot be published as pass.
 final class PoseTraceWriter {
   let file:FileHandle
-  var failure:String?,query="",queries=0,solves=0,bytes=0,sequence=0
+  var failure:String?,failureKind="unknown",query="",queries=0,solves=0,bytes=0,sequence=0
   init(root:URL)throws {
     let folder=root.appendingPathComponent("temp/pose-trace",isDirectory:true)
+    PoseTraceFailure.kind="directory"
     try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
     let path=folder.appendingPathComponent("trace.jsonl")
+    PoseTraceFailure.kind="create"
     guard FileManager.default.createFile(atPath:path.path,contents:nil) else{throw HouseError.message("Cannot create private trace.")}
-    file=try FileHandle(forWritingTo:path)
+    PoseTraceFailure.kind="open";file=try FileHandle(forWritingTo:path);PoseTraceFailure.kind="unknown"
     record(["type":"header","schema":1,"coordinateFrame":"centroid-local-opencv","limitBytes":1_073_741_824,"limitSolves":8192])
   }
   func record(_ value:[String:Any]) {
     guard failure==nil else{return}
+    var operation="record-serialization"
     do {
       var row=value;row["sequence"]=sequence
       if value["type"] as? String == "solve" {solves+=1;row["query"]=query}
       let data=try JSONSerialization.data(withJSONObject:row,options:[.sortedKeys])+Data([10])
+      operation="record-bounds"
       guard data.count<=8_388_608,bytes<=1_073_741_824-data.count,solves<=8192 else{throw HouseError.message("Private trace budget exceeded.")}
+      operation="record-write"
       try file.write(contentsOf:data);bytes+=data.count;sequence+=1
-    }catch{failure=error.localizedDescription}
+    }catch{failure=error.localizedDescription;failureKind=operation}
   }
-  func begin(_ image:String){query=image;queries+=1;if queries>512{failure="Private query bound exceeded."};record(["type":"begin","query":image])}
+  func begin(_ image:String){query=image;queries+=1;if queries>512{failure="Private query bound exceeded.";failureKind="query-bound"};record(["type":"begin","query":image])}
   func end(accepted:Bool,reason:String){record(["type":"end","query":query,"accepted":accepted,"reason":reason]);query=""}
   func finish(expectedQueries:Int)throws {
-    if queries != expectedQueries || !query.isEmpty {failure="Trace query denominator mismatch."}
+    if queries != expectedQueries || !query.isEmpty {failure="Trace query denominator mismatch.";failureKind="query-denominator"}
     record(["type":"footer","queries":queries,"solves":solves,"complete":failure==nil])
-    try file.synchronize();try file.close()
-    if let failure{throw HouseError.message(failure)}
+    PoseTraceFailure.kind="synchronize";try file.synchronize()
+    PoseTraceFailure.kind="close";try file.close();PoseTraceFailure.kind="unknown"
+    if let failure{PoseTraceFailure.kind=failureKind;throw HouseError.message(failure)}
   }
 }'''
 

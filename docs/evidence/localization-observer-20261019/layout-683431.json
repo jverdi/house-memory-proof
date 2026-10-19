@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "source": "b816d75d0ce3a23408512a2f92deacb3971feb2d",
+  "seed": 683431,
+  "runnerSeconds": 2100,
+  "cases": [
+    {
+      "stage": "rough",
+      "width": 384,
+      "status": "incomplete",
+      "diagnosticComplete": false,
+      "decisionEquivalent": false,
+      "originalGatePassed": false,
+      "baselineExitCode": 0,
+      "observedExitCode": 1,
+      "errorClass": "RuntimeError"
+    },
+    {
+      "stage": "finished",
+      "width": 384,
+      "status": "incomplete",
+      "diagnosticComplete": false,
+      "decisionEquivalent": false,
+      "originalGatePassed": false,
+      "baselineExitCode": 1,
+      "observedExitCode": 1,
+      "errorClass": "RuntimeError"
+    },
+    {
+      "stage": "finished",
+      "width": 768,
+      "status": "incomplete",
+      "diagnosticComplete": false,
+      "decisionEquivalent": false,
+      "originalGatePassed": false,
+      "baselineExitCode": 0,
+      "observedExitCode": 1,
+      "errorClass": "RuntimeError"
+    }
+  ],
+  "physicalQualification": false,
+  "precisionEnabled": false,
+  "protectedLayoutsDrawn": false,
+  "executionRetryAllowed": false,
+  "diagnosticComplete": false,
+  "originalGatesPassed": false,
+  "baselineBinarySHA256": "14030bd5c39000e86c8365dad707677ab52f6eddadb241efbef1ddb39d5da907",
+  "observerPatchSHA256": "d75186734a2881bbe9b723f43c70447945d859370f27a5d43871f3dfe9766cfd",
+  "observerBinarySHA256": "7c5a77236a115957297280446e5b4687aa96c745d0f4432224c62718447f494c"
+}

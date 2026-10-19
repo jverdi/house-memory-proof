@@ -17,6 +17,7 @@ import time
 
 import pose_residuals
 import prepare
+from failure_contract import validate_failure
 
 SEEDS = (905771, 683431)
 CASES = (("rough",384,()), ("finished",384,("--paired","--staggered","--finished-capture")),
@@ -116,12 +117,14 @@ def main():
     write_summary(summary_path,summary)
     deadline = Deadline()
     originals = None
+    preparation_phase = "baseline-build"
     try:
         if deadline.run(["bash","tooling/opencv/build-host.sh"],private/"baseline-build.log",600) != 0:
             raise RuntimeError("Baseline host build failed")
         baseline = private/"baseline-replay"
         baseline.write_bytes((root/"build/vision-replay").read_bytes());baseline.chmod(0o700)
         summary["baselineBinarySHA256"] = digest(baseline)
+        preparation_phase = "observer-preparation"
         originals, changed = prepare.prepare(root)
         import difflib
         patch = "".join("".join(difflib.unified_diff(originals[name].splitlines(True),changed[name].splitlines(True),
@@ -129,6 +132,7 @@ def main():
         summary["observerPatchSHA256"] = hashlib.sha256(patch.encode()).hexdigest()
         for name,text in changed.items():
             (root/name).write_text(text)
+        preparation_phase = "observer-build"
         if deadline.run(["bash","tooling/opencv/build-host.sh"],private/"observer-build.log",600) != 0:
             raise RuntimeError("Observer host build failed")
         observed = root/"build/vision-replay"
@@ -139,6 +143,7 @@ def main():
             case["status"] = "started"
             write_summary(summary_path,summary)
             fixture = private/(stage+"-"+str(width))
+            case_phase = "fixture-generation"
             try:
                 if deadline.run([sys.executable,"tooling/simulation/house_layout_fixture.py",str(fixture),
                                  "--seed",str(args.seed),"--width",str(width),*flags],private/(fixture.name+"-generate.log"),600) != 0:
@@ -150,9 +155,16 @@ def main():
                                "--fixture",str(fixture),"--output",str(result),"--refine","--bundle","--house"]
                     if kind == "observed":
                         command.append("--pose-trace")
+                    case_phase = kind+"-execution"
                     exit_code = deadline.run(command,private/(fixture.name+"-"+kind+".log"),660)
                     case[kind+"ExitCode"] = exit_code
+                    case_phase = kind+"-report"
                     report = pose_residuals.load_json(result)
+                    case[kind+"CandidateRejected"] = report.get("candidateRejected") is True
+                    failure = validate_failure(report.get("observerFailure"))
+                    if failure is not None:
+                        case[kind+"Failure"] = failure
+                    case_phase = kind+"-contract"
                     # Exit 1 retains an original failed accuracy/availability
                     # gate, but a rejected/crashed candidate is incomplete.
                     if exit_code not in (0,1) or report.get("candidateRejected") or not isinstance(report.get("queries"),list):
@@ -161,6 +173,7 @@ def main():
                     if (report.get("positiveQueries"),report.get("negativeQueries"),len(report["queries"])) != (positive,negative,positive+negative):
                         raise ValueError("Declared case denominator changed")
                     reports.append(report)
+                case_phase = "decision-equivalence"
                 case["decisionEquivalent"] = equivalent(*reports)
                 if not case["decisionEquivalent"]:
                     raise ValueError("Observer changed a candidate output")
@@ -168,6 +181,7 @@ def main():
                 # it cannot consume the remainder of the managed job unbounded.
                 metrics_path = private/(fixture.name+"-metrics.json")
                 command = [sys.executable,str(Path(__file__).with_name("pose_residuals.py")),str(result),str(metrics_path),"--stage",stage]
+                case_phase = "residual-evaluation"
                 if deadline.run(command,private/(fixture.name+"-metrics.log"),180) != 0:
                     raise RuntimeError("Residual evaluator incomplete")
                 metrics = pose_residuals.load_json(metrics_path)
@@ -180,10 +194,12 @@ def main():
             except Exception as error:
                 case["status"] = "incomplete"
                 case["errorClass"] = type(error).__name__
+                case["failedAt"] = case_phase
             write_summary(summary_path,summary)
             print(json.dumps({key:case[key] for key in ("stage","width","status","diagnosticComplete","originalGatePassed")}),flush=True)
     except Exception as error:
         summary["preparationErrorClass"] = type(error).__name__
+        summary["preparationFailedAt"] = preparation_phase
     finally:
         if originals is not None:
             for name,text in originals.items():

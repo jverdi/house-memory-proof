@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-19T19:47:32.761327+00:00",
+  "updatedUTC": "2026-10-19T19:56:54.838293+00:00",
   "overall": "in_progress",
   "validatedApplicationSource": "777520e23ffc6930ce4118be2626c1634f0a045a",
   "validationBuild": "241.1",
@@ -44,7 +44,7 @@
     "Measured sensor timing/adapters, identifiable calibration and independent field validation"
   ],
   "nextLocalizationDiagnostic": {
-    "status": "running",
+    "status": "executed_incomplete_allowance_consumed",
     "maximumJobs": 2,
     "maximumMinutesPerJob": 40,
     "maximumConcurrentJobs": 1,
@@ -54,7 +54,13 @@
     "authorization": "User instructed continuation after the explicit two-job, 40-minute-each proposal.",
     "workflow": ".github/workflows/pose-observer-20261019.yml",
     "run": 39313356060,
-    "source": "b816d75d0ce3a23408512a2f92deacb3971feb2d"
+    "source": "b816d75d0ce3a23408512a2f92deacb3971feb2d",
+    "jobsExecuted": 2,
+    "combinedRunnerSeconds": 725,
+    "evidence": "docs/evidence/localization-observer-20261019/summary.json",
+    "activeWorkflowRetired": true,
+    "followupProposal": "docs/LOCALIZATION_OBSERVER_FAILURE_PROPOSAL.md",
+    "followupAuthorized": false
   },
   "integrationCommit": "5404e776b6c032ee16282bb8889b025dccfc7104",
   "automaticReplayCancellations": {
@@ -84,12 +90,14 @@
     "qualificationResultClaimed": false
   },
   "registeredReconstructionNavigation": {
-    "status": "prepared_native_pending",
+    "status": "native_integration_running",
     "evidence": "docs/evidence/reconstructed-rooms-candidate.md",
     "commandContractsPassed": 63,
     "ciContractsPassed": 47,
     "maximumIntegrationJobs": 1,
     "maximumMinutesPerJob": 70,
-    "wholeHouseQualified": false
+    "wholeHouseQualified": false,
+    "source": "5242e7c320dbfb24a39c86ec1eebac7b558143e4",
+    "run": 39313991922
   }
 }

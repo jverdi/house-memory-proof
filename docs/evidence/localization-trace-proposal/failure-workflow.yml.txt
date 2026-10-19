@@ -1,9 +1,8 @@
-# Single authorized diagnostic phase: two serial jobs, 40 minutes each, no reruns.
-name: Observe production localization selection
+# Review artifact only. This is not an installed Actions workflow and cannot run.
+# Separate unapproved follow-up: one job, at most 40 minutes; no reruns.
+name: Diagnose private observer execution failure
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/pose-observer-20261019.yml]
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -11,12 +10,12 @@ concurrency:
   cancel-in-progress: false
 jobs:
   observe:
-    if: ${{ github.run_attempt == 1 && github.event.head_commit.message == '[diagnostic-20261019] Execute authorized bounded pose observation' }}
+    if: ${{ false }} # Keep disabled until the specific renewed phase is authorized.
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        seed: [905771, 683431]
+        seed: [905771]
     runs-on: macos-26
     timeout-minutes: 40
     steps:

@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "run": 39313356060,
+  "source": "b816d75d0ce3a23408512a2f92deacb3971feb2d",
+  "status": "completed_with_incomplete_diagnostic",
+  "declaredMaximumJobs": 2,
+  "declaredMaximumMinutesPerJob": 40,
+  "maximumConcurrentJobs": 1,
+  "jobsExecuted": 2,
+  "combinedRunnerSeconds": 725,
+  "serialExecutionVerified": true,
+  "declaredCases": 6,
+  "completeDiagnosticCases": 0,
+  "decisionEquivalenceEstablished": false,
+  "residualEvaluationCompleted": false,
+  "originalAcceptanceGatesPassed": false,
+  "nativeBaselineAndObserverCompiled": true,
+  "nativeFailureReasonRetained": false,
+  "artifacts": [
+    {
+      "id": 12217437054,
+      "seed": 905771,
+      "sha256": "ae1b3de0b2b4f57a4f06ecc1cae3b840c71aef9a3b86fca41b7837278fdf24bb",
+      "hashVerified": true,
+      "job": 118268412810,
+      "startedUTC": "2026-10-19T19:43:43Z",
+      "completedUTC": "2026-10-19T19:49:21Z"
+    },
+    {
+      "id": 12215724827,
+      "seed": 683431,
+      "sha256": "2977ccc57435bc0e57c542607061e6fc42e41cca406fd5375798fd8d7c939a52",
+      "hashVerified": true,
+      "job": 118268413324,
+      "startedUTC": "2026-10-19T19:49:31Z",
+      "completedUTC": "2026-10-19T19:55:58Z"
+    }
+  ],
+  "rawCandidateDataPublished": false,
+  "protectedLayoutsDrawn": false,
+  "estimatorOrThresholdChanges": false,
+  "rerunPerformed": false,
+  "jobAllowanceConsumed": true,
+  "precisionEnabled": false,
+  "physicalQualification": false,
+  "acceptedRelease": false,
+  "nextProposal": "docs/LOCALIZATION_OBSERVER_FAILURE_PROPOSAL.md"
+}

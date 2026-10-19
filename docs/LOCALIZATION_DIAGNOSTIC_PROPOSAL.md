@@ -1,6 +1,6 @@
 # Proposed next localization diagnostic
 
-**Status: authorized for one diagnostic phase by the user’s continuation instruction following the concrete two-job / 80-minute proposal. Execution is pending.**
+**Status: authorized phase executed; both jobs failed with incomplete diagnostic outputs. The two-job allowance is consumed.** [Retained results](evidence/localization-observer-20261019/README.md).
 
 Runbook §22.3 limits a failure class to five repair iterations and a declared compute cap. The finished 384-pixel localization accuracy class has exhausted that budget. The renewed authorization covers only the proposed diagnostic phase below; it does not authorize a sixth estimator repair attempt.
 
@@ -34,4 +34,8 @@ Until the accuracy gates pass, retain documentary/approximate operation with pre
 
 ## Prepared review package
 
-The [observer, residual evaluator and bounded runner](evidence/localization-trace-proposal/README.md) are now prepared with 27 local contract/math checks passing. The original disabled workflow remains retained as review material. A separate one-shot workflow is activated for this authorized phase, restricted to its exact activation commit message and first attempt. No native observer build or localization replay has run yet. The proposed 80-runner-minute cap includes baseline/observer compilation and comparison; if the cases cannot finish within it, the result remains incomplete without rerun.
+The [observer, residual evaluator and bounded runner](evidence/localization-trace-proposal/README.md) passed 27 local contract/math checks before activation. The original disabled template remains retained as review material. The separately activated one-shot workflow executed both jobs and is now retired. The original 80-runner-minute cap included baseline/observer compilation and comparison. Subsequent controlled-failure preparation expands the local suite to 31 checks but remains unexecuted.
+
+## Execution outcome
+
+Run 39313356060 completed both serial jobs in 725 combined runner-seconds. All six observed cases were incomplete before equivalence/residual evaluation; their SHA-verified summaries are retained. Both binaries compiled, but the coarse error metadata does not identify the native failure. The active one-shot workflow is retired, without rerun. [A separate unexecuted failure-diagnosis proposal](LOCALIZATION_OBSERVER_FAILURE_PROPOSAL.md) retains a concrete one-job / 40-minute budget request; it does not renew the consumed allowance.
