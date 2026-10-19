@@ -30,7 +30,7 @@ The owner approved publishing the prepared source and synthetic test evidence to
 
 Local verification passes: 52 command/reader tests, 41 release/recovery tests, 12 observer-preparation checks and 50 portable geometry cases. All 19 interface workflows remain unchanged; four native regression cases are added. These host checks do not establish Swift compilation or native acceptance. [Local results](evidence/continuation-local-summary.json).
 
-The prior thread's review-only pose observer is also preserved. It does not change shipping estimators or automatically run a localization experiment. Its separate evaluator and bounded wrapper remain unfinished; the exhausted localization budget has not been renewed.
+The prior thread's review-only pose observer is also preserved. It does not change shipping estimators or automatically run a localization experiment. Its residual evaluator and bounded serial wrapper are now prepared with 27 local contract/math checks passing. The workflow remains disabled outside active workflow paths; native compilation, exact baseline/observer equivalence and diagnostic execution are unverified. The exhausted localization budget has not been renewed.
 
 ## What prevents full completion
 

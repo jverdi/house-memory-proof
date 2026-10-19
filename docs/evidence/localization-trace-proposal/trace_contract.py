@@ -71,7 +71,7 @@ def solve(row, current):
     return n, len(indices)
 
 
-def inspect(stream, expected_queries):
+def inspect(stream, expected_queries, on_record=None):
     require(integer(expected_queries, 1, MAX_QUERIES), "Expected denominator outside bound")
     sequence = byte_count = solves = accepted = inputs = selected = ended = 0
     current = None
@@ -124,6 +124,8 @@ def inspect(stream, expected_queries):
             footer = True
         else:
             raise ValueError("Unknown record")
+        if on_record is not None:
+            on_record(row)
         sequence += 1
     require(footer, "Missing completion record")
     public = dict(schema=1, complete=True, queries=ended, acceptedQueries=accepted,

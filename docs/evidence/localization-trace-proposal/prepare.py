@@ -108,6 +108,10 @@ void tracePose(const cv::Mat& r,const cv::Mat& t,int offset){for(int i=0;i<3;i++
              "p.add_argument('--coded',action='store_true');p.add_argument('--pose-trace',action='store_true');a=p.parse_args()")
     s = once(s, "+(['--coded'] if a.coded else []),capture_output=True",
              "+(['--coded'] if a.coded else [])+(['--pose-trace'] if a.pose_trace else []),capture_output=True")
+    s = once(s, " report=json.loads(result.stdout)", """ if a.pose_trace:
+  with (candidate/'temp/pose-trace/trace.jsonl').open('rb') as trace_stream:
+   candidate_trace_sha256=hashlib.file_digest(trace_stream,'sha256').hexdigest()
+ report=json.loads(result.stdout)""")
     anchor = " a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(report,indent=2))"
     s = once(s, anchor, """ if a.pose_trace:
   audit=a.output.with_suffix('.audit')
@@ -116,7 +120,7 @@ void tracePose(const cv::Mat& r,const cv::Mat& t,int offset){for(int i=0;i<3;i++
   (audit/'query-names.json').write_text(json.dumps(original_names,sort_keys=True))
   (audit/'oracle.json').write_text(json.dumps(oracle))
   shutil.copy2(fixture/'vision-map.hxray',audit/'input.hxray')
-  (audit/'sealed-candidate.json').write_text(json.dumps(dict(candidateBinarySHA256=report['candidateBinarySHA256'],oracleReadDenied=report['oracleReadDenied'],queryLabelsExcluded=report['queryLabelsExcluded'])))
+  (audit/'sealed-candidate.json').write_text(json.dumps(dict(candidateBinarySHA256=report['candidateBinarySHA256'],traceSHA256=candidate_trace_sha256,oracleReadDenied=report['oracleReadDenied'],queryLabelsExcluded=report['queryLabelsExcluded'])))
 """ + anchor)
     result[name] = s
     return originals, result

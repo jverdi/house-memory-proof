@@ -31,3 +31,7 @@ Publish hash-verified aggregate results and an explanation of whether the eviden
 This proposal authorizes **diagnosis only** if approved. It does not authorize adopting a detector variant, changing thresholds, narrowing the required operating conditions, enabling precision, or shipping a final release. Any subsequent repair must have an evidence-based change and a separately declared validation budget.
 
 Until the accuracy gates pass, retain documentary/approximate operation with precision disabled. This is a fallback, not completion of the original specification.
+
+## Prepared review package
+
+The [observer, residual evaluator and bounded runner](evidence/localization-trace-proposal/README.md) are now prepared with 27 local contract/math checks passing. The workflow remains a disabled text artifact outside active workflow paths. No native observer build or localization replay has run. The proposed 80-runner-minute cap includes baseline/observer compilation and comparison; if the cases cannot finish within it, the result remains incomplete without rerun.

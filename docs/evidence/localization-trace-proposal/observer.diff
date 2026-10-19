@@ -236,7 +236,7 @@
  exe=a.executable.resolve();fixture=a.fixture.resolve();oracle=json.loads((fixture/'vision-queries.json').read_text())
  with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
   root=Path(temporary).resolve();candidate=root/'candidate';candidate.mkdir();(candidate/'temp').mkdir()
-@@ -38,7 +38,7 @@
+@@ -38,11 +38,14 @@
    diagnostics=subprocess.run(['/usr/bin/log','show','--last','1m','--style','compact','--predicate','process == "cat" OR eventMessage CONTAINS "Sandbox: cat(" OR eventMessage CONTAINS "Sandbox: vision-replay("'],capture_output=True,text=True,timeout=20)
    a.output.parent.mkdir(parents=True,exist_ok=True);a.output.with_suffix('.sandbox.log').write_text(diagnostics.stdout[-30000:]+diagnostics.stderr[-3000:])
   assert positive.returncode==0 and negative.returncode!=0, f'Oracle exclusion controls failed: permitted={positive.returncode} ({positive.stderr.decode()[-1000:]}), denied={negative.returncode} ({negative.stderr.decode()[-1000:]})'
@@ -245,7 +245,14 @@
   if result.returncode:
    a.output.parent.mkdir(parents=True,exist_ok=True)
    a.output.write_text(json.dumps(dict(passed=False,oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),candidateRejected=True,error=result.stderr[-5000:],productionQualified=False),indent=2))
-@@ -89,6 +89,14 @@
+   raise RuntimeError(result.stderr[-5000:])
++ if a.pose_trace:
++  with (candidate/'temp/pose-trace/trace.jsonl').open('rb') as trace_stream:
++   candidate_trace_sha256=hashlib.file_digest(trace_stream,'sha256').hexdigest()
+  report=json.loads(result.stdout)
+  assert len(report['queries'])==len(queries) and {q['image'] for q in report['queries']}==set(original_names), 'Candidate omitted or duplicated queries'
+  for query in report['queries']:query['image']=original_names[query['image']]
+@@ -89,6 +92,14 @@
    report['optimizedCameraCount']=len(errors);report['maximumOptimizedCameraPositionErrorMetres']=max(errors,default=float('inf'))
    report['injectedTranslationDriftMetres']=oracle['injectedTranslationDriftMetres']
    report['passed']=report['passed'] and len(errors)>=3 and max(errors,default=1)<.015
@@ -256,7 +263,7 @@
 +  (audit/'query-names.json').write_text(json.dumps(original_names,sort_keys=True))
 +  (audit/'oracle.json').write_text(json.dumps(oracle))
 +  shutil.copy2(fixture/'vision-map.hxray',audit/'input.hxray')
-+  (audit/'sealed-candidate.json').write_text(json.dumps(dict(candidateBinarySHA256=report['candidateBinarySHA256'],oracleReadDenied=report['oracleReadDenied'],queryLabelsExcluded=report['queryLabelsExcluded'])))
++  (audit/'sealed-candidate.json').write_text(json.dumps(dict(candidateBinarySHA256=report['candidateBinarySHA256'],traceSHA256=candidate_trace_sha256,oracleReadDenied=report['oracleReadDenied'],queryLabelsExcluded=report['queryLabelsExcluded'])))
   a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(report,indent=2))
   print(json.dumps({k:report[k] for k in ['passed','positiveAccepted','falseAccepts','worstAcceptedPositionErrorMetres','oracleReadDenied']}))
   if not report['passed']:raise SystemExit(1)

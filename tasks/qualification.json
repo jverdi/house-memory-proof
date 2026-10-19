@@ -1392,5 +1392,18 @@
     "retainedAreaLimit": 128,
     "completeRoomCoverageClaimed": false,
     "newNativeCases": 2
+  },
+  "localizationObserverPreparation": {
+    "status": "prepared_not_executed",
+    "reviewPackage": "docs/evidence/localization-trace-proposal/README.md",
+    "preparationMathAndRunnerChecksPassed": 27,
+    "workflowInstalled": false,
+    "nativeCompiled": false,
+    "nativeDecisionEquivalenceVerified": false,
+    "budgetRenewed": false,
+    "proposedManagedJobs": 2,
+    "proposedMinutesPerJob": 40,
+    "serial": true,
+    "protectedLayoutsDrawn": false
   }
 }
