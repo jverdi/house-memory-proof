@@ -81,6 +81,7 @@ jobs:
             build/evidence/self-test-partial.json
             build/evidence/native-reader-status.json
             build/evidence/native-coverage-guidance.json
+            build/evidence/native-coverage-loop.json
             build/evidence/native-tour-framing.json
             build/evidence/native-tour-reveal.json
             build/evidence/tour-reveal-validation.json

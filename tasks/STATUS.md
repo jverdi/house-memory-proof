@@ -1,3 +1,19 @@
+## Publication approved in the current thread
+
+The owner approved publication of the prepared source and synthetic test evidence to the public `jverdi/house-memory-proof` repository, direct commits to main, and continued execution on 18 October 2026 at 22:42 New York time. This resolves the prior automatic publication block. The continuation is ready for the unchanged 182-native/19-interface validation; no native success is inferred from host checks. The separately proposed localization diagnostic has not executed and physical/device acceptance remains open.
+
+## Continuation prepared locally; publication blocked by automatic approval review
+
+The local `continuation-20261019` branch preserves the source continuation and review-only observer. Host verification: 52 command/reader tests, 41 release/recovery tests, 12 observer-preparation checks and 50 portable cases pass. Four new native regression checks are prepared; all 19 interface workflows remain unchanged. Native compilation and execution of this candidate remain pending. Local evidence: `docs/evidence/continuation-local-summary.json`.
+
+Both the direct-main push and separate-branch source/evidence publication were blocked by automatic approval review. Retrieved prior-thread authorization was not accepted by that review. GitHub verifies this is the connected owner's public repository. Main remains `ad8e0c5`; no new workflow or TestFlight upload was started. Current-thread approval to publish the prepared source and synthetic evidence to `jverdi/house-memory-proof` and commit directly to `main` is the next publication prerequisite. The localization diagnostic budget and physical acceptance gates remain separate and unpassed. See `docs/CURRENT_PROGRESS.md` for the resumable handoff.
+
+## 226.1 integration verified; independent continuation integrated
+
+Source `ad8e0c5c8baf214967ccacea80a6195d7df66e8c`, run `39175973721`, passes Debug/Release compilation, 178 native checks, 19 interface workflows, 19 reader phases, 52 command contracts, 36 validation reports, three process recoveries and 50 portable cases. Both ZIP hashes are independently verified; screenshots 34/38/40–47 have been reviewed. Mini-map startup and orientation cleanup are repaired. All homeowner readability follow-ups pass simulator visual review. See `docs/evidence/native-ad8-summary.json`.
+
+Prepared continuation is integrated: reject unusable saved viewpoints before Float camera conversion, keep usable map markers, exercise coverage requests with delay/imperfect movement, prevent detail churn across small distance reversals, and explain view recovery in homeowner help. The combined candidate expects 182 native checks and all 19 interface workflows under existing bounds. Native validation is pending. TestFlight remains 216.1; no intermediate upload is requested. Overall, precision, device/provider, field and accepted-release gates remain open.
+
 ## 225.1 failures inspected; mini-map startup and orientation repair prepared
 
 225.1 / bf0a75c353 passes 178 native checks, 19 reader phases, 52 command contracts, 36 export reports, three process recoveries and 50 portable cases. **12/19 interface workflows pass; seven fail.** All four homeowner workflows and the comfort workflow pass. Both artifacts are SHA-verified in `docs/evidence/native-bf0-summary.json`.

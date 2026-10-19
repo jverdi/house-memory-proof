@@ -190,11 +190,13 @@ extension UIColor {
   var textures:[String:UIImage]=[:]
   var lastCamera:V3?
   var lastUpdate=0.0
+  private var lastPlan:[SpatialDisplayIndex.Allocation]=[]
   init(index:SpatialDisplayIndex,scene:SCNScene,options:SceneOptions){self.index=index;self.scene=scene;self.options=options}
   func update(camera:V3,time:Double) {
     if lastCamera==nil || (time-lastUpdate>=0.5 && (camera-lastCamera!).length>=1) {
       lastCamera=camera;lastUpdate=time
-      let plan=index.plan(camera:camera),needed=Set(plan.map{$0.tile})
+      let plan=index.plan(camera:camera,previous:lastPlan),needed=Set(plan.map{$0.tile})
+      lastPlan=plan
       for id in Array(nodes.keys) where !needed.contains(id) {nodes.removeValue(forKey:id)?.removeFromParentNode();allocations.removeValue(forKey:id)}
       let textureKeys=Set(plan.filter{$0.textured}.compactMap{index.features[index.tiles[$0.tile].feature].texture})
       textures=textures.filter{textureKeys.contains($0.key)}
@@ -458,12 +460,24 @@ extension UIColor {
     validateWalkPosition()
   }
   func bookmark(_ b: Bookmark) {
-    walkEyeHeight=nil
+    walkEyeHeight=nil;clearMovement()
+    guard let h=house else{return}
+    // Archive validation rejects nonfinite values, but finite Double values
+    // can still overflow SceneKit's Float camera or belong to another frame.
+    guard b.position.finite,max(abs(b.position.x),abs(b.position.y),abs(b.position.z))<=100000,
+      b.yaw.isFinite,b.pitch.isFinite,h.rooms.contains(where:{$0.id==b.roomID}),
+      options.room==nil || options.room==b.roomID,
+      b.segmentID==SceneBuilder.activeUnregisteredSegment(h,options:options) else {
+      resetView()
+      navigationNotice="That saved viewpoint cannot be used in this view. "+(preparingScene ? "Checking the room's floor and route…":flying ? "No checked walking viewpoint is available; Free fly is enabled.":"Returned to a checked viewpoint.")
+      return
+    }
+    if navigationNotice.hasPrefix("That saved viewpoint cannot be used") {navigationNotice=""}
+    setOrbit(false)
     camera.simdPosition = b.position.render
-    yaw = Float(b.yaw)
-    pitch = Float(b.pitch)
+    yaw = Float(b.yaw.truncatingRemainder(dividingBy:2 * .pi))
+    pitch = Float(max(-1.35,min(1.35,b.pitch)))
     camera.eulerAngles = SCNVector3(pitch, yaw, 0)
-    clearMovement()
     validateWalkPosition()
   }
   @objc func pan(_ g: UIPanGestureRecognizer) {

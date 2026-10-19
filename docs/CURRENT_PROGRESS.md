@@ -1,6 +1,6 @@
 # House Xray: current progress
 
-Updated 18 October 2026. The full plan is **in progress**. Precision use and final release acceptance remain disabled.
+Updated 19 October 2026 UTC (18 October in New York). The full plan is **in progress**. Precision use and final release acceptance remain disabled.
 
 ## What you can install
 
@@ -16,15 +16,21 @@ Updated 18 October 2026. The full plan is **in progress**. Precision use and fin
 | Help inside the app | Fourteen searchable, offline guides explain homeowner tasks, unfamiliar terms and what to do when capture or an overlay is unavailable. Links open the relevant app screen. Simulator workflows pass at 224.1. |
 | First real capture after the sample | The new house retains its own room and stage. The capture header and opening instructions pass renewed visual review at 224.1. |
 | Walking over recorded surfaces | Missing floor support is refused. Connected room/stair diagnostics and two bounded reconstructed fragments pass at 224.1. This is not whole-house navigation qualification. |
-| Movement and view settings | Remembered speed, acceleration, turning, sensitivity, view width, eye height, handedness and reset are implemented. Native checks and the comfort interface workflow pass in 225.1; combined integration needs the retained interface repairs. |
-| Room map | Room, level, direction, saved viewpoints and recorded photo positions are implemented, with separate unaligned visits and a remembered mini-map. Dots do not establish complete capture coverage. Native map checks pass in 225.1; the missing mini-map startup is repaired and awaits a new integration run. |
-| Readability follow-up | Dark lettering on bright action buttons, a separate walking-notice row and clearer capture-count wording are included in 225.1. Introduction/capture contrast and comfort screenshots are reviewed. Photo-only notice and room-map screenshots remain pending. |
+| Movement and view settings | Remembered speed, acceleration, turning, sensitivity, view width, eye height, handedness and reset are implemented. Native checks, the comfort interface workflow and screenshot review pass at 226.1. |
+| Room map | Room, level, direction, saved viewpoints and recorded photo positions are implemented, with separate unaligned visits and a remembered mini-map. Dots do not establish complete capture coverage. Native and interface map checks, remembered mini-map startup and screenshot review pass at 226.1. |
+| Readability follow-up | Dark lettering on bright action buttons, a separate walking-notice row and clearer capture-count wording are included in 225.1. Introduction/capture contrast and comfort screenshots are reviewed. Photo-only notice and room-map screenshots pass review at 226.1. |
 
-Latest complete integration: **224.1**, source `3883931263a2861a28cd354f190bbc3d8d71f178`, run `39169002149`: 172 native checks, 17 interface workflows, 19 reader phases, 52 command contracts, 36 validation reports, three process recoveries and 50 portable checks pass. Artifact hashes are independently verified in [the retained report](evidence/native-388-summary.json).
+Latest complete integration: **226.1**, source `ad8e0c5c8baf214967ccacea80a6195d7df66e8c`, run `39175973721`: **178/178 native checks and 19/19 interface workflows pass**, together with 19 reader phases, 52 command contracts, 36 validation reports, three process recoveries and 50 portable checks. Both artifact hashes are independently verified and all ten required screenshots reviewed in [the retained report](evidence/native-ad8-summary.json). The failed 225.1 integration is retained separately.
 
-**225.1 failed interface integration.** Source `bf0a75c353953233c6a517fca7a71693cae37f1e`, run `39172396220`, passes Debug/Release compilation, all 178 native checks, 19 reader phases, 52 command contracts, 36 export reports, three process recoveries and 50 portable cases. Interface tests: **12 passed, 7 failed**, including all four homeowner workflows passing. Both artifact hashes and all seven failure recordings are inspected in [the retained report](evidence/native-bf0-summary.json).
+Saved-viewpoint recovery, usable map-marker preservation, a bounded delayed/imperfect operator coverage loop, streamed-detail hysteresis and plain-language lost-view help are integrated in the prepared continuation, authorized for publication and awaiting native validation. Expected counts: 182 native checks and all 19 interface workflows, with existing execution bounds and acceptance thresholds retained. These changes do not complete whole-house or physical qualification.
 
-The next code repair starts mini-map loading from a concrete view, scrolls to the landscape Layers control, and restores portrait through XCTest lifecycle cleanup even when a test fails. It retains all 19 workflows and existing time/acceptance bounds. New native/interface validation is pending.
+## Publication authorization
+
+The owner approved publishing the prepared source and synthetic test evidence to the public `jverdi/house-memory-proof` repository and committing directly to `main` in this thread on 18 October 2026 at 22:42 New York time. The earlier automatic publication block is resolved by that explicit instruction. Native validation of this continuation is the next action; TestFlight remains 216.1 until an authorized delivery.
+
+Local verification passes: 52 command/reader tests, 41 release/recovery tests, 12 observer-preparation checks and 50 portable geometry cases. All 19 interface workflows remain unchanged; four native regression cases are added. These host checks do not establish Swift compilation or native acceptance. [Local results](evidence/continuation-local-summary.json).
+
+The prior thread's review-only pose observer is also preserved. It does not change shipping estimators or automatically run a localization experiment. Its separate evaluator and bounded wrapper remain unfinished; the exhausted localization budget has not been renewed.
 
 ## What prevents full completion
 
@@ -44,8 +50,8 @@ The [proposed next localization diagnostic](LOCALIZATION_DIAGNOSTIC_PROPOSAL.md)
 
 ## Next steps
 
-1. Validate the mini-map startup and orientation-cleanup repair, retaining all 19 interface workflows.
-2. Inspect screenshots 34/38/40–47, publish exact-source results, and update this page and the task ledger.
+1. Publish the owner-approved continuation and validate its 182 native checks and all 19 interface workflows.
+2. Continue reconstructed whole-house navigation and software qualification with bounded diagnostics.
 3. Continue independent software work. Keep the exhausted accuracy-repair budget separate from implementation that can proceed.
 4. Use the [owner-device protocol](DEVICE_ACCEPTANCE.md) for checks that need the actual phone. Only run feature-specific checks on a build containing those features.
 

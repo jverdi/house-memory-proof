@@ -44,7 +44,7 @@ struct SpatialDisplayIndex {
     static func <(a:Key,b:Key)->Bool {a.x != b.x ? a.x<b.x:a.y != b.y ? a.y<b.y:a.z<b.z}
   }
   struct Tile {var feature:Int;var primitives:[Int];var low:V3;var high:V3;var cost:Int}
-  struct Allocation:Equatable {var tile:Int;var budget:Int;var textured:Bool}
+  struct Allocation:Equatable {var tile:Int;var budget:Int;var textured:Bool;var near:Bool}
   var features:[Feature]
   var tiles:[Tile]=[]
   init(features:[Feature],primitiveLimit:Int=2_000_000)throws {
@@ -67,19 +67,23 @@ struct SpatialDisplayIndex {
       tiles += groups.keys.sorted().map{groups[$0]!}
     }
   }
-  func plan(camera:V3,budget:Int=DisplayGeometry.sceneVertexBudget,residents:Int=512)->[Allocation] {
+  func plan(camera:V3,budget:Int=DisplayGeometry.sceneVertexBudget,residents:Int=512,previous:[Allocation]=[])->[Allocation] {
     guard camera.finite,budget>=3,residents>0 else{return []}
     func distance(_ tile:Tile)->Double {
       let dx=max(0,max(tile.low.x-camera.x,camera.x-tile.high.x)),dy=max(0,max(tile.low.y-camera.y,camera.y-tile.high.y)),dz=max(0,max(tile.low.z-camera.z,camera.z-tile.high.z))
       return sqrt(dx*dx+dy*dy+dz*dz)
     }
-    struct Ranked {var tile:Int;var distance:Double;var requested:Int}
+    let prior=Dictionary(previous.map{($0.tile,$0.near)},uniquingKeysWith:{_,new in new})
+    struct Ranked {var tile:Int;var distance:Double;var requested:Int;var near:Bool}
     var ranked:[Ranked]=[]
     for index in tiles.indices {
       let separation=distance(tiles[index])
-      let factor:Int=separation<10 ? 1:16
+      // Enter detail below 9 m, retain it until 11 m. First admission keeps
+      // the original 10 m threshold; a small reversal cannot churn geometry.
+      let threshold=prior[index].map{$0 ? 11.0:9.0} ?? 10.0
+      let near=separation<threshold,factor:Int=near ? 1:16
       let wanted=max(3,min(50000,tiles[index].cost/factor))
-      ranked.append(Ranked(tile:index,distance:separation,requested:wanted))
+      ranked.append(Ranked(tile:index,distance:separation,requested:wanted,near:near))
     }
     ranked.sort {a,b in
       if a.distance==b.distance {return a.tile<b.tile}
@@ -98,7 +102,7 @@ struct SpatialDisplayIndex {
       }
       let extra=min(max(0,item.requested-3),remaining),allocation=3+extra
       remaining-=extra
-      result.append(Allocation(tile:item.tile,budget:allocation,textured:textured))
+      result.append(Allocation(tile:item.tile,budget:allocation,textured:textured,near:item.near))
     }
     return result
   }

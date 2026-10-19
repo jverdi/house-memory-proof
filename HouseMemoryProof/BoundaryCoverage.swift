@@ -45,6 +45,13 @@ struct BoundaryCoverageReport {
   var boundary:RevealBoundary;var revision:Int;var columns:Int;var rows:Int;var cells:[BoundaryCoverageCell];var cameraCount:Int;var consideredCameraCount:Int
   var states:[Int] {cells.map{$0.state}}
   var supported:Int {cells.filter{$0.supported}.count}
+  // The UI and replay operator consume the same single-patch request. A
+  // blocked or unsupported patch remains a gap; acknowledgement is not data.
+  func nextGap(after previous:Int?=nil)->Int? {
+    guard !cells.isEmpty else{return nil}
+    let start=previous.flatMap{cells.indices.contains($0) ? ($0+1)%cells.count:nil} ?? 0
+    return (0..<cells.count).map{($0+start)%cells.count}.first{!cells[$0].supported}
+  }
 }
 enum BoundaryCoverage {
   static func analyze(house:House,boundary:RevealBoundary,repo:Repository)throws->BoundaryCoverageReport {
@@ -138,8 +145,7 @@ struct BoundaryCoveragePanel:View {
         Text("\(r.supported)/\(r.cells.count) patches supported · \(r.cameraCount)/\(r.consideredCameraCount) sampled views have compatible depth").font(.caption)
         Text("Mint: three good angles · orange: revisit · red: foreground obstruction · gray: unknown or depth mismatch. Height increases upward; width increases rightward.").font(.caption)
         Button("Show next gap") {
-          let start=(selectedCell.map{$0+1} ?? 0)%r.cells.count
-          selectedCell=(0..<r.cells.count).map{($0+start)%r.cells.count}.first{!r.cells[$0].supported}
+          selectedCell=r.nextGap(after:selectedCell)
         }.disabled(r.supported==r.cells.count)
         if let i=selectedCell {
           let cell=r.cells[i]

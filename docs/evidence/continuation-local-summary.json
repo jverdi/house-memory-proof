@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "checkedUTC": "2026-10-19T02:41:26.355728+00:00",
+  "baseSource": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
+  "runtime": "Linux host",
+  "commandAndIndependentReaderTests": {
+    "passed": 52,
+    "failed": 0
+  },
+  "releaseAndRecoveryTests": {
+    "passed": 41,
+    "failed": 0
+  },
+  "observerPreparationTests": {
+    "passed": 12,
+    "failed": 0
+  },
+  "portableGeometry": {
+    "passed": true,
+    "cases": 50,
+    "maxP95Metres": 0.0011250724095434594
+  },
+  "priorNativeNamedChecksPreserved": 146,
+  "newNativeChecks": 4,
+  "expectedNativeChecks": 182,
+  "existingInterfaceWorkflowsUnchanged": 19,
+  "nativeCompilationExecuted": false,
+  "nativeIntegrationExecuted": false,
+  "localizationExperimentExecuted": false,
+  "wholeHouseQualified": false,
+  "physicalQualification": false
+}

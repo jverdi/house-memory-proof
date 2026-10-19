@@ -19,6 +19,7 @@ struct RoomMapSnapshot {
   var bookmarks:[Bookmark]
   var separateVisit:UUID?
   var limitedBookmarks:Bool
+  var omittedBookmarks:Int
   var levels:[Int] {Array(Set(rooms.map{$0.level})).sorted()}
   static func displayable(_ position:V3)->Bool {
     position.finite && max(abs(position.x),abs(position.y),abs(position.z))<=100000
@@ -53,10 +54,10 @@ struct RoomMapSnapshot {
         views.append(Viewpoint(id:observation.id,roomID:observation.roomID,position:position))
       }
     }
-    let bookmarks=house.bookmarks.filter{roomIDs.contains($0.roomID) && $0.segmentID==separate && $0.position.finite}
-    guard bookmarks.prefix(100).allSatisfy({displayable($0.position)}) else{throw HouseError.message("A saved viewpoint exceeds the supported map range.")}
+    let scopedBookmarks=house.bookmarks.filter{roomIDs.contains($0.roomID) && $0.segmentID==separate}
+    let bookmarks=scopedBookmarks.filter{displayable($0.position) && $0.yaw.isFinite && $0.pitch.isFinite}
     return Self(rooms:rooms,visits:views,viewCounts:counts,bookmarks:Array(bookmarks.prefix(100)),
-      separateVisit:separate,limitedBookmarks:bookmarks.count>100)
+      separateVisit:separate,limitedBookmarks:bookmarks.count>100,omittedBookmarks:scopedBookmarks.count-bookmarks.count)
   }
   func room(at position:V3)->Room? {
     guard Self.displayable(position) else{return nil}
@@ -171,11 +172,12 @@ struct RoomMapPage:View {
           Text("A room with no dots has no eligible saved photo positions in this scope. Imported ordinary photos may still be available in Evidence. Capture coverage checks surfaces and wall areas separately.").font(.footnote)
         }
         Section("Saved viewpoints") {
-          if snapshot.bookmarks.isEmpty {Text("No saved viewpoints in this map. In Explore, open Jump → Save viewpoint to keep a place you want to return to.")}
+          if snapshot.bookmarks.isEmpty {Text("No usable saved viewpoints in this map. In Explore, open Jump → Save viewpoint to keep a place you want to return to.")}
           ForEach(snapshot.bookmarks.filter{mark in level==nil || snapshot.rooms.first{$0.id==mark.roomID}?.level==level}) {mark in
             Button(mark.name){bookmark(mark)}
           }
           if snapshot.limitedBookmarks {Text("Showing the first 100 saved viewpoints. The complete list remains in Jump.").font(.footnote)}
+          if snapshot.omittedBookmarks>0 {Text("\(snapshot.omittedBookmarks) saved viewpoints could not be placed on this map. Choose a room to return to a checked view. Your saved records have not been changed.").font(.footnote)}
         }
       }else if let failure {Text(failure)}else {ProgressView("Preparing room map…")}
     }.navigationTitle("Room map").task(id:sourceKey) {

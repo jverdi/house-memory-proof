@@ -23,7 +23,7 @@ struct HomeGuide: Identifiable {
     case .references: return "marker reference board print printed align alignment registration before drywall"
     case .review: return "checklist inspect builder contractor gaps missing drywall"
     case .find: return "search find wire pipe cable photo notes"
-    case .explore: return "walk walking 3D model rotate zoom controls layer ghost"
+    case .explore: return "walk walking 3D model rotate zoom controls layer ghost map floor level bookmark saved viewpoint movement speed sensitivity left handed"
     case .reveal: return "xray x-ray augmented reality AR overlay see through drywall"
     case .backup: return "backup back up recover recovery archive restore iCloud files snapshot"
     case .share: return "share export video movie tour flythrough contractor"
@@ -133,6 +133,7 @@ struct HomeGuide: Identifiable {
       step("Start capture is unavailable", "If you are in the sample house, create a real house first. Check the selected room and stage. If camera permission was denied, enable camera access for House Xray in iPhone Settings, then return and start again. If AR capture is unavailable on the device, use Evidence → Import existing photographs."),
       step("Saving or processing pauses", "Read the message on screen. Let an active save finish before starting another task. Low storage, heat, leaving the app or an interruption may stop capture or pause processing. Return to Capture, check the saved session and use Process capture when available. Keep the phone cool and free storage without deleting your only copy of the record."),
       step("The 3D view is empty or incomplete", "Check the house, room, stage and system filters. Try All evidence in Explore and inspect the source photos in Evidence. Imported ordinary photos do not automatically create a 3D model. Separate sessions may need alignment; a gap is not proof of empty space."),
+      step("I lost my place in the 3D view", "Open Explore → Layers → Reset view to this room. If a checked walking view is unavailable, the app explains that Free fly is being used. To see where you are, open Layers → Room map. Turn on Show mini-map in the 3D view, then return to Explore with Inspect selected. The small map is hidden while measuring, tracing a route or defining a wall. An unavailable saved viewpoint does not delete your photos or notes."),
       step("The camera overlay cannot find the room", "Check that you chose the correct earlier session and a wall or ceiling volume. The room may have changed too much, the views may be poor, or reference markers may have moved. Use the dated originals instead of trying to force an uncertain overlay to fit."),
       step("A backup or import is missing files", "Check the chosen folder in Files and let the storage provider finish transferring. Re-select the folder if permission changed. Keep the existing local record and retry after the files are available. Do not delete the app as a first troubleshooting step."),
       step("You still need help", "Note what you were doing, the exact on-screen message and the build shown in Tools under Diagnostics. A screenshot of the message can help explain the problem. Diagnostics is an advanced section; you do not need to run synthetic self-tests to create an ordinary construction record.")

@@ -433,6 +433,23 @@ import simd
                 }
                 do {_=try SpatialDisplayIndex(features:features,primitiveLimit:10);return false}catch{return true}
             }
+            await check("Streamed detail survives distance reversals without repeated geometry replacement") {
+                let mesh=Mesh(vertices:[V3(0,0,0),V3(0.8,0,0),V3(0,0.8,0)],triangles:Array(repeating:[Int32(0),1,2],count:50).flatMap{$0})
+                let feature=Feature(name:"Observed source tile",trade:.structure,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:mesh)
+                let index=try SpatialDisplayIndex(features:[feature]);guard index.tiles.count==1 else{return false}
+                let stream=SpatialSceneStream(index:index,scene:SCNScene(),options:SceneOptions())
+                let distances=[9.5,10.6,11.7,10.6,8.8],expected=[true,true,false,false,true]
+                var nodes:[SCNNode]=[]
+                for i in distances.indices {
+                    stream.update(camera:V3(0.8+distances[i],0.4,0),time:Double(i))
+                    guard let allocation=stream.allocations[0],let node=stream.nodes[0],allocation.near==expected[i],
+                      stream.pending.isEmpty,stream.nodes.count==1,allocation.budget<=DisplayGeometry.sceneVertexBudget else{return false}
+                    let (_,shown,_)=index.materialize(allocation)
+                    guard (expected[i] ? shown.triangles==mesh.triangles:shown.triangles.isEmpty) else{return false}
+                    nodes.append(node)
+                }
+                return nodes[0]===nodes[1] && nodes[1] !== nodes[2] && nodes[2]===nodes[3] && nodes[3] !== nodes[4] && index.features==[feature]
+            }
             await check("Traced annotation loses eligibility when source revision or registration changes") {
                 var h=House.empty("Annotation inputs");var segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);segment.registration=Rigid();h.segments=[segment]
                 var source=Feature(name:"Wall",trade:.structure,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.observed,mesh:.box(center:V3(),size:V3(2,0.1,3)),segmentID:segment.id)
@@ -926,6 +943,80 @@ import simd
                 guard result.cells.allSatisfy({$0.projectedViews==9 && $0.matchingDepthViews==5 && $0.usefulViews==3 && $0.separatedViews==3 && $0.angularBaseline && $0.occludedViews==1 && $0.unavailableDepthViews==1 && $0.uncertainDepthViews==1 && $0.unmatchedDepthViews==1 && $0.darkViews==2 && $0.blurredViews==2}) else{return false}
                 let report:[String:Any]=["passed":true,"analyticOnly":true,"oracleIsolatedQualification":false,"physicalQualification":false,"patches":result.cells.count,"projectedViewsPerPatch":9,"compatibleDepthCameras":result.cameraCount,"supportedPatches":result.supported,"usefulViewsPerPatch":3,"obstructedViewsPerPatch":1,"unavailableDepthViewsPerPatch":1,"uncertainDepthViewsPerPatch":1,"unmatchedDepthViewsPerPatch":1,"darkViewsPerPatch":2,"blurredViewsPerPatch":2,"semanticReviewQualified":false,"sourceRecordsPublished":false]
                 try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys,.prettyPrinted]).write(to:mainRepo.root.appendingPathComponent("native-coverage-guidance.json"))
+                return true
+            }
+            await check("Closed-loop coverage requests respond to delayed imperfect movement and retain inaccessible gaps") {
+                var pool=try SimulatedCapture.make(repo:repo)
+                for i in pool.observations.indices {pool.observations[i].intrinsics[0]*=2;pool.observations[i].intrinsics[4]*=2;pool.observations[i].sharpness=0.1}
+                let source=pool.features[0],segment=pool.segments[0]
+                let unbound=RevealBoundary(name:"Disclosed analytic wall",segmentID:segment.id,origin:V3(-0.2,1.8,1.6),horizontal:V3(1,0,0),vertical:V3(0,0,-1),width:0.4,height:0.4,depth:0.2,finishOffset:0.01,sourceFingerprint:try VisualMapping.fingerprint(house:pool,segment:segment))
+                let boundary=try BoundaryEvidence.bind(unbound,sources:[source.id],house:pool)
+                // The virtual operator sees only the app's requested patch and
+                // advice. Delay, missed instructions and travel limits belong
+                // to the operator; they never change the coverage thresholds.
+                let cases:[(name:String,stride:Int,delay:Int,missEvery:Int,lastView:Int,fault:Int)]=[
+                    ("responsive",2,0,0,8,0),("delayed-imperfect",1,2,3,8,0),
+                    ("movement-limited",2,0,0,4,0),("foreground-blocked",2,0,0,8,1),
+                    ("depth-unavailable",2,0,0,8,2)]
+                var summaries:[[String:Any]]=[];var responsiveEffort=0,delayedEffort=0
+                for config in cases {
+                    var house=pool;house.observations=[]
+                    var offered=pool.observations
+                    if config.fault==1 {
+                        var foreground=Data();for _ in 0..<(192*144) {foreground.float(1)}
+                        let file=try repo.put(foreground,ext:"depth32")
+                        for i in offered.indices {offered[i].depth=file}
+                    }else if config.fault==2 {for i in offered.indices {offered[i].depth=nil}}
+                    var report=try BoundaryCoverage.analyze(house:house,boundary:boundary,repo:repo)
+                    guard report.supported==0,report.cells.count==16,report.nextGap()==0 else{return false}
+                    var cursor=0,lastAction = -100,attempts=0,missed=0,waited=0,captures=0
+                    var stopped="time limit",falseComplete=0,trace:[[String:Any]]=[]
+                    for tick in 0..<64 {
+                        guard let patch=report.nextGap() else{stopped="supported nominal plane";break}
+                        let advice=report.cells[patch].advice
+                        var action="wait"
+                        if tick-lastAction<=config.delay {waited+=1}
+                        else {
+                            lastAction=tick;attempts+=1
+                            if config.missEvery>0 && attempts%config.missEvery==0 {missed+=1;action="missed instruction"}
+                            else if advice == .aroundObstruction {stopped="no accessible alternate view";action="retain blocked gap"}
+                            else if advice == .translate && !house.observations.isEmpty && cursor==config.lastView {stopped="movement limit";action="retain gap at movement limit"}
+                            else {
+                                if advice == .translate && !house.observations.isEmpty {cursor=min(config.lastView,cursor+config.stride)}
+                                var observation=offered[cursor];observation.id=UUID();observation.timestamp=Double(tick)
+                                house.observations.append(observation);house.revision+=1;captures+=1;action="capture"
+                                report=try BoundaryCoverage.analyze(house:house,boundary:boundary,repo:repo)
+                            }
+                        }
+                        // A disclosed analytic evaluator knows these two
+                        // faults and the short path cannot certify the plane.
+                        if (config.fault>0 || config.lastView==4) && report.supported>0 {falseComplete+=1}
+                        trace.append(["tick":tick,"requestedPatch":patch,"advice":advice.rawValue,"operatorAction":action,
+                                      "captures":captures,"supportedPatches":report.supported])
+                        if stopped != "time limit" {break}
+                        if captures==16 {stopped="capture limit";break}
+                    }
+                    let expectedComplete=config.fault==0 && config.lastView==8
+                    guard falseComplete==0,captures>0,captures<=16,trace.count<=64,
+                      (expectedComplete ? report.supported==16:report.supported==0),
+                      (expectedComplete ? report.nextGap()==nil:report.nextGap() != nil),
+                      house.features==pool.features,house.segments==pool.segments else{return false}
+                    if config.name=="responsive" {responsiveEffort=trace.count;guard captures==5 else{return false}}
+                    if config.name=="delayed-imperfect" {delayedEffort=trace.count;guard waited>0,missed>0,captures==9 else{return false}}
+                    if config.fault==1 {guard report.cells.allSatisfy({$0.advice == .aroundObstruction}),stopped=="no accessible alternate view" else{return false}}
+                    if config.fault==2 {guard report.cameraCount==0,report.cells.allSatisfy({$0.advice == .depth}),stopped=="capture limit" else{return false}}
+                    summaries.append(["name":config.name,"operatorDelayTicks":config.delay,"missEvery":config.missEvery,
+                      "maximumTranslationPerActionMetres":Double(config.stride)*0.08,"captures":captures,"requestTicks":trace.count,
+                      "waitedTicks":waited,"missedInstructions":missed,"initialGaps":16,"remainingGaps":16-report.supported,
+                      "falseCompletePatches":falseComplete,"stopReason":stopped,"trace":trace])
+                }
+                guard delayedEffort>responsiveEffort else{return false}
+                let result:[String:Any]=["version":1,"profile":"disclosed-coverage-loop-v1","passed":true,
+                  "cases":summaries,"maximumTicksPerCase":64,"maximumCapturesPerCase":16,
+                  "sharedAppGapRequest":true,"wholeHouseQualified":false,"oracleIsolatedQualification":false,
+                  "physicalQualification":false,"sourceRecordsPublished":false,
+                  "limitations":"Five disclosed analytic plane cases exercise the real gap request and coverage analyzer with a bounded virtual operator. This is not protected evaluation, live AR injection, whole-house coverage or field qualification."]
+                try JSONSerialization.data(withJSONObject:result,options:[.sortedKeys,.prettyPrinted]).write(to:mainRepo.root.appendingPathComponent("native-coverage-loop.json"))
                 return true
             }
             await check("Disconnected photograph is excluded without inventing camera corrections") {
@@ -1927,6 +2018,16 @@ import simd
                 return noViews.visits.isEmpty && noViews.viewCounts.isEmpty && emptyBounds.low.finite
                   && emptyBounds.high.finite && emptyBounds.high.x-emptyBounds.low.x>=2 && h==original
             }
+            await check("One oversized saved viewpoint does not suppress the remaining room map or alter records") {
+                var h=House.empty("Oversized saved viewpoint")
+                let valid=Bookmark(name:"Room view",position:V3(2,2,1.6),yaw:0,pitch:0,roomID:h.rooms[0].id)
+                var oversized=valid;oversized.id=UUID();oversized.name="Unsupported camera";oversized.position.x=1e100
+                h.bookmarks=[oversized,valid];try h.validate();let original=h
+                let map=try RoomMapSnapshot.build(house:h,options:SceneOptions())
+                let bounds=map.bounds(level:0,position:valid.position)
+                return map.bookmarks==[valid] && map.omittedBookmarks==1 && !map.limitedBookmarks &&
+                  bounds.low.finite && bounds.high.finite && bounds.high.x<100000 && h==original
+            }
             await check("Viewer preferences bound invalid input and round-trip without changing defaults") {
                 let defaults=ViewerComfort()
                 guard defaults.eyeHeight==1.7,defaults.fieldOfView==60,ViewerComfort.decode("invalid")==defaults else{return false}
@@ -2059,6 +2160,40 @@ import simd
                 var unsupported=SceneOptions();unsupported.stage=h.stages[1].id
                 controller.load(h,unsupported)
                 return controller.flying && controller.navigationNotice.contains("No checked walking viewpoint") && h.features.count==2
+            }
+            await check("Saved viewpoints reject overflowing coordinates and foreign frames before camera conversion") {
+                var h=House.empty("Saved viewpoint recovery");h.isDemo=true;h.rooms[0].size=V3(6,6,3)
+                let room=h.rooms[0].id,stage=h.stages[0].id
+                h.features=[Feature(name:"Floor",trade:.floor,roomID:room,stageID:stage,kind:.synthetic,mesh:.box(center:V3(3,3,-0.1),size:V3(6,6,0.2)))]
+                let controller=WalkController();defer{controller.stop()};controller.load(h,SceneOptions())
+                let normal=Bookmark(name:"Recorded view",position:V3(2,2,1.6),yaw:0,pitch:0,roomID:room)
+                for fault in 0..<6 {
+                    var bad=normal
+                    switch fault {
+                    case 0:bad.position.x=1e100
+                    case 1:bad.position.z = .nan
+                    case 2:bad.yaw = .infinity
+                    case 3:bad.pitch = .nan
+                    case 4:bad.roomID=UUID()
+                    default:bad.segmentID=UUID()
+                    }
+                    controller.setFlying(true);controller.setOrbit(true);controller.move=SIMD2(1,1);controller.vertical=1
+                    controller.bookmark(bad)
+                    let restored=V3(ar:controller.camera.simdPosition)
+                    guard restored.finite,(restored-V3(3,3,1.6)).length<1e-5,!controller.flying,!controller.orbit,
+                      controller.yaw.isFinite,controller.pitch.isFinite,controller.move == .zero,controller.vertical==0,
+                      controller.navigationNotice.contains("saved viewpoint cannot be used"),controller.house==h else{return false}
+                }
+                var rotated=normal;rotated.yaw=1e100;rotated.pitch=1e100
+                controller.setOrbit(true);controller.bookmark(rotated)
+                guard !controller.orbit,controller.view.pointOfView===controller.camera,
+                  abs(controller.yaw)<=2 * .pi,abs(controller.pitch-1.35)<1e-5,
+                  !controller.navigationNotice.contains("saved viewpoint cannot be used"),
+                  (V3(ar:controller.camera.simdPosition)-normal.position).length<1e-5 else{return false}
+                var unsupported=SceneOptions();unsupported.stage=h.stages[1].id;controller.load(h,unsupported)
+                var bad=normal;bad.position.x=1e100;controller.bookmark(bad)
+                return controller.flying && V3(ar:controller.camera.simdPosition).finite &&
+                  controller.navigationNotice.contains("No checked walking viewpoint") && controller.house==h
             }
             await check("Observed floor walking preserves capture height, climbs checked steps and refuses holes or low headroom") {
                 func floor(_ centre:V3,_ size:V3)->Feature {Feature(name:"Observed floor fixture",trade:.floor,roomID:UUID(),stageID:UUID(),kind:.synthetic,mesh:.box(center:centre,size:size))}
