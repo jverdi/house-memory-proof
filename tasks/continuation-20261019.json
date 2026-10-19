@@ -125,9 +125,13 @@
     "estimatorOrThresholdChanges": false
   },
   "sliderEndpointFollowup": {
-    "status": "prepared",
+    "status": "committed_validation_queued",
     "maximumJobs": 1,
     "maximumMinutesPerJob": 70,
-    "change": "Finish one-step-short synthesized slider adjustment with one bounded thumb-to-edge gesture; retain exact endpoint, persistence and reset assertions."
+    "change": "Finish one-step-short synthesized slider adjustment with one bounded thumb-to-edge gesture; retain exact endpoint, persistence and reset assertions.",
+    "source": "389ac9ccde749623f51d3b84397b25f9db742de9",
+    "run": 39329413198,
+    "build": "246.1",
+    "failedRunScreenRecordingReviewed": true
   }
 }
