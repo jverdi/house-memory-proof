@@ -779,6 +779,18 @@ final class HouseXraySmoke: XCTestCase {
     guard let current=number(),range.contains(current) else{XCTFail("Slider must expose its current numeric value and unit");return}
     let expected=upper ? range.upperBound:range.lowerBound
     slider.adjust(toNormalizedSliderPosition:upper ? 1:0)
+    // The synthesized adjustment can stop one discrete step short (245.1
+    // retained 0.3 m/s when requesting the 0.2 m/s endpoint). Finish that
+    // gesture at the edge of the control, without relaxing the exact value.
+    if let adjusted=number(),range.contains(adjusted),abs(adjusted-expected)>=0.000001 {
+      let frame=slider.frame
+      guard frame.width>frame.height,frame.height>0 else{XCTFail("Slider has no usable track");return}
+      let fraction=(adjusted-range.lowerBound)/(range.upperBound-range.lowerBound)
+      let inset=frame.height/2
+      let thumbX=(inset+CGFloat(fraction)*(frame.width-2*inset))/frame.width
+      slider.coordinate(withNormalizedOffset:CGVector(dx:thumbX,dy:0.5))
+        .press(forDuration:0.1,thenDragTo:slider.coordinate(withNormalizedOffset:CGVector(dx:upper ? 1:0,dy:0.5)))
+    }
     let reached=expectation(for:NSPredicate{_,_ in number().map{abs($0-expected)<0.000001} ?? false},evaluatedWith:slider)
     wait(for:[reached],timeout:5)
   }

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "source": "ed5aaa7e13881348e927a45a553845934c0e7b41",
+  "build": "245.1",
+  "run": 39317003340,
+  "completeIntegrationPassed": false,
+  "debugCompilePassed": true,
+  "releaseCompilePassed": true,
+  "nativePassed": 194,
+  "nativeTotal": 194,
+  "nativeSeconds": 227.9392295,
+  "readerPhasesPassed": 21,
+  "commandContractsPassed": 63,
+  "uiPassed": 19,
+  "uiTotal": 20,
+  "uiRunnerExitCode": 65,
+  "failedUI": "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout",
+  "failureEvidence": "Normalized slider adjustment left Walking speed at 0.3 m/s instead of required 0.2 m/s. Three retained accessibility snapshots agree.",
+  "nativeArtifact": {
+    "id": 12219214053,
+    "sha256": "77ba664cf0701d58a2109d85eeed36d10e141400339792ed32db10765cc81488",
+    "hashVerified": true
+  },
+  "simulatorArtifact": {
+    "id": 12220634188,
+    "sha256": "de9425eda901b0d7970420af1295e8a708e61124b5e0c444ecaae841a123a035",
+    "hashVerified": true
+  },
+  "roomGraphCorrectionValidated": true,
+  "wholeHouseQualified": false,
+  "precisionEnabled": false,
+  "physicalQualification": false
+}

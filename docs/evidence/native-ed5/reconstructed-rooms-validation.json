@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "profile": "registered-reconstructed-fragments-v1",
+  "privatePackageSHA256": "5b29165903c3a4bb293a99a8a639cd310a07928bd8f2fe0cfa2c4f46981af819",
+  "fragments": 3,
+  "capturedViews": 27,
+  "vertices": [
+    105336,
+    105336,
+    105336
+  ],
+  "tracedSteps": 16,
+  "roomBoundaryCrossings": 2,
+  "supportedRoomLinks": 1,
+  "refusedSteps": 3,
+  "disconnectedUpperFloor": true,
+  "registrationSupplied": true,
+  "floorClassificationSupplied": true,
+  "rawSourceRecordsPublished": false,
+  "wholeHouseQualified": false,
+  "physicalQualification": false,
+  "protectedBenchmark": false
+}

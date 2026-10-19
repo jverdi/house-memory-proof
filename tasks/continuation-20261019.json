@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-19T20:10:14.292935+00:00",
+  "updatedUTC": "2026-10-19T21:40:27.395Z",
   "overall": "in_progress",
   "validatedApplicationSource": "777520e23ffc6930ce4118be2626c1634f0a045a",
   "validationBuild": "241.1",
@@ -60,7 +60,7 @@
     "evidence": "docs/evidence/localization-observer-20261019/summary.json",
     "activeWorkflowRetired": true,
     "followupProposal": "docs/LOCALIZATION_OBSERVER_FAILURE_PROPOSAL.md",
-    "followupAuthorized": false
+    "followupAuthorized": true
   },
   "integrationCommit": "5404e776b6c032ee16282bb8889b025dccfc7104",
   "automaticReplayCancellations": {
@@ -90,7 +90,7 @@
     "qualificationResultClaimed": false
   },
   "registeredReconstructionNavigation": {
-    "status": "correction_committed_validation_queued",
+    "status": "native_and_readers_passed_full_ui_failed",
     "evidence": "docs/evidence/reconstructed-rooms-candidate.md",
     "commandContractsPassed": 63,
     "ciContractsPassed": 47,
@@ -107,6 +107,27 @@
     "correctiveFailureClassIteration": 1,
     "correctiveSource": "ed5aaa7e13881348e927a45a553845934c0e7b41",
     "correctiveRun": 39317003340,
-    "correctiveBuild": "245.1"
+    "correctiveBuild": "245.1",
+    "correctiveNativePassed": 194,
+    "correctiveReaderPhasesPassed": 21,
+    "correctiveUIPassed": 19,
+    "correctiveUITotal": 20,
+    "correctiveEvidence": "docs/evidence/native-ed5/summary.json"
+  },
+  "observerFailureDiagnostic": {
+    "status": "running",
+    "maximumJobs": 1,
+    "maximumMinutesPerJob": 40,
+    "run": 39329166282,
+    "source": "9eb7231622a5e0af90751e07e56d790f98058b36",
+    "seed": 905771,
+    "rerunsAllowed": false,
+    "estimatorOrThresholdChanges": false
+  },
+  "sliderEndpointFollowup": {
+    "status": "prepared",
+    "maximumJobs": 1,
+    "maximumMinutesPerJob": 70,
+    "change": "Finish one-step-short synthesized slider adjustment with one bounded thumb-to-edge gesture; retain exact endpoint, persistence and reset assertions."
   }
 }
