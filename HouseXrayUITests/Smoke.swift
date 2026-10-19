@@ -356,6 +356,35 @@ final class HouseXraySmoke: XCTestCase {
     XCTAssertLessThan(savedEvidence.frame.maxY,app.frame.maxY-40)
     XCTAssertEqual(savedEvidence.label,"Synthetic 50 mm outer measurement");screenshot("27-measured-envelope-relaunched")
   }
+  @MainActor func testMeasuredLinearTaperSaveAndRelaunch() throws {
+    let app=XCUIApplication();app.launchArguments=["--envelope-demo","--envelope-demo-reset"];app.launch()
+    defer{app.terminate()}
+    XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:20));app.tabBars.buttons["Evidence"].tap()
+    let source=app.staticTexts["Visible centerline"];XCTAssertTrue(source.waitForExistence(timeout:10));source.tap()
+    let open=app.buttons["Record a service envelope"];guidanceReveal(open,in:app);open.tap()
+    func finishEntry() {
+      let done=app.buttons["envelope-keyboard-done"];XCTAssertTrue(done.waitForExistence(timeout:5));done.tap()
+      let closed=expectation(for:NSPredicate(format:"exists == false"),evaluatedWith:app.keyboards.firstMatch)
+      wait(for:[closed],timeout:5)
+    }
+    let width=app.textFields["envelope-width"];XCTAssertTrue(width.waitForExistence(timeout:10));width.tap();width.typeText("50");finishEntry()
+    let taper=app.switches["envelope-tapered"];guidanceReveal(taper,in:app);setSwitch(taper,to:true)
+    let end=app.textFields["envelope-end-width"];guidanceReveal(end,in:app);end.tap();end.typeText("90");finishEntry()
+    screenshot("50-measured-taper-endpoints")
+    let evidence=app.descendants(matching:.any).matching(identifier:"envelope-evidence").firstMatch
+    guidanceReveal(evidence,in:app);evidence.tap();evidence.typeText("Checked straight taper from 50 to 90 mm");finishEntry()
+    let confirm=app.switches["envelope-confirm"];guidanceReveal(confirm,in:app);setSwitch(confirm,to:true)
+    let save=app.buttons["envelope-save"];guidanceReveal(save,in:app);XCTAssertTrue(save.isEnabled);save.tap()
+    XCTAssertTrue(app.navigationBars["Object details"].waitForExistence(timeout:10));app.navigationBars["Object details"].buttons["Cancel"].tap()
+    app.terminate();app.launchArguments=["--envelope-demo"];app.launch()
+    XCTAssertTrue(app.tabBars.buttons["Evidence"].waitForExistence(timeout:20));app.tabBars.buttons["Evidence"].tap()
+    let envelope=app.staticTexts["Visible centerline · measured envelope"];XCTAssertTrue(envelope.waitForExistence(timeout:10));envelope.tap()
+    let startSize=app.staticTexts["service-envelope-size"];guidanceReveal(startSize,in:app);XCTAssertTrue(startSize.label.contains("50 mm"))
+    let endSize=app.staticTexts["service-envelope-end-size"];guidanceReveal(endSize,in:app)
+    XCTAssertTrue(endSize.label.contains("90 mm"));XCTAssertTrue(endSize.label.contains("owner-checked straight linear taper"))
+    let savedEvidence=app.staticTexts["service-envelope-evidence"];guidanceReveal(savedEvidence,in:app)
+    XCTAssertEqual(savedEvidence.label,"Checked straight taper from 50 to 90 mm");screenshot("51-measured-taper-relaunched")
+  }
   @MainActor func testDrawingSuggestionReviewAndRelaunch() throws {
     continueAfterFailure=false
     let app=XCUIApplication();app.launchArguments=["--drawing-demo","--drawing-demo-reset"];app.launch()

@@ -1219,6 +1219,9 @@ import simd
                 do{_=try ServiceEnvelope.feature(source:source,interval:0,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:nil,evidence:" ",house:h);return false}catch{}
                 return true
             }
+            await check("Measured linear tapers preserve endpoint sections and analytic volume through source validation") {
+                try ServiceEnvelopeTests.linearTapers()
+            }
             await check("Measured envelope metadata geometry and source links survive archive GLB and CSV handoff") {
                 var h=House.empty("Envelope interchange");h.isDemo=true
                 let line=[V3(0,0,1),V3(1,0,1)]
@@ -1230,7 +1233,9 @@ import simd
                 let curved=Feature(name:"Recorded bent route",trade:.plumbing,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.synthetic,mesh:Mesh(vertices:bentLine,triangles:[]),route:bentLine)
                 h.features.append(curved)
                 let bent=try ServiceEnvelope.feature(source:curved,interval:0,endInterval:2,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:0.001,evidence:"Synthetic constant diameter measured along all three intervals",house:h)
-                h.features += [round,rectangle,bent];try repo.save(h)
+                let taperedRound=try ServiceEnvelope.feature(source:source,interval:0,section:.round,width:0.05,height:nil,widthAxis:nil,tolerance:0.001,evidence:"Synthetic checked linear diameter transition",house:h,endWidth:0.09)
+                let taperedRectangle=try ServiceEnvelope.feature(source:source,interval:0,section:.rectangular,width:0.2,height:0.1,widthAxis:V3(0,1,0),tolerance:nil,evidence:"Synthetic checked linear rectangular transition",house:h,endWidth:0.08,endHeight:0.16)
+                h.features += [round,rectangle,bent,taperedRound,taperedRectangle];try repo.save(h)
                 let archive=try Exporter.archive(h,repo:repo),target=try Repository(root:folder.appendingPathComponent("envelope-restore")),restored=try Exporter.restore(archive,repo:target)
                 guard restored.features==h.features,restored.rooms==h.rooms else{return false}
                 try Data(contentsOf:archive).write(to:mainRepo.root.appendingPathComponent("service-envelopes.hxray"))

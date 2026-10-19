@@ -1,0 +1,11 @@
+# Measured linear section transitions — 19 October 2026
+
+Status: source prepared; 60 command/reader contracts pass. Native compilation, geometry execution and the new interface flow are pending. This is independent of requested TestFlight 234.1 and is not included in that snapshot.
+
+Service-envelope version 3 records both endpoint sizes for one straight source interval. Round diameters or rectangular width/height may vary linearly. The owner must explicitly confirm measuring both ends and checking the visible straight linear transition; endpoint measurements alone do not establish its hidden shape. Connected/curved reducers, eccentric transitions, arbitrary variable curves, fittings and internal bundle members are not inferred. Existing versions 1 (straight constant section) and 2 (connected constant circular section) remain supported. Readers limited to those earlier versions do not support v3 records.
+
+The new declaration rejects missing, nonfinite, out-of-range or mixed connected/taper metadata, and a size tolerance must be smaller than half of every endpoint dimension. Persistent field captions distinguish start/end dimensions and millimetres after entry. The source centerline, interval identity, revision/frame dependency and unknown centerline uncertainty are retained. Editing the source invalidates the separate derived envelope. End caps delimit the measured interval only.
+
+Native assertions compare legacy constant-section vertices exactly, verify new circular endpoint rings and cap centers, integrate signed mesh volume against analytic round and rectangular frusta for four orientations in both directions, preserve source/JSON records, and reject tampering or stale dependencies. The existing archive/GLB/CSV check expands from three to five envelopes and compares all endpoint metadata and exported coordinates through the independent readers. A twentieth UI workflow records a taper, saves it, relaunches, and requires both endpoint sizes and its original evidence text; screenshots 50–51 must be inspected. All original 19 UI flows remain.
+
+Expected combined native suite: 193; interface suite: 20, under the existing execution limits. Passing this bounded capability would not close broad curved/variable-service reconstruction, whole-house geometry or physical accuracy qualification.

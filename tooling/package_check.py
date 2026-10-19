@@ -169,7 +169,7 @@ def drawing_mark_check(mark):
 
 def envelope_check(value,feature=None,*,iso_dates=False):
     if value is None:return
-    require(isinstance(value,dict) and type(value.get('version')) is int and value['version'] in (1,2),'Invalid envelope version')
+    require(isinstance(value,dict) and type(value.get('version')) is int and value['version'] in (1,2,3),'Invalid envelope version')
     source=identity(value.get('sourceFeatureID'))
     require(type(value.get('sourceRevision')) is int and value['sourceRevision']>0 and type(value.get('sourceInterval')) is int and 0<=value['sourceInterval']<127,'Invalid envelope dependency')
     width=value.get('widthMetres');height=value.get('heightMetres');axis=value.get('widthAxis');section=value.get('section')
@@ -179,10 +179,16 @@ def envelope_check(value,feature=None,*,iso_dates=False):
         require(section=='Rectangular' and numeric(height) and .001<=height<=4 and vector(axis),'Invalid measured cross section')
         require(abs(math.sqrt(sum(axis[k]**2 for k in ['x','y','z']))-1)<1e-6,'Invalid width axis')
     end=value.get('sourceEndInterval')
-    if value['version']==1:require(end is None,'Legacy envelope has a connected interval range')
-    else:require(section=='Round' and type(end) is int and value['sourceInterval']<end<127,'Invalid connected envelope range')
+    if value['version']==2:require(section=='Round' and type(end) is int and value['sourceInterval']<end<127,'Invalid connected envelope range')
+    else:require(end is None,'Straight envelope has a connected interval range')
+    end_width=value.get('endWidthMetres');end_height=value.get('endHeightMetres')
+    if value['version']==3:
+        require(numeric(end_width) and .001<=end_width<=4,'Invalid measured end width')
+        if section=='Rectangular':require(numeric(end_height) and .001<=end_height<=4,'Invalid measured end height')
+        else:require(end_height is None,'Round taper has rectangular metadata')
+    else:require(end_width is None and end_height is None,'Constant envelope has tapered dimensions')
     tolerance=value.get('dimensionToleranceMetres')
-    require(tolerance is None or (numeric(tolerance) and 0<tolerance<min(width,height or width)/2),'Invalid size tolerance')
+    require(tolerance is None or (numeric(tolerance) and 0<tolerance<min(width,height or width,end_width or width,end_height or height or width)/2),'Invalid size tolerance')
     evidence=value.get('evidence');require(isinstance(evidence,str) and bool(evidence.strip()) and len(evidence.encode('utf-8'))<=4096 and '\0' not in evidence,'Missing envelope measurement evidence')
     recorded=value.get('recorded')
     if iso_dates:
@@ -194,7 +200,7 @@ def envelope_check(value,feature=None,*,iso_dates=False):
     require(feature.get('kind') in ['observed','synthetic'] and source!=identity(feature['id']),'Invalid envelope evidence kind or self-reference')
     dependencies=feature.get('annotationSources')
     require(isinstance(dependencies,list) and len(dependencies)==1 and identity(dependencies[0].get('featureID'))==source and type(dependencies[0].get('revision')) is int and dependencies[0]['revision']==value['sourceRevision'],'Envelope dependency differs')
-    route=feature.get('route');expected_points=2 if value['version']==1 else end-value['sourceInterval']+2
+    route=feature.get('route');expected_points=end-value['sourceInterval']+2 if value['version']==2 else 2
     require(isinstance(route,list) and len(route)==expected_points and all(vector(p) for p in route),'Invalid envelope centerline')
     if value['version']==2:
         connected_envelope_geometry(feature,width)
@@ -210,11 +216,13 @@ def envelope_check(value,feature=None,*,iso_dates=False):
     n=64 if section=='Round' else 4;vertices=feature['mesh']['vertices'];indices=feature['mesh']['triangles']
     require(len(vertices)==2*n+2 and len(indices)==12*n,'Envelope mesh dimensions differ')
     expected=[]
-    for center in [a,b]:
+    for endpoint,center in enumerate([a,b]):
+        ring_width=end_width if endpoint and end_width is not None else width
+        ring_height=end_height if endpoint and end_height is not None else height
         for i in range(n):
-            if section=='Round':x,y=math.cos(2*math.pi*i/n)*width/2,math.sin(2*math.pi*i/n)*width/2
+            if section=='Round':x,y=math.cos(2*math.pi*i/n)*ring_width/2,math.sin(2*math.pi*i/n)*ring_width/2
             else:
-                signs=[(-1,-1),(1,-1),(1,1),(-1,1)];x,y=signs[i][0]*width/2,signs[i][1]*height/2
+                signs=[(-1,-1),(1,-1),(1,1),(-1,1)];x,y=signs[i][0]*ring_width/2,signs[i][1]*ring_height/2
             expected.append([center[k]+w[k]*x+h[k]*y for k in range(3)])
     expected+=[a,b]
     require(all(max(abs(x-y) for x,y in zip(xyz(actual),target))<1e-8 for actual,target in zip(vertices,expected)),'Envelope mesh disagrees with recorded dimensions')

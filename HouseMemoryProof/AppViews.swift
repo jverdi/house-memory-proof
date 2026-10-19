@@ -631,6 +631,9 @@ struct FeatureEditor: View {
           Text("\(feature.kind.rawValue) · \(feature.sourceIDs.count) linked observations")
           if let envelope=feature.envelope {
             Text("Recorded \(envelope.section.rawValue.lowercased()) outer size: \((envelope.widthMetres*1000).formatted()) mm"+(envelope.heightMetres.map{" × \(($0*1000).formatted()) mm"} ?? "")).font(.caption).accessibilityIdentifier("service-envelope-size")
+            if let endWidth=envelope.endWidthMetres {
+              Text("End outer size: \((endWidth*1000).formatted()) mm"+(envelope.endHeightMetres.map{" × \(($0*1000).formatted()) mm"} ?? "")+" · owner-checked straight linear taper").font(.caption).accessibilityIdentifier("service-envelope-end-size")
+            }
             Text(envelope.evidence).font(.caption).accessibilityIdentifier("service-envelope-evidence")
             Text(envelope.sourceEndInterval.map{"Recorded source intervals \(envelope.sourceInterval+1)–\($0+1) · constant diameter · mitered bends"} ?? "Recorded source interval \(envelope.sourceInterval+1)").font(.caption)
             Text(envelope.dimensionToleranceMetres.map{"Recorded size tolerance ± \(($0*1000).formatted()) mm; centerline uncertainty remains unknown."} ?? "Dimension tolerance and centerline uncertainty remain unknown.").font(.caption)

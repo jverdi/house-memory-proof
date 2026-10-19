@@ -6,13 +6,20 @@ struct ServiceEnvelope:Codable,Equatable {
   var sourceFeatureID:UUID;var sourceRevision:Int;var sourceInterval:Int
   var sourceEndInterval:Int?=nil
   var section:EnvelopeSection;var widthMetres:Double;var heightMetres:Double?=nil;var widthAxis:V3?=nil
+  var endWidthMetres:Double?=nil;var endHeightMetres:Double?=nil
   var dimensionToleranceMetres:Double?=nil;var evidence:String;var recorded=Date()
   var valid:Bool {
-    guard [1,2].contains(version),sourceRevision>0,(0..<127).contains(sourceInterval),widthMetres.isFinite,(0.001...4).contains(widthMetres),
+    guard [1,2,3].contains(version),sourceRevision>0,(0..<127).contains(sourceInterval),widthMetres.isFinite,(0.001...4).contains(widthMetres),
       !evidence.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,evidence.utf8.count<=4096,!evidence.contains("\0"),recorded.timeIntervalSince1970.isFinite,
-      dimensionToleranceMetres.map({$0.isFinite && $0>0 && $0<min(widthMetres,heightMetres ?? widthMetres)/2}) ?? true else{return false}
-    if version==1 {guard sourceEndInterval==nil else{return false}}
-    else {guard section == .round,let end=sourceEndInterval,end>sourceInterval,end<127 else{return false}}
+      dimensionToleranceMetres.map({$0.isFinite && $0>0 && $0<[widthMetres,heightMetres ?? widthMetres,endWidthMetres ?? widthMetres,endHeightMetres ?? heightMetres ?? widthMetres].min()!/2}) ?? true else{return false}
+    if version==2 {guard section == .round,let end=sourceEndInterval,end>sourceInterval,end<127 else{return false}}
+    else {guard sourceEndInterval==nil else{return false}}
+    if version==3 {
+      guard let endWidthMetres,endWidthMetres.isFinite,(0.001...4).contains(endWidthMetres) else{return false}
+      if section == .rectangular {
+        guard let endHeightMetres,endHeightMetres.isFinite,(0.001...4).contains(endHeightMetres) else{return false}
+      }else if endHeightMetres != nil {return false}
+    }else if endWidthMetres != nil || endHeightMetres != nil {return false}
     switch section {
     case .round:return heightMetres==nil && widthAxis==nil
     case .rectangular:
@@ -30,13 +37,16 @@ struct ServiceEnvelope:Codable,Equatable {
     guard projected.length>=0.1 else{throw HouseError.message("The width direction is nearly parallel to this route. Choose the direction of the measured width across the duct.")}
     let w=projected.normalized,h=tangent.cross(w).normalized
     let count=section == .round ? 64:4
-    var crossSection:[V3]=[]
-    if section == .round {
-      for i in 0..<count {let angle=2*Double.pi*Double(i)/Double(count);crossSection.append((w*cos(angle)+h*sin(angle))*(widthMetres/2))}
-    }else {
-      for (x,y) in [(-1.0,-1.0),(1.0,-1.0),(1.0,1.0),(-1.0,1.0)] {crossSection.append(w*(x*widthMetres/2)+h*(y*heightMetres!/2))}
+    var vertices:[V3]=[],triangles:[Int32]=[]
+    for endpoint in 0..<2 {
+      let width=endpoint==1 ? endWidthMetres ?? widthMetres:widthMetres
+      let height=endpoint==1 ? endHeightMetres ?? heightMetres:heightMetres
+      if section == .round {
+        for i in 0..<count {let angle=2*Double.pi*Double(i)/Double(count);vertices.append(route[endpoint]+(w*cos(angle)+h*sin(angle))*(width/2))}
+      }else {
+        for (x,y) in [(-1.0,-1.0),(1.0,-1.0),(1.0,1.0),(-1.0,1.0)] {vertices.append(route[endpoint]+(w*(x*width/2)+h*(y*height!/2)))}
+      }
     }
-    var vertices=route.flatMap{center in crossSection.map{center+$0}},triangles:[Int32]=[]
     vertices += route
     for i in 0..<count {
       let a=Int32(i),b=Int32((i+1)%count),n=Int32(count)
@@ -102,16 +112,18 @@ struct ServiceEnvelope:Codable,Equatable {
     else if t>1 {t=1;s=max(0,min(1,(bb-dd)/aa))}
     return (w+u*s-v*t).length
   }
-  static func feature(source:Feature,interval:Int,endInterval:Int?=nil,section:EnvelopeSection,width:Double,height:Double?,widthAxis:V3?,tolerance:Double?,evidence:String,house:House)throws->Feature {
+  static func feature(source:Feature,interval:Int,endInterval:Int?=nil,section:EnvelopeSection,width:Double,height:Double?,widthAxis:V3?,tolerance:Double?,evidence:String,house:House,endWidth:Double?=nil,endHeight:Double?=nil)throws->Feature {
     guard house.features.contains(source),source.envelope==nil,(2...128).contains(source.route.count),
       interval>=0,interval<source.route.count-1,[EvidenceKind.observed,.synthetic].contains(source.kind),
       DerivedEvidence.currentIDs(house).contains(source.id) else{throw HouseError.message("Choose a current observed route with two to 128 points. Reopen it if its source changed.")}
     let end=endInterval ?? interval
     guard end>=interval,end<source.route.count-1 else{throw HouseError.message("Choose an end interval within the recorded route.")}
-    let value=ServiceEnvelope(version:endInterval==nil ? 1:2,sourceFeatureID:source.id,sourceRevision:source.revision,sourceInterval:interval,sourceEndInterval:endInterval,section:section,widthMetres:width,heightMetres:height,widthAxis:widthAxis,dimensionToleranceMetres:tolerance,evidence:evidence)
+    let version=endWidth != nil || endHeight != nil ? 3:endInterval==nil ? 1:2
+    let value=ServiceEnvelope(version:version,sourceFeatureID:source.id,sourceRevision:source.revision,sourceInterval:interval,sourceEndInterval:endInterval,section:section,widthMetres:width,heightMetres:height,widthAxis:widthAxis,endWidthMetres:endWidth,endHeightMetres:endHeight,dimensionToleranceMetres:tolerance,evidence:evidence)
     let route=Array(source.route[interval...(end+1)]),mesh=try value.mesh(along:route)
     var result=Feature(name:source.name+" · measured envelope",trade:source.trade,roomID:source.roomID,stageID:source.stageID,kind:source.kind,mesh:mesh,route:route,sourceIDs:source.sourceIDs,
       notes:"Owner-recorded outer dimensions along the selected source intervals. Centerline placement and physical accuracy remain uncalibrated. End caps delimit the recorded intervals; they do not assert a physical cap or a connection. Circular bends use piecewise miter sections without smoothing the recorded centerline. Hidden continuation, fittings and bundle members are not inferred.",segmentID:source.segmentID,annotationSources:DerivedEvidence.dependencies([source.id],house:house))
+    if version==3 {result.notes += " Owner checked a straight linear taper between the measured endpoint sections. Endpoint sizes alone do not establish an unobserved transition shape."}
     result.envelope=value;return result
   }
 }
