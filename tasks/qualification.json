@@ -41,7 +41,7 @@
         "build": "234.1",
         "nativeExpected": 182,
         "interfaceExpected": 19,
-        "status": "simulator_passed_apple_delivery_pending",
+        "status": "signed_upload_command_succeeded_apple_readiness_pending",
         "appleUploadVerified": false,
         "nativePassed": 182,
         "nativeFailed": 0,
@@ -51,7 +51,9 @@
         "interfacePassed": 19,
         "interfaceFailed": 0,
         "completeIntegrationPassed": true,
-        "fullEvidence": "docs/evidence/native-cac/summary.json"
+        "fullEvidence": "docs/evidence/native-cac/summary.json",
+        "uploadCommandSucceeded": true,
+        "distributionSignatureVerified": true
       }
     }
   },
@@ -102,7 +104,7 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Validate the scale-relative source picker on main; continue software qualification while the requested 234.1 snapshot completes its independent release gate.",
+  "nextAction": "Complete combined native and all 20 interface gates with bounded result-finalization headroom; verify exact 234.1 Apple readiness.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
     "status": "failed_repair_prepared",
@@ -1510,8 +1512,13 @@
     "releaseCompilePassed": true,
     "nativePassed": 189,
     "nativeFailed": 0,
-    "interfaceValidationPending": true,
-    "nativeEvidence": "docs/evidence/native-1fee/summary.json"
+    "interfaceValidationPending": false,
+    "nativeEvidence": "docs/evidence/native-1fee/summary.json",
+    "interfacePassed": 19,
+    "interfaceFailed": 0,
+    "interfaceRunnerExitCode": 124,
+    "completeIntegrationPassed": false,
+    "status": "native_passed_interface_runner_timeout"
   },
   "roomStreamingContinuation": {
     "branch": "room-streaming-20261019",
@@ -1546,5 +1553,15 @@
     "nativeValidationPending": true,
     "physicalQualification": false,
     "evidence": "docs/evidence/measured-taper-candidate.md"
+  },
+  "ciExecutionBudgetFollowup": {
+    "reason": "235.1 passed all 19 cases in 1992.629s but xcodebuild shutdown exceeded 2100s; the expanded suite has 20 cases",
+    "uiSeconds": 2400,
+    "uiStepMinutes": 42,
+    "simulatorJobMinutes": 70,
+    "caseCompletenessRequired": true,
+    "zeroRunnerExitRequired": true,
+    "accuracyThresholdsChanged": false,
+    "nativeBoundsChanged": false
   }
 }

@@ -1,0 +1,11 @@
+{
+  "status": "xcode_upload_command_succeeded",
+  "revision": "cac8756b62",
+  "build": "234.1",
+  "bundle_id": "com.jverdi.housememoryproof",
+  "pre_upload_distribution_audit_passed": true,
+  "uploaded_ipa_hash_independently_verified": false,
+  "apple_processing_verified": false,
+  "internal_tester_access_verified": false,
+  "physical_iPhone_verified": false
+}

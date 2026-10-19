@@ -31,5 +31,13 @@
     "43-left-handed-viewer",
     "45-room-map-records",
     "46-mini-map-landscape"
-  ]
+  ],
+  "uploadCommandSucceeded": true,
+  "distributionSignatureVerified": true,
+  "uploadArtifact": 12200871198,
+  "uploadArtifactSHA256": "23a5003cbfb284f066ad73dee2dd5acd9faed45e6df36b362be87bc999bf297b",
+  "uploadArtifactDigestVerified": true,
+  "appleProcessingVerified": false,
+  "ownerAccessVerified": false,
+  "uploadedIPAHashIndependentlyVerified": false
 }

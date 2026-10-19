@@ -31,7 +31,7 @@ jobs:
   simulator:
     name: Compile and launch on iPhone simulator
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -120,7 +120,7 @@ jobs:
         run: bash ci/simulator.sh recovery
       - name: Exercise the iPhone interface workflows
         if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/simulator-result.json') != ''
-        timeout-minutes: 37
+        timeout-minutes: 42
         run: bash ci/simulator.sh ui
       - name: Verify portable core and independent export readers
         if: always() && !cancelled() && steps.compile.outcome == 'success' && hashFiles('build/evidence/test.glb') != ''

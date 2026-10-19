@@ -9,8 +9,17 @@
   "nativeFailed": 0,
   "nativeReaderPhasesPassed": 19,
   "commandContractsPassed": 52,
-  "interfaceStatus": "in_progress",
+  "interfaceStatus": "runner_timeout_after_all_cases_passed",
   "interfaceExpected": 19,
   "completeIntegrationPassed": false,
-  "physicalQualification": false
+  "physicalQualification": false,
+  "interfacePassed": 19,
+  "interfaceFailed": 0,
+  "interfaceRunnerExitCode": 124,
+  "interfaceCaseSeconds": 1992.629,
+  "fullArtifact": 12200955996,
+  "fullArtifactSHA256": "94ec6d93b436837d64cbeaee3f24c199be55e3f2f12decff62ee65a5bfac3a4a",
+  "fullArtifactDigestVerified": true,
+  "visualFollowupsReviewed": false,
+  "uiResultArtifact": 12200921399
 }

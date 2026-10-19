@@ -1,0 +1,21 @@
+{
+  "sourceRevision": "cac8756b627474b65d2a8b1f912a73791b3225dc",
+  "embeddedSourceRevision": "cac8756b62",
+  "build": "234.1",
+  "bundleIdentifier": "com.jverdi.housememoryproof",
+  "signatureVerified": true,
+  "archiveIdentityVerified": true,
+  "releaseIdentityVerified": true,
+  "phase": "distribution",
+  "debuggerAttachmentAllowed": false,
+  "backgroundGPURequested": false,
+  "matchingSymbolUUIDs": [
+    "56C774CC-154B-3CB5-88F8-003399B505DA"
+  ],
+  "executableSHA256": "03ad7d2293296f1e685815bd3668f6ba40ad1ce4ccd46f5d74b131524475171f",
+  "symbolsSHA256": "1175ff0350ba91b9a6b5831b030d633f8219920d475e5922d60df60805a34ad1",
+  "physicalDeviceQualified": false,
+  "inspectedIPASHA256": "e5661d8e499e40a50f4663a408ac658ebcaa6d7059c572fe5ae4eb1a5d634850",
+  "inspectedIPABytes": 17671246,
+  "uploaded": false
+}
