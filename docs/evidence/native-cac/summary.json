@@ -1,0 +1,19 @@
+{
+  "source": "cac8756b627474b65d2a8b1f912a73791b3225dc",
+  "build": "234.1",
+  "run": 39272141287,
+  "artifact": 12197446070,
+  "artifactSHA256": "be8972d325a41c5a9a25c4fb6413edff2b0bb94f901f533c4598bd12c73c27d5",
+  "digestVerified": true,
+  "debugCompilePassed": true,
+  "releaseCompilePassed": true,
+  "nativePassed": 182,
+  "nativeFailed": 0,
+  "nativeReaderPhasesPassed": 19,
+  "commandContractsPassed": 52,
+  "interfaceStatus": "in_progress",
+  "interfaceExpected": 19,
+  "appleUploadVerified": false,
+  "completeIntegrationPassed": false,
+  "physicalQualification": false
+}

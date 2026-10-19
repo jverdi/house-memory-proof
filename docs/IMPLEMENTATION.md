@@ -2,6 +2,10 @@
 
 Updated 19 October 2026 UTC during continuation of the October 17–18 implementation session. This document records actual scope; it does not replace or relax the approved architecture runbook.
 
+## Active continuation
+
+Current source/evidence is maintained in [CURRENT_PROGRESS.md](CURRENT_PROGRESS.md). Requested 234.1 passes its 182-native checkpoint and is in the full 19-flow UI gate. Picking source 1fee4cc117 / 235.1 passes 591 host checks and both native build configurations; native execution is pending. A separate room-priority/viewer-runtime candidate expects 192 native checks and 19 UI workflows. These changes do not close whole-house, actual-device/provider or accuracy qualification. Historical release entries below retain their checkpoint-specific state.
+
 ## Release state
 
 - **Latest complete integration: 226.1 / ad8e0c5c8b**, run 39175973721. Debug/Release compilation, 178 native checks, 19 reader phases, 52 command contracts, 19 interface workflows, three recoveries, 50 portable cases and 36 validation reports pass. Both artifact hashes and required visual follow-ups are verified in `docs/evidence/native-ad8-summary.json`. Requested TestFlight 228.1 / f7123ca2ee passes its 182-native phase; interface/upload readiness remain pending. The combined map and streamed-room handoff candidate 230.1 / dc505889f4 expects 185 native checks and all 19 interface workflows.

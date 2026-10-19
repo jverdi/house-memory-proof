@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-19",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "8e8edb694bc327af224d042e1f56b034a118f753",
+  "currentImplementationCommit": "1fee4cc117fc61baa5c8f8a6b8d531b56d68c5db",
   "testflight": {
     "build": "216.1",
     "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -41,8 +41,13 @@
         "build": "234.1",
         "nativeExpected": 182,
         "interfaceExpected": 19,
-        "status": "in_progress",
-        "appleUploadVerified": false
+        "status": "interface_in_progress",
+        "appleUploadVerified": false,
+        "nativePassed": 182,
+        "nativeFailed": 0,
+        "nativeReaderPhasesPassed": 19,
+        "commandContractsPassed": 52,
+        "evidence": "docs/evidence/native-cac/summary.json"
       }
     }
   },
@@ -1491,6 +1496,27 @@
     "portableCasesPassed": 591,
     "nativeValidationPending": true,
     "accuracyThresholdChanged": false,
-    "evidence": "docs/evidence/source-picking-candidate.md"
+    "evidence": "docs/evidence/source-picking-candidate.md",
+    "source": "1fee4cc117fc61baa5c8f8a6b8d531b56d68c5db",
+    "build": "235.1",
+    "run": 39273286562,
+    "nativeExpected": 189,
+    "interfaceExpected": 19,
+    "debugCompilePassed": true,
+    "releaseCompilePassed": true
+  },
+  "roomStreamingContinuation": {
+    "branch": "room-streaming-20261019",
+    "source": "7a9db0123a544310507768e9829c83b921f74c49",
+    "nativeExpected": 192,
+    "interfaceExpected": 19,
+    "nativeValidationPending": true,
+    "independentViewerReaderTestsPassed": 5,
+    "wholeHouseQualified": false,
+    "physicalQualification": false,
+    "evidence": [
+      "docs/evidence/room-streaming-candidate.md",
+      "docs/evidence/viewer-runtime-candidate.md"
+    ]
   }
 }

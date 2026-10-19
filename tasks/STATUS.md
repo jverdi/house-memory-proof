@@ -1,3 +1,9 @@
+## Active continuation — 19 October 2026
+
+Requested 234.1 passes 182/182 native checks, 19 reader phases and 52 command contracts in its SHA-verified checkpoint; the 19-flow interface gate is running. Main 235.1 contains the shared double-precision displayed-surface picking repair: 591 host cases and Debug/Release compilation pass; native/UI results remain pending. A separate 192-native/19-UI candidate adds checked room priorities and user-started viewer performance reports; five independent report-reader contracts pass. See `docs/CURRENT_PROGRESS.md` for exact sources, evidence and remaining work. Last verified TestFlight remains 216.1. No accuracy threshold, localization budget, device gate or final acceptance was changed.
+
+Older entries below retain historical state.
+
 ## Work resumed in a new thread — 19 October 2026
 
 The last pending builds are now reconciled: 231.1 failed its movement-settings interface check and skipped Apple upload; 233.1 failed tiny-triangle picking (187/188 native) and movement-settings adjustment (18/19 interface). Hash-verified 233.1 evidence is retained in `docs/evidence/restart-20261019/`.

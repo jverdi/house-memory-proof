@@ -1,98 +1,48 @@
 # House Xray: current progress
 
-Updated 19 October 2026. Work has resumed in a new thread. The full plan remains **in progress**; precision use and final release acceptance remain disabled.
+Updated 19 October 2026. Work has resumed in a new thread. The approved runbook remains **in progress**. Precision, accepted-release and automatic-renewal gates remain closed.
 
-## Restart status (supersedes older run status below)
+## TestFlight delivery
 
-- Requested release **231.1** completed with a movement-settings interface failure; Apple upload was skipped.
-- Main **233.1**, source `8e8edb6`, completed with **187/188 native checks** and **18/19 interface workflows** passing. Small-triangle source picking and the movement-settings slider still fail. The complete artifact was downloaded and SHA-256 verified; the failure recording and accessibility description were inspected. [Retained evidence](evidence/restart-20261019/summary.json).
-- The snapshot accessibility repair is published as `cac8756b627474b65d2a8b1f912a73791b3225dc` on `requested-snapshot-20261019`. **234.1**, [run 39272141287](https://github.com/jverdi/house-memory-proof/actions/runs/39272141287), has been queued for the complete release validation and conditional Apple upload. A queued run is not an available TestFlight build.
-- **216.1 remains the last verified available TestFlight build.** No newer installation or delivery is claimed.
-- The recovery notes and exact next work are in [RESTART_CHECKPOINT.md](RESTART_CHECKPOINT.md). The new repair has not yet passed native/UI validation. All 19 interface workflows and exact setting/persistence assertions remain; no accuracy threshold or localization budget changed.
+**216.1 is the last verified available TestFlight build.** Apple processing and owner-group access are verified; installation or physical qualification of a later build is not claimed.
 
-Older sections below retain their historical checkpoints and outstanding specification work.
+Requested snapshot **234.1**, source `cac8756b627474b65d2a8b1f912a73791b3225dc`, [run 39272141287](https://github.com/jverdi/house-memory-proof/actions/runs/39272141287), passes Debug/Release compilation, **182/182 native checks**, **19 independent reader/command phases** and **52 command contracts**. Its native artifact SHA-256 was independently verified. The complete **19-workflow interface gate is running**; signing, Apple upload, processing and owner access remain pending. [Retained checkpoint](evidence/native-cac/summary.json).
 
-## What you can install
+This requested snapshot includes homeowner introduction/help, viewer comfort and room-map work. It does not include the subsequent picking, room-priority or viewer-performance continuation. The full simulator gate still precedes upload; no release criterion was removed.
 
-**TestFlight 216.1 is available to the owner's Personal iPhone group.** Apple processing and tester access are verified. Installation on the physical phone has not been verified. This is the requested development snapshot, not the completed app.
+## Work completed or under validation
 
-216.1 does **not** include the new homeowner introduction, help guides, movement settings or room map. Later validation builds are not TestFlight uploads. The owner requested a new TestFlight snapshot on 19 October 2026 UTC. A dedicated release run will validate this continuation before uploading; availability remains 216.1 until Apple processing and owner access are verified.
-
-## What has changed since that snapshot
-
-| Work | Current evidence |
+| Work | Exact state |
 |---|---|
-| First-use introduction | Five steps, three starting goals, Skip, Back, restart and show-on-next-launch settings are implemented. Replaying help preserves house records. Simulator workflows pass at 224.1. |
-| Help inside the app | Fourteen searchable, offline guides explain homeowner tasks, unfamiliar terms and what to do when capture or an overlay is unavailable. Links open the relevant app screen. Simulator workflows pass at 224.1. |
-| First real capture after the sample | The new house retains its own room and stage. The capture header and opening instructions pass renewed visual review at 224.1. |
-| Walking over recorded surfaces | Missing floor support is refused. Connected room/stair diagnostics and two bounded reconstructed fragments pass at 224.1. This is not whole-house navigation qualification. |
-| Movement and view settings | Remembered speed, acceleration, turning, sensitivity, view width, eye height, handedness and reset are implemented. Native checks, the comfort interface workflow and screenshot review pass at 226.1. |
-| Room map | Room, level, direction, saved viewpoints and recorded photo positions are implemented, with separate unaligned visits and a remembered mini-map. Dots do not establish complete capture coverage. Native and interface map checks, remembered mini-map startup and screenshot review pass at 226.1. |
-| Readability follow-up | Dark lettering on bright action buttons, a separate walking-notice row and clearer capture-count wording are included in 225.1. Introduction/capture contrast and comfort screenshots are reviewed. Photo-only notice and room-map screenshots pass review at 226.1. |
+| Snapshot accessibility repair | Native slider percentages are retained; current physical units move to the accessible label. Standard slider adjustment still requires exact endpoint/persistence/reset assertions. Switch interaction targets its actual control. 234.1 native passes; UI pending. |
+| Small displayed-surface picking | Source `1fee4cc117fc61baa5c8f8a6b8d531b56d68c5db`, **235.1**, [run 39273286562](https://github.com/jverdi/house-memory-proof/actions/runs/39273286562). Production double-precision segment/triangle picking operates only on resident displayed surfaces, preserves original coordinates and the unchanged 2 µm diagnostic tolerance. 591 portable analytic cases and address/undefined-behavior sanitizers pass; Debug/Release compile passes; 189 native checks and 19 UI workflows pending. |
+| Checked room priorities | A separate continuation branch derives bounded adjacency from registered, same-stage viewpoints with original floor/clearance checks and a recorded-camera corridor. Current room, checked neighbors and same-floor shell geometry receive display priority after the immediate neighborhood. Existing live walking checks remain mandatory. Source/negative regression cases published; native validation pending. [Candidate](evidence/room-streaming-candidate.md). |
+| Viewer performance evidence | User-started local cadence/memory/thermal reports checkpoint incomplete sessions and finalize on leaving Explore, inactivity or scene changes. Five independent reader tests pass. Combined source expects 192 native checks and 19 UI workflows; native execution pending. This does not measure presented FPS or qualify a phone. [Candidate](evidence/viewer-runtime-candidate.md). |
 
-Latest complete integration remains **226.1**, source `ad8e0c5c8baf214967ccacea80a6195d7df66e8c`, run `39175973721`: 178 native checks, all 19 interface workflows, 19 reader phases, 52 command contracts, 36 validation reports, three recoveries and 50 portable checks pass. Both hashes and required screenshots are verified in [the retained report](evidence/native-ad8-summary.json).
+The room/performance continuation is isolated on `room-streaming-20261019` while the requested release and main picking validation finish. Its queued predecessor 236.1 was superseded without a native or UI acceptance claim. No active TestFlight validation is cancelled by this work.
 
-The requested **228.1** release passed compilation, all 182 native checks, readers, exports and recoveries, but **17/19 interface workflows passed and two failed**. The envelope keyboard remained open after Done; the comfort test's slider gesture undershot its requested value. Apple upload was skipped. Both failure recordings and artifact hashes are reviewed in [the failure report](evidence/native-f712-summary.json). A repair based on the requested f712 source is prepared locally on `requested-snapshot-20261019`, commit `7e9359809b25889b8dca4be3da1d6549faa57af1`, with the complete original validation gate retained.
+Existing portable geometry (50), command (52) and CI/release (47) tests passed with the picking repair. LeakSanitizer itself was unavailable because the host blocks its process inspection; address and undefined-behavior checks passed with leak detection disabled. These host results do not substitute for native or device results.
 
-The combined map and distant-room follow-up **230.1** passes all **185 native checks**; 17 of its 19 interface workflows passed and two failed. A separate local candidate adds bounded directional prefetch and local render coordinates, expecting 187 native checks and the same 19 interface workflows. It is not published or native-validated.
+## Remaining work, in execution order
 
-## Publication authorization
+1. Finish the requested 234.1 interface gate, repair any reproduced failure, then verify signed upload, Apple processing and owner-group access.
+2. Inspect the 235.1 picking regression and complete interface evidence. Inspect the combined 192-check room/performance continuation, repair failures and integrate the passing source into main. Preserve each exact-source result and required screenshots.
+3. Continue reconstructed whole-house topology/streaming, mixed-stage/closed-loop coverage, broad tours, thin/variable-section services, registration and representative drawing qualification. Current bounded analytic cases do not close these software requirements.
+4. Complete the owner-device, real provider and signed-update matrix using [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md). New instrumentation must only be tested on a build that contains it.
+5. Finish physical acquisition/calibration/independent validation and the unresolved localization acceptance gates before final acceptance or renewal.
 
-The owner approved publishing the prepared source and synthetic test evidence to the public `jverdi/house-memory-proof` repository and committing directly to `main` in this thread on 18 October 2026 at 22:42 New York time. The earlier automatic publication block is resolved by that explicit instruction. The continuation is published as `0c1da56aaab46bb5157ef6580425fe310741bb77`, with cancelled validation run `39191319328` (227.1) retained separately. The owner subsequently requested a new TestFlight snapshot in this thread; its dedicated release run retains the complete simulator gate before upload.
+## Gates that cannot be marked complete here
 
-Local verification passes: 52 command/reader tests, 41 release/recovery tests, 12 observer-preparation checks and 50 portable geometry cases. All 19 interface workflows remain unchanged; four native regression cases are added. These host checks do not establish Swift compilation or native acceptance. [Local results](evidence/continuation-local-summary.json).
-
-The prior thread's review-only pose observer is also preserved. It does not change shipping estimators or automatically run a localization experiment. Its residual evaluator and bounded serial wrapper are now prepared with 27 local contract/math checks passing. The workflow remains disabled outside active workflow paths; native compilation, exact baseline/observer equivalence and diagnostic execution are unverified. The exhausted localization budget has not been renewed.
-
-## What prevents full completion
-
-| Remaining work | What must happen |
+| Gate | Evidence still required |
 |---|---|
-| Accuracy and alignment in finished rooms | Existing accuracy, rough-to-finished availability and finished depth-edge failures must be repaired and independently rerun. The five-attempt repair budget for finished 384-pixel localization is exhausted; another experiment requires an explicitly renewed, bounded budget under runbook §22.3. |
-| Whole-house software qualification | Complete reconstructed-house topology and streaming, mixed construction stages, capture guidance with a simulated operator, coverage and broad tour checks. Then run the required diverse development and protected-house evaluation with unchanged acceptance criteria. |
-| Geometry, drawings and uncertainty | Complete broad registration, thin-route and variable-section qualification, calibrated uncertainty, and representative real-plan recognition/resource checks. Existing bounded examples do not close these requirements. |
-| Actual iPhone behavior | Run sustained capture, rendering, memory/thermal, interruption, accessibility and homeowner comprehension checks on the installed source. CI cannot supply these observations. |
-| Files, iCloud and app updates | Verify real provider transfer/fault cases, large-device workloads and a signed-app update using recoverable test projects. Simulator and frozen-archive checks are separate evidence. |
-| Physical accuracy | Measure camera/depth/timing behavior, calibrate using measured references, and validate on independent construction regions and later sessions. No field result is currently claimed. |
-| Final delivery and upkeep | After the applicable gates pass, sign and upload the accepted source, verify Apple processing/access, and enable the approved renewal process for that accepted source. |
+| Finished localization | Existing accuracy, rough-to-finished availability and finished depth-edge failures remain. The five-attempt finished-384 repair budget is exhausted; another experiment needs an explicitly renewed bounded budget under runbook §22.3. No experiment or protected draw was run during this continuation. |
+| Full software qualification | Diverse reconstructed whole-house navigation, registration, services, coverage and tours, followed by the specified development/protected evaluation. A small passing fixture is not whole-house acceptance. |
+| Actual iPhone | Sustained capture/render/export, memory and thermal behavior, interruptions, accessibility and homeowner task comprehension on identified installed source. |
+| Files/iCloud and updates | Real provider partial arrival, offline/quota/conflict/account transitions, large-device workloads and recoverable signed-version update. |
+| Physical accuracy | Measured sensor timing/adapters, identifiable calibration and independent construction-region/later-session truth. Precision remains disabled. |
 
-The original specification and its thresholds remain unchanged. Documentary and approximate use is the retained fallback while accuracy gates are open; it does not count as completing those gates.
+Public source, workflow and synthetic-evidence publication to `jverdi/house-memory-proof`, including direct main and release branches through the requested TestFlight delivery, is authorized. Earlier publication blocks are historical, not current restrictions.
 
-The [proposed next localization diagnostic](LOCALIZATION_DIAGNOSTIC_PROPOSAL.md) defines a possible renewed budget: two serial jobs of at most 40 minutes each, using the unchanged estimator and already disclosed development cases. It is a proposal only; no new experiment has run.
+Latest complete integrated source before this continuation remains **226.1 / ad8e0c5c8b**, with 178 native checks, all 19 UI workflows, readers/recovery/exports and visual follow-ups passing. Release 231.1 and main 233.1 failures are retained in [restart evidence](evidence/restart-20261019/summary.json); 233.1 passed 187/188 native and 18/19 UI checks. A later candidate does not erase those failures.
 
-## Current map follow-up
-
-The room map now has a prepared follow-up for checked wall/ceiling areas, known gaps, unchecked areas and stale definitions. It retains bounded transient summaries and keeps stages and unaligned visits separate. It is combined with a prepared distant-room collision handoff repair for 185 native checks and all 19 interface workflows. The photo-point workflow now checks actual wall analysis appearing on the map and invalidation after an edit. [Candidate details](evidence/room-map-coverage-candidate.md). The requested TestFlight snapshot is build **228.1**, source `f7123ca2ee6c556620b3f01cc3d6d88bc20d0597`, run `39191585115`, and excludes this follow-up. Its 182 native checks, 19 reader phases, 52 command contracts and process recovery pass. The native artifact hash is independently verified in [the release checkpoint](evidence/native-f712-summary.json). Its later interface stage failed two workflows, so upload was skipped; the prepared repair must pass the complete gate.
-
-## Next steps
-
-1. Validate the published continuation and requested TestFlight snapshot with 182 native checks and all 19 interface workflows, then verify Apple processing and owner access.
-2. Continue reconstructed whole-house navigation and software qualification with bounded diagnostics.
-3. Continue independent software work. Keep the exhausted accuracy-repair budget separate from implementation that can proceed.
-4. Use the [owner-device protocol](DEVICE_ACCEPTANCE.md) for checks that need the actual phone. Only run feature-specific checks on a build containing those features.
-
-Detailed state: [task ledger](../tasks/qualification.json), [implementation audit](IMPLEMENTATION.md), [runbook](architecture-runbook.md), and [TestFlight delivery evidence](evidence/testflight-216-1-summary.json).
-
-The [streamed room-jump repair](evidence/streamed-room-jump-candidate.md) prevents a distant destination from being checked against the previous room’s collision window. It pauses walking during the handoff, preserves the latest requested room and keeps missing floor support explicit. Native validation passes in 230.1; full interface integration and screenshots 48–49 remain pending. Superseded 227.1 is retained as [cancelled, without a native/interface pass](evidence/native-0c1-cancelled-summary.json).
-
-Current combined validation is **230.1**, source `dc505889f484a0bc61baafda1c20b5c550c51ffe`, run `39192940987`. Debug and Release compilation and all 185 native checks pass; interface validation failed in classification keyboard dismissal and the photo workflow’s mini-map expectation. Superseded [229.1](evidence/native-665-cancelled-summary.json) remains cancelled with no native/interface acceptance. The owner reported installing an initial build on 17 October 2026 at 04:20 UTC; that historical statement does not establish installation or device qualification of the current snapshot.
-
-## Current publication block and prepared work
-
-Automatic approval review rejected publication of the repaired snapshot tree twice. A fresh context lookup recovered the exact 02:41:41 UTC request to publish source and synthetic evidence to public `jverdi/house-memory-proof`, directly to main, and the owner's 02:42:26 UTC approval. The reviewer still rejected that recovered approval as untrusted context. No alternate publication route or signing bypass was attempted. The repair and the independent streaming changes are committed locally and remain unpublished.
-
-The [directional prefetch candidate](evidence/directional-streaming-candidate.md) preserves nearby geometry and all residency limits. The [local render coordinate candidate](evidence/local-render-coordinates-candidate.md) keeps original Double coordinates while rebasing display geometry, picks, saved poses and map positions. Their native regression cases are prepared; no results are claimed. Both interface fixes from the release repair are also applied locally to this continuation.
-
-## 19 October follow-up
-
-Run 230.1 completed with 185 native checks passing and 17/19 UI workflows passing. The classification Done button left the keyboard visible. The photo workflow successfully checked the full map summary but then expected the mini-map while still in Wall mode; mini-maps intentionally appear only in Inspect mode. Prepared fixes explicitly resign the filter responder and return the UI workflow to Inspect without weakening its checked-area or invalidation assertions. Native validation of these fixes remains pending. Automatic publication rejection remains unresolved. No new TestFlight upload occurred.
-
-## Publication resumed
-
-The owner explicitly authorized public source, workflow and synthetic evidence publication, including main and release branches, through TestFlight delivery on 19 October 2026. The repaired snapshot is published as `543bb566a052bc41718496eb8e73fe6dc4fcdf13` on `requested-snapshot-20261019`. Validation and Apple delivery remain pending. The earlier rejection is retained above as historical evidence.
-
-The repaired release is now validating as **231.1**, run `39226613300`, source `543bb566a052bc41718496eb8e73fe6dc4fcdf13`. The published streaming/render continuation is **232.1**, run `39226689510`, source `757860efd92f1f91afa36fd24ba87678c4543d9c`, expecting 187 native cases. Both Debug and distribution compilation passed. Apple upload is not yet verified. Five automatically triggered localization/development replays were cancelled because the UIKit classification repair did not require them; these cancellations provide no qualification result or renewed repair budget.
-
-The next prepared [bookmark follow-up](evidence/saved-viewpoint-scope-candidate.md) captures the displayed camera in the actual room/visit and refuses poses that cannot be restored faithfully. Its 188-case native validation remains pending. Six new UI evidence parser tests pass, including replay of the retained 228.1 failure log, and all 47 local CI/release-tool tests pass. Future CI retains every UI case across runner restarts and stores original result bundles separately from exported attachments; no original evidence is removed.
-
-231.1 passed its native and process-recovery stages and entered the 19-flow UI gate. Continuation 232.1 passed 186/187 native cases; its local-render source-picking regression failed and its hash-verified checkpoint is retained. The next 188-case candidate combines two-sided picking, stage-specific render diagnostics, the saved-viewpoint repair and strict UI result reporting. The failing continuation is superseded; its incomplete integration is not accepted.
+See the [qualification ledger](../tasks/qualification.json), [package audit](IMPLEMENTATION.md), [approved runbook](architecture-runbook.md) and [preserved earlier progress](history/current-progress-before-20261019-continuation.md).
