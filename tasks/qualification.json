@@ -24,7 +24,7 @@
       "build": "228.1",
       "source": "f7123ca2ee6c556620b3f01cc3d6d88bc20d0597",
       "run": 39191585115,
-      "status": "repair_published_validation_pending",
+      "status": "repair_signed_upload_command_succeeded_readiness_pending",
       "nativePassed": 182,
       "nativeEvidence": "docs/evidence/native-f712-summary.json",
       "interfacePassed": 17,
@@ -106,23 +106,6 @@
   ],
   "nextAction": "Complete combined native and all 20 interface gates with bounded result-finalization headroom; verify exact 234.1 Apple readiness.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
-  "currentValidation": {
-    "status": "failed_repair_prepared",
-    "source": "8e8edb694bc327af224d042e1f56b034a118f753",
-    "run": 39228983220,
-    "build": "233.1",
-    "nativeExpected": 188,
-    "nativePassed": 187,
-    "nativeFailed": 1,
-    "interfaceExpected": 19,
-    "interfacePassed": 18,
-    "interfaceFailed": 1,
-    "integrationComplete": false,
-    "evidence": "docs/evidence/restart-20261019/summary.json",
-    "appleUploadRequested": false,
-    "repairNativeExpected": 189,
-    "repairNativeValidated": false
-  },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
     "run": 39131633332,
@@ -1518,7 +1501,9 @@
     "interfaceFailed": 0,
     "interfaceRunnerExitCode": 124,
     "completeIntegrationPassed": false,
-    "status": "native_passed_interface_runner_timeout"
+    "status": "native_passed_interface_runner_timeout",
+    "processRecoveriesPassed": 3,
+    "exportValidationReportsPassed": 36
   },
   "roomStreamingContinuation": {
     "branch": "room-streaming-20261019",
@@ -1543,16 +1528,23 @@
     "nativeEvidence": "docs/evidence/native-883/summary.json"
   },
   "measuredTaperContinuation": {
-    "source": "95218fd6253da5d939a50db67c0d1027622bbf0a",
-    "build": "240.1",
-    "run": 39280008507,
+    "source": "777520e23ffc6930ce4118be2626c1634f0a045a",
+    "build": "241.1",
+    "run": 39281579722,
     "branch": "service-sections-20261019",
     "nativeExpected": 193,
     "interfaceExpected": 20,
     "commandContractsPassed": 60,
     "nativeValidationPending": true,
     "physicalQualification": false,
-    "evidence": "docs/evidence/measured-taper-candidate.md"
+    "evidence": "docs/evidence/measured-taper-candidate.md",
+    "previousCandidate": {
+      "source": "95218fd6253da5d939a50db67c0d1027622bbf0a",
+      "build": "240.1",
+      "run": 39280008507,
+      "nativeResultClaimed": false
+    },
+    "status": "validation_queued"
   },
   "ciExecutionBudgetFollowup": {
     "reason": "235.1 passed all 19 cases in 1992.629s but xcodebuild shutdown exceeded 2100s; the expanded suite has 20 cases",
@@ -1563,5 +1555,32 @@
     "zeroRunnerExitRequired": true,
     "accuracyThresholdsChanged": false,
     "nativeBoundsChanged": false
+  },
+  "previousFailedValidation": {
+    "status": "failed_repair_prepared",
+    "source": "8e8edb694bc327af224d042e1f56b034a118f753",
+    "run": 39228983220,
+    "build": "233.1",
+    "nativeExpected": 188,
+    "nativePassed": 187,
+    "nativeFailed": 1,
+    "interfaceExpected": 19,
+    "interfacePassed": 18,
+    "interfaceFailed": 1,
+    "integrationComplete": false,
+    "evidence": "docs/evidence/restart-20261019/summary.json",
+    "appleUploadRequested": false,
+    "repairNativeExpected": 189,
+    "repairNativeValidated": false
+  },
+  "currentValidation": {
+    "source": "777520e23ffc6930ce4118be2626c1634f0a045a",
+    "build": "241.1",
+    "run": 39281579722,
+    "nativeExpected": 193,
+    "interfaceExpected": 20,
+    "status": "validation_queued",
+    "completeIntegrationPassed": false,
+    "appleUploadRequested": false
   }
 }
