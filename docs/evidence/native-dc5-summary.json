@@ -1,0 +1,1074 @@
+{
+  "build": "230.1",
+  "date": "2026-10-19T03:23:03Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 196.21661162500004,
+  "fieldAccuracyValidated": false,
+  "passed": true,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1640284160,
+    "physicalFootprintBytes": 137913152,
+    "residentBytes": 280510464
+  },
+  "sourceRevision": "dc505889f4",
+  "systemVersion": "26.5",
+  "source": "dc505889f484a0bc61baafda1c20b5c550c51ffe",
+  "run": 39192940987,
+  "nativeChecks": 185,
+  "nativePassed": 185,
+  "nativeFailures": [],
+  "nativeArtifact": {
+    "id": 12160889476,
+    "sha256": "b301c253d8e3698a8811a8471c7c1d3f947462860fbc345deafedc122e41cbdd",
+    "sha256IndependentlyVerified": true
+  },
+  "nativeReaderStatus": [
+    {
+      "check": "navigation-benchmark-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstructed-navigation-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "drawing-benchmark-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "capture-runtime-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-coordinate-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-source-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "ifc-property-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "drawing-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "envelope-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "archive-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "command-contracts",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reveal-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "tour-result",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "service-tour-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "service-tour-reader",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-command",
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "check": "reconstruction-result",
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "integrationComplete": false,
+  "physicalQualification": false,
+  "nativeExpected": 185,
+  "readerPhasesExpected": 19,
+  "validationReportsExpected": 36,
+  "interfaceExpected": 19,
+  "interfaceStatus": "failed",
+  "appleUploadVerified": false,
+  "boundarySource": {
+    "analyticOnly": true,
+    "finalSupportedPatches": 16,
+    "finalViews": 9,
+    "initialSupportedPatches": 0,
+    "initialViews": 1,
+    "legacyBoundaryPolicyPreserved": true,
+    "oracleIsolatedQualification": false,
+    "passed": true,
+    "physicalQualification": false,
+    "sourceRecordsPublished": false,
+    "staleInputRefusals": 7,
+    "totalPatches": 16
+  },
+  "authenticArchiveCompatibility": {
+    "archiveSHA256": "7d0e5428b7f4649a94325ed5097df617b9e06156d7967929b93fab2ed55ec5c5",
+    "currentWriterReimportPassed": true,
+    "featuresPreserved": 217,
+    "futureSchemaRefusedWithoutActivation": true,
+    "metadataAndGeometryExact": true,
+    "originalAssetsVerified": 1,
+    "originalBytesUnchanged": true,
+    "passed": true,
+    "physicalQualification": false,
+    "producerBuild": "161.1",
+    "producerSource": "2fae54ff2d3177958a4b7e78da1f3546d23314fd",
+    "restoredSchema": 5,
+    "roomsPreserved": 3,
+    "runtime": "iOS simulator",
+    "signedApplicationExecution": false,
+    "sourceSchema": 1
+  },
+  "captureRuntimeReader": {
+    "passed": true,
+    "reader": "Independent Python capture workload reader",
+    "sessions": [
+      {
+        "sourceRevision": "dc505889f4",
+        "build": "230.1",
+        "platform": "iPhone simulator",
+        "mode": "capture",
+        "finalized": true,
+        "stopReason": "self-test",
+        "observedSeconds": 0.009935499999983222,
+        "acquisitionEndSeconds": 0.005853166666611287,
+        "activeIntervals": [
+          {
+            "startSeconds": 0.000456125000027896,
+            "endSeconds": 0.005853166666611287,
+            "seconds": 0.005397041666583391,
+            "cameraCallbackHz": 370.5733851163881,
+            "renderCallbackHz": 185.28669255819406,
+            "savedImagesPerSecond": 185.28669255819406
+          }
+        ],
+        "largestSampleGapSeconds": 0.005397041666583391,
+        "deliveredCameraFrames": 2,
+        "normalTrackingFrames": 1,
+        "savedImages": 1,
+        "saveFailures": 1,
+        "maximumPendingSaves": 1,
+        "maximumSaveSeconds": 0.5,
+        "memoryWarnings": 0,
+        "sampledPhysicalFootprintPeakBytes": 44734336,
+        "sampledThermalStates": [
+          "nominal"
+        ],
+        "batteryChange": null,
+        "volumeFreeBytesChange": 0
+      }
+    ],
+    "physicalQualification": false,
+    "precisionEnabled": false,
+    "presentedFrameRateMeasured": false,
+    "limitations": "Sampled resource evidence only; counters are callback rates. External disk activity, charging and sampling gaps need review. Incomplete sessions and missing battery/memory remain explicit. Neither duration nor successful decoding grants device acceptance."
+  },
+  "coverageResponseLoop": {
+    "cases": [
+      {
+        "captures": 5,
+        "falseCompletePatches": 0,
+        "initialGaps": 16,
+        "maximumTranslationPerActionMetres": 0.16,
+        "missedInstructions": 0,
+        "missEvery": 0,
+        "name": "responsive",
+        "operatorDelayTicks": 0,
+        "remainingGaps": 0,
+        "requestTicks": 5,
+        "stopReason": "supported nominal plane",
+        "trace": [
+          {
+            "advice": "visit",
+            "captures": 1,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 0
+          },
+          {
+            "advice": "translate",
+            "captures": 2,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 1
+          },
+          {
+            "advice": "translate",
+            "captures": 3,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 2
+          },
+          {
+            "advice": "translate",
+            "captures": 4,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 3
+          },
+          {
+            "advice": "translate",
+            "captures": 5,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 16,
+            "tick": 4
+          }
+        ],
+        "waitedTicks": 0
+      },
+      {
+        "captures": 9,
+        "falseCompletePatches": 0,
+        "initialGaps": 16,
+        "maximumTranslationPerActionMetres": 0.08,
+        "missedInstructions": 4,
+        "missEvery": 3,
+        "name": "delayed-imperfect",
+        "operatorDelayTicks": 2,
+        "remainingGaps": 0,
+        "requestTicks": 37,
+        "stopReason": "supported nominal plane",
+        "trace": [
+          {
+            "advice": "visit",
+            "captures": 1,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 0
+          },
+          {
+            "advice": "translate",
+            "captures": 1,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 1
+          },
+          {
+            "advice": "translate",
+            "captures": 1,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 2
+          },
+          {
+            "advice": "translate",
+            "captures": 2,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 3
+          },
+          {
+            "advice": "translate",
+            "captures": 2,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 4
+          },
+          {
+            "advice": "translate",
+            "captures": 2,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 5
+          },
+          {
+            "advice": "translate",
+            "captures": 2,
+            "operatorAction": "missed instruction",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 6
+          },
+          {
+            "advice": "translate",
+            "captures": 2,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 7
+          },
+          {
+            "advice": "translate",
+            "captures": 2,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 8
+          },
+          {
+            "advice": "translate",
+            "captures": 3,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 9
+          },
+          {
+            "advice": "translate",
+            "captures": 3,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 10
+          },
+          {
+            "advice": "translate",
+            "captures": 3,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 11
+          },
+          {
+            "advice": "translate",
+            "captures": 4,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 12
+          },
+          {
+            "advice": "translate",
+            "captures": 4,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 13
+          },
+          {
+            "advice": "translate",
+            "captures": 4,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 14
+          },
+          {
+            "advice": "translate",
+            "captures": 4,
+            "operatorAction": "missed instruction",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 15
+          },
+          {
+            "advice": "translate",
+            "captures": 4,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 16
+          },
+          {
+            "advice": "translate",
+            "captures": 4,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 17
+          },
+          {
+            "advice": "translate",
+            "captures": 5,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 18
+          },
+          {
+            "advice": "translate",
+            "captures": 5,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 19
+          },
+          {
+            "advice": "translate",
+            "captures": 5,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 20
+          },
+          {
+            "advice": "translate",
+            "captures": 6,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 21
+          },
+          {
+            "advice": "translate",
+            "captures": 6,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 22
+          },
+          {
+            "advice": "translate",
+            "captures": 6,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 23
+          },
+          {
+            "advice": "translate",
+            "captures": 6,
+            "operatorAction": "missed instruction",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 24
+          },
+          {
+            "advice": "translate",
+            "captures": 6,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 25
+          },
+          {
+            "advice": "translate",
+            "captures": 6,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 26
+          },
+          {
+            "advice": "translate",
+            "captures": 7,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 27
+          },
+          {
+            "advice": "translate",
+            "captures": 7,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 28
+          },
+          {
+            "advice": "translate",
+            "captures": 7,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 29
+          },
+          {
+            "advice": "translate",
+            "captures": 8,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 30
+          },
+          {
+            "advice": "translate",
+            "captures": 8,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 31
+          },
+          {
+            "advice": "translate",
+            "captures": 8,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 32
+          },
+          {
+            "advice": "translate",
+            "captures": 8,
+            "operatorAction": "missed instruction",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 33
+          },
+          {
+            "advice": "translate",
+            "captures": 8,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 34
+          },
+          {
+            "advice": "translate",
+            "captures": 8,
+            "operatorAction": "wait",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 35
+          },
+          {
+            "advice": "translate",
+            "captures": 9,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 16,
+            "tick": 36
+          }
+        ],
+        "waitedTicks": 24
+      },
+      {
+        "captures": 3,
+        "falseCompletePatches": 0,
+        "initialGaps": 16,
+        "maximumTranslationPerActionMetres": 0.16,
+        "missedInstructions": 0,
+        "missEvery": 0,
+        "name": "movement-limited",
+        "operatorDelayTicks": 0,
+        "remainingGaps": 16,
+        "requestTicks": 4,
+        "stopReason": "movement limit",
+        "trace": [
+          {
+            "advice": "visit",
+            "captures": 1,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 0
+          },
+          {
+            "advice": "translate",
+            "captures": 2,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 1
+          },
+          {
+            "advice": "translate",
+            "captures": 3,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 2
+          },
+          {
+            "advice": "translate",
+            "captures": 3,
+            "operatorAction": "retain gap at movement limit",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 3
+          }
+        ],
+        "waitedTicks": 0
+      },
+      {
+        "captures": 1,
+        "falseCompletePatches": 0,
+        "initialGaps": 16,
+        "maximumTranslationPerActionMetres": 0.16,
+        "missedInstructions": 0,
+        "missEvery": 0,
+        "name": "foreground-blocked",
+        "operatorDelayTicks": 0,
+        "remainingGaps": 16,
+        "requestTicks": 2,
+        "stopReason": "no accessible alternate view",
+        "trace": [
+          {
+            "advice": "visit",
+            "captures": 1,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 0
+          },
+          {
+            "advice": "aroundObstruction",
+            "captures": 1,
+            "operatorAction": "retain blocked gap",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 1
+          }
+        ],
+        "waitedTicks": 0
+      },
+      {
+        "captures": 16,
+        "falseCompletePatches": 0,
+        "initialGaps": 16,
+        "maximumTranslationPerActionMetres": 0.16,
+        "missedInstructions": 0,
+        "missEvery": 0,
+        "name": "depth-unavailable",
+        "operatorDelayTicks": 0,
+        "remainingGaps": 16,
+        "requestTicks": 16,
+        "stopReason": "capture limit",
+        "trace": [
+          {
+            "advice": "visit",
+            "captures": 1,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 0
+          },
+          {
+            "advice": "depth",
+            "captures": 2,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 1
+          },
+          {
+            "advice": "depth",
+            "captures": 3,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 2
+          },
+          {
+            "advice": "depth",
+            "captures": 4,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 3
+          },
+          {
+            "advice": "depth",
+            "captures": 5,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 4
+          },
+          {
+            "advice": "depth",
+            "captures": 6,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 5
+          },
+          {
+            "advice": "depth",
+            "captures": 7,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 6
+          },
+          {
+            "advice": "depth",
+            "captures": 8,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 7
+          },
+          {
+            "advice": "depth",
+            "captures": 9,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 8
+          },
+          {
+            "advice": "depth",
+            "captures": 10,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 9
+          },
+          {
+            "advice": "depth",
+            "captures": 11,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 10
+          },
+          {
+            "advice": "depth",
+            "captures": 12,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 11
+          },
+          {
+            "advice": "depth",
+            "captures": 13,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 12
+          },
+          {
+            "advice": "depth",
+            "captures": 14,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 13
+          },
+          {
+            "advice": "depth",
+            "captures": 15,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 14
+          },
+          {
+            "advice": "depth",
+            "captures": 16,
+            "operatorAction": "capture",
+            "requestedPatch": 0,
+            "supportedPatches": 0,
+            "tick": 15
+          }
+        ],
+        "waitedTicks": 0
+      }
+    ],
+    "limitations": "Five disclosed analytic plane cases exercise the real gap request and coverage analyzer with a bounded virtual operator. This is not protected evaluation, live AR injection, whole-house coverage or field qualification.",
+    "maximumCapturesPerCase": 16,
+    "maximumTicksPerCase": 64,
+    "oracleIsolatedQualification": false,
+    "passed": true,
+    "physicalQualification": false,
+    "profile": "disclosed-coverage-loop-v1",
+    "sharedAppGapRequest": true,
+    "sourceRecordsPublished": false,
+    "version": 1,
+    "wholeHouseQualified": false
+  },
+  "drawingBenchmarkReader": {
+    "passed": true,
+    "reader": "Independent analytic drawing suggestion scorer",
+    "profileHash": "9f858468f850556e2d7799d6389e839e53bf6c16ef58e5af5d3c92e85893dc36",
+    "cases": 11,
+    "classSizeCounts": [
+      {
+        "category": "rectangular-outline",
+        "size": "large",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 8,
+        "recall": 1.0,
+        "precision": 0.5
+      },
+      {
+        "category": "rectangular-outline",
+        "size": "small",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 17,
+        "recall": 1.0,
+        "precision": 0.32
+      },
+      {
+        "category": "room-name-text",
+        "size": "18px",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "room-name-text",
+        "size": "36px",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "service-label-text",
+        "size": "18px",
+        "truth": 4,
+        "matched": 4,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      },
+      {
+        "category": "service-label-text",
+        "size": "36px",
+        "truth": 4,
+        "matched": 4,
+        "falsePositive": 0,
+        "recall": 1.0,
+        "precision": null
+      }
+    ],
+    "methodSizeMetrics": [
+      {
+        "method": "OCR",
+        "size": "18px",
+        "truth": 12,
+        "matched": 12,
+        "falsePositive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "method": "OCR",
+        "size": "36px",
+        "truth": 12,
+        "matched": 12,
+        "falsePositive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "method": "rectangle",
+        "size": "large",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 8,
+        "precision": 0.5,
+        "recall": 1.0
+      },
+      {
+        "method": "rectangle",
+        "size": "small",
+        "truth": 8,
+        "matched": 8,
+        "falsePositive": 17,
+        "precision": 0.32,
+        "recall": 1.0
+      }
+    ],
+    "negativeCaseProposals": 2,
+    "accuracyQualified": false,
+    "physicalQualification": false,
+    "protectedBenchmark": false,
+    "limitations": "Counts scored on eleven analytic development rasters only. OCR semantic subtype precision is unavailable; text/rectangle precision and recall are reported separately by size. No thresholds, model or operating envelope changed."
+  },
+  "envelopeReader": {
+    "passed": true,
+    "reader": "Independent Python service-envelope archive GLB and CSV readers",
+    "sections": 2,
+    "connectedCircularEnvelopes": 1,
+    "sourceCenterlinesPreserved": true,
+    "declaredDimensionsVerified": true,
+    "sourceDependenciesPreserved": true,
+    "maximumExportCoordinateErrorMetres": 1.1813446221253798e-07,
+    "csvDateResolutionSeconds": 1,
+    "measurementInstantPreserved": true,
+    "toleranceIsSizeOnly": true,
+    "sourceRecordsPublished": false,
+    "physicalQualification": false
+  },
+  "serviceTourReader": {
+    "passed": true,
+    "reader": "Independent Python service-tour reader",
+    "frames": 300,
+    "inspections": 6,
+    "endpoints": 4,
+    "sourceRoutesVerified": true,
+    "explicitConnectionsOnly": true,
+    "cameraCutsVerified": true,
+    "physicalQualification": false
+  },
+  "navigationBenchmarkReader": {
+    "passed": true,
+    "reader": "Independent Python connected-walk trace scorer",
+    "profile": "analytic-connected-walk-v2",
+    "cases": 9,
+    "unsupportedFloorVariants": 5,
+    "tracedSteps": 284,
+    "horizontalRouteMetres": 56.8,
+    "maximumCoordinateErrorMetres": 1.2588500979404671e-05,
+    "physicalQualification": false,
+    "reconstructionQualified": false,
+    "protectedBenchmark": false,
+    "limitations": "Analytic native-controller topology only; not reconstructed-house, field or sustained rendering qualification."
+  },
+  "reconstructedNavigationReader": {
+    "passed": true,
+    "reader": "Independent reconstructed triangle and native movement scorer",
+    "profile": "analytic-reconstructed-floor-v1",
+    "privatePackageSHA256": "0fe6f18123ddb0b90192a1babfd43d5b626ca62a1863e7211425e640023f13dc",
+    "flatVertices": 105336,
+    "gapVertices": 87552,
+    "tracedSteps": 8,
+    "refusedSteps": 3,
+    "unclassifiedRefused": true,
+    "explicitFreeFlyAndReturnVerified": true,
+    "rawSourceRecordsPublished": false,
+    "wholeHouseQualified": false,
+    "physicalQualification": false,
+    "limitations": "Bounded synthetic reconstructed floor only; no whole-house, automatic floor recognition or physical acceptance."
+  },
+  "commandContracts": {
+    "suite": "commands",
+    "passed": true,
+    "tests": 52,
+    "seconds": 1.911539165999784,
+    "exitCode": 0
+  },
+  "navigationBenchmark": {
+    "doorways": 4,
+    "horizontalRouteLengthMetres": 56.8,
+    "levels": 2,
+    "limitations": "Public analytic source geometry and camera positions through the actual native walking controller. This checks connected movement and refusals; it does not qualify reconstructed topology, localization, display performance or physical safety.",
+    "passed": true,
+    "physicalQualification": false,
+    "profile": "analytic-connected-walk-v2",
+    "protectedBenchmark": false,
+    "reconstructionQualified": false,
+    "rooms": 9,
+    "routeSpaces": 7,
+    "sourceGeometryUnchanged": true,
+    "stairTreads": 16,
+    "version": 2,
+    "cases": [
+      {
+        "attemptedSteps": 284,
+        "completedSteps": 284,
+        "maximumPositionErrorMetres": 7.629394538355427e-07,
+        "name": "six rooms and sixteen stair treads in both directions",
+        "passed": true
+      },
+      {
+        "movedSteps": 5,
+        "name": "closed door preserves the observed corridor but refuses passage",
+        "passed": true,
+        "refusedSteps": 11
+      },
+      {
+        "movedSteps": 5,
+        "name": "missing stair tread refuses unsupported continuation",
+        "passed": true,
+        "refusedSteps": 11
+      },
+      {
+        "movedSteps": 6,
+        "name": "low stair headroom refuses passage",
+        "passed": true,
+        "refusedSteps": 10
+      },
+      {
+        "movedSteps": 7,
+        "name": "unobserved doorway never invents a camera connection",
+        "passed": true,
+        "refusedSteps": 9
+      },
+      {
+        "cameraPositions": 20,
+        "name": "unregistered repeated room remains a separate frame",
+        "passed": true,
+        "visibleFeatures": 3
+      },
+      {
+        "name": "stacked floors without observed connections remain unavailable",
+        "passed": true
+      },
+      {
+        "name": "hidden layers preserve all walking obstacles",
+        "passed": true
+      },
+      {
+        "name": "camera corridors without observed floor support cannot enable walking",
+        "passed": true
+      }
+    ]
+  },
+  "reconstructedNavigation": {
+    "capturedViewsPerFragment": 9,
+    "classifiedWalkEnabled": true,
+    "completedSteps": 8,
+    "flatVertices": 105336,
+    "gapStartWalkEnabled": true,
+    "gapVertices": 87552,
+    "generatorMeshesSupplied": 0,
+    "landedWalkEnabled": true,
+    "limitations": "Two bounded synthetic depth fragments through production reconstruction and walking. Explicit floor classification is supplied by the diagnostic. This does not qualify automatic floor recognition, whole-house registration/navigation, sustained rendering or physical accuracy.",
+    "passed": true,
+    "physicalQualification": false,
+    "privatePackageSHA256": "0fe6f18123ddb0b90192a1babfd43d5b626ca62a1863e7211425e640023f13dc",
+    "profile": "analytic-reconstructed-floor-v1",
+    "protectedBenchmark": false,
+    "sourceGeometryUnchanged": true,
+    "unclassifiedRefused": true,
+    "version": 1,
+    "wholeHouseQualified": false
+  },
+  "interfacePassed": 17,
+  "interfaceFailed": 2,
+  "interfaceFollowUp": "docs/evidence/interface-230-follow-up.json"
+}

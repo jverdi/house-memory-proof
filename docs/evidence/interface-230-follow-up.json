@@ -1,0 +1,36 @@
+{
+  "run": 39192940987,
+  "job": 117869943975,
+  "source": "dc505889f484a0bc61baafda1c20b5c550c51ffe",
+  "conclusion": "failure",
+  "appleUpload": "skipped",
+  "passed": 17,
+  "failed": 2,
+  "cases": [
+    "2026-10-19T03:25:58.8083470Z Test Case '-[HouseXrayUITests.HouseXraySmoke testBatchClassificationWorkflow]' failed (63.001 seconds).",
+    "2026-10-19T03:26:30.1500080Z Test Case '-[HouseXrayUITests.HouseXraySmoke testClosureReviewKeepsMissingStageEvidenceExplicit]' passed (26.195 seconds).",
+    "2026-10-19T03:27:33.8140340Z Test Case '-[HouseXrayUITests.HouseXraySmoke testDrawingSuggestionReviewAndRelaunch]' passed (63.652 seconds).",
+    "2026-10-19T03:28:45.0263190Z Test Case '-[HouseXrayUITests.HouseXraySmoke testEvidenceSearchMatchesRoomAndSystemTogether]' passed (71.234 seconds).",
+    "2026-10-19T03:30:58.1209330Z Test Case '-[HouseXrayUITests.HouseXraySmoke testHomeownerHelpBeforeCreatingHouseAtLargeText]' passed (133.037 seconds).",
+    "2026-10-19T03:32:47.0614280Z Test Case '-[HouseXrayUITests.HouseXraySmoke testHomeownerIntroductionCompletionRestartAndPersistence]' passed (108.976 seconds).",
+    "2026-10-19T03:33:35.5829610Z Test Case '-[HouseXrayUITests.HouseXraySmoke testHomeownerSampleToRealHouseUsesNewCaptureLocation]' passed (48.525 seconds).",
+    "2026-10-19T03:35:11.8269840Z Test Case '-[HouseXrayUITests.HouseXraySmoke testHomeownerSkipReplaySearchAndTaskNavigation]' passed (96.193 seconds).",
+    "2026-10-19T03:36:01.9991660Z Test Case '-[HouseXrayUITests.HouseXraySmoke testLandscapeControlsAndRotation]' passed (50.219 seconds).",
+    "2026-10-19T03:37:12.9885800Z Test Case '-[HouseXrayUITests.HouseXraySmoke testMeasuredEnvelopeSaveAndRelaunch]' passed (70.503 seconds).",
+    "2026-10-19T03:38:05.6655910Z Test Case '-[HouseXrayUITests.HouseXraySmoke testPersonalHouseWorkflow]' passed (53.172 seconds).",
+    "2026-10-19T03:44:06.4892090Z Test Case '-[HouseXrayUITests.HouseXraySmoke testPhotoPointWorkflow]' failed (360.645 seconds).",
+    "2026-10-19T03:44:58.9523880Z Test Case '-[HouseXrayUITests.HouseXraySmoke testPointCloudDeclarationWorkflow]' passed (46.006 seconds).",
+    "2026-10-19T03:45:43.9993470Z Test Case '-[HouseXrayUITests.HouseXraySmoke testReviewedServiceTourPreviewAndTradeScope]' passed (45.034 seconds).",
+    "2026-10-19T03:48:18.2995100Z Test Case '-[HouseXrayUITests.HouseXraySmoke testRoomMapShowsFloorsBookmarksAndRestoresMiniMap]' passed (154.302 seconds).",
+    "2026-10-19T03:49:00.3331480Z Test Case '-[HouseXrayUITests.HouseXraySmoke testSavedIFCSourceWorkflow]' passed (42.028 seconds).",
+    "2026-10-19T03:49:47.1687860Z Test Case '-[HouseXrayUITests.HouseXraySmoke testSinglePhotoAnnotationSurvivesRelaunch]' passed (46.848 seconds).",
+    "2026-10-19T03:51:15.9441990Z Test Case '-[HouseXrayUITests.HouseXraySmoke testStepNavigationControlsInBothOrientations]' passed (88.763 seconds).",
+    "2026-10-19T03:54:18.4894630Z Test Case '-[HouseXrayUITests.HouseXraySmoke testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout]' passed (182.556 seconds)."
+  ],
+  "errors": [
+    "2026-10-19T03:25:55.9204830Z /Users/runner/work/house-memory-proof/house-memory-proof/HouseXrayUITests/Smoke.swift:447: error: -[HouseXrayUITests.HouseXraySmoke testBatchClassificationWorkflow] : Asynchronous wait failed: Exceeded timeout of 5 seconds, with unfulfilled expectations: \"Expect predicate `exists == 0` for object Keyboard (First Match)\".",
+    "2026-10-19T03:44:03.4515240Z /Users/runner/work/house-memory-proof/house-memory-proof/HouseXrayUITests/Smoke.swift:598: error: -[HouseXrayUITests.HouseXraySmoke testPhotoPointWorkflow] : XCTAssertTrue failed"
+  ],
+  "repairsValidated": false,
+  "fullArtifactReviewed": false
+}

@@ -128,7 +128,7 @@
   "readerPhasesExpected": 19,
   "validationReportsExpected": 36,
   "interfaceExpected": 19,
-  "interfaceStatus": "pending",
+  "interfaceStatus": "failed or incomplete",
   "appleUploadVerified": false,
   "boundarySource": {
     "analyticOnly": true,
@@ -1067,5 +1067,218 @@
     "unclassifiedRefused": true,
     "version": 1,
     "wholeHouseQualified": false
-  }
+  },
+  "interfaceRunnerTimedOut": false,
+  "interfaceCompletionTotalsAvailable": false,
+  "interfaceStartedCases": 19,
+  "interfaceCompletedCases": 19,
+  "interfaceUnfinishedCases": [],
+  "interfaceCompletedCaseSeconds": 1818.15,
+  "fullArtifact": {
+    "id": 12161647795,
+    "sha256": "f6b259972dbc19a742d12f434708215ca8f4e8820e11a42105d1f20c67483eb8",
+    "sha256IndependentlyVerified": true
+  },
+  "interfaceExecuted": 19,
+  "interfacePassed": 17,
+  "interfaceFailures": 2,
+  "interfaceElapsedSeconds": null,
+  "interfaceCases": [
+    {
+      "name": "testBatchClassificationWorkflow",
+      "result": "passed",
+      "seconds": 117.671
+    },
+    {
+      "name": "testClosureReviewKeepsMissingStageEvidenceExplicit",
+      "result": "passed",
+      "seconds": 38.754
+    },
+    {
+      "name": "testDrawingSuggestionReviewAndRelaunch",
+      "result": "passed",
+      "seconds": 68.059
+    },
+    {
+      "name": "testEvidenceSearchMatchesRoomAndSystemTogether",
+      "result": "passed",
+      "seconds": 71.145
+    },
+    {
+      "name": "testHomeownerHelpBeforeCreatingHouseAtLargeText",
+      "result": "passed",
+      "seconds": 140.54
+    },
+    {
+      "name": "testHomeownerIntroductionCompletionRestartAndPersistence",
+      "result": "passed",
+      "seconds": 94.758
+    },
+    {
+      "name": "testHomeownerSampleToRealHouseUsesNewCaptureLocation",
+      "result": "passed",
+      "seconds": 47.549
+    },
+    {
+      "name": "testHomeownerSkipReplaySearchAndTaskNavigation",
+      "result": "passed",
+      "seconds": 107.208
+    },
+    {
+      "name": "testLandscapeControlsAndRotation",
+      "result": "passed",
+      "seconds": 58.812
+    },
+    {
+      "name": "testMeasuredEnvelopeSaveAndRelaunch",
+      "result": "failed",
+      "seconds": 51.55
+    },
+    {
+      "name": "testPersonalHouseWorkflow",
+      "result": "passed",
+      "seconds": 53.042
+    },
+    {
+      "name": "testPhotoPointWorkflow",
+      "result": "passed",
+      "seconds": 307.781
+    },
+    {
+      "name": "testPointCloudDeclarationWorkflow",
+      "result": "passed",
+      "seconds": 50.373
+    },
+    {
+      "name": "testReviewedServiceTourPreviewAndTradeScope",
+      "result": "passed",
+      "seconds": 61.651
+    },
+    {
+      "name": "testRoomMapShowsFloorsBookmarksAndRestoresMiniMap",
+      "result": "passed",
+      "seconds": 198.131
+    },
+    {
+      "name": "testSavedIFCSourceWorkflow",
+      "result": "passed",
+      "seconds": 39.674
+    },
+    {
+      "name": "testSinglePhotoAnnotationSurvivesRelaunch",
+      "result": "passed",
+      "seconds": 51.239
+    },
+    {
+      "name": "testStepNavigationControlsInBothOrientations",
+      "result": "passed",
+      "seconds": 126.423
+    },
+    {
+      "name": "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout",
+      "result": "failed",
+      "seconds": 133.79
+    }
+  ],
+  "processRecoveries": {
+    "process-recovery-journal.json": {
+      "powerLossQualified": false,
+      "passed": true,
+      "fault": "SIGKILL after durable journal, before observation SQLite commit",
+      "verifiedAssets": 3,
+      "recoveredExactlyOnce": true
+    },
+    "process-recovery-migration.json": {
+      "passed": true,
+      "fault": "SIGKILL inside schema transaction before COMMIT",
+      "verifiedAssets": 19,
+      "powerLossQualified": false
+    },
+    "process-recovery-capture-row.json": {
+      "passed": true,
+      "recoveredExactlyOnce": true,
+      "verifiedAssets": 3,
+      "powerLossQualified": false,
+      "fault": "SIGKILL after capture row commit, before project checkpoint"
+    }
+  },
+  "portableChecks": 50,
+  "portablePassed": true,
+  "validationReports": {
+    "archive-validation.json": true,
+    "capture-runtime-validation.json": true,
+    "chunked-snapshot-validation.json": true,
+    "cli-command-validation.json": true,
+    "cli-reconstruction-validation.json": true,
+    "drawing-benchmark-validation.json": true,
+    "drawing-marks-validation.json": true,
+    "general-glb-validation.json": true,
+    "general-obj-validation.json": true,
+    "general-ply-validation.json": true,
+    "general-points-usd-validation.json": true,
+    "general-semantic-validation.json": true,
+    "general-test-usd-validation.json": true,
+    "general-textured-usd-validation.json": true,
+    "house-surface-gltf-validation.json": true,
+    "ifc-properties-validation.json": true,
+    "ifc-source-gltf-validation.json": true,
+    "ifc-source-validation.json": true,
+    "mesh-interchange-validation.json": true,
+    "navigation-benchmark-validation.json": true,
+    "offline-viewer-validation.json": true,
+    "photo-curve-gltf-validation.json": true,
+    "photo-curve-viewer-validation.json": true,
+    "points-gltf-validation.json": true,
+    "points-usd-validation.json": true,
+    "portable-package-validation.json": true,
+    "reconstructed-navigation-validation.json": true,
+    "semantic-csv-validation.json": true,
+    "service-envelope-gltf-validation.json": true,
+    "service-envelope-validation.json": true,
+    "service-tour-validation.json": true,
+    "test-gltf-validation.json": true,
+    "test-usd-validation.json": true,
+    "textured-gltf-validation.json": true,
+    "textured-usd-validation.json": true,
+    "tour-reveal-validation.json": true
+  },
+  "validationReportsPassed": true,
+  "recordedAssertionsComplete": false,
+  "simulatorJobConclusion": "failure",
+  "interfaceCountsSource": "19 unique per-case XCTest completion records. Runner restarted with an empty suite; trailing Executed 0 totals do not describe the completed cases.",
+  "interfaceRawCompletionTotals": [
+    [
+      "0",
+      "0",
+      "0.000"
+    ],
+    [
+      "0",
+      "0",
+      "0.000"
+    ],
+    [
+      "0",
+      "0",
+      "0.000"
+    ]
+  ],
+  "interfaceFailedCases": [
+    "testMeasuredEnvelopeSaveAndRelaunch",
+    "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout"
+  ],
+  "interfaceFailureRecordingsReviewed": true,
+  "archiveAndUploadConclusion": "skipped",
+  "failureFindings": [
+    {
+      "test": "testMeasuredEnvelopeSaveAndRelaunch",
+      "finding": "Keyboard remained visible after the evidence-field Done action, overlapping the confirmation switch. The shared Boolean focus binding is replaced by distinct field identities and explicit dismissal.",
+      "recordingSHA256": "c82599293beb56ecef84228cad52da1de7b17887b4cda35b6644b9a0f0b4993d"
+    },
+    {
+      "test": "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout",
+      "finding": "XCTest normalized-slider adjustment reached 1.0 m rather than the requested 0.8 m; recording confirms the displayed value. Preserve the requested endpoints and use an explicit gesture from the displayed numeric value.",
+      "recordingSHA256": "744cc802051b2cf15028e498c0e44bed81587125404038aa2c2b461f4c59611f"
+    }
+  ]
 }

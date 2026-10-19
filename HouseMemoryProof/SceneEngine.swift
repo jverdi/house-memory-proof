@@ -17,6 +17,12 @@ struct SceneOptions: Equatable {
   var room: UUID?
   var stage: UUID?
 }
+// SceneKit uses Float coordinates. Keep the source anchor in Double and put
+// only local vertex offsets and nearby node translations into the renderer.
+final class SourceGeometryNode:SCNNode {
+  var canonicalAnchor=V3()
+  func place(relativeTo origin:V3) {simdPosition=(canonicalAnchor-origin).render}
+}
 enum SceneBuilder {
   static func visible(_ f: Feature, _ o: SceneOptions) -> Bool {
     guard !f.hidden, f.artifactValid != false, o.trades.contains(f.trade),
@@ -120,10 +126,13 @@ enum SceneBuilder {
     }
     return scene
   }
-  static func node(_ f:Feature,mesh:Mesh,uv:[UV]?,options:SceneOptions,textures:inout [String:UIImage],textured:Bool=true,assetRoot:URL?=nil)->SCNNode {
+  static func node(_ f:Feature,mesh:Mesh,uv:[UV]?,options:SceneOptions,textures:inout [String:UIImage],textured:Bool=true,assetRoot:URL?=nil,renderOrigin:V3=V3())->SCNNode {
       // Reduced point previews must not connect skipped samples across gaps.
       let line=f.isPhotoCurve && mesh.vertices.count==f.mesh.vertices.count
-      let n = SCNNode(geometry: geometry(mesh, uv: uv,connectedLine:line))
+      let anchor=mesh.vertices.first ?? V3()
+      var local=mesh;local.vertices=mesh.vertices.map{$0-anchor}
+      let n=SourceGeometryNode();n.canonicalAnchor=anchor
+      n.geometry=geometry(local,uv:uv,connectedLine:line);n.place(relativeTo:renderOrigin)
       n.name = f.id.uuidString
       let m = SCNMaterial()
       m.lightingModel = .physicallyBased
@@ -190,12 +199,16 @@ extension UIColor {
   var textures:[String:UIImage]=[:]
   var lastCamera:V3?
   var lastUpdate=0.0
+  var renderOrigin=V3()
   private var lastPlan:[SpatialDisplayIndex.Allocation]=[]
+  private var lastPrefetch=V3()
   init(index:SpatialDisplayIndex,scene:SCNScene,options:SceneOptions){self.index=index;self.scene=scene;self.options=options}
-  func update(camera:V3,time:Double) {
-    if lastCamera==nil || (time-lastUpdate>=0.5 && (camera-lastCamera!).length>=1) {
-      lastCamera=camera;lastUpdate=time
-      let plan=index.plan(camera:camera,previous:lastPlan),needed=Set(plan.map{$0.tile})
+  func update(camera:V3,time:Double,velocity:V3=V3()) {
+    guard camera.finite,time.isFinite else{return}
+    let prefetch=SpatialDisplayIndex.prefetchOffset(velocity:velocity)
+    if lastCamera==nil || (time-lastUpdate>=0.5 && ((camera-lastCamera!).length>=1 || (prefetch-lastPrefetch).length>=1)) {
+      lastCamera=camera;lastUpdate=time;lastPrefetch=prefetch
+      let plan=index.plan(camera:camera,velocity:velocity,previous:lastPlan),needed=Set(plan.map{$0.tile})
       lastPlan=plan
       for id in Array(nodes.keys) where !needed.contains(id) {nodes.removeValue(forKey:id)?.removeFromParentNode();allocations.removeValue(forKey:id)}
       let textureKeys=Set(plan.filter{$0.textured}.compactMap{index.features[index.tiles[$0.tile].feature].texture})
@@ -206,7 +219,7 @@ extension UIColor {
     }
     guard !pending.isEmpty else{return}
     let next=pending.removeFirst(),(feature,mesh,uv)=index.materialize(next)
-    let node=SceneBuilder.node(feature,mesh:mesh,uv:uv,options:options,textures:&textures,textured:next.textured)
+    let node=SceneBuilder.node(feature,mesh:mesh,uv:uv,options:options,textures:&textures,textured:next.textured,renderOrigin:renderOrigin)
     scene.rootNode.addChildNode(node);nodes[next.tile]=node;allocations[next.tile]=next
   }
 }
@@ -255,6 +268,23 @@ extension UIColor {
   private var panTime:CFTimeInterval=0
   private var hadController = false
   var camera = SceneBuilder.camera(at: V3(3, 2, 1.6))
+  private(set) var renderOrigin=V3()
+  var canonicalPosition:V3 {
+    get {canonicalPoint(camera.simdPosition)}
+    set {
+      guard newValue.finite else{return}
+      SCNTransaction.begin();SCNTransaction.animationDuration=0
+      let relative=newValue-renderOrigin
+      if max(abs(relative.x),abs(relative.y),abs(relative.z))>256 {
+        renderOrigin=newValue;stream?.renderOrigin=newValue
+        for node in view.scene?.rootNode.childNodes ?? [] {(node as? SourceGeometryNode)?.place(relativeTo:newValue)}
+        drawPoints()
+      }
+      camera.simdPosition=(newValue-renderOrigin).render
+      SCNTransaction.commit()
+    }
+  }
+  func canonicalPoint(_ rendered:SIMD3<Float>)->V3 {renderOrigin+V3(ar:rendered)}
   override init() {
     super.init()
     view.backgroundColor = .black
@@ -323,6 +353,7 @@ extension UIColor {
     recordedPaths=NavigationGeometry.paths(house:h,options:o)
     let large=h.features.reduce(0){$0+DisplayGeometry.cost($1.mesh)}>DisplayGeometry.sceneVertexBudget || h.features.count>512
     let scene=large ? SceneBuilder.baseScene():SceneBuilder.scene(h,options:o)
+    for node in scene.rootNode.childNodes {(node as? SourceGeometryNode)?.place(relativeTo:renderOrigin)}
     scene.rootNode.addChildNode(camera);view.scene=scene
     preparingScene=large
     if large {
@@ -331,7 +362,7 @@ extension UIColor {
       sceneTask=Task {
         defer {if self.sceneRequest==request {self.sceneTask=nil}}
         do {
-          let position=V3(ar:self.camera.simdPosition)
+          let position=self.canonicalPosition
           let prepared=try await LocalWorker.run { () throws -> (SpatialDisplayIndex,SpatialDisplayIndex,SpatialClearance) in
             let canonical=Exporter.canonicalFeatures(h,options:o)
             let index=try SpatialDisplayIndex(features:canonical)
@@ -340,6 +371,7 @@ extension UIColor {
           }
           guard !Task.isCancelled,self.sceneRequest==request,self.house?.id==h.id,self.revision==h.revision,self.options==o,self.view.scene===scene else{return}
           self.navigationIndex=prepared.1;self.clearance=prepared.2;self.stream=SpatialSceneStream(index:prepared.0,scene:scene,options:o);self.preparingScene=false
+          self.stream?.renderOrigin=self.renderOrigin
           self.navigationNotice=prepared.2.complete ? "Dense or distant surfaces may appear as source points. Select a room for more detail. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
           self.validateWalkPosition()
         }catch is CancellationError {}catch {
@@ -365,8 +397,8 @@ extension UIColor {
           )
           let center = (low + high) * 0.5
           let radius = max(2, (high - low).length)
-          camera.simdPosition = (center + V3(0, -radius, radius * 0.35)).render
-          camera.look(at: SCNVector3(center.render))
+          canonicalPosition = center + V3(0, -radius, radius * 0.35)
+          camera.look(at: SCNVector3((center-renderOrigin).render))
           yaw = camera.eulerAngles.y
           pitch = camera.eulerAngles.x
           flying = true
@@ -377,7 +409,7 @@ extension UIColor {
   }
   private func validateWalkPosition() {
     guard !flying,!orbit,!preparingScene,let h=house else{return}
-    let current=V3(ar:camera.simdPosition)
+    let current=canonicalPosition
     if let target=collisionTarget,(current-target).length>=1 {
       collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID();collisionTarget=nil
     }
@@ -399,13 +431,13 @@ extension UIColor {
       return adjusted
     }
     if let adjusted=usable(current) {
-      camera.simdPosition=adjusted.render;walkEyeHeight=comfort?.eyeHeight
+      canonicalPosition=adjusted;walkEyeHeight=comfort?.eyeHeight
       if navigationNotice.hasPrefix("No checked walking viewpoint") {navigationNotice=""}
       return
     }
     let candidates=h.isDemo && h.observations.isEmpty ? h.rooms.filter{options.room==nil || $0.id==options.room}.map{$0.origin+V3($0.size.x/2,$0.size.y/2,1.6)}:cameraCorridor
     if let safe=candidates.sorted(by:{($0-current).length<($1-current).length}).lazy.compactMap(usable).first {
-      camera.simdPosition=safe.render;walkEyeHeight=comfort?.eyeHeight;clearMovement()
+      canonicalPosition=safe;walkEyeHeight=comfort?.eyeHeight;clearMovement()
       navigationNotice="Moved to a checked viewpoint for this stage."
     } else {
       flying=true;clearMovement()
@@ -459,6 +491,7 @@ extension UIColor {
     }
   }
   func jump(_ room: Room) {
+    if orbit {setOrbit(false)}
     walkEyeHeight=nil;clearMovement()
     var p = room.origin + V3(room.size.x / 2, room.size.y / 2, 1.6)
     var direction = V3(0.55, 1, -0.08)
@@ -479,7 +512,7 @@ extension UIColor {
         direction = t.apply(direction) - t.apply(V3())
       }
     }
-    camera.simdPosition = p.render
+    canonicalPosition=p
     yaw = Float(atan2(-direction.x, direction.y))
     pitch = Float(asin(max(-1, min(1, direction.normalized.z))))
     camera.eulerAngles = SCNVector3(pitch, yaw, 0)
@@ -500,7 +533,7 @@ extension UIColor {
     }
     if navigationNotice.hasPrefix("That saved viewpoint cannot be used") {navigationNotice=""}
     setOrbit(false)
-    camera.simdPosition = b.position.render
+    canonicalPosition=b.position
     yaw = Float(b.yaw.truncatingRemainder(dividingBy:2 * .pi))
     pitch = Float(max(-1.35,min(1.35,b.pitch)))
     camera.eulerAngles = SCNVector3(pitch, yaw, 0)
@@ -529,7 +562,7 @@ extension UIColor {
       let hit = view.hitTest(p, options: [.searchMode: SCNHitTestSearchMode.closest.rawValue]).first
     else { return }
     selection = hit.node.name.flatMap(UUID.init(uuidString:))
-    let v = V3(ar: SIMD3(hit.worldCoordinates.x, hit.worldCoordinates.y, hit.worldCoordinates.z))
+    let v=canonicalPoint(SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z))
     if tool != "Inspect" {
       guard selection != nil else{return}
       if (tool == "Measure" && points.count >= 2) || (tool == "Boundary" && points.count >= 3) {points=[];pointFeatureIDs=[]}
@@ -553,7 +586,7 @@ extension UIColor {
     for p in points {
       let n = SCNNode(geometry: SCNSphere(radius: 0.025))
       n.geometry?.firstMaterial?.diffuse.contents = UIColor.white
-      n.simdPosition = p.render
+      n.simdPosition=(p-renderOrigin).render
       group.addChildNode(n)
     }
     view.scene?.rootNode.addChildNode(group)
@@ -571,8 +604,8 @@ extension UIColor {
       hadController = false
     }
     let displayed=view.pointOfView?.presentation.simdWorldPosition ?? camera.simdPosition
-    stream?.update(camera:V3(ar:displayed),time:link.timestamp)
-    updateCollision(at:V3(ar:camera.simdPosition))
+    stream?.update(camera:canonicalPoint(displayed),time:link.timestamp,velocity:orbit ? V3():V3(ar:motionVelocity))
+    updateCollision(at:canonicalPosition)
     advance(seconds:dt,look:look)
   }
   // Shared by the display link and native diagnostics. Frame stalls cannot
@@ -615,21 +648,21 @@ extension UIColor {
   }
   private func attemptMove(_ delta:SIMD3<Float>) {
     guard !orbit,!isPreparingNavigation,house != nil,delta.x.isFinite,delta.y.isFinite,delta.z.isFinite,simd_length(delta)>0 else{return}
-    let from = camera.simdPosition
-    var to = from + delta
+    let from=canonicalPosition
+    var to=from+V3(ar:delta)
     if flying {
       walkEyeHeight=nil
-      camera.simdPosition = to
+      canonicalPosition=to
       return
     }
     guard clearance.hasFloorSupport else{return}
-    if comfort == nil,let adjusted=NavigationGeometry.followedHeight(from:V3(ar:from),to:V3(ar:to),paths:recordedPaths) {to=adjusted.render}
-    if let destination=clearance.walkingDestination(from:V3(ar:from),toward:V3(ar:to),eyeHeight:walkEyeHeight) {
-      to=destination.position.render
+    if comfort == nil,let adjusted=NavigationGeometry.followedHeight(from:from,to:to,paths:recordedPaths) {to=adjusted}
+    if let destination=clearance.walkingDestination(from:from,toward:to,eyeHeight:walkEyeHeight) {
+      to=destination.position
       if let h = house {
-        guard withinWalkingRecord(V3(ar:to),house:h) else{return}
+        guard withinWalkingRecord(to,house:h) else{return}
       }
-      camera.simdPosition = to
+      canonicalPosition=to
       walkEyeHeight=destination.eyeHeight
     }
   }

@@ -5,7 +5,7 @@ import SceneKit
   var roomMapPose:(position:V3,yaw:Double) {
     let node=(view.pointOfView ?? camera).presentation,backward=node.simdWorldTransform.columns.2
     let direction=hypot(Double(backward.x),Double(backward.z))>1e-6 ? atan2(Double(backward.x),Double(backward.z)):Double.nan
-    return(V3(ar:node.simdWorldPosition),direction)
+    return(canonicalPoint(node.simdWorldPosition),direction)
   }
 }
 

@@ -379,7 +379,7 @@ struct ExploreView: View {
               $0.bookmarks.append(
                 Bookmark(
                   name: "View \($0.bookmarks.count+1)",
-                  position: V3(ar: controller.camera.simdPosition),
+                  position: controller.canonicalPosition,
                   yaw: Double(controller.yaw), pitch: Double(controller.pitch),
                   roomID: options.room ?? r.id,
                   segmentID: SceneBuilder.activeUnregisteredSegment(house, options: options)
@@ -569,7 +569,7 @@ struct ExploreView: View {
           }
         }
         .sheet(isPresented: $editor) { if let f = selectedFeature { FeatureEditor(feature: f) } }
-        .sheet(item:$boundarySegment) { segment in BoundaryEditor(house:house,segment:segment,points:controller.points,sourceFeatureIDs:controller.pointFeatureIDs,cameraPosition:V3(ar:controller.camera.simdPosition)) }
+        .sheet(item:$boundarySegment) { segment in BoundaryEditor(house:house,segment:segment,points:controller.points,sourceFeatureIDs:controller.pointFeatureIDs,cameraPosition:controller.canonicalPosition) }
         .sheet(isPresented: $saveRoute) {
           NavigationStack {
             Form {

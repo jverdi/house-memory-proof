@@ -450,6 +450,12 @@ import simd
                 }
                 return nodes[0]===nodes[1] && nodes[1] !== nodes[2] && nodes[2]===nodes[3] && nodes[3] !== nodes[4] && index.features==[feature]
             }
+            await check("Directional streaming preserves nearby source detail and reverses pending work") {
+                try NavigationBenchmark.directionalStreaming()
+            }
+            await check("Local rendering preserves millimetre source detail, picking and saved poses at large coordinates") {
+                try NavigationBenchmark.localRenderCoordinates()
+            }
             mark("Distant room jumps wait for destination collision geometry")
             do {results.append(try await NavigationBenchmark.streamedRoomJumps())}
             catch {results.append(["test":"Distant room jumps wait for destination collision geometry","passed":false,"error":error.localizedDescription])}

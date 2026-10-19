@@ -163,6 +163,102 @@ import simd
     return moved>0 && refused>0 && tall.house==house
   }
 
+  static func localRenderCoordinates()throws->Bool {
+    var house=House.empty("Local render coordinates");house.isDemo=true
+    house.rooms=[Room(name:"Positive source frame",level:0,origin:V3(50000,40000,0),size:V3(4,4,3)),
+      Room(name:"Negative source frame",level:0,origin:V3(-50000,-40000,0),size:V3(4,4,3))]
+    house.features=house.rooms.map {room in
+      Feature(name:"Source floor",trade:.floor,roomID:room.id,stageID:house.stages[0].id,kind:.synthetic,
+        mesh:.box(center:room.origin+V3(2,2,-0.05),size:V3(4,4,0.1)))
+    }
+    let point=house.rooms[0].origin+V3(3.8,3,2),target=point+V3(0,0.00025,0.00025)
+    let feature=Feature(name:"One millimetre source detail",trade:.structure,roomID:house.rooms[0].id,
+      stageID:house.stages[0].id,kind:.synthetic,
+      mesh:Mesh(vertices:[point,point+V3(0,0.001,0),point+V3(0,0,0.001)],triangles:[0,1,2]))
+    house.features.append(feature);try house.validate()
+    let walk=WalkController();defer{walk.stop()};walk.applyComfort(ViewerComfort());walk.load(house,SceneOptions())
+    guard !walk.flying,(walk.canonicalPosition-(house.rooms[0].origin+V3(2,2,1.7))).length<0.000001,
+      walk.renderOrigin.length>10000,simd_length(walk.camera.simdPosition)<1 else{return false}
+    walk.yaw=0;walk.stepMove(SIMD2(1,0))
+    guard abs(walk.canonicalPosition.x-50002.2)<0.000001 else{return false}
+    let bookmark=Bookmark(name:"Precise saved source pose",position:V3(50002.123456,40002.345678,1.7),
+      yaw:0.2,pitch:0,roomID:house.rooms[0].id)
+    walk.bookmark(bookmark)
+    guard (walk.canonicalPosition-bookmark.position).length<0.000001,
+      let node=walk.view.scene?.rootNode.childNode(withName:feature.id.uuidString,recursively:false) as? SourceGeometryNode,
+      node.canonicalAnchor==point,let source=node.geometry?.sources(for:.vertex).first,
+      source.vectorCount==3,source.bytesPerComponent==4,source.componentsPerVector==3 else{return false}
+    let vertices:[SIMD3<Float>]=source.data.withUnsafeBytes { data in
+      (0..<3).map { i in
+        let offset=source.dataOffset+i*source.dataStride
+        return SIMD3(data.loadUnaligned(fromByteOffset:offset,as:Float.self),
+          data.loadUnaligned(fromByteOffset:offset+4,as:Float.self),data.loadUnaligned(fromByteOffset:offset+8,as:Float.self))
+      }
+    }
+    guard abs(Double(simd_length(vertices[1]-vertices[0]))-0.001)<0.0000001,
+      abs(Double(simd_length(vertices[2]-vertices[0]))-0.001)<0.0000001 else{return false}
+    let hits=walk.view.scene!.rootNode.hitTestWithSegment(
+      from:SCNVector3((target+V3(-0.2,0,0)-walk.renderOrigin).render),
+      to:SCNVector3((target+V3(0.2,0,0)-walk.renderOrigin).render),options:nil)
+    guard let hit=hits.first(where:{$0.node.name==feature.id.uuidString}),
+      (walk.canonicalPoint(SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z))-target).length<0.000002 else{return false}
+    walk.points=[target];walk.drawPoints()
+    walk.setOrbit(true);walk.jump(house.rooms[1])
+    guard !walk.orbit,!walk.flying,(walk.canonicalPosition-(house.rooms[1].origin+V3(2,2,1.7))).length<0.000001 else{return false}
+    walk.bookmark(bookmark)
+    guard (walk.canonicalPosition-bookmark.position).length<0.000001,
+      let marker=walk.view.scene?.rootNode.childNode(withName:"selection-points",recursively:false)?.childNodes.first,
+      (walk.canonicalPoint(marker.simdWorldPosition)-target).length<0.000002 else{return false}
+    let index=try SpatialDisplayIndex(features:[feature]),scene=SceneBuilder.baseScene()
+    let stream=SpatialSceneStream(index:index,scene:scene,options:SceneOptions());stream.renderOrigin=point
+    stream.update(camera:point,time:0)
+    guard let tile=stream.nodes[0] as? SourceGeometryNode,tile.canonicalAnchor==point,
+      simd_length(tile.simdPosition)<0.000001,tile.name==feature.id.uuidString else{return false}
+    return walk.house==house && index.features==[feature]
+  }
+
+  static func directionalStreaming()throws->Bool {
+    let room=UUID(),stage=UUID()
+    let features=[1.0,-8.0,8.0].enumerated().map { i,x in
+      Feature(name:"Directional source \(i)",trade:.structure,roomID:room,stageID:stage,kind:.synthetic,
+        mesh:Mesh(vertices:[V3(x,0.2,1),V3(x+0.2,0.2,1),V3(x,0.4,1)],triangles:[0,1,2]))
+    }
+    let index=try SpatialDisplayIndex(features:features),camera=V3(0,0,1)
+    guard index.tiles.count==3 else{return false}
+    func featureOrder(_ plan:[SpatialDisplayIndex.Allocation])->[Int] {plan.map{index.tiles[$0.tile].feature}}
+    let stationary=index.plan(camera:camera,budget:6,residents:2)
+    let forward=index.plan(camera:camera,velocity:V3(3,0,0),budget:6,residents:2)
+    let backward=index.plan(camera:camera,velocity:V3(-3,0,0),budget:6,residents:2)
+    guard featureOrder(stationary)==[0,1],featureOrder(forward)==[0,2],featureOrder(backward)==[0,1],
+      forward.reduce(0,{$0+$1.budget})<=6,backward.reduce(0,{$0+$1.budget})<=6,
+      index.plan(camera:camera,velocity:V3(.nan,0,0),budget:6,residents:2)==stationary,
+      abs(SpatialDisplayIndex.prefetchOffset(velocity:V3(1000,1000,0)).length-6)<1e-9,
+      SpatialDisplayIndex.prefetchOffset(velocity:V3(0.01,0,0))==V3() else{return false}
+    var local=features[0];local.id=UUID();local.mesh.vertices=local.mesh.vertices.map{$0+V3(2.5,0,0)}
+    let crowded=try SpatialDisplayIndex(features:features+[local])
+    let protected=crowded.plan(camera:camera,velocity:V3(4,0,0),budget:6,residents:2)
+    guard protected.map({crowded.tiles[$0.tile].feature})==[0,3] else{return false}
+    for allocation in forward+backward {
+      let (feature,mesh,_)=index.materialize(allocation)
+      guard feature==features[index.tiles[allocation.tile].feature],mesh==feature.mesh else{return false}
+    }
+    // Use the actual one-tile-per-frame loader. A reversal at the same camera
+    // position must reprioritize unfinished work without replacing nearby nodes.
+    let stream=SpatialSceneStream(index:index,scene:SceneBuilder.baseScene(),options:SceneOptions())
+    stream.update(camera:camera,time:0)
+    guard let close=stream.nodes[0],stream.nodes.count==1 else{return false}
+    stream.update(camera:camera,time:0.6,velocity:V3(3,0,0))
+    guard stream.nodes[0]===close,stream.nodes[2] != nil,stream.nodes[1]==nil else{return false}
+    stream.update(camera:camera,time:1.2,velocity:V3(-3,0,0))
+    guard stream.nodes[0]===close,stream.nodes.count==3,stream.pending.isEmpty else{return false}
+    let before=stream.nodes
+    stream.update(camera:camera,time:1.8)
+    stream.update(camera:V3(.nan,0,0),time:2.4)
+    return stream.pending.isEmpty && stream.nodes.count==3 && before.allSatisfy{stream.nodes[$0.key]===$0.value}
+      && stream.nodes.allSatisfy{$0.value.name==features[index.tiles[$0.key].feature].id.uuidString}
+      && index.features==features
+  }
+
   static func streamedRoomJumps() async throws->[String:Any] {
     var house=House.empty("Streamed destination handoff");house.isDemo=true
     house.rooms=[Room(name:"Near room",level:0,origin:V3(),size:V3(4,4,3)),

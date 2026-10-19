@@ -67,25 +67,38 @@ struct SpatialDisplayIndex {
       tiles += groups.keys.sorted().map{groups[$0]!}
     }
   }
-  func plan(camera:V3,budget:Int=DisplayGeometry.sceneVertexBudget,residents:Int=512,previous:[Allocation]=[])->[Allocation] {
+  static func prefetchOffset(velocity:V3)->V3 {
+    guard velocity.finite,velocity.length.isFinite,velocity.length>0.05 else{return V3()}
+    // Two seconds of actual movement, capped at six metres. Looking around
+    // while standing still must not evict the geometry around the viewer.
+    return velocity.normalized * min(6,velocity.length*2)
+  }
+  func plan(camera:V3,velocity:V3=V3(),budget:Int=DisplayGeometry.sceneVertexBudget,residents:Int=512,previous:[Allocation]=[])->[Allocation] {
     guard camera.finite,budget>=3,residents>0 else{return []}
-    func distance(_ tile:Tile)->Double {
-      let dx=max(0,max(tile.low.x-camera.x,camera.x-tile.high.x)),dy=max(0,max(tile.low.y-camera.y,camera.y-tile.high.y)),dz=max(0,max(tile.low.z-camera.z,camera.z-tile.high.z))
+    func distance(_ tile:Tile,from point:V3)->Double {
+      let dx=max(0,max(tile.low.x-point.x,point.x-tile.high.x)),dy=max(0,max(tile.low.y-point.y,point.y-tile.high.y)),dz=max(0,max(tile.low.z-point.z,point.z-tile.high.z))
       return sqrt(dx*dx+dy*dy+dz*dz)
     }
+    let ahead=camera+Self.prefetchOffset(velocity:velocity)
     let prior=Dictionary(previous.map{($0.tile,$0.near)},uniquingKeysWith:{_,new in new})
-    struct Ranked {var tile:Int;var distance:Double;var requested:Int;var near:Bool}
+    struct Ranked {var tile:Int;var distance:Double;var priority:Double;var requested:Int;var near:Bool}
     var ranked:[Ranked]=[]
     for index in tiles.indices {
-      let separation=distance(tiles[index])
+      let separation=distance(tiles[index],from:camera)
       // Enter detail below 9 m, retain it until 11 m. First admission keeps
       // the original 10 m threshold; a small reversal cannot churn geometry.
       let threshold=prior[index].map{$0 ? 11.0:9.0} ?? 10.0
       let near=separation<threshold,factor:Int=near ? 1:16
       let wanted=max(3,min(50000,tiles[index].cost/factor))
-      ranked.append(Ranked(tile:index,distance:separation,requested:wanted,near:near))
+      let priority=min(separation,distance(tiles[index],from:ahead)+2)
+      ranked.append(Ranked(tile:index,distance:separation,priority:priority,requested:wanted,near:near))
     }
     ranked.sort {a,b in
+      // Always admit the current four-metre neighbourhood first. Prefetch
+      // changes only display residency; it never creates a walking connection.
+      let localA=a.distance<=4,localB=b.distance<=4
+      if localA != localB {return localA}
+      if !localA,a.priority != b.priority {return a.priority<b.priority}
       if a.distance==b.distance {return a.tile<b.tile}
       return a.distance<b.distance
     }
