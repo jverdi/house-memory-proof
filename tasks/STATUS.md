@@ -1,3 +1,11 @@
+## Requested TestFlight 228.1 passes native phase; combined continuation prepared
+
+The owner explicitly requested a new TestFlight in the current thread. Build **228.1**, source `f7123ca2ee6c556620b3f01cc3d6d88bc20d0597`, run `39191585115`, passes **182 native checks**, 19 reader phases, 52 command contracts and process recovery. Its native artifact is independently SHA-256 verified in `docs/evidence/native-f712-summary.json`. All 19 interface workflows are running. Upload remains gated on complete integration; Apple readiness is not yet claimed. Superseded 227.1 is retained as cancelled without native/interface acceptance.
+
+The independent continuation adds bounded, scoped summaries of actually checked wall areas and a distant-room collision-window handoff repair. It expects 185 native checks and all 19 interface workflows, including actual wall-check/map/invalidation assertions and screenshots 48–49. Existing execution bounds and acceptance thresholds remain. The review-only pose observer/evaluator/serial runner passes 27 local checks; its workflow is disabled outside active paths. No renewed localization budget or physical qualification is claimed.
+
+Earlier entries below retain their state at those checkpoints; `docs/CURRENT_PROGRESS.md` and `tasks/qualification.json` identify the current state.
+
 ## Publication approved in the current thread
 
 The owner approved publication of the prepared source and synthetic test evidence to the public `jverdi/house-memory-proof` repository, direct commits to main, and continued execution on 18 October 2026 at 22:42 New York time. This resolves the prior automatic publication block. The continuation is ready for the unchanged 182-native/19-interface validation; no native success is inferred from host checks. The separately proposed localization diagnostic has not executed and physical/device acceptance remains open.

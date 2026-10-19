@@ -181,7 +181,8 @@ struct BoundaryCoveragePanel:View {
   let colors:[Color]=[.gray,.orange,.mint,.red]
   var body:some View {
     Section("Wall and ceiling gap map") {
-      Picker("Boundary",selection:$selection){Text("Choose").tag(Optional<UUID>.none);ForEach(house.boundaries){Text($0.name).tag(Optional($0.id))}}
+      Picker("Boundary",selection:$selection){Text("Choose").tag(Optional<UUID>.none);ForEach(house.boundaries){Text($0.name).tag(Optional($0.id)).accessibilityIdentifier("coverage-boundary-choice")}}
+        .accessibilityIdentifier("coverage-boundary-picker")
       Button("Check nominal cavity back plane") {
         guard let repo=model.repository,let boundary=house.boundaries.first(where:{$0.id==selection}) else{return};let snapshot=house
         model.perform("Checking wall coverage and occlusion") {
@@ -199,6 +200,7 @@ struct BoundaryCoveragePanel:View {
           }.gesture(SpatialTapGesture().onEnded{value in let x=min(r.columns-1,max(0,Int(value.location.x/proxy.size.width*Double(r.columns)))),y=min(r.rows-1,max(0,r.rows-1-Int(value.location.y/proxy.size.height*Double(r.rows))));selectedCell=y*r.columns+x})
         }.frame(height:220).accessibilityLabel("Coverage heat map: \(r.supported) of \(r.cells.count) nominal back-plane patches have support")
         Text("\(r.supported)/\(r.cells.count) patches supported · \(r.cameraCount)/\(r.consideredCameraCount) sampled views have compatible depth").font(.caption)
+          .accessibilityIdentifier("coverage-patch-count")
         Text("Mint: three good angles · orange: revisit · red: foreground obstruction · gray: unknown or depth mismatch. Height increases upward; width increases rightward.").font(.caption)
         Button("Show next gap") {
           selectedCell=r.nextGap(after:selectedCell)

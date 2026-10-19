@@ -1,0 +1,15 @@
+{
+  "build": "227.1",
+  "source": "0c1da56aaab46bb5157ef6580425fe310741bb77",
+  "run": 39191319328,
+  "conclusion": "cancelled",
+  "reason": "Superseded by the dedicated 228.1 release validation of identical application source and the 229.1 map follow-up. No native or interface pass is inferred.",
+  "nativeChecksComplete": false,
+  "interfaceChecksComplete": false,
+  "integrationComplete": false,
+  "artifact": {
+    "id": 12159957736,
+    "sha256": "d5d518fb4299d3e9f40b6fe3176769f8205c741fa0fbc52d377cda137f4afd13",
+    "sha256IndependentlyVerified": true
+  }
+}

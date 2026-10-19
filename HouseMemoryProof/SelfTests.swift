@@ -450,6 +450,9 @@ import simd
                 }
                 return nodes[0]===nodes[1] && nodes[1] !== nodes[2] && nodes[2]===nodes[3] && nodes[3] !== nodes[4] && index.features==[feature]
             }
+            mark("Distant room jumps wait for destination collision geometry")
+            do {results.append(try await NavigationBenchmark.streamedRoomJumps())}
+            catch {results.append(["test":"Distant room jumps wait for destination collision geometry","passed":false,"error":error.localizedDescription])}
             await check("Traced annotation loses eligibility when source revision or registration changes") {
                 var h=House.empty("Annotation inputs");var segment=Segment(roomID:h.rooms[0].id,stageID:h.stages[0].id);segment.registration=Rigid();h.segments=[segment]
                 var source=Feature(name:"Wall",trade:.structure,roomID:h.rooms[0].id,stageID:h.stages[0].id,kind:.observed,mesh:.box(center:V3(),size:V3(2,0.1,3)),segmentID:segment.id)

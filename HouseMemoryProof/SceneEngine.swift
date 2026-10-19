@@ -227,10 +227,13 @@ extension UIColor {
   private var navigationIndex:SpatialDisplayIndex?
   private var collisionTask:Task<Void,Never>?
   private var collisionRequest=UUID()
+  private var collisionTarget:V3?
+  private var pendingWalkingLocation=false
   private var sceneTask:Task<Void,Never>?
   private var sceneRequest=UUID()
   private var resumeScene=false
   private var preparingScene=false
+  var isPreparingNavigation:Bool {preparingScene || pendingWalkingLocation}
   private var cameraCorridor: [V3] = []
   private var recordedPaths:[NavigationGeometry.PathEdge]=[]
   private var walkEyeHeight:Double?
@@ -287,7 +290,7 @@ extension UIColor {
     timer = nil
     clearMovement()
     lastTime = 0
-    collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
+    collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID();collisionTarget=nil
     if sceneTask != nil {resumeScene=true}
     sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID()
   }
@@ -298,6 +301,7 @@ extension UIColor {
   }
   func setFlying(_ enabled:Bool) {
     clearMovement();flying=enabled
+    if enabled {pendingWalkingLocation=false}
     if !enabled {validateWalkPosition()}
   }
   func load(_ h: House, _ o: SceneOptions) {
@@ -312,7 +316,7 @@ extension UIColor {
     options = o
     revision = h.revision
     walkEyeHeight=nil;clearMovement()
-    collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID()
+    collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID();collisionTarget=nil;pendingWalkingLocation=false
     sceneTask?.cancel();sceneTask=nil;sceneRequest=UUID();resumeScene=false
     stream=nil;navigationIndex=nil
     cameraCorridor = NavigationGeometry.positions(house:h,options:o)
@@ -374,6 +378,19 @@ extension UIColor {
   private func validateWalkPosition() {
     guard !flying,!orbit,!preparingScene,let h=house else{return}
     let current=V3(ar:camera.simdPosition)
+    if let target=collisionTarget,(current-target).length>=1 {
+      collisionTask?.cancel();collisionTask=nil;collisionRequest=UUID();collisionTarget=nil
+    }
+    // A teleport can leave the resident collision window. Keep its requested
+    // destination and pause movement while loading that location; looking for
+    // a safe pose in the previous room would silently undo the room jump.
+    if stream != nil,let centre=clearance.coverageCentre,(current-centre).length>=1 {
+      pendingWalkingLocation=true;clearMovement()
+      navigationNotice="Checking this viewpoint's floor and route…"
+      updateCollision(at:current,replace:true)
+      return
+    }
+    pendingWalkingLocation=false
     func usable(_ point:V3)->V3? {
       let adjusted:V3?
       if let comfort {adjusted=clearance.standingPosition(from:point,eyeHeight:comfort.eyeHeight)}
@@ -415,20 +432,29 @@ extension UIColor {
     guard let h=house,let room=h.rooms.first(where:{$0.id==options.room}) ?? h.rooms.first else{return}
     setOrbit(false);flying=false;jump(room);validateWalkPosition()
   }
-  private func updateCollision(at position:V3) {
-    guard let stream,let index=navigationIndex,collisionTask==nil,
+  private func updateCollision(at position:V3,replace:Bool=false) {
+    guard let stream,let index=navigationIndex,
       clearance.coverageCentre.map({(position-$0).length>=1}) ?? true else{return}
+    if replace {
+      if collisionTask != nil,let target=collisionTarget,(target-position).length<0.25 {return}
+      collisionTask?.cancel();collisionTask=nil
+    }else if collisionTask != nil {return}
     let request=UUID();collisionRequest=request
+    collisionTarget=position
     collisionTask=Task {
-      defer {if self.collisionRequest==request {self.collisionTask=nil}}
+      defer {if self.collisionRequest==request {self.collisionTask=nil;self.collisionTarget=nil}}
       do {
         let next=try await LocalWorker.run {try SpatialClearance(index:index,camera:position)}
         guard !Task.isCancelled,self.collisionRequest==request,self.stream===stream else{return}
         self.clearance=next
         self.navigationNotice=next.complete ? "Dense or distant surfaces may appear as source points. Select a room for more detail. Measurements and exports use originals.":"Nearby collision detail exceeds the budget. Select a room or use Free fly."
+        if self.pendingWalkingLocation {self.pendingWalkingLocation=false;self.validateWalkPosition()}
       }catch is CancellationError {}catch {
         guard self.collisionRequest==request else{return}
-        self.navigationNotice="Nearby collision preparation failed. Walking remains limited to the last checked area."
+        if self.pendingWalkingLocation {
+          self.pendingWalkingLocation=false;self.flying=true;self.clearMovement()
+          self.navigationNotice="This viewpoint's floor and route could not be checked. Free fly is enabled. Choose a room or saved viewpoint to try again."
+        }else {self.navigationNotice="Nearby collision preparation failed. Walking remains limited to the last checked area."}
       }
     }
   }
@@ -588,7 +614,7 @@ extension UIColor {
     camera.eulerAngles=SCNVector3(pitch,yaw,0)
   }
   private func attemptMove(_ delta:SIMD3<Float>) {
-    guard !orbit,!preparingScene,house != nil,delta.x.isFinite,delta.y.isFinite,delta.z.isFinite,simd_length(delta)>0 else{return}
+    guard !orbit,!isPreparingNavigation,house != nil,delta.x.isFinite,delta.y.isFinite,delta.z.isFinite,simd_length(delta)>0 else{return}
     let from = camera.simdPosition
     var to = from + delta
     if flying {

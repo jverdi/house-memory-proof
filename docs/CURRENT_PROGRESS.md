@@ -50,7 +50,7 @@ The [proposed next localization diagnostic](LOCALIZATION_DIAGNOSTIC_PROPOSAL.md)
 
 ## Current map follow-up
 
-The room map now has a prepared follow-up for checked wall/ceiling areas, known gaps, unchecked areas and stale definitions. It retains bounded transient summaries and keeps stages and unaligned visits separate. It awaits 184 native checks and all 19 interface workflows. [Candidate details](evidence/room-map-coverage-candidate.md). The requested TestFlight snapshot is build **228.1**, source `f7123ca2ee6c556620b3f01cc3d6d88bc20d0597`, run `39191585115`, and excludes this follow-up. Its complete simulator validation must pass before upload.
+The room map now has a prepared follow-up for checked wall/ceiling areas, known gaps, unchecked areas and stale definitions. It retains bounded transient summaries and keeps stages and unaligned visits separate. It is combined with a prepared distant-room collision handoff repair for 185 native checks and all 19 interface workflows. The photo-point workflow now checks actual wall analysis appearing on the map and invalidation after an edit. [Candidate details](evidence/room-map-coverage-candidate.md). The requested TestFlight snapshot is build **228.1**, source `f7123ca2ee6c556620b3f01cc3d6d88bc20d0597`, run `39191585115`, and excludes this follow-up. Its 182 native checks, 19 reader phases, 52 command contracts and process recovery pass. The native artifact hash is independently verified in [the release checkpoint](evidence/native-f712-summary.json). All 19 interface workflows and complete integration must pass before upload.
 
 ## Next steps
 
@@ -60,3 +60,5 @@ The room map now has a prepared follow-up for checked wall/ceiling areas, known 
 4. Use the [owner-device protocol](DEVICE_ACCEPTANCE.md) for checks that need the actual phone. Only run feature-specific checks on a build containing those features.
 
 Detailed state: [task ledger](../tasks/qualification.json), [implementation audit](IMPLEMENTATION.md), [runbook](architecture-runbook.md), and [TestFlight delivery evidence](evidence/testflight-216-1-summary.json).
+
+The [streamed room-jump repair](evidence/streamed-room-jump-candidate.md) prevents a distant destination from being checked against the previous room’s collision window. It pauses walking during the handoff, preserves the latest requested room and keeps missing floor support explicit. Native validation and screenshots 48–49 remain pending. Superseded 227.1 is retained as [cancelled, without a native/interface pass](evidence/native-0c1-cancelled-summary.json).

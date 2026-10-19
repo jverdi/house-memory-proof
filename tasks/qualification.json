@@ -24,7 +24,9 @@
       "build": "228.1",
       "source": "f7123ca2ee6c556620b3f01cc3d6d88bc20d0597",
       "run": 39191585115,
-      "status": "validating_before_upload"
+      "status": "native_passed_interface_running",
+      "nativePassed": 182,
+      "nativeEvidence": "docs/evidence/native-f712-summary.json"
     }
   },
   "verifiedNative": {
@@ -77,9 +79,9 @@
   "nextAction": "Validate and upload the owner-requested current-state TestFlight snapshot, verify Apple processing/access, and continue independent software qualification.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "map_coverage_candidate_prepared",
+    "status": "streamed_jump_and_map_candidate_prepared",
     "precedingSource": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
-    "nativeExpected": 184,
+    "nativeExpected": 185,
     "interfaceExpected": 19,
     "nativeReaderPhasesExpected": 19,
     "commandContractsExpected": 52,
@@ -1391,7 +1393,12 @@
     "evidence": "docs/evidence/room-map-coverage-candidate.md",
     "retainedAreaLimit": 128,
     "completeRoomCoverageClaimed": false,
-    "newNativeCases": 2
+    "newNativeCases": 2,
+    "interfaceWorkflowExtended": "testPhotoPointWorkflow",
+    "requiredScreenshots": [
+      48,
+      49
+    ]
   },
   "localizationObserverPreparation": {
     "status": "prepared_not_executed",
@@ -1405,5 +1412,11 @@
     "proposedMinutesPerJob": 40,
     "serial": true,
     "protectedLayoutsDrawn": false
+  },
+  "streamedRoomJumpCandidate": {
+    "status": "native_pending",
+    "evidence": "docs/evidence/streamed-room-jump-candidate.md",
+    "newNativeCases": 1,
+    "wholeHouseQualified": false
   }
 }

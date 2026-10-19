@@ -577,6 +577,29 @@ final class HouseXraySmoke: XCTestCase {
     let boundarySave=app.buttons["Save reveal boundary"]
     XCTAssertTrue(boundarySave.waitForExistence(timeout:5));screenshot("09-boundary-definition");boundarySave.tap()
     XCTAssertTrue(app.buttons["Layers"].waitForExistence(timeout:5))
+    app.tabBars.buttons["Tools"].tap()
+    app.buttons["Capture coverage"].tap()
+    let boundary=app.descendants(matching:.any)["coverage-boundary-picker"].firstMatch
+    guidanceReveal(boundary,in:app,horizontal:0.97);boundary.tap()
+    let choice=app.descendants(matching:.any)["coverage-boundary-choice"].firstMatch
+    XCTAssertTrue(choice.waitForExistence(timeout:5));choice.tap()
+    let check=app.buttons["Check nominal cavity back plane"]
+    guidanceReveal(check,in:app,horizontal:0.97);XCTAssertTrue(check.isEnabled);check.tap()
+    XCTAssertTrue(app.staticTexts["coverage-patch-count"].waitForExistence(timeout:20))
+    app.tabBars.buttons["Explore"].tap();app.buttons["Layers"].tap()
+    let map=app.buttons["viewer-room-map"];guidanceReveal(map,in:app,horizontal:0.97);map.tap()
+    XCTAssertTrue(app.navigationBars["Room map"].waitForExistence(timeout:10))
+    setSwitch(app.switches["show-mini-map"],to:true)
+    let checked=app.staticTexts.matching(NSPredicate(format:"label CONTAINS %@","1 of 1 defined areas checked")).firstMatch
+    guidanceReveal(checked,in:app,horizontal:0.97);XCTAssertTrue(checked.label.contains("Other surfaces remain unassessed"))
+    screenshot("48-map-checked-wall-area")
+    app.navigationBars.buttons["Layers"].tap();app.buttons["Done"].tap()
+    let mini=app.descendants(matching:.any)["mini-room-map"].firstMatch
+    XCTAssertTrue(mini.waitForExistence(timeout:10))
+    XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"value CONTAINS %@","1 of 1 defined areas checked"),object:mini)],timeout:10),.completed)
+    app.buttons["Jump"].tap();app.buttons["Save viewpoint"].tap()
+    XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"value CONTAINS %@","0 of 1 defined areas checked"),object:mini)],timeout:10),.completed)
+    screenshot("49-map-check-invalidated-by-edit")
     app.terminate()
   }
   @MainActor func testLandscapeControlsAndRotation() throws {

@@ -163,6 +163,57 @@ import simd
     return moved>0 && refused>0 && tall.house==house
   }
 
+  static func streamedRoomJumps() async throws->[String:Any] {
+    var house=House.empty("Streamed destination handoff");house.isDemo=true
+    house.rooms=[Room(name:"Near room",level:0,origin:V3(),size:V3(4,4,3)),
+      Room(name:"Distant room",level:0,origin:V3(100,0,0),size:V3(4,4,3))]
+    let stage=house.stages[0].id
+    house.features=house.rooms.map { room in
+      Feature(name:"Observed floor fixture",trade:.floor,roomID:room.id,stageID:stage,kind:.synthetic,
+        mesh:.box(center:room.origin+V3(2,2,-0.05),size:V3(4,4,0.1)))
+    }
+    // The public streaming path is selected by actual inventory size. Distant
+    // source points do not provide floor support or a fabricated connection.
+    for i in 0..<512 {
+      house.features.append(Feature(name:"Distant point fixture",trade:.structure,roomID:house.rooms[0].id,stageID:stage,
+        kind:.synthetic,mesh:Mesh(vertices:[V3(200+Double(i)*0.01,20,1)],triangles:[])))
+    }
+    try house.validate();let original=house
+    let walk=WalkController();defer{walk.stop()};walk.applyComfort(ViewerComfort());walk.load(house,SceneOptions())
+    func settled() async throws {
+      for _ in 0..<300 {
+        try Task.checkCancellation()
+        if !walk.isPreparingNavigation {return}
+        try await Task.sleep(nanoseconds:10_000_000)
+      }
+      throw HouseError.message("Streamed destination did not finish within the bounded diagnostic.")
+    }
+    try await settled()
+    guard !walk.flying else{throw HouseError.message("Initial streamed floor was not admitted.")}
+    walk.jump(house.rooms[1])
+    let pending=V3(ar:walk.camera.simdPosition)
+    guard walk.isPreparingNavigation,abs(pending.x-102)<0.0001 else{throw HouseError.message("Distant room jump reused the previous room's floor.")}
+    walk.stepMove(SIMD2(1,0))
+    guard (V3(ar:walk.camera.simdPosition)-pending).length<0.0001 else{throw HouseError.message("Movement began before destination clearance was ready.")}
+    try await settled()
+    guard !walk.flying,abs(V3(ar:walk.camera.simdPosition).x-102)<0.0001 else{throw HouseError.message("Destination validation displaced a supported room jump.")}
+    walk.yaw=0;walk.stepMove(SIMD2(1,0))
+    guard abs(V3(ar:walk.camera.simdPosition).x-102.2)<0.0001 else{throw HouseError.message("Walking did not resume on the destination floor.")}
+    // Supersede in-flight work before yielding; the cancelled room must not
+    // overwrite the latest request or move the camera back after completion.
+    walk.jump(house.rooms[0]);walk.jump(house.rooms[1]);walk.jump(house.rooms[0])
+    try await settled();try await Task.sleep(nanoseconds:20_000_000)
+    guard !walk.flying,abs(V3(ar:walk.camera.simdPosition).x-2)<0.0001,walk.house==original else{throw HouseError.message("A stale collision task replaced the latest room jump.")}
+    let missingRoom=house.rooms[1].id
+    house.features.removeAll{$0.roomID==missingRoom};house.revision+=1
+    walk.load(house,SceneOptions());try await settled();walk.jump(house.rooms[1]);try await settled()
+    let missingFloorRefused=walk.flying && abs(V3(ar:walk.camera.simdPosition).x-102)<0.0001
+    return ["test":"Distant room jumps wait for destination collision geometry","passed":missingFloorRefused && walk.house==house,
+      "rooms":2,"separationMetres":100,"movementPausedDuringHandoff":true,"latestDestinationPreserved":true,
+      "missingFloorRefused":missingFloorRefused,"sourceRecordsUnchanged":walk.house==house,
+      "wholeHouseQualified":false,"physicalQualification":false]
+  }
+
   static func run()throws->[String:Any] {
     let original=fixture();try original.house.validate()
     let h=original.house
