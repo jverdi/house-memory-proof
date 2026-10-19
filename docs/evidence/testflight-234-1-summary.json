@@ -1,0 +1,18 @@
+{
+  "build": "234.1",
+  "source": "cac8756b627474b65d2a8b1f912a73791b3225dc",
+  "deliveryRun": 39272141287,
+  "appleProcessing": "VALID",
+  "internalState": "IN_BETA_TESTING",
+  "expired": false,
+  "signedDistributionIdentityVerified": true,
+  "uploadCommandSucceeded": true,
+  "uploadedIPAHashIndependentlyVerified": false,
+  "physicalInstallationVerified": false,
+  "physicalQualification": false,
+  "acceptedRelease": false,
+  "automaticRenewalEnabled": false,
+  "signedEvidence": "native-cac/summary.json",
+  "note": "This owner-requested snapshot contains homeowner guidance, comfort and map repairs. Later picking, room-priority, viewer-runtime and measured-taper work is not included.",
+  "accountSpecificEvidencePublished": false
+}
