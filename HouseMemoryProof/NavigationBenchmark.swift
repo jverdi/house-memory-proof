@@ -1,5 +1,6 @@
 import Foundation
 import SceneKit
+import UIKit
 import simd
 
 // Public analytic topology used only by owner diagnostics. This exercises the
@@ -201,6 +202,26 @@ import simd
     return moved>0 && refused>0 && tall.house==house
   }
 
+  static func sourcePickingSemantics()throws->Bool {
+    let anchor=V3(50000,-40000,2),room=UUID(),stage=UUID(),scene=SceneBuilder.baseScene()
+    var textures:[String:UIImage]=[:]
+    let target=anchor+V3(0,0.00025,0.00025)
+    let far=Feature(name:"Small surface",trade:.structure,roomID:room,stageID:stage,kind:.synthetic,
+      mesh:Mesh(vertices:[anchor,anchor+V3(0,0.001,0),anchor+V3(0,0,0.001)],triangles:[0,1,2]))
+    var near=far;near.id=UUID();near.mesh.vertices=near.mesh.vertices.map{$0+V3(0.1,0,0)}
+    let farNode=SceneBuilder.node(far,mesh:far.mesh,uv:nil,options:SceneOptions(),textures:&textures,renderOrigin:anchor)
+    let nearNode=SceneBuilder.node(near,mesh:near.mesh,uv:nil,options:SceneOptions(),textures:&textures,renderOrigin:anchor)
+    scene.rootNode.addChildNode(farNode);scene.rootNode.addChildNode(nearNode)
+    func hit()->SceneBuilder.SourceHit? {SceneBuilder.pick(scene,from:target+V3(0.2,0,0),to:target-V3(0.2,0,0))}
+    guard let first=hit(),first.id==near.id,(first.position-(target+V3(0.1,0,0))).length<0.000002 else{return false}
+    nearNode.isHidden=true;guard hit()?.id==far.id else{return false}
+    nearNode.isHidden=false;nearNode.opacity=0;guard hit()?.id==far.id else{return false}
+    nearNode.opacity=1;nearNode.removeFromParentNode();guard hit()?.id==far.id else{return false}
+    guard SceneBuilder.pick(scene,from:target+V3(0.2,0.01,0),to:target+V3(-0.2,0.01,0))==nil,
+      SceneBuilder.pick(scene,from:V3(.nan,0,0),to:target)==nil else{return false}
+    farNode.removeFromParentNode();return hit()==nil
+  }
+
   static func localRenderCoordinates()throws->Bool {
     var house=House.empty("Local render coordinates");house.isDemo=true
     house.rooms=[Room(name:"Positive source frame",level:0,origin:V3(50000,40000,0),size:V3(4,4,3)),
@@ -238,13 +259,9 @@ import simd
     // Visible source surfaces use two-sided materials. Picking must match
     // that display from either side, without loosening the coordinate bound.
     for side in [-1.0,1.0] {
-      let hits=walk.view.scene!.rootNode.hitTestWithSegment(
-        from:SCNVector3((target+V3(side*0.2,0,0)-walk.renderOrigin).render),
-        to:SCNVector3((target+V3(-side*0.2,0,0)-walk.renderOrigin).render),
-        options:[SCNHitTestOption.backFaceCulling.rawValue:false])
-      guard let hit=hits.first(where:{$0.node.name==feature.id.uuidString}),
-        (walk.canonicalPoint(SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z))-target).length<0.000002 else {
-        throw HouseError.message("Local render source picking failed from side \(side); hits \(hits.count).")
+      let hit=SceneBuilder.pick(walk.view.scene!,from:target+V3(side*0.2,0,0),to:target+V3(-side*0.2,0,0))
+      guard let hit,hit.id==feature.id,(hit.position-target).length<0.000002 else {
+        throw HouseError.message("Local render source picking failed from side \(side).")
       }
     }
     walk.points=[target];walk.drawPoints()

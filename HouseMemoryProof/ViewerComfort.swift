@@ -68,8 +68,10 @@ struct ViewerComfortSettings: View {
   private func control(_ title: String, value: Binding<Double>, range: ClosedRange<Double>, step: Double, unit: String, digits: Int, id: String) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text("\(title): \(value.wrappedValue.formatted(.number.precision(.fractionLength(digits)))) \(unit)")
-      Slider(value: value, in: range, step: step).accessibilityLabel(title)
-        .accessibilityValue("\(value.wrappedValue.formatted(.number.precision(.fractionLength(digits)))) \(unit)")
+      // Keep the native adjustable value so accessibility clients can operate
+      // the slider consistently. Include the meaningful units in its label.
+      Slider(value: value, in: range, step: step)
+        .accessibilityLabel("\(title): \(value.wrappedValue.formatted(.number.precision(.fractionLength(digits)))) \(unit)")
         .accessibilityIdentifier(id)
     }
   }

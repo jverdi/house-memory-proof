@@ -1,0 +1,9 @@
+# Scale-relative displayed-surface picking
+
+Candidate after retained 233.1 failure, not yet native-validated. SceneKit retained the one-millimetre vertex spacing but returned no segment hit. The viewer now uses a shared C++ double-precision segment/triangle query for resident displayed surfaces. Point and line selections retain SceneKit screen-sized hit areas. Only the currently displayed, stage-filtered nodes participate; hidden, zero-opacity and unloaded nodes cannot be selected. Closest-surface ordering includes point/line hits. Original geometry and records are unchanged.
+
+The query uses node-local coordinates and a relative parallelism threshold, with two-sided triangles, a finite segment and complete input validation before returning a hit. It allocates nothing per query. Node buffers remain within the existing 400,000 vertex/index residency budget (at most about 11.2 MB for packed Double vertices and Int32 indices, excluding allocator overhead). This does not establish captured measurement precision.
+
+591 portable cases exercise axis/scale/offset/winding/ray-direction combinations, finite-segment misses, nearest occlusion, malformed late indices, nonfinite input, degeneracy and the 133,333-triangle residency bound. The compiled production function passes AddressSanitizer and UndefinedBehaviorSanitizer with leak detection disabled because this host denies LeakSanitizer's /proc task inspection. The initial LeakSanitizer environment failure is not a passing leak check. The query itself performs no allocation. Host timings are not phone performance.
+
+The prior large-coordinate regression retains its one-millimetre detail and two-micrometre hit tolerance, now calling the same query as the touch path. A new native case verifies nearest/hidden/transparent/unloaded surfaces. Combined candidate expects 189 native checks and all 19 interface workflows; no result is claimed before execution. The separate release branch continues build 234.1.

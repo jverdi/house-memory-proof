@@ -743,17 +743,13 @@ final class HouseXraySmoke: XCTestCase {
   }
   @MainActor private func setSliderEndpoint(_ slider:XCUIElement,range:ClosedRange<Double>,upper:Bool) {
     func number()->Double? {
-      guard let raw=slider.value as? String,let first=raw.split(whereSeparator:{$0.isWhitespace}).first else{return nil}
+      guard let raw=slider.label.split(separator:":",maxSplits:1).last,
+        let first=raw.split(whereSeparator:{$0.isWhitespace}).first else{return nil}
       return Double(first)
     }
     guard let current=number(),range.contains(current) else{XCTFail("Slider must expose its current numeric value and unit");return}
-    let fraction=(current-range.lowerBound)/(range.upperBound-range.lowerBound),expected=upper ? range.upperBound:range.lowerBound
-    // These controls expose meaningful units to VoiceOver. XCTest's normalized
-    // adjustment can undershoot with that value; drag the visible thumb to the
-    // endpoint and require the same exact numeric result instead.
-    let start=slider.coordinate(withNormalizedOffset:CGVector(dx:max(0.05,min(0.95,fraction)),dy:0.5))
-    let end=slider.coordinate(withNormalizedOffset:CGVector(dx:upper ? 1:0,dy:0.5))
-    start.press(forDuration:0.1,thenDragTo:end)
+    let expected=upper ? range.upperBound:range.lowerBound
+    slider.adjust(toNormalizedSliderPosition:upper ? 1:0)
     let reached=expectation(for:NSPredicate{_,_ in number().map{abs($0-expected)<0.000001} ?? false},evaluatedWith:slider)
     wait(for:[reached],timeout:5)
   }
@@ -764,7 +760,8 @@ final class HouseXraySmoke: XCTestCase {
       // SwiftUI exposes the labeled Form row and its UISwitch separately.
       // A center tap on the row can hit the label without changing the switch.
       let control=row.switches.firstMatch
-      (control.exists ? control:row).tap()
+      if control.exists {control.tap()}
+      else {row.coordinate(withNormalizedOffset:CGVector(dx:0.93,dy:0.5)).tap()}
     }
     let changed=expectation(for:NSPredicate(format:"value == %@",expected),evaluatedWith:row)
     wait(for:[changed],timeout:5)

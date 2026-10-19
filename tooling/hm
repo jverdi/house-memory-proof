@@ -32,6 +32,9 @@ def test(output=None):
  surface=ROOT/'build/hx-surface-test'
  subprocess.run(['c++','-std=c++17','-O2',str(ROOT/'packages/spatial-core/hx_surface.cpp'),str(ROOT/'packages/spatial-core/surface_test.cpp'),'-o',str(surface)],check=True)
  surface_report=subprocess.check_output([str(surface)]).decode();(ROOT/'build/evidence').mkdir(parents=True,exist_ok=True);(ROOT/'build/evidence/surface-tests.json').write_text(surface_report)
+ pick=ROOT/'build/hx-pick-test'
+ subprocess.run(['c++','-std=c++17','-O2',str(ROOT/'packages/spatial-core/hx_core.cpp'),str(ROOT/'packages/spatial-core/pick_test.cpp'),'-o',str(pick)],check=True)
+ (ROOT/'build/evidence/picking-tests.json').write_text(subprocess.check_output([str(pick)]).decode())
  results=[]
  with tempfile.TemporaryDirectory() as tmp:
   for seed in range(50):

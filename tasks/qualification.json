@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-19T09:11:11.920501+00:00",
+  "updatedUTC": "2026-10-19",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "dc505889f484a0bc61baafda1c20b5c550c51ffe",
+  "currentImplementationCommit": "8e8edb694bc327af224d042e1f56b034a118f753",
   "testflight": {
     "build": "216.1",
     "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -34,14 +34,14 @@
       "repairBranch": "requested-snapshot-20261019",
       "repairLocalCommit": "7e9359809b25889b8dca4be3da1d6549faa57af1",
       "repairPublished": true,
-      "repairPublishedCommit": "543bb566a052bc41718496eb8e73fe6dc4fcdf13",
+      "repairPublishedCommit": "cac8756b627474b65d2a8b1f912a73791b3225dc",
       "repairValidation": {
-        "source": "543bb566a052bc41718496eb8e73fe6dc4fcdf13",
-        "run": 39226613300,
-        "build": "231.1",
+        "source": "cac8756b627474b65d2a8b1f912a73791b3225dc",
+        "run": 39272141287,
+        "build": "234.1",
         "nativeExpected": 182,
         "interfaceExpected": 19,
-        "status": "native_and_recovery_passed_ui_running",
+        "status": "in_progress",
         "appleUploadVerified": false
       }
     }
@@ -93,31 +93,24 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Complete repaired TestFlight 231.1 validation, upload and owner readiness; retain 232.1 continuation evidence and validate the next 188-case bookmark/UI-evidence follow-up.",
+  "nextAction": "Validate the scale-relative source picker on main; continue software qualification while the requested 234.1 snapshot completes its independent release gate.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "native_failed_superseding",
-    "precedingSource": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
-    "nativeExpected": 187,
-    "interfaceExpected": 19,
-    "nativeReaderPhasesExpected": 19,
-    "commandContractsExpected": 52,
-    "validationReportsExpected": 36,
-    "integrationComplete": false,
-    "evidencePending": false,
-    "appleUploadRequested": false,
-    "uiRunnerBudgetSeconds": 2100,
-    "uiStepTimeoutMinutes": 37,
-    "nativeAppBudgetSeconds": 300,
-    "wholeJobTimeoutMinutes": 60,
-    "source": "757860efd92f1f91afa36fd24ba87678c4543d9c",
-    "run": 39226689510,
-    "build": "232.1",
-    "repairPrepared": true,
-    "repairNativeValidated": false,
-    "nativePassed": 186,
+    "status": "failed_repair_prepared",
+    "source": "8e8edb694bc327af224d042e1f56b034a118f753",
+    "run": 39228983220,
+    "build": "233.1",
+    "nativeExpected": 188,
+    "nativePassed": 187,
     "nativeFailed": 1,
-    "evidence": "docs/evidence/native-757-failed-summary.json"
+    "interfaceExpected": 19,
+    "interfacePassed": 18,
+    "interfaceFailed": 1,
+    "integrationComplete": false,
+    "evidence": "docs/evidence/restart-20261019/summary.json",
+    "appleUploadRequested": false,
+    "repairNativeExpected": 189,
+    "repairNativeValidated": false
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1492,5 +1485,12 @@
     ],
     "conclusion": "cancelled",
     "reason": "Automatic replay triggers from a UIKit-only classification change; no localization budget renewal or new qualification claim."
+  },
+  "sourcePickingCandidate": {
+    "scope": "resident displayed surfaces only",
+    "portableCasesPassed": 591,
+    "nativeValidationPending": true,
+    "accuracyThresholdChanged": false,
+    "evidence": "docs/evidence/source-picking-candidate.md"
   }
 }

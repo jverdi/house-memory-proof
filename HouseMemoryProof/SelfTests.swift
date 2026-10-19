@@ -456,6 +456,9 @@ import simd
             await check("Local rendering preserves millimetre source detail, picking and saved poses at large coordinates") {
                 try NavigationBenchmark.localRenderCoordinates()
             }
+            await check("Displayed source picking respects nearest surfaces, visibility and residency") {
+                try NavigationBenchmark.sourcePickingSemantics()
+            }
             await check("Saved viewpoints retain displayed pose, actual floor and unaligned visit scope") {
                 try NavigationBenchmark.savedViewpointScope()
             }

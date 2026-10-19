@@ -21,9 +21,50 @@ struct SceneOptions: Equatable {
 // only local vertex offsets and nearby node translations into the renderer.
 final class SourceGeometryNode:SCNNode {
   var canonicalAnchor=V3()
+  // Only resident display geometry is retained here. The existing aggregate
+  // vertex/index budget bounds these arrays; full source meshes are not copied.
+  private var pickVertices:[Double]=[]
+  private var pickIndices:[Int32]=[]
+  private var pickBounds:SpatialClearance.Bounds?
+  var hasPickTriangles:Bool {!pickIndices.isEmpty}
+  func preparePicking(_ local:Mesh) {
+    pickVertices=[];pickBounds=nil
+    pickIndices=local.triangles
+    guard !pickIndices.isEmpty,let first=local.vertices.first else{return}
+    pickVertices.reserveCapacity(local.vertices.count*3)
+    var bounds=SpatialClearance.Bounds(low:first,high:first)
+    for p in local.vertices {
+      pickVertices.append(contentsOf:[p.x,p.y,p.z])
+      bounds=bounds.union(SpatialClearance.Bounds(low:p,high:p))
+    }
+    pickBounds=bounds
+  }
+  func pick(from start:V3,to end:V3)->Double? {
+    let a=start-canonicalAnchor,b=end-canonicalAnchor
+    guard !isHidden,opacity>0,a.finite,b.finite,
+      pickBounds?.intersects(a,b,radius:0)==true else{return nil}
+    let from=[a.x,a.y,a.z],to=[b.x,b.y,b.z];var fraction=0.0
+    let status=pickVertices.withUnsafeBufferPointer {v in pickIndices.withUnsafeBufferPointer {i in
+      from.withUnsafeBufferPointer {f in to.withUnsafeBufferPointer {t in
+        hx_pick_segment(v.baseAddress,UInt32(v.count/3),i.baseAddress,UInt32(i.count),f.baseAddress,t.baseAddress,&fraction)
+      }}
+    }}
+    return status==1 ? fraction:nil
+  }
   func place(relativeTo origin:V3) {simdPosition=(canonicalAnchor-origin).render}
 }
 enum SceneBuilder {
+  struct SourceHit {var id:UUID;var position:V3;var fraction:Double}
+  static func pick(_ scene:SCNScene,from start:V3,to end:V3)->SourceHit? {
+    guard start.finite,end.finite else{return nil}
+    var nearest:SourceHit?
+    for case let node as SourceGeometryNode in scene.rootNode.childNodes {
+      guard let id=node.name.flatMap(UUID.init(uuidString:)),let fraction=node.pick(from:start,to:end),
+        nearest==nil || fraction<nearest!.fraction else{continue}
+      nearest=SourceHit(id:id,position:start+(end-start)*fraction,fraction:fraction)
+    }
+    return nearest
+  }
   static func visible(_ f: Feature, _ o: SceneOptions) -> Bool {
     guard !f.hidden, f.artifactValid != false, o.trades.contains(f.trade),
       o.room == nil || o.room == f.roomID
@@ -132,6 +173,7 @@ enum SceneBuilder {
       let anchor=mesh.vertices.first ?? V3()
       var local=mesh;local.vertices=mesh.vertices.map{$0-anchor}
       let n=SourceGeometryNode();n.canonicalAnchor=anchor
+      n.preparePicking(local)
       n.geometry=geometry(local,uv:uv,connectedLine:line);n.place(relativeTo:renderOrigin)
       n.name = f.id.uuidString
       let m = SCNMaterial()
@@ -592,11 +634,24 @@ extension UIColor {
   }
   @objc func tap(_ g: UITapGestureRecognizer) {
     let p = g.location(in: view)
-    guard
-      let hit = view.hitTest(p, options: [.searchMode: SCNHitTestSearchMode.closest.rawValue, .backFaceCulling: false]).first
-    else { return }
-    selection = hit.node.name.flatMap(UUID.init(uuidString:))
-    let v=canonicalPoint(SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z))
+    guard let scene=view.scene else{return}
+    let near=view.unprojectPoint(SCNVector3(Float(p.x),Float(p.y),0))
+    let far=view.unprojectPoint(SCNVector3(Float(p.x),Float(p.y),1))
+    let start=canonicalPoint(SIMD3(near.x,near.y,near.z)),end=canonicalPoint(SIMD3(far.x,far.y,far.z))
+    var picked=SceneBuilder.pick(scene,from:start,to:end)
+    // Points and lines retain SceneKit's screen-sized hit region. Triangles
+    // use the same two-sided, scale-relative query exercised by diagnostics.
+    if let hit=view.hitTest(p,options:[.searchMode:SCNHitTestSearchMode.all.rawValue,.backFaceCulling:false]).first(where:{
+      guard let node=$0.node as? SourceGeometryNode else{return false};return !node.hasPickTriangles
+    }),let id=hit.node.name.flatMap(UUID.init(uuidString:)) {
+      let position=canonicalPoint(SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z))
+      if picked==nil || (position-start).length<(picked!.position-start).length {
+        picked=SceneBuilder.SourceHit(id:id,position:position,fraction:0)
+      }
+    }
+    guard let hit=picked else{return}
+    selection=hit.id
+    let v=hit.position
     if tool != "Inspect" {
       guard selection != nil else{return}
       if (tool == "Measure" && points.count >= 2) || (tool == "Boundary" && points.count >= 3) {points=[];pointFeatureIDs=[]}
