@@ -293,6 +293,20 @@ import simd
       baseline.links.allSatisfy({link in h.observations.contains{$0.id==link.fromObservation} && h.observations.contains{$0.id==link.toObservation}}) else {
       throw HouseError.message("Checked room graph did not retain the six observed room/stair transitions; links \(baseline.links.count), limited \(baseline.limited).")
     }
+    // A one-pair graph finishes with exactly one expensive candidate check.
+    // Repeated observations of that same connection do not consume a second
+    // check or turn complete work into a limited result. The full graph below
+    // still reports limitation when its one-check budget leaves other pairs.
+    var singlePair=h;singlePair.rooms=Array(h.rooms.prefix(2))
+    let pairRooms=Set(singlePair.rooms.map{$0.id})
+    singlePair.segments.removeAll{!pairRooms.contains($0.roomID)}
+    singlePair.observations.removeAll{!pairRooms.contains($0.roomID)}
+    singlePair.features.removeAll{!pairRooms.contains($0.roomID)}
+    let exactBudget=try graph(singlePair,limit:1)
+    guard !exactBudget.limited,exactBudget.examinedCandidates==1,
+      Set(exactBudget.links.map{pair($0.fromRoom,$0.toRoom)})==Set([pair(h.rooms[0].id,h.rooms[1].id)]) else {
+      throw HouseError.message("Resolved duplicate room evidence consumed another candidate check.")
+    }
     var blocked=h
     blocked.features.append(Feature(name:"Closed recorded door",trade:.structure,roomID:h.rooms[1].id,
       stageID:h.stages[0].id,kind:.synthetic,mesh:.box(center:V3(0,2,1.2),size:V3(0.1,1,2.4)),segmentID:h.segments[1].id))

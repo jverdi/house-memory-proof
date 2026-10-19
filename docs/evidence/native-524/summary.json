@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "source": "5242e7c320dbfb24a39c86ec1eebac7b558143e4",
+  "build": "244.1",
+  "run": 39313991922,
+  "nativePassed": false,
+  "checks": 194,
+  "passedChecks": 193,
+  "elapsedSeconds": 271.77712925000003,
+  "failure": "Reconstructed room transitions retain floor isolation and source geometry",
+  "artifact": 12218087224,
+  "artifactSHA256": "c8e77f9b73406e053d774de7d812f3d7372cec00ac64deb940baf20eb2f3050d",
+  "artifactHashVerified": true,
+  "movementStepsPassed": 16,
+  "missingFloorRefusalPassed": true,
+  "upperFloorJumpPassed": true,
+  "sourceGeometryUnchanged": true,
+  "actualRoomLinks": [
+    [
+      0,
+      1
+    ]
+  ],
+  "graphLimited": true,
+  "independentReadersExecuted": false,
+  "completeIntegrationPassed": false,
+  "precisionEnabled": false,
+  "physicalQualification": false,
+  "correction": "Skip already-resolved room/stage pairs before checking the expensive-candidate budget; retain limits for unresolved pairs."
+}

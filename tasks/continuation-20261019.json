@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-19T19:56:54.838293+00:00",
+  "updatedUTC": "2026-10-19T20:08:57.111091+00:00",
   "overall": "in_progress",
   "validatedApplicationSource": "777520e23ffc6930ce4118be2626c1634f0a045a",
   "validationBuild": "241.1",
@@ -90,7 +90,7 @@
     "qualificationResultClaimed": false
   },
   "registeredReconstructionNavigation": {
-    "status": "native_integration_running",
+    "status": "native_failure_retained_correction_prepared",
     "evidence": "docs/evidence/reconstructed-rooms-candidate.md",
     "commandContractsPassed": 63,
     "ciContractsPassed": 47,
@@ -98,6 +98,12 @@
     "maximumMinutesPerJob": 70,
     "wholeHouseQualified": false,
     "source": "5242e7c320dbfb24a39c86ec1eebac7b558143e4",
-    "run": 39313991922
+    "run": 39313991922,
+    "failedNativeEvidence": "docs/evidence/native-524/summary.json",
+    "checks": 194,
+    "passedChecks": 193,
+    "correctiveJobsDeclared": 1,
+    "correctiveMaximumMinutes": 70,
+    "correctiveFailureClassIteration": 1
   }
 }

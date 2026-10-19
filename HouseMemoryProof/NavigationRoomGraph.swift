@@ -65,11 +65,14 @@ struct NavigationRoomGraph {
     var connected=Set<Pair>()
     for (i,j,_) in candidates {
       try Task.checkCancellation()
-      if result.examinedCandidates>=candidateLimit || ProcessInfo.processInfo.systemUptime-started>timeLimit {result.limited=true;break}
       let a=anchors[i],b=anchors[j]
       let key=Pair(a:min(a.room.uuidString,b.room.uuidString)==a.room.uuidString ? a.room:b.room,
         b:min(a.room.uuidString,b.room.uuidString)==a.room.uuidString ? b.room:a.room,stage:a.stage)
+      // A retained link already resolves this room/stage pair. Duplicate
+      // camera evidence needs no further clearance solve and cannot make a
+      // completed graph appear incomplete when the work allowance is spent.
       if connected.contains(key) {continue}
+      if result.examinedCandidates>=candidateLimit || ProcessInfo.processInfo.systemUptime-started>timeLimit {result.limited=true;break}
       result.examinedCandidates+=1
       let clearance=try SpatialClearance(index:navigation,camera:(a.position+b.position)*0.5,stageID:a.stage)
       guard clearance.complete,
