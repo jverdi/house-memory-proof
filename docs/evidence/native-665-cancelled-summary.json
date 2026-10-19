@@ -1,0 +1,16 @@
+{
+  "build": "229.1",
+  "source": "665f43c2d0be4b9a55d22b97ce40b457bba37098",
+  "run": 39191842183,
+  "conclusion": "cancelled",
+  "reason": "Superseded by combined 230.1 validation after review found the distant-room collision-window handoff defect. The extended existing photo workflow also verifies actual coverage-to-map publication and revision invalidation.",
+  "debugAndUnsignedReleaseCompiled": true,
+  "nativeChecksComplete": false,
+  "interfaceChecksComplete": false,
+  "integrationComplete": false,
+  "artifact": {
+    "id": 12160374227,
+    "sha256": "29950b1dae34da45e7f694e43d8db62c1f3f50b960b23b904f92469a345d39dc",
+    "sha256IndependentlyVerified": true
+  }
+}

@@ -3,7 +3,7 @@
   "updatedUTC": "2026-10-19T02:42:52.384729+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
-  "currentImplementationCommit": "0c1da56aaab46bb5157ef6580425fe310741bb77",
+  "currentImplementationCommit": "dc505889f484a0bc61baafda1c20b5c550c51ffe",
   "testflight": {
     "build": "216.1",
     "source": "f2a3d40cacaa7bba0f248cb660139bffb2ee5c3a",
@@ -79,7 +79,7 @@
   "nextAction": "Validate and upload the owner-requested current-state TestFlight snapshot, verify Apple processing/access, and continue independent software qualification.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "streamed_jump_and_map_candidate_prepared",
+    "status": "native_in_progress",
     "precedingSource": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
     "nativeExpected": 185,
     "interfaceExpected": 19,
@@ -93,9 +93,9 @@
     "uiStepTimeoutMinutes": 37,
     "nativeAppBudgetSeconds": 300,
     "wholeJobTimeoutMinutes": 60,
-    "source": "0c1da56aaab46bb5157ef6580425fe310741bb77",
-    "run": 39191319328,
-    "build": "227.1"
+    "source": "dc505889f484a0bc61baafda1c20b5c550c51ffe",
+    "run": 39192940987,
+    "build": "230.1"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1418,5 +1418,13 @@
     "evidence": "docs/evidence/streamed-room-jump-candidate.md",
     "newNativeCases": 1,
     "wholeHouseQualified": false
+  },
+  "ownerReportedInstallation": {
+    "reportedUTC": "2026-10-17T04:20:05Z",
+    "status": "Owner reported the initial app received and installed on iPhone",
+    "buildNotEstablishedFromRetrievedStatement": true,
+    "appliesToLatestTestFlight": false,
+    "deviceDiagnosticsReceived": false,
+    "fieldMeasurementsReceived": false
   }
 }
