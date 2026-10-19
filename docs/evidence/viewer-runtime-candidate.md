@@ -1,6 +1,6 @@
 # Viewer runtime candidate — 19 October 2026
 
-Status: source prepared, five independent reader contract tests pass; native compile/integration pending. This feature is not included in requested TestFlight 234.1.
+Status: all five independent reader contracts, native lifecycle and durable-report assertions pass in 239.1 / `8831db8767338f2b485293a6dbaf1e9ff6188c11`. The combined source passes Debug/Release compilation, 192 native checks and 20 reader phases; all 19 interface workflows and complete export/recovery integration pass. The source is integrated on main. This feature is not included in requested TestFlight 234.1.
 
 Explore → Layers → Start performance recording begins a user-requested local report. Leaving Explore, app inactivity or a scene/layer change finalizes it. Tools → Export viewer performance shares bounded JSON. There is no automatic upload or deletion. Up to 100 sessions are retained, with ten-second checkpoints and 721 samples (about two hours). Force-quit retains the last incomplete report. Reports contain source/build/device/project identities, renderer completion interval histogram, current displayed vertices, resident tile/texture counts, navigation waiting, sampled process memory, memory warnings, thermal and low-power states. Photos, room names and coordinates are excluded.
 

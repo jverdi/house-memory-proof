@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "sessions": [
+    {
+      "sourceRevision": "8831db8767",
+      "build": "239.1",
+      "hardware": "arm64",
+      "platform": "iPhone simulator",
+      "finalized": false,
+      "stopReason": null,
+      "observedSeconds": 0.005958333333410337,
+      "intervals": [
+        {
+          "startSeconds": 0.0005326250000052823,
+          "endSeconds": 0.005958333333410337,
+          "renderCallbackHz": 737.2309298995599
+        }
+      ],
+      "renderCallbacks": 4,
+      "renderIntervalP95UpperBoundSeconds": 0.008333333333333333,
+      "renderIntervalMaximumSeconds": 5.500000042957254e-06,
+      "intervalsOver100ms": 0,
+      "sampledPhysicalFootprintPeakBytes": 44865408,
+      "sampledThermalStates": [
+        "nominal"
+      ],
+      "memoryWarnings": 0
+    },
+    {
+      "sourceRevision": "8831db8767",
+      "build": "239.1",
+      "hardware": "arm64",
+      "platform": "iPhone simulator",
+      "finalized": true,
+      "stopReason": "viewer-inactive",
+      "observedSeconds": 0.003493333333381088,
+      "intervals": [
+        {
+          "startSeconds": 0.0003882500000145228,
+          "endSeconds": 0.003493333333381088,
+          "renderCallbackHz": 0.0
+        }
+      ],
+      "renderCallbacks": 0,
+      "renderIntervalP95UpperBoundSeconds": null,
+      "renderIntervalMaximumSeconds": 0,
+      "intervalsOver100ms": 0,
+      "sampledPhysicalFootprintPeakBytes": 45553536,
+      "sampledThermalStates": [
+        "nominal"
+      ],
+      "memoryWarnings": 0
+    }
+  ],
+  "physicalQualification": false,
+  "presentedFrameRateMeasured": false,
+  "limitations": "Renderer completion cadence and sampled resources only. Histogram percentile is an upper bound, or unknown for overflow/no intervals. Successful parsing, simulator output and duration do not qualify owner-device performance."
+}
