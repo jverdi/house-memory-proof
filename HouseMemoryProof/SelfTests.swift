@@ -456,6 +456,9 @@ import simd
             await check("Local rendering preserves millimetre source detail, picking and saved poses at large coordinates") {
                 try NavigationBenchmark.localRenderCoordinates()
             }
+            await check("Saved viewpoints retain displayed pose, actual floor and unaligned visit scope") {
+                try NavigationBenchmark.savedViewpointScope()
+            }
             mark("Distant room jumps wait for destination collision geometry")
             do {results.append(try await NavigationBenchmark.streamedRoomJumps())}
             catch {results.append(["test":"Distant room jumps wait for destination collision geometry","passed":false,"error":error.localizedDescription])}

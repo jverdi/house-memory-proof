@@ -374,18 +374,10 @@ struct ExploreView: View {
           }
         ) { b in Button(b.name) { controller.bookmark(b) } }
         Button("Save viewpoint") {
-          if let r = house.rooms.first {
-            model.edit {
-              $0.bookmarks.append(
-                Bookmark(
-                  name: "View \($0.bookmarks.count+1)",
-                  position: controller.canonicalPosition,
-                  yaw: Double(controller.yaw), pitch: Double(controller.pitch),
-                  roomID: options.room ?? r.id,
-                  segmentID: SceneBuilder.activeUnregisteredSegment(house, options: options)
-                ))
-            }
-          }
+          do {
+            let mark=try controller.makeBookmark(name:"View \(house.bookmarks.count+1)")
+            model.edit {$0.bookmarks.append(mark)}
+          }catch{model.error=error.localizedDescription}
         }
       } label: {
         Label("Jump", systemImage: "location")

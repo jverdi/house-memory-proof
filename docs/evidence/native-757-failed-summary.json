@@ -1,0 +1,38 @@
+{
+  "build": "232.1",
+  "date": "2026-10-19T09:15:19Z",
+  "deviceModel": "iPhone",
+  "elapsedSeconds": 210.2748585833333,
+  "fieldAccuracyValidated": false,
+  "passed": false,
+  "physicalMemoryBytes": 7516192768,
+  "platform": "iPhone simulator",
+  "precisionProfileEnabled": false,
+  "processMemory": {
+    "lifetimeResidentPeakBytes": 1459552256,
+    "physicalFootprintBytes": 137864000,
+    "residentBytes": 413794304
+  },
+  "sourceRevision": "757860efd9",
+  "systemVersion": "26.5",
+  "source": "757860efd92f1f91afa36fd24ba87678c4543d9c",
+  "run": 39226689510,
+  "nativeChecks": 187,
+  "nativePassed": 186,
+  "nativeFailures": [
+    {
+      "passed": false,
+      "seconds": 0.0371386666665785,
+      "test": "Local rendering preserves millimetre source detail, picking and saved poses at large coordinates"
+    }
+  ],
+  "nativeArtifact": {
+    "id": 12175971333,
+    "sha256": "76392e8395b45721019fc0ed0d0e7473d56a85bb69e54f660acbc3f2678137d3",
+    "sha256IndependentlyVerified": true
+  },
+  "integrationComplete": false,
+  "physicalQualification": false,
+  "interfaceStatus": "superseded_after_native_failure",
+  "repairHypothesis": "Two-sided rendered geometry was tested with default back-face-culling hit queries; match picking to visible materials and test both ray directions. Added per-stage failure messages; no coordinate tolerance changes."
+}

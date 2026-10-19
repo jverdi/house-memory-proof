@@ -518,6 +518,40 @@ extension UIColor {
     camera.eulerAngles = SCNVector3(pitch, yaw, 0)
     validateWalkPosition()
   }
+  func makeBookmark(name:String)throws->Bookmark {
+    guard let house,!preparingScene else {
+      throw HouseError.message("Wait for this view to finish loading before saving a viewpoint.")
+    }
+    // SceneKit owns the displayed camera during orbit; the walking camera
+    // remains parked. Save the displayed pose in the original source frame.
+    let node=orbit ? (view.pointOfView ?? camera):camera
+    let transform=node.simdWorldTransform,backward=transform.columns.2
+    let position=canonicalPoint(node.simdWorldPosition)
+    let direction=V3(-Double(backward.x),Double(backward.z),-Double(backward.y)).normalized
+    guard RoomMapSnapshot.displayable(position),direction.finite,direction.length>0.99 else {
+      throw HouseError.message("This view cannot be saved. Return to a room and try again.")
+    }
+    let segment=SceneBuilder.activeUnregisteredSegment(house,options:options)
+    let room:Room?
+    if let segment {
+      let roomID=house.segments.first{$0.id==segment}?.roomID
+      room=house.rooms.first{$0.id==roomID && (options.room==nil || $0.id==options.room)}
+    }else {
+      room=RoomMapSnapshot.containingRoom(position,in:house.rooms.filter{options.room==nil || $0.id==options.room})
+    }
+    guard let room else {
+      throw HouseError.message("Move inside a room before saving a viewpoint. The overview is outside the recorded room bounds.")
+    }
+    let savedYaw=hypot(direction.x,direction.y)>1e-6 ? atan2(-direction.x,direction.y):Double(yaw)
+    let savedPitch=asin(max(-1,min(1,direction.z)))
+    let up=V3(Double(transform.columns.1.x),-Double(transform.columns.1.z),Double(transform.columns.1.y)).normalized
+    let restoredUp=V3(sin(savedYaw)*sin(savedPitch),-cos(savedYaw)*sin(savedPitch),cos(savedPitch))
+    guard abs(savedPitch)<=1.35,(up-restoredUp).length<0.0001 else {
+      throw HouseError.message("Level the view and look less steeply up or down before saving a viewpoint.")
+    }
+    return Bookmark(name:name,position:position,yaw:savedYaw,
+      pitch:savedPitch,roomID:room.id,segmentID:segment)
+  }
   func bookmark(_ b: Bookmark) {
     walkEyeHeight=nil;clearMovement()
     guard let h=house else{return}
@@ -559,7 +593,7 @@ extension UIColor {
   @objc func tap(_ g: UITapGestureRecognizer) {
     let p = g.location(in: view)
     guard
-      let hit = view.hitTest(p, options: [.searchMode: SCNHitTestSearchMode.closest.rawValue]).first
+      let hit = view.hitTest(p, options: [.searchMode: SCNHitTestSearchMode.closest.rawValue, .backFaceCulling: false]).first
     else { return }
     selection = hit.node.name.flatMap(UUID.init(uuidString:))
     let v=canonicalPoint(SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z))

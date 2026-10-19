@@ -62,6 +62,10 @@ struct RoomMapSnapshot {
   func room(at position:V3)->Room? {
     guard Self.displayable(position) else{return nil}
     if separateVisit != nil {return rooms.first}
+    return Self.containingRoom(position,in:rooms)
+  }
+  static func containingRoom(_ position:V3,in rooms:[Room])->Room? {
+    guard displayable(position) else{return nil}
     return rooms.filter { r in
       let local=position-r.origin
       return local.x>=0 && local.x<=r.size.x && local.y>=0 && local.y<=r.size.y && local.z>=0 && local.z<=r.size.z

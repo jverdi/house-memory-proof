@@ -260,6 +260,14 @@ if [ -d build/evidence/ui-tests.xcresult ]; then
   xcrun xcresulttool export attachments --path build/evidence/ui-tests.xcresult --output-path build/evidence/ui-attachments || true
 fi
 
+# XCTest can restart after a failed case and end with a partial zero-failure
+# suite total. Preserve every case and require the full source-declared suite.
+if ! python3 ci/summarize_ui.py --source HouseXrayUITests/Smoke.swift \
+  --log build/evidence/ui-tests.log --exit-code "$ui_failed" \
+  --output build/evidence/ui-summary.json; then
+  if [ "$ui_failed" -eq 0 ]; then ui_failed=1; fi
+fi
+
 # Preserve a readable, SDK-formatted source package for the next reviewed checkpoint.
 mkdir -p build/formatted-source
 cp -R HouseMemoryProof HouseXrayUITests build/formatted-source/

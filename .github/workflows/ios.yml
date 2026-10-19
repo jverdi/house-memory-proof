@@ -140,7 +140,18 @@ jobs:
         if: always()
         with:
           name: simulator-evidence-${{ github.run_number }}-${{ github.run_attempt }}
-          path: build/evidence/
+          path: |
+            build/evidence/
+            !build/evidence/ui-tests.xcresult/**
+          if-no-files-found: error
+          retention-days: 14
+      # Keep the original result bundle as a separate artifact instead of
+      # duplicating its videos beside exported attachments in one huge ZIP.
+      - uses: actions/upload-artifact@v4
+        if: always() && hashFiles('build/evidence/ui-tests.xcresult/**') != ''
+        with:
+          name: ui-result-${{ github.run_number }}-${{ github.run_attempt }}
+          path: build/evidence/ui-tests.xcresult/
           if-no-files-found: error
           retention-days: 14
 

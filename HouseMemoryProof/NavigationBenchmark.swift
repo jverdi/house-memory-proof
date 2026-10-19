@@ -81,6 +81,44 @@ import simd
     return controller
   }
 
+  static func savedViewpointScope()throws->Bool {
+    let h=fixture().house,original=h
+    let walk=WalkController();defer{walk.stop()}
+    var options=SceneOptions();options.stage=h.stages[0].id
+    walk.load(h,options);walk.setFlying(true)
+    let room=h.rooms[4],position=room.origin+V3(2,2,1.7)
+    walk.canonicalPosition=position;walk.yaw=0.4;walk.pitch = -0.2
+    walk.camera.eulerAngles=SCNVector3(walk.pitch,walk.yaw,0)
+    let mark=try walk.makeBookmark(name:"Upper room")
+    guard mark.roomID==room.id,mark.segmentID==nil,(mark.position-position).length<1e-5,
+      abs(mark.yaw-0.4)<1e-5,abs(mark.pitch+0.2)<1e-5 else{return false}
+    // A different orbit camera must be captured, including its orientation.
+    let overview=SceneBuilder.camera(at:position+V3(0.5,0.2,0.1))
+    overview.eulerAngles=SCNVector3(0.3,-0.7,0)
+    walk.view.scene?.rootNode.addChildNode(overview)
+    walk.setOrbit(true);walk.view.pointOfView=overview
+    let orbitMark=try walk.makeBookmark(name:"Displayed orbit view")
+    guard orbitMark.roomID==room.id,(orbitMark.position-(position+V3(0.5,0.2,0.1))).length<1e-5,
+      abs(orbitMark.yaw+0.7)<1e-5,abs(orbitMark.pitch-0.3)<1e-5 else{return false}
+    overview.eulerAngles=SCNVector3(1.5,0,0)
+    do {_=try walk.makeBookmark(name:"Steep overview");return false}catch{}
+    overview.eulerAngles=SCNVector3(0.3,-0.7,0.2)
+    do {_=try walk.makeBookmark(name:"Tilted overview");return false}catch{}
+    walk.bookmark(orbitMark)
+    guard !walk.orbit,(walk.canonicalPosition-orbitMark.position).length<1e-5 else{return false}
+    walk.canonicalPosition=V3(100,100,100)
+    do {_=try walk.makeBookmark(name:"Outside");return false}catch{}
+    options.room=h.rooms[0].id;walk.load(h,options);walk.setFlying(true);walk.canonicalPosition=position
+    do {_=try walk.makeBookmark(name:"Outside selected room");return false}catch{}
+    // A visit without alignment uses its visit's room, never design bounds.
+    var local=h;local.segments[4].registration=nil;local.revision+=1
+    options.room=room.id;walk.load(local,options);walk.setFlying(true)
+    walk.canonicalPosition=V3(200,200,1.5)
+    let visit=try walk.makeBookmark(name:"Unaligned visit")
+    return visit.roomID==room.id && visit.segmentID==local.segments[4].id &&
+      (visit.position-V3(200,200,1.5)).length<1e-5 && h==original
+  }
+
   static func reconstructedFloor(repo:Repository) async throws->[String:Any] {
     let flatInput=try SimulatedCapture.navigationFloor(repo:repo,missingStrip:false)
     let gapInput=try SimulatedCapture.navigationFloor(repo:repo,missingStrip:true)
@@ -178,16 +216,16 @@ import simd
     house.features.append(feature);try house.validate()
     let walk=WalkController();defer{walk.stop()};walk.applyComfort(ViewerComfort());walk.load(house,SceneOptions())
     guard !walk.flying,(walk.canonicalPosition-(house.rooms[0].origin+V3(2,2,1.7))).length<0.000001,
-      walk.renderOrigin.length>10000,simd_length(walk.camera.simdPosition)<1 else{return false}
+      walk.renderOrigin.length>10000,simd_length(walk.camera.simdPosition)<1 else{throw HouseError.message("Local render check failed: initial supported spawn or render origin.")}
     walk.yaw=0;walk.stepMove(SIMD2(1,0))
-    guard abs(walk.canonicalPosition.x-50002.2)<0.000001 else{return false}
+    guard abs(walk.canonicalPosition.x-50002.2)<0.000001 else{throw HouseError.message("Local render check failed: canonical step position.")}
     let bookmark=Bookmark(name:"Precise saved source pose",position:V3(50002.123456,40002.345678,1.7),
       yaw:0.2,pitch:0,roomID:house.rooms[0].id)
     walk.bookmark(bookmark)
     guard (walk.canonicalPosition-bookmark.position).length<0.000001,
       let node=walk.view.scene?.rootNode.childNode(withName:feature.id.uuidString,recursively:false) as? SourceGeometryNode,
       node.canonicalAnchor==point,let source=node.geometry?.sources(for:.vertex).first,
-      source.vectorCount==3,source.bytesPerComponent==4,source.componentsPerVector==3 else{return false}
+      source.vectorCount==3,source.bytesPerComponent==4,source.componentsPerVector==3 else{throw HouseError.message("Local render check failed: bookmark pose or geometry-source layout.")}
     let vertices:[SIMD3<Float>]=source.data.withUnsafeBytes { data in
       (0..<3).map { i in
         let offset=source.dataOffset+i*source.dataStride
@@ -196,24 +234,31 @@ import simd
       }
     }
     guard abs(Double(simd_length(vertices[1]-vertices[0]))-0.001)<0.0000001,
-      abs(Double(simd_length(vertices[2]-vertices[0]))-0.001)<0.0000001 else{return false}
-    let hits=walk.view.scene!.rootNode.hitTestWithSegment(
-      from:SCNVector3((target+V3(-0.2,0,0)-walk.renderOrigin).render),
-      to:SCNVector3((target+V3(0.2,0,0)-walk.renderOrigin).render),options:nil)
-    guard let hit=hits.first(where:{$0.node.name==feature.id.uuidString}),
-      (walk.canonicalPoint(SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z))-target).length<0.000002 else{return false}
+      abs(Double(simd_length(vertices[2]-vertices[0]))-0.001)<0.0000001 else{throw HouseError.message("Local render check failed: millimetre vertex separation.")}
+    // Visible source surfaces use two-sided materials. Picking must match
+    // that display from either side, without loosening the coordinate bound.
+    for side in [-1.0,1.0] {
+      let hits=walk.view.scene!.rootNode.hitTestWithSegment(
+        from:SCNVector3((target+V3(side*0.2,0,0)-walk.renderOrigin).render),
+        to:SCNVector3((target+V3(-side*0.2,0,0)-walk.renderOrigin).render),
+        options:[SCNHitTestOption.backFaceCulling.rawValue:false])
+      guard let hit=hits.first(where:{$0.node.name==feature.id.uuidString}),
+        (walk.canonicalPoint(SIMD3(hit.worldCoordinates.x,hit.worldCoordinates.y,hit.worldCoordinates.z))-target).length<0.000002 else {
+        throw HouseError.message("Local render source picking failed from side \(side); hits \(hits.count).")
+      }
+    }
     walk.points=[target];walk.drawPoints()
     walk.setOrbit(true);walk.jump(house.rooms[1])
-    guard !walk.orbit,!walk.flying,(walk.canonicalPosition-(house.rooms[1].origin+V3(2,2,1.7))).length<0.000001 else{return false}
+    guard !walk.orbit,!walk.flying,(walk.canonicalPosition-(house.rooms[1].origin+V3(2,2,1.7))).length<0.000001 else{throw HouseError.message("Local render check failed: distant orbit-to-room jump.")}
     walk.bookmark(bookmark)
     guard (walk.canonicalPosition-bookmark.position).length<0.000001,
       let marker=walk.view.scene?.rootNode.childNode(withName:"selection-points",recursively:false)?.childNodes.first,
-      (walk.canonicalPoint(marker.simdWorldPosition)-target).length<0.000002 else{return false}
+      (walk.canonicalPoint(marker.simdWorldPosition)-target).length<0.000002 else{throw HouseError.message("Local render check failed: restored bookmark or selection marker.")}
     let index=try SpatialDisplayIndex(features:[feature]),scene=SceneBuilder.baseScene()
     let stream=SpatialSceneStream(index:index,scene:scene,options:SceneOptions());stream.renderOrigin=point
     stream.update(camera:point,time:0)
     guard let tile=stream.nodes[0] as? SourceGeometryNode,tile.canonicalAnchor==point,
-      simd_length(tile.simdPosition)<0.000001,tile.name==feature.id.uuidString else{return false}
+      simd_length(tile.simdPosition)<0.000001,tile.name==feature.id.uuidString else{throw HouseError.message("Local render check failed: streamed tile anchor or identity.")}
     return walk.house==house && index.features==[feature]
   }
 

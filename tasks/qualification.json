@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-19T08:54:56.888007+00:00",
+  "updatedUTC": "2026-10-19T09:11:11.920501+00:00",
   "overall": "in_progress",
   "precisionEnabled": false,
   "currentImplementationCommit": "dc505889f484a0bc61baafda1c20b5c550c51ffe",
@@ -34,7 +34,16 @@
       "repairBranch": "requested-snapshot-20261019",
       "repairLocalCommit": "7e9359809b25889b8dca4be3da1d6549faa57af1",
       "repairPublished": true,
-      "repairPublishedCommit": "543bb566a052bc41718496eb8e73fe6dc4fcdf13"
+      "repairPublishedCommit": "543bb566a052bc41718496eb8e73fe6dc4fcdf13",
+      "repairValidation": {
+        "source": "543bb566a052bc41718496eb8e73fe6dc4fcdf13",
+        "run": 39226613300,
+        "build": "231.1",
+        "nativeExpected": 182,
+        "interfaceExpected": 19,
+        "status": "native_and_recovery_passed_ui_running",
+        "appleUploadVerified": false
+      }
     }
   },
   "verifiedNative": {
@@ -84,12 +93,12 @@
     "Real Files/iCloud partial arrival, offline/quota/conflict and account/permission changes.",
     "Measured camera/depth/timing adapter correctness, identifiable calibration and independent field validation."
   ],
-  "nextAction": "Resolve automatic review rejection of the prepared public-repository repair publication, run its complete 182-native/19-interface gate and verify TestFlight readiness. Continue the separately prepared 187-native streaming/render candidate.",
+  "nextAction": "Complete repaired TestFlight 231.1 validation, upload and owner readiness; retain 232.1 continuation evidence and validate the next 188-case bookmark/UI-evidence follow-up.",
   "publication": "New whole-house and sensor diagnostics publish allowlisted aggregate results only; images, poses, maps and oracle inputs remain ephemeral in CI.",
   "currentValidation": {
-    "status": "interface_failed_upload_skipped",
+    "status": "native_failed_superseding",
     "precedingSource": "ad8e0c5c8baf214967ccacea80a6195d7df66e8c",
-    "nativeExpected": 185,
+    "nativeExpected": 187,
     "interfaceExpected": 19,
     "nativeReaderPhasesExpected": 19,
     "commandContractsExpected": 52,
@@ -101,19 +110,14 @@
     "uiStepTimeoutMinutes": 37,
     "nativeAppBudgetSeconds": 300,
     "wholeJobTimeoutMinutes": 60,
-    "source": "dc505889f484a0bc61baafda1c20b5c550c51ffe",
-    "run": 39192940987,
-    "build": "230.1",
-    "nativePassed": 185,
-    "evidence": "docs/evidence/native-dc5-summary.json",
-    "interfacePassed": 17,
-    "interfaceFailed": 2,
-    "interfaceFailureNames": [
-      "testBatchClassificationWorkflow",
-      "testPhotoPointWorkflow"
-    ],
+    "source": "757860efd92f1f91afa36fd24ba87678c4543d9c",
+    "run": 39226689510,
+    "build": "232.1",
     "repairPrepared": true,
-    "repairNativeValidated": false
+    "repairNativeValidated": false,
+    "nativePassed": 186,
+    "nativeFailed": 1,
+    "evidence": "docs/evidence/native-757-failed-summary.json"
   },
   "previousIntegratedAttempt": {
     "source": "dfec13ee619a0d0735292948cc29115a1455615b",
@@ -1454,7 +1458,7 @@
     "fieldMeasurementsReceived": false
   },
   "preparedStreamingFollowup": {
-    "status": "local_prepared_not_native_validated",
+    "status": "published_native_one_failure_repair_prepared",
     "branch": "continuation-recovered-20261019",
     "nativeExpected": 187,
     "interfaceExpected": 19,
@@ -1462,5 +1466,31 @@
     "localRenderEvidence": "docs/evidence/local-render-coordinates-candidate.md",
     "interfaceRepairApplied": true,
     "published": false
+  },
+  "preparedBookmarkFollowup": {
+    "status": "publication_prepared_for_188_case_validation",
+    "nativeExpected": 188,
+    "interfaceExpected": 19,
+    "evidence": "docs/evidence/saved-viewpoint-scope-candidate.md",
+    "published": true
+  },
+  "ciEvidenceFollowup": {
+    "caseLevelSummaryTestsPassed": 6,
+    "allCIToolTestsPassed": 47,
+    "retained228FailureReplayVerified": true,
+    "nativeValidationPending": true,
+    "allOriginalResultBundlesRetained": true
+  },
+  "unneededReplayCancellations": {
+    "source": "757860efd92f1f91afa36fd24ba87678c4543d9c",
+    "runs": [
+      39226689648,
+      39226689394,
+      39226689371,
+      39226689372,
+      39226689343
+    ],
+    "conclusion": "cancelled",
+    "reason": "Automatic replay triggers from a UIKit-only classification change; no localization budget renewal or new qualification claim."
   }
 }
