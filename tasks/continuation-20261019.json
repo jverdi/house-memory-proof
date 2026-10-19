@@ -51,5 +51,32 @@
     "protectedDraws": 0,
     "estimatorOrThresholdChanges": false,
     "proposal": "docs/LOCALIZATION_DIAGNOSTIC_PROPOSAL.md"
+  },
+  "integrationCommit": "5404e776b6c032ee16282bb8889b025dccfc7104",
+  "automaticReplayCancellations": {
+    "source": "5404e776b6c032ee16282bb8889b025dccfc7104",
+    "runs": [
+      39287678901,
+      39287678873,
+      39287678577,
+      39287678812,
+      39287678696
+    ],
+    "reason": "Service-envelope integration triggered unrelated existing localization replays; no renewed experiment budget.",
+    "cancellationRequestedForAll": true,
+    "completedWorkflowCancellations": [
+      39287678873,
+      39287678577,
+      39287678812,
+      39287678696
+    ],
+    "nativeVisionJob": {
+      "id": 118179489754,
+      "conclusion": "cancelled",
+      "cancelledStep": "Build shared production core as isolated command-line candidate",
+      "queryGenerationAndEvaluation": "skipped",
+      "workflowStatusMayLag": true
+    },
+    "qualificationResultClaimed": false
   }
 }
