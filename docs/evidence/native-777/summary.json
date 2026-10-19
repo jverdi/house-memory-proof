@@ -13,7 +13,23 @@
   "nativeReaderPhasesPassed": 20,
   "commandContractsPassed": 60,
   "interfaceExpected": 20,
-  "interfaceStatus": "pending",
-  "completeIntegrationPassed": false,
-  "physicalQualification": false
+  "interfaceStatus": "passed",
+  "completeIntegrationPassed": true,
+  "physicalQualification": false,
+  "interfacePassed": 20,
+  "interfaceFailed": 0,
+  "interfaceRunnerExitCode": 0,
+  "interfaceCaseSeconds": 1653.997,
+  "fullArtifact": 12204420545,
+  "fullArtifactSHA256": "0f710a5f21bc67a5055925602f795cf95f50e2ddcd35e60807a9869599fcf063",
+  "fullArtifactDigestVerified": true,
+  "processRecoveriesPassed": 3,
+  "portableCasesPassed": 50,
+  "analyticPickingCasesPassed": 591,
+  "exportValidationReportsPassed": 37,
+  "visualFollowupsReviewed": [
+    "26-measured-envelope",
+    "50-measured-taper-endpoints",
+    "51-measured-taper-relaunched"
+  ]
 }

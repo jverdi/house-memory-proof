@@ -1,0 +1,175 @@
+{
+  "passed": true,
+  "runnerExitCode": 0,
+  "expected": [
+    "testBatchClassificationWorkflow",
+    "testClosureReviewKeepsMissingStageEvidenceExplicit",
+    "testDrawingSuggestionReviewAndRelaunch",
+    "testEvidenceSearchMatchesRoomAndSystemTogether",
+    "testHomeownerHelpBeforeCreatingHouseAtLargeText",
+    "testHomeownerIntroductionCompletionRestartAndPersistence",
+    "testHomeownerSampleToRealHouseUsesNewCaptureLocation",
+    "testHomeownerSkipReplaySearchAndTaskNavigation",
+    "testLandscapeControlsAndRotation",
+    "testMeasuredEnvelopeSaveAndRelaunch",
+    "testMeasuredLinearTaperSaveAndRelaunch",
+    "testPersonalHouseWorkflow",
+    "testPhotoPointWorkflow",
+    "testPointCloudDeclarationWorkflow",
+    "testReviewedServiceTourPreviewAndTradeScope",
+    "testRoomMapShowsFloorsBookmarksAndRestoresMiniMap",
+    "testSavedIFCSourceWorkflow",
+    "testSinglePhotoAnnotationSurvivesRelaunch",
+    "testStepNavigationControlsInBothOrientations",
+    "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout"
+  ],
+  "passedCases": [
+    "testBatchClassificationWorkflow",
+    "testClosureReviewKeepsMissingStageEvidenceExplicit",
+    "testDrawingSuggestionReviewAndRelaunch",
+    "testEvidenceSearchMatchesRoomAndSystemTogether",
+    "testHomeownerHelpBeforeCreatingHouseAtLargeText",
+    "testHomeownerIntroductionCompletionRestartAndPersistence",
+    "testHomeownerSampleToRealHouseUsesNewCaptureLocation",
+    "testHomeownerSkipReplaySearchAndTaskNavigation",
+    "testLandscapeControlsAndRotation",
+    "testMeasuredEnvelopeSaveAndRelaunch",
+    "testMeasuredLinearTaperSaveAndRelaunch",
+    "testPersonalHouseWorkflow",
+    "testPhotoPointWorkflow",
+    "testPointCloudDeclarationWorkflow",
+    "testReviewedServiceTourPreviewAndTradeScope",
+    "testRoomMapShowsFloorsBookmarksAndRestoresMiniMap",
+    "testSavedIFCSourceWorkflow",
+    "testSinglePhotoAnnotationSurvivesRelaunch",
+    "testStepNavigationControlsInBothOrientations",
+    "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout"
+  ],
+  "failedCases": [],
+  "missingCases": [],
+  "unexpectedCases": [],
+  "repeatedCases": [],
+  "results": {
+    "testBatchClassificationWorkflow": [
+      {
+        "status": "passed",
+        "seconds": 98.903
+      }
+    ],
+    "testClosureReviewKeepsMissingStageEvidenceExplicit": [
+      {
+        "status": "passed",
+        "seconds": 67.679
+      }
+    ],
+    "testDrawingSuggestionReviewAndRelaunch": [
+      {
+        "status": "passed",
+        "seconds": 55.977
+      }
+    ],
+    "testEvidenceSearchMatchesRoomAndSystemTogether": [
+      {
+        "status": "passed",
+        "seconds": 55.465
+      }
+    ],
+    "testHomeownerHelpBeforeCreatingHouseAtLargeText": [
+      {
+        "status": "passed",
+        "seconds": 97.901
+      }
+    ],
+    "testHomeownerIntroductionCompletionRestartAndPersistence": [
+      {
+        "status": "passed",
+        "seconds": 84.786
+      }
+    ],
+    "testHomeownerSampleToRealHouseUsesNewCaptureLocation": [
+      {
+        "status": "passed",
+        "seconds": 52.348
+      }
+    ],
+    "testHomeownerSkipReplaySearchAndTaskNavigation": [
+      {
+        "status": "passed",
+        "seconds": 74.798
+      }
+    ],
+    "testLandscapeControlsAndRotation": [
+      {
+        "status": "passed",
+        "seconds": 36.847
+      }
+    ],
+    "testMeasuredEnvelopeSaveAndRelaunch": [
+      {
+        "status": "passed",
+        "seconds": 59.551
+      }
+    ],
+    "testMeasuredLinearTaperSaveAndRelaunch": [
+      {
+        "status": "passed",
+        "seconds": 88.957
+      }
+    ],
+    "testPersonalHouseWorkflow": [
+      {
+        "status": "passed",
+        "seconds": 41.947
+      }
+    ],
+    "testPhotoPointWorkflow": [
+      {
+        "status": "passed",
+        "seconds": 247.662
+      }
+    ],
+    "testPointCloudDeclarationWorkflow": [
+      {
+        "status": "passed",
+        "seconds": 46.096
+      }
+    ],
+    "testReviewedServiceTourPreviewAndTradeScope": [
+      {
+        "status": "passed",
+        "seconds": 46.582
+      }
+    ],
+    "testRoomMapShowsFloorsBookmarksAndRestoresMiniMap": [
+      {
+        "status": "passed",
+        "seconds": 111.831
+      }
+    ],
+    "testSavedIFCSourceWorkflow": [
+      {
+        "status": "passed",
+        "seconds": 35.932
+      }
+    ],
+    "testSinglePhotoAnnotationSurvivesRelaunch": [
+      {
+        "status": "passed",
+        "seconds": 43.667
+      }
+    ],
+    "testStepNavigationControlsInBothOrientations": [
+      {
+        "status": "passed",
+        "seconds": 81.102
+      }
+    ],
+    "testViewerComfortSettingsPersistResetAndSupportLeftHandedLayout": [
+      {
+        "status": "passed",
+        "seconds": 225.966
+      }
+    ]
+  },
+  "note": "Case-level results retain failures across runner restarts; trailing suite totals are not used."
+}

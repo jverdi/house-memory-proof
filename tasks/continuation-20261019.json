@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "updatedUTC": "2026-10-19T16:41:16.148427+00:00",
+  "overall": "in_progress",
+  "validatedApplicationSource": "777520e23ffc6930ce4118be2626c1634f0a045a",
+  "validationBuild": "241.1",
+  "validationRun": 39281579722,
+  "applicationIntegratedToMain": true,
+  "completeIntegrationPassed": true,
+  "nativePassed": 193,
+  "interfacePassed": 20,
+  "nativeReaderPhasesPassed": 20,
+  "commandContractsPassed": 60,
+  "processRecoveriesPassed": 3,
+  "portableCasesPassed": 50,
+  "analyticPickingCasesPassed": 591,
+  "exportValidationReportsPassed": 37,
+  "evidence": "docs/evidence/native-777/summary.json",
+  "completedContinuation": [
+    "Resident displayed-surface double-precision picking",
+    "Checked room adjacency and room/shell display priorities",
+    "User-started durable viewer cadence/resource reports",
+    "Measured straight round and rectangular endpoint tapers",
+    "Legacy envelope geometry compatibility and independent exports",
+    "Full interface validation and required visual review"
+  ],
+  "testflight": {
+    "build": "234.1",
+    "source": "cac8756b627474b65d2a8b1f912a73791b3225dc",
+    "appleProcessing": "VALID",
+    "internalState": "IN_BETA_TESTING",
+    "accountSpecificEvidencePublished": false,
+    "evidence": "docs/evidence/testflight-234-1-summary.json",
+    "includesLaterContinuation": false
+  },
+  "precisionEnabled": false,
+  "acceptedRelease": false,
+  "automaticRenewalEnabled": false,
+  "open": [
+    "Reconstructed whole-house topology/streaming, registration, mixed-stage/closed-loop coverage, broad tours and representative drawing/service qualification",
+    "Finished localization accuracy, availability and depth-edge gates; five-attempt budget exhausted",
+    "Actual-device sustained workload, accessibility and homeowner task evidence",
+    "Real provider fault matrix and actual signed-version update",
+    "Measured sensor timing/adapters, identifiable calibration and independent field validation"
+  ],
+  "nextLocalizationDiagnostic": {
+    "status": "prepared_not_authorized_not_executed",
+    "maximumJobs": 2,
+    "maximumMinutesPerJob": 40,
+    "maximumConcurrentJobs": 1,
+    "protectedDraws": 0,
+    "estimatorOrThresholdChanges": false,
+    "proposal": "docs/LOCALIZATION_DIAGNOSTIC_PROPOSAL.md"
+  }
+}
