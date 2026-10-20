@@ -1,0 +1,52 @@
+# Authorized one-job diagnostic, maximum 40 minutes; no reruns.
+name: Repair bounded private observer creation
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/pose-create-20261020.yml]
+permissions:
+  contents: read
+concurrency:
+  group: pose-create-20261020-one-budget
+  cancel-in-progress: false
+jobs:
+  observe:
+    if: ${{ github.run_attempt == 1 && github.event.head_commit.message == 'Run bounded private trace creation repair' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        seed: [905771]
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: build/opencv-host
+          key: opencv-4.13.0-macos14-arm64-v1-sdk
+      - uses: actions/cache@v4
+        with:
+          path: build/apriltag
+          key: apriltag-3.4.5-apple-arm64-v1-${{ hashFiles('tooling/references/build.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: build/ceres
+          key: ceres-2.2.0-macos-arm64-v1
+      - name: Prepare bounded evaluator dependencies
+        run: |
+          python3 -m venv build/pose-trace-env
+          build/pose-trace-env/bin/pip install numpy==2.3.5 pillow==11.3.0
+          build/pose-trace-env/bin/python -m unittest discover -s docs/evidence/localization-trace-proposal -p 'test_*.py'
+      - name: Compare sealed baseline and observer with unchanged gates
+        run: build/pose-trace-env/bin/python docs/evidence/localization-trace-proposal/run_diagnostic.py --seed ${{ matrix.seed }}
+      - uses: actions/upload-artifact@v4
+        if: always() && !cancelled()
+        with:
+          name: pose-selection-aggregates-${{ matrix.seed }}
+          path: build/pose-trace-aggregates/summary.json
+          if-no-files-found: error
+          retention-days: 30

@@ -74,7 +74,8 @@ void tracePose(const cv::Mat& r,const cv::Mat& t,int offset){for(int i=0;i<3;i++
     s = once(s, anchor, '    observePose(kind:"consensus",sourceIDs:candidates.flatMap{$0.pose.sources},queryIndices:traceQueries,xyz:xyz,xy:xy,width:width,height:height,intrinsics:intrinsics,status:accepted,matrix:matrix,quality:quality)\n' + anchor)
     result[name] = s
     name = paths[3]
-    s = once(result[name], "@main struct VisionReplay {", SWIFT_WRITER + "\n@main struct VisionReplay {")
+    s = once(result[name], "import Foundation\n", "import Foundation\nimport Darwin\n")
+    s = once(s, "@main struct VisionReplay {", SWIFT_WRITER + "\n@main struct VisionReplay {")
     s = once(s, '"--house","--coded"].contains($0)', '"--house","--coded","--pose-trace"].contains($0)')
     # One additional argument may coexist with the prior --audit observer patch.
     s = once(s, "guard (3...7).contains(CommandLine.arguments.count)", "guard (3...9).contains(CommandLine.arguments.count)")
@@ -126,6 +127,17 @@ void tracePose(const cv::Mat& r,const cv::Mat& t,int offset){for(int i=0;i<3;i++
   (audit/'sealed-candidate.json').write_text(json.dumps(dict(candidateBinarySHA256=report['candidateBinarySHA256'],traceSHA256=candidate_trace_sha256,oracleReadDenied=report['oracleReadDenied'],queryLabelsExcluded=report['queryLabelsExcluded'])))
 """ + anchor)
     s = once(s, "candidateRejected=True,error=result.stderr[-5000:]", "candidateRejected=True,observerFailure=read_failure(result.stderr),error=result.stderr[-5000:]")
+    anchor = " result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')]"
+    s = once(s, anchor, """ if a.pose_trace:
+  # Check the existing policy without granting another writable path. Failure
+  # stops this diagnostic; the policy and oracle exclusion stay unchanged.
+  writable=candidate/'temp/observer-write-control'
+  forbidden=root/'observer-denied-write-control'
+  allowed_write=subprocess.run(sandbox+['/usr/bin/touch',str(writable)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,cwd=candidate)
+  denied_write=subprocess.run(sandbox+['/usr/bin/touch',str(forbidden)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,cwd=candidate)
+  assert allowed_write.returncode==0 and writable.is_file() and denied_write.returncode!=0 and not forbidden.exists(), 'Observer write-isolation control failed'
+  writable.unlink()
+""" + anchor)
     # The harness parses only a fixed marker before private stderr is truncated.
     # This does not grant the native process access to any evaluator records.
     result[name] = (Path(__file__).with_name("failure_contract.py").read_text()+"\n"+s)
@@ -154,8 +166,11 @@ final class PoseTraceWriter {
     try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
     let path=folder.appendingPathComponent("trace.jsonl")
     PoseTraceFailure.kind="create"
-    guard FileManager.default.createFile(atPath:path.path,contents:nil) else{throw HouseError.message("Cannot create private trace.")}
-    PoseTraceFailure.kind="open";file=try FileHandle(forWritingTo:path);PoseTraceFailure.kind="unknown"
+    // Create only this new file in the already permitted private directory.
+    // Preserve a real errno if creation fails; do not change sandbox policy.
+    let descriptor=Darwin.open(path.path,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW,mode_t(0o600))
+    guard descriptor>=0 else{throw NSError(domain:NSPOSIXErrorDomain,code:Int(errno))}
+    file=FileHandle(fileDescriptor:descriptor,closeOnDealloc:true);PoseTraceFailure.kind="unknown"
     record(["type":"header","schema":1,"coordinateFrame":"centroid-local-opencv","limitBytes":1_073_741_824,"limitSolves":8192])
   }
   func record(_ value:[String:Any]) {

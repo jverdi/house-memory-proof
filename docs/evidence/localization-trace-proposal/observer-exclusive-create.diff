@@ -1,0 +1,366 @@
+--- a/packages/visual-core/hx_vision.h
++++ b/packages/visual-core/hx_vision.h
+@@ -9,6 +9,11 @@
+ // Returns pairs (map index, query index) with ratio and reciprocal-match checks.
+ int32_t hx_vision_match(const uint8_t* map,uint32_t map_count,const uint8_t* query,uint32_t query_count,uint32_t* pairs,uint32_t capacity);
+ typedef struct HXPoseQuality {uint32_t inliers;double fraction;double rms_pixels;double p95_pixels;double condition;uint32_t rejection;uint32_t image_cells;double span_x;double span_y;double spread_largest;double spread_middle;double spread_smallest;} HXPoseQuality;
++// Host proposal only: copy the previous solve's observer state, never its decision.
++// state[0] flags: 1 centroid, 2 RANSAC, 4 refinement. state[1...3] centroid;
++// [4...9] raw r/t; [10...15] refined r/t, in OpenCV's local centroid frame.
++// Returns the selected inlier count, or -1 for insufficient output capacity.
++int32_t hx_vision_trace(double* state,uint32_t state_capacity,uint32_t* indices,uint32_t index_capacity);
+ // Output maps native AR camera right/up/back into the supplied right-handed world.
+ // rejection: 0 accepted, 1 RANSAC, 2 inliers, 3 image coverage, 4 3D spread,
+ // 5 depth, 6 reprojection, 7 conditioning. Invalid arguments return <0.
+--- a/packages/visual-core/hx_vision.cpp
++++ b/packages/visual-core/hx_vision.cpp
+@@ -13,6 +13,10 @@
+ namespace {
+ void configure(){static std::once_flag once;std::call_once(once,[]{cv::setNumThreads(1);});}
+ bool hxFinite(double x){return std::isfinite(x);}
++// Fixed storage, no allocation, no extra solver call, and no RNG access.
++struct PoseTrace {std::array<double,16> state{};std::array<uint32_t,2400> indices{};uint32_t count=0;};
++thread_local PoseTrace poseTrace;
++void tracePose(const cv::Mat& r,const cv::Mat& t,int offset){for(int i=0;i<3;i++){poseTrace.state[offset+i]=r.at<double>(i);poseTrace.state[offset+3+i]=t.at<double>(i);}}
+ }
+ extern "C" int32_t hx_vision_detect(const uint8_t* gray,uint32_t bytes,uint32_t w,uint32_t h,uint32_t stride,float* xy,uint8_t* descriptors,uint32_t capacity) try {
+  if(!gray||!xy||!descriptors||w<64||h<64||w>4096||h>4096||stride<w||uint64_t(stride)*h>bytes||capacity<1||capacity>2400)return -1;
+@@ -57,7 +61,13 @@
+  }
+  return count;
+ } catch(...){return -2;}
++extern "C" int32_t hx_vision_trace(double* state,uint32_t capacity,uint32_t* indices,uint32_t indexCapacity){
++ if(!state||!indices||capacity<16||indexCapacity<poseTrace.count)return -1;
++ std::copy(poseTrace.state.begin(),poseTrace.state.end(),state);
++ std::copy_n(poseTrace.indices.begin(),poseTrace.count,indices);return int32_t(poseTrace.count);
++}
+ extern "C" int32_t hx_vision_pose(const double* xyz,const double* xy,uint32_t n,double fx,double fy,double cx,double cy,uint32_t w,uint32_t h,double* output,HXPoseQuality* quality) try {
++ poseTrace={};
+  if(!xyz||!xy||!output||!quality||n<30||n>2400||w<64||h<64||w>4096||h>4096||!hxFinite(fx)||!hxFinite(fy)||fx<1||fy<1||fx>1000000||fy>1000000||!hxFinite(cx)||!hxFinite(cy))return -1;
+  *quality={};auto reject=[quality](uint32_t reason){quality->rejection=reason;return 0;};configure();std::vector<cv::Point3d> world;std::vector<cv::Point2d> pixels;
+  for(uint32_t i=0;i<n;i++){
+@@ -68,9 +78,12 @@
+  // Translation of the house origin must not change pose conditioning or
+  // candidate rejection. Solve in a local centroid frame, then restore origin.
+  cv::Point3d origin(0,0,0);for(const auto& p:world)origin+=p;origin*=1./world.size();for(auto& p:world)p-=origin;
++ poseTrace.state[0]=1;poseTrace.state[1]=origin.x;poseTrace.state[2]=origin.y;poseTrace.state[3]=origin.z;
+  cv::Mat K=(cv::Mat_<double>(3,3)<<fx,0,cx,0,fy,cy,0,0,1),r,t,inliers;
+  cv::theRNG().state=0x4858524159504e50ULL;
+  if(!cv::solvePnPRansac(world,pixels,K,cv::noArray(),r,t,false,400,2.5,0.999,inliers,cv::SOLVEPNP_EPNP))return reject(1);
++ poseTrace.state[0]=3;tracePose(r,t,4);poseTrace.count=uint32_t(inliers.rows);
++ for(int i=0;i<inliers.rows;i++)poseTrace.indices[i]=uint32_t(inliers.at<int>(i));
+  quality->inliers=uint32_t(inliers.rows);quality->fraction=double(inliers.rows)/n;
+  if(inliers.rows<30||double(inliers.rows)/n<.6)return reject(2);
+  std::vector<cv::Point3d> selected;std::vector<cv::Point2d> observations;std::set<int> cells;
+@@ -84,6 +97,7 @@
+  // Reject near-planar/linear ambiguity instead of inventing a tight pose bound.
+  if(pca.eigenvalues.at<double>(0)<.09||pca.eigenvalues.at<double>(1)<.0225||pca.eigenvalues.at<double>(2)<.0016)return reject(4);
+  cv::solvePnPRefineLM(selected,observations,K,cv::noArray(),r,t);
++ poseTrace.state[0]=7;tracePose(r,t,10);
+  std::vector<cv::Point2d> projected;cv::Mat jacobian,R;cv::projectPoints(selected,r,t,K,cv::noArray(),projected,jacobian);cv::Rodrigues(r,R);
+  std::vector<double> errors;double sum=0;
+  for(size_t i=0;i<selected.size();i++){
+--- a/HouseMemoryProof/VisualMapping.swift
++++ b/HouseMemoryProof/VisualMapping.swift
+@@ -25,6 +25,14 @@
+   }
+ }
+ enum VisualMapping {
++  // Set only by the isolated, serial host replay. Shipping source is untouched.
++  static var poseObserver:(([String:Any])->Void)?
++  static func observePose(kind:String,sourceIDs:[UUID],queryIndices:[Int],xyz:[Double],xy:[Double],width:Int,height:Int,intrinsics:[Double],status:Int32,matrix:[Double],quality:HXPoseQuality) {
++    guard let observer=poseObserver else{return}
++    var state=[Double](repeating:0,count:16),indices=[UInt32](repeating:0,count:2400)
++    let count=state.withUnsafeMutableBufferPointer{s in indices.withUnsafeMutableBufferPointer{i in hx_vision_trace(s.baseAddress,16,i.baseAddress,2400)}}
++    observer(["type":"solve","kind":kind,"sourceIDs":sourceIDs.map{$0.uuidString},"queryIndices":queryIndices,"xyz":xyz,"xy":xy,"width":width,"height":height,"intrinsics":intrinsics,"status":Int(status),"matrix":status==1 ? matrix:[],"rejection":Int(quality.rejection),"inlierCount":Int(quality.inliers),"inlierIndices":count>=0 ? Array(indices.prefix(Int(count))):[],"observerReadSucceeded":count>=0,"state":state])
++  }
+   static let featureLimit=2000
+   struct PixelIdentity:Hashable {var u:UInt32;var v:UInt32;init(_ u:Double,_ v:Double){self.u=Float(u).bitPattern;self.v=Float(v).bitPattern}}
+   struct Features {var xy:[Float];var descriptors:Data;var count:Int}
+@@ -252,6 +260,7 @@
+     let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
+       hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(points.count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
+     }}}
++    observePose(kind:"pooled",sourceIDs:sources.map{$0.id},queryIndices:points.map{$0.0},xyz:xyz,xy:xy,width:width,height:height,intrinsics:intrinsics,status:accepted,matrix:matrix,quality:quality)
+     diagnostic?("Pooled source group: \(sources.count) sources, \(points.count) repeated features, rejection \(quality.rejection), cells \(quality.image_cells), span \(quality.span_x)/\(quality.span_y), spectrum \(quality.spread_largest)/\(quality.spread_middle)/\(quality.spread_smallest)")
+     guard accepted==1,Rigid(values:matrix).valid else{return nil}
+     return Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:sources.map{$0.id})
+@@ -287,6 +296,7 @@
+       let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
+         hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(count),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
+       }}}
++      observePose(kind:"individual",sourceIDs:[view.observationID],queryIndices:(0..<Int(count)).map{Int(pairs[$0*2+1])},xyz:xyz,xy:xy,width:width,height:height,intrinsics:intrinsics,status:accepted,matrix:matrix,quality:quality)
+       diagnostic?("view \(view.observationID): matches \(count), pose \(accepted), rejection \(quality.rejection), inliers \(quality.inliers), cells \(quality.image_cells), span \(quality.span_x)/\(quality.span_y), spectrum \(quality.spread_largest)/\(quality.spread_middle)/\(quality.spread_smallest)")
+       if accepted==1,Rigid(values:matrix).valid{candidates.append(Candidate(pose:Pose(transform:Rigid(values:matrix),inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:[view.observationID]),position:view.position,matches:matches))}
+     }
+@@ -303,7 +313,7 @@
+     // rerun the same robust PnP gates on one correspondence per image feature.
+     var repeated:[Int:[(V3,V3)]]=[:]
+     for candidate in candidates {for (query,point) in candidate.matches {repeated[query,default:[]].append((point,candidate.position))}}
+-    var xyz:[Double]=[],xy:[Double]=[]
++    var xyz:[Double]=[],xy:[Double]=[];var traceQueries:[Int]=[]
+     for query in repeated.keys.sorted() {
+       let samples=repeated[query]!
+       guard samples.count>=2 else{continue}
+@@ -313,12 +323,14 @@
+       guard hasSourceBaseline(supported.map{$0.1}) else{continue}
+       let point=supported.reduce(V3()){$0+$1.0}*(1/Double(supported.count))
+       xyz += [point.x,point.y,point.z];xy += [Double(features.xy[query*2])*Double(width),Double(features.xy[query*2+1])*Double(height)]
++      traceQueries.append(query)
+     }
+     guard xy.count>=60 else{diagnostic?("Insufficient repeated features for multi-view query refinement");return nil}
+     var matrix=[Double](repeating:0,count:16),quality=HXPoseQuality()
+     let accepted=xyz.withUnsafeBufferPointer{x in xy.withUnsafeBufferPointer{y in matrix.withUnsafeMutableBufferPointer{out in
+       hx_vision_pose(x.baseAddress,y.baseAddress,UInt32(xy.count/2),intrinsics[0],intrinsics[4],intrinsics[2],intrinsics[5],UInt32(width),UInt32(height),out.baseAddress,&quality)
+     }}}
++    observePose(kind:"consensus",sourceIDs:candidates.flatMap{$0.pose.sources},queryIndices:traceQueries,xyz:xyz,xy:xy,width:width,height:height,intrinsics:intrinsics,status:accepted,matrix:matrix,quality:quality)
+     let transform=Rigid(values:matrix)
+     guard accepted==1,candidates.allSatisfy({agree(transform,$0.pose.transform)}) else{diagnostic?("Multi-view query refinement rejected at gate \(quality.rejection)");return nil}
+     return Pose(transform:transform,inliers:Int(quality.inliers),rms:quality.rms_pixels,sources:candidates.flatMap{$0.pose.sources})
+--- a/tooling/simulation/VisionReplay.swift
++++ b/tooling/simulation/VisionReplay.swift
+@@ -1,4 +1,5 @@
+ import Foundation
++import Darwin
+ import CryptoKit
+ 
+ struct ReplayQuery:Decodable {var image:String;var width:Int;var height:Int;var intrinsics:[Double];var segmentID:UUID?}
+@@ -24,6 +25,58 @@
+     let hash=SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
+     guard key.hasPrefix(hash+".") else{throw HouseError.message("Original asset checksum mismatch.")}
+     return data
++  }
++}
++enum PoseTraceFailure {
++  static var phase="initialization",kind="unknown"
++  static func emit(_ error:Error) {
++    let native=error as NSError
++    let domain=["NSCocoaErrorDomain","NSPOSIXErrorDomain"].contains(native.domain) ? native.domain:"other"
++    let value:[String:Any]=["schema":1,"phase":phase,"kind":kind,"domain":domain,"code":native.code]
++    if let data=try? JSONSerialization.data(withJSONObject:value,options:[.sortedKeys]) {
++      try? FileHandle.standardError.write(contentsOf:Data("HX_POSE_OBSERVER_FAILURE ".utf8)+data+Data([10]))
++    }
++  }
++}
++// Private bounded JSONL trace. Failure marks the diagnostic incomplete after
++// candidate decisions, never changes acceptance, and cannot be published as pass.
++final class PoseTraceWriter {
++  let file:FileHandle
++  var failure:String?,failureKind="unknown",query="",queries=0,solves=0,bytes=0,sequence=0
++  init(root:URL)throws {
++    let folder=root.appendingPathComponent("temp/pose-trace",isDirectory:true)
++    PoseTraceFailure.kind="directory"
++    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
++    let path=folder.appendingPathComponent("trace.jsonl")
++    PoseTraceFailure.kind="create"
++    // Create only this new file in the already permitted private directory.
++    // Preserve a real errno if creation fails; do not change sandbox policy.
++    let descriptor=Darwin.open(path.path,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW,mode_t(0o600))
++    guard descriptor>=0 else{throw NSError(domain:NSPOSIXErrorDomain,code:Int(errno))}
++    file=FileHandle(fileDescriptor:descriptor,closeOnDealloc:true);PoseTraceFailure.kind="unknown"
++    record(["type":"header","schema":1,"coordinateFrame":"centroid-local-opencv","limitBytes":1_073_741_824,"limitSolves":8192])
++  }
++  func record(_ value:[String:Any]) {
++    guard failure==nil else{return}
++    var operation="record-serialization"
++    do {
++      var row=value;row["sequence"]=sequence
++      if value["type"] as? String == "solve" {solves+=1;row["query"]=query}
++      let data=try JSONSerialization.data(withJSONObject:row,options:[.sortedKeys])+Data([10])
++      operation="record-bounds"
++      guard data.count<=8_388_608,bytes<=1_073_741_824-data.count,solves<=8192 else{throw HouseError.message("Private trace budget exceeded.")}
++      operation="record-write"
++      try file.write(contentsOf:data);bytes+=data.count;sequence+=1
++    }catch{failure=error.localizedDescription;failureKind=operation}
++  }
++  func begin(_ image:String){query=image;queries+=1;if queries>512{failure="Private query bound exceeded.";failureKind="query-bound"};record(["type":"begin","query":image])}
++  func end(accepted:Bool,reason:String){record(["type":"end","query":query,"accepted":accepted,"reason":reason]);query=""}
++  func finish(expectedQueries:Int)throws {
++    if queries != expectedQueries || !query.isEmpty {failure="Trace query denominator mismatch.";failureKind="query-denominator"}
++    record(["type":"footer","queries":queries,"solves":solves,"complete":failure==nil])
++    PoseTraceFailure.kind="synchronize";try file.synchronize()
++    PoseTraceFailure.kind="close";try file.close();PoseTraceFailure.kind="unknown"
++    if let failure{PoseTraceFailure.kind=failureKind;throw HouseError.message(failure)}
+   }
+ }
+ @main struct VisionReplay {
+@@ -50,10 +103,10 @@
+       guard graphStatus==1 else{throw HouseError.message("Graph diagnostics failed at gate \(graphStatus).")}
+       guard status==1 else{throw HouseError.message("Native vision diagnostics failed.")};return
+     }
+-    guard (3...7).contains(CommandLine.arguments.count),CommandLine.arguments.dropFirst(3).allSatisfy({["--refine","--bundle","--house","--coded"].contains($0)}) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
++    guard (3...9).contains(CommandLine.arguments.count),CommandLine.arguments.dropFirst(3).allSatisfy({["--refine","--bundle","--house","--coded","--pose-trace"].contains($0)}) else{throw HouseError.message("Usage: vision-replay candidate-directory query-specification.json")}
+     let root=URL(fileURLWithPath:CommandLine.arguments[1]),queriesURL=URL(fileURLWithPath:CommandLine.arguments[2])
+     if CommandLine.arguments.contains("--coded"){try runCodedHouse(root:root,queriesURL:queriesURL);return}
+-    if CommandLine.arguments.contains("--house"){try runHouse(root:root,queriesURL:queriesURL);return}
++    if CommandLine.arguments.contains("--house"){do{try runHouse(root:root,queriesURL:queriesURL)}catch{if CommandLine.arguments.contains("--pose-trace"){PoseTraceFailure.emit(error)};throw error};return}
+     var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
+     guard let segment=house.segments.first else{throw HouseError.message("No mapping segment.")}
+     var activeSegment=segment
+@@ -127,9 +180,14 @@
+     print(String(data:try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]),encoding:.utf8)!)
+   }
+   static func runHouse(root:URL,queriesURL:URL)throws {
++    let trace:PoseTraceWriter?
++    if CommandLine.arguments.contains("--pose-trace") {trace=try PoseTraceWriter(root:root)}else{trace=nil}
++    defer{VisualMapping.poseObserver=nil}
++    if let trace{VisualMapping.poseObserver={record in trace.record(record)}}
+     var house=try JSONDecoder().decode(House.self,from:Data(contentsOf:root.appendingPathComponent("house.json")));try house.validate()
+     guard house.segments.count<=24 else{throw HouseError.message("Competing-map budget exceeded; full search required.")}
+     var maps:[UUID:VisualMap]=[:],failures:[String:String]=[:],cameras:[String:[Double]]=[:]
++    PoseTraceFailure.phase="mapping"
+     for index in house.segments.indices {
+       do {
+         var segment=house.segments[index]
+@@ -141,8 +199,9 @@
+     }
+     let queries=try JSONDecoder().decode(ReplayQueries.self,from:Data(contentsOf:queriesURL));var output:[[String:Any]]=[]
+     for q in queries.queries {
++      PoseTraceFailure.phase="queries";trace?.begin(q.image)
+       guard !q.image.contains("/"),!q.image.contains("..") else{throw HouseError.message("Unsafe query image path.")}
+-      guard let selected=q.segmentID,let map=maps[selected] else{output.append(["image":q.image,"accepted":false,"reason":"Selected capture has no admitted map"]);continue}
++      guard let selected=q.segmentID,let map=maps[selected] else{output.append(["image":q.image,"accepted":false,"reason":"Selected capture has no admitted map"]);trace?.end(accepted:false,reason:"no-map");continue}
+       let features=try VisualMapping.detectImage(Data(contentsOf:root.appendingPathComponent(q.image)),cameraWidth:q.width,cameraHeight:q.height),start=Date()
+       let competing=maps.filter{$0.key != selected && ($0.value.roomID != map.roomID || $0.value.frameID != map.frameID)}.map{$0.value}
+       let ambiguous=VisualMapping.competingMatch(features,width:q.width,height:q.height,intrinsics:q.intrinsics,maps:competing)
+@@ -150,8 +209,38 @@
+       let pose=ambiguous ? nil:VisualMapping.query(features,width:q.width,height:q.height,intrinsics:q.intrinsics,map:map,diagnostic:{diagnostics.append($0)})
+       var result:[String:Any]=["image":q.image,"diagnostics":diagnostics,"queryFeatures":features.count,"accepted":pose != nil,"ambiguous":ambiguous,"selectedRoomID":map.roomID.uuidString,"selectedSegmentID":selected.uuidString,"seconds":Date().timeIntervalSince(start)]
+       if let pose{result["worldFromARCamera"]=pose.transform.values;result["inliers"]=pose.inliers;result["rmsPixels"]=pose.rms}
+-      output.append(result)
+-    }
++      output.append(result);trace?.end(accepted:pose != nil,reason:ambiguous ? "ambiguous":"evaluated")
++    }
++    PoseTraceFailure.phase="trace-finalization"
++    try trace?.finish(expectedQueries:queries.queries.count)
++    PoseTraceFailure.phase="private-export"
++    if CommandLine.arguments.contains("--pose-trace") {
++      let audit=root.appendingPathComponent("temp/audit",isDirectory:true)
++      try FileManager.default.createDirectory(at:audit,withIntermediateDirectories:true)
++      let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
++      for (identity,map) in maps {try encoder.encode(map).write(to:audit.appendingPathComponent("map-"+identity.uuidString+".json"))}
++      var sources:[[String:Any]]=[]
++      for observation in house.observations {
++        let data=try DiskEvidence(root).read(observation.image)
++        let (gray,w,h)=try VisualMapping.image(data)
++        let raw=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
++        let features=try VisualMapping.cameraFeatures(raw,imageWidth:w,imageHeight:h,cameraWidth:observation.width,cameraHeight:observation.height)
++        let filename="source-"+observation.id.uuidString+".gray"
++        try gray.write(to:audit.appendingPathComponent(filename))
++        sources.append(["observationID":observation.id.uuidString,"gray":filename,"grayWidth":w,"grayHeight":h,"cameraWidth":observation.width,"cameraHeight":observation.height,"camera":cameras[observation.id.uuidString] ?? observation.camera,"intrinsics":observation.intrinsics,"xy":features.xy,"descriptors":features.descriptors.base64EncodedString(),"count":features.count])
++      }
++      var queryImages:[[String:Any]]=[]
++      for query in queries.queries {
++        let (gray,w,h)=try VisualMapping.image(Data(contentsOf:root.appendingPathComponent(query.image)))
++        let raw=try VisualMapping.detect(gray:gray,width:w,height:h,stride:w)
++        let features=try VisualMapping.cameraFeatures(raw,imageWidth:w,imageHeight:h,cameraWidth:query.width,cameraHeight:query.height)
++        let filename="query-"+query.image+".gray"
++        try gray.write(to:audit.appendingPathComponent(filename))
++        queryImages.append(["image":query.image,"gray":filename,"grayWidth":w,"grayHeight":h,"cameraWidth":query.width,"cameraHeight":query.height,"intrinsics":query.intrinsics,"xy":features.xy,"descriptors":features.descriptors.base64EncodedString(),"count":features.count])
++      }
++      try JSONSerialization.data(withJSONObject:["sources":sources,"queries":queryImages],options:[.sortedKeys]).write(to:audit.appendingPathComponent("images.json"))
++    }
++    PoseTraceFailure.phase="report"
+     let report:[String:Any]=["queries":output,"mapCount":maps.count,"mappingFailures":failures,"optimizedCameras":cameras,"mapFeatures":maps.values.reduce(0){$0+$1.points.count},"mapViews":maps.values.reduce(0){$0+$1.views.count},"productionQualified":false]
+     print(String(data:try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]),encoding:.utf8)!)
+   }
+--- a/tooling/simulation/replay_fixture.py
++++ b/tooling/simulation/replay_fixture.py
+@@ -1,9 +1,55 @@
++"""Allowlisted failure metadata only; never publish candidate stderr or paths."""
++import json
++
++PREFIX = 'HX_POSE_OBSERVER_FAILURE '
++PHASES = {'initialization', 'mapping', 'queries', 'trace-finalization', 'private-export', 'report'}
++KINDS = {'unknown', 'directory', 'create', 'open', 'record-serialization', 'record-bounds', 'record-write', 'query-bound', 'query-denominator', 'synchronize', 'close'}
++DOMAINS = {'NSCocoaErrorDomain', 'NSPOSIXErrorDomain', 'other'}
++KEYS = {'schema', 'phase', 'kind', 'domain', 'code'}
++
++
++def validate_failure(value):
++    if not isinstance(value, dict) or set(value) != KEYS:
++        return None
++    if any(type(value[k]) is not str for k in ('phase', 'kind', 'domain')):
++        return None
++    if (type(value['schema']) is not int or value['schema'] != 1 or value['phase'] not in PHASES or
++            value['kind'] not in KINDS or value['domain'] not in DOMAINS or
++            type(value['code']) is not int or not -100000 <= value['code'] <= 100000):
++        return None
++    return dict(value)
++
++
++def read_failure(stderr):
++    if not isinstance(stderr, str) or len(stderr) > 1048576:
++        return None
++    found = []
++    for line in stderr.splitlines():
++        if not line.startswith(PREFIX):
++            continue
++        if len(line) > 1024:
++            return None
++        try:
++            pairs = json.loads(line[len(PREFIX):], object_pairs_hook=list)
++            if not isinstance(pairs, list) or any(not isinstance(x, tuple) or len(x) != 2 for x in pairs):
++                return None
++            value = dict(pairs)
++            if len(value) != len(pairs):
++                return None
++            checked = validate_failure(value)
++        except (ValueError, TypeError):
++            return None
++        if checked is None:
++            return None
++        found.append(checked)
++    return found[0] if len(found) == 1 else None
++
+ #!/usr/bin/env python3
+ """Run exact Swift/C++ map/query code with the oracle denied by the OS sandbox."""
+ import argparse,hashlib,json,math,shutil,subprocess,tempfile,zipfile
+ from pathlib import Path
+ from pose_metrics import pose_errors,overlay_errors,distribution
+-p=argparse.ArgumentParser();p.add_argument('--executable',type=Path,required=True);p.add_argument('--fixture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--refine',action='store_true');p.add_argument('--bundle',action='store_true');p.add_argument('--house',action='store_true');p.add_argument('--coded',action='store_true');a=p.parse_args()
++p=argparse.ArgumentParser();p.add_argument('--executable',type=Path,required=True);p.add_argument('--fixture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--refine',action='store_true');p.add_argument('--bundle',action='store_true');p.add_argument('--house',action='store_true');p.add_argument('--coded',action='store_true');p.add_argument('--pose-trace',action='store_true');a=p.parse_args()
+ exe=a.executable.resolve();fixture=a.fixture.resolve();oracle=json.loads((fixture/'vision-queries.json').read_text())
+ with tempfile.TemporaryDirectory(prefix='house-vision-evaluator-') as temporary:
+  root=Path(temporary).resolve();candidate=root/'candidate';candidate.mkdir();(candidate/'temp').mkdir()
+@@ -38,11 +84,23 @@
+   diagnostics=subprocess.run(['/usr/bin/log','show','--last','1m','--style','compact','--predicate','process == "cat" OR eventMessage CONTAINS "Sandbox: cat(" OR eventMessage CONTAINS "Sandbox: vision-replay("'],capture_output=True,text=True,timeout=20)
+   a.output.parent.mkdir(parents=True,exist_ok=True);a.output.with_suffix('.sandbox.log').write_text(diagnostics.stdout[-30000:]+diagnostics.stderr[-3000:])
+  assert positive.returncode==0 and negative.returncode!=0, f'Oracle exclusion controls failed: permitted={positive.returncode} ({positive.stderr.decode()[-1000:]}), denied={negative.returncode} ({negative.stderr.decode()[-1000:]})'
+- result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')]+(['--refine'] if a.refine else [])+(['--bundle'] if a.bundle else [])+(['--house'] if a.house else [])+(['--coded'] if a.coded else []),capture_output=True,text=True,timeout=600 if a.house else 180,cwd=candidate)
++ if a.pose_trace:
++  # Check the existing policy without granting another writable path. Failure
++  # stops this diagnostic; the policy and oracle exclusion stay unchanged.
++  writable=candidate/'temp/observer-write-control'
++  forbidden=root/'observer-denied-write-control'
++  allowed_write=subprocess.run(sandbox+['/usr/bin/touch',str(writable)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,cwd=candidate)
++  denied_write=subprocess.run(sandbox+['/usr/bin/touch',str(forbidden)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,cwd=candidate)
++  assert allowed_write.returncode==0 and writable.is_file() and denied_write.returncode!=0 and not forbidden.exists(), 'Observer write-isolation control failed'
++  writable.unlink()
++ result=subprocess.run(sandbox+[str(exe),str(candidate),str(candidate/'queries.json')]+(['--refine'] if a.refine else [])+(['--bundle'] if a.bundle else [])+(['--house'] if a.house else [])+(['--coded'] if a.coded else [])+(['--pose-trace'] if a.pose_trace else []),capture_output=True,text=True,timeout=600 if a.house else 180,cwd=candidate)
+  if result.returncode:
+   a.output.parent.mkdir(parents=True,exist_ok=True)
+-  a.output.write_text(json.dumps(dict(passed=False,oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),candidateRejected=True,error=result.stderr[-5000:],productionQualified=False),indent=2))
++  a.output.write_text(json.dumps(dict(passed=False,oracleReadDenied=True,candidateBinarySHA256=hashlib.sha256(exe.read_bytes()).hexdigest(),candidateRejected=True,observerFailure=read_failure(result.stderr),error=result.stderr[-5000:],productionQualified=False),indent=2))
+   raise RuntimeError(result.stderr[-5000:])
++ if a.pose_trace:
++  with (candidate/'temp/pose-trace/trace.jsonl').open('rb') as trace_stream:
++   candidate_trace_sha256=hashlib.file_digest(trace_stream,'sha256').hexdigest()
+  report=json.loads(result.stdout)
+  assert len(report['queries'])==len(queries) and {q['image'] for q in report['queries']}==set(original_names), 'Candidate omitted or duplicated queries'
+  for query in report['queries']:query['image']=original_names[query['image']]
+@@ -89,6 +147,14 @@
+   report['optimizedCameraCount']=len(errors);report['maximumOptimizedCameraPositionErrorMetres']=max(errors,default=float('inf'))
+   report['injectedTranslationDriftMetres']=oracle['injectedTranslationDriftMetres']
+   report['passed']=report['passed'] and len(errors)>=3 and max(errors,default=1)<.015
++ if a.pose_trace:
++  audit=a.output.with_suffix('.audit')
++  shutil.copytree(candidate/'temp/audit',audit,dirs_exist_ok=True)
++  shutil.copytree(candidate/'temp/pose-trace',audit/'pose-trace',dirs_exist_ok=True)
++  (audit/'query-names.json').write_text(json.dumps(original_names,sort_keys=True))
++  (audit/'oracle.json').write_text(json.dumps(oracle))
++  shutil.copy2(fixture/'vision-map.hxray',audit/'input.hxray')
++  (audit/'sealed-candidate.json').write_text(json.dumps(dict(candidateBinarySHA256=report['candidateBinarySHA256'],traceSHA256=candidate_trace_sha256,oracleReadDenied=report['oracleReadDenied'],queryLabelsExcluded=report['queryLabelsExcluded'])))
+  a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(report,indent=2))
+  print(json.dumps({k:report[k] for k in ['passed','positiveAccepted','falseAccepts','worstAcceptedPositionErrorMetres','oracleReadDenied']}))
+  if not report['passed']:raise SystemExit(1)

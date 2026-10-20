@@ -128,6 +128,21 @@ class PreparationTests(unittest.TestCase):
         self.assertIn("oracleReadDenied=report['oracleReadDenied']",text)
         self.assertIn("candidate/'temp/pose-trace'",text)
 
+    def test_trace_creation_retains_exclusive_private_file_and_real_errno(self):
+        text=self.after['tooling/simulation/VisionReplay.swift']
+        self.assertIn('Darwin.open(path.path,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW,mode_t(0o600))',text)
+        self.assertIn('NSError(domain:NSPOSIXErrorDomain,code:Int(errno))',text)
+        self.assertIn('FileHandle(fileDescriptor:descriptor,closeOnDealloc:true)',text)
+        self.assertNotIn('createFile(atPath:path.path,contents:nil)',text)
+
+    def test_write_controls_do_not_expand_sandbox_policy_or_access_oracle(self):
+        before=self.before['tooling/simulation/replay_fixture.py']
+        after=self.after['tooling/simulation/replay_fixture.py']
+        policy=lambda s:s[s.index(" profile='(version 1)"):s.index(" policy=root/'candidate.sb'")]
+        self.assertEqual(policy(before),policy(after))
+        self.assertIn("denied_write.returncode!=0 and not forbidden.exists()",after)
+        self.assertLess(after.index("Observer write-isolation control failed"),after.index(' result=subprocess.run(sandbox+[str(exe)'))
+
 
 if __name__=='__main__':
     unittest.main()
