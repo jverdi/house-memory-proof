@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-20T02:15:35.604Z",
+  "updatedUTC": "2026-10-20T02:16:26.124104+00:00",
   "overall": "in_progress",
   "validatedApplicationSource": "389ac9ccde749623f51d3b84397b25f9db742de9",
   "validationBuild": "246.1",
@@ -115,14 +115,22 @@
     "correctiveEvidence": "docs/evidence/native-ed5/summary.json"
   },
   "observerFailureDiagnostic": {
-    "status": "completed_failed_aggregate_review_pending",
+    "status": "executed_incomplete_allowance_consumed",
     "maximumJobs": 1,
     "maximumMinutesPerJob": 40,
     "run": 39329166282,
     "source": "9eb7231622a5e0af90751e07e56d790f98058b36",
     "seed": 905771,
     "rerunsAllowed": false,
-    "estimatorOrThresholdChanges": false
+    "estimatorOrThresholdChanges": false,
+    "actualRunnerSeconds": 413,
+    "casesIncomplete": 3,
+    "failurePhase": "initialization",
+    "failureKind": "create",
+    "nativeFailureCauseEstablished": false,
+    "retryAuthorized": false,
+    "activeWorkflowRetired": true,
+    "evidence": "docs/evidence/observer-failure-20261019/README.md"
   },
   "sliderEndpointFollowup": {
     "status": "complete_integration_passed",
@@ -132,7 +140,8 @@
     "source": "389ac9ccde749623f51d3b84397b25f9db742de9",
     "run": 39329413198,
     "build": "246.1",
-    "failedRunScreenRecordingReviewed": true
+    "failedRunScreenRecordingReviewed": true,
+    "visualReviewPassed": true
   },
   "requestedPriorityOrder": [
     5,

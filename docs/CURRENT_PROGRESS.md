@@ -84,3 +84,9 @@ The UI harness retains the normalized adjustment and adds at most one thumb-to-e
 The separately authorized failure-code probe is running as [39329166282](https://github.com/jverdi/house-memory-proof/actions/runs/39329166282), source `9eb7231622a5e0af90751e07e56d790f98058b36`: one job, 40 minutes maximum, original disclosed seed 905771, no reruns or estimator/threshold changes. It does not upload a new TestFlight build.
 
 The endpoint correction is committed as `389ac9ccde749623f51d3b84397b25f9db742de9`; [build 246.1 / run 39329413198](https://github.com/jverdi/house-memory-proof/actions/runs/39329413198) is queued. The retained 245.1 screen recording was also visually reviewed and confirms the displayed 0.3 m/s value; this is not just an accessibility-label discrepancy. No production UI or numeric tolerance was changed.
+
+## Evidence review completed 20 October
+
+246.1 comfort, left-handed landscape layout, map checked-area/invalidation and saved-taper screenshots are reviewed against the hash-verified simulator artifact. The complete passing result and visual findings are retained in [native-389](evidence/native-389/summary.json). The current storage continuation remains separate and unchanged.
+
+The authorized one-job observer probe completed in 413 runner-seconds with all three cases incomplete at `initialization / create`, before query evaluation. Its generic application error does not establish the underlying filesystem cause. The artifact hash is verified, the allowance is consumed and the active workflow is retired; no retry or estimator change is authorized. [Retained outcome](evidence/observer-failure-20261019/README.md).

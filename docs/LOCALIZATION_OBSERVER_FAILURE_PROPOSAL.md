@@ -17,3 +17,7 @@ Authorized follow-up: **one managed job, at most 40 runner-minutes**, first atte
 This phase diagnoses observer execution failure. It is not a sixth localization repair attempt and cannot authorize precision, qualification or release. A failing marker identifies a subsystem, not automatically a proven estimator defect. Any subsequent change or experiment must follow the runbook's separately declared evidence and budget requirements.
 
 The user authorized this specific follow-up by instructing continuation. The first-attempt-only workflow `.github/workflows/pose-failure-20261019.yml` is executing at source `9eb7231622a5e0af90751e07e56d790f98058b36`, run 39329166282. The review template remains unchanged. This allowance permits exactly one job; no retry is authorized.
+
+## Outcome — allowance consumed
+
+Run 39329166282 completed with all three observed cases incomplete at `initialization / create`, before query evaluation. The 413-second job and artifact hash are verified in [the retained result](evidence/observer-failure-20261019/README.md). The underlying filesystem cause is not established. The active one-shot workflow is retired; no retry or estimator change is authorized.

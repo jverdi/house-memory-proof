@@ -26,5 +26,13 @@
   "testflightUpload": false,
   "physicalQualification": false,
   "precisionEnabled": false,
-  "wholeHouseQualified": false
+  "wholeHouseQualified": false,
+  "reviewedScreenshots": {
+    "49-map-check-invalidated-by-edit_0_B647389B-3E7E-493F-8D3C-BFEC018D6FAF.png": "505e5bfe31cbd74a8b5954ad50136a8874a83300cc941984844a9997a94fae2d",
+    "48-map-checked-wall-area_0_8E5A007D-48F0-4026-821E-8323B1206443.png": "145011169b70101eae1c9b6b81203528a5ae498d9e4acd200e1582e593bc54c3",
+    "43-left-handed-viewer_0_F33CA5B9-A212-4282-8DEB-CA027B955000.png": "50663fc3d89b5d3757e2be1642556ebf6dcfc2cb797b0e3842eb3fac0e9f162b",
+    "51-measured-taper-relaunched_0_7D71D31A-6EBF-4A44-8031-D7DF782CFD67.png": "fdcc9f4d8fa61f82955d627c8f58d22c4b629400623f815bf63d9bc0ed50ad98",
+    "42-viewer-comfort-settings_0_F57D7823-A8C7-4B88-921E-1228C5B88A4D.png": "dad4d506928865669e92010e1b1af46e62f50281b06c670af9befb7a182b247e"
+  },
+  "visualReview": "Comfort controls and left-handed landscape layout are readable; map explicitly shows zero supported patches and clears checks after edit; measured 50-to-90 mm taper persists with uncertainty limits. Walking-speed endpoint, relaunch and reset are asserted by the passing UI case."
 }

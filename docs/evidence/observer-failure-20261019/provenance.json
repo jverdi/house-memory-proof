@@ -1,0 +1,11 @@
+{
+  "run": 39329166282,
+  "source": "9eb7231622a5e0af90751e07e56d790f98058b36",
+  "job": 118322682324,
+  "actualRunnerSeconds": 413,
+  "artifact": 12223264849,
+  "sha256": "15106e41b9426e98271269cdfe9ad01a4fb0b732390b1d3e117fde549c9c8f21",
+  "hashVerified": true,
+  "budgetConsumed": true,
+  "retryAuthorized": false
+}

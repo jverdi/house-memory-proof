@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "source": "9eb7231622a5e0af90751e07e56d790f98058b36",
+  "seed": 905771,
+  "runnerSeconds": 2100,
+  "cases": [
+    {
+      "stage": "rough",
+      "width": 384,
+      "status": "incomplete",
+      "diagnosticComplete": false,
+      "decisionEquivalent": false,
+      "originalGatePassed": false,
+      "baselineExitCode": 0,
+      "baselineCandidateRejected": false,
+      "observedExitCode": 1,
+      "observedCandidateRejected": true,
+      "observedFailure": {
+        "code": 0,
+        "domain": "other",
+        "kind": "create",
+        "phase": "initialization",
+        "schema": 1
+      },
+      "errorClass": "RuntimeError",
+      "failedAt": "observed-contract"
+    },
+    {
+      "stage": "finished",
+      "width": 384,
+      "status": "incomplete",
+      "diagnosticComplete": false,
+      "decisionEquivalent": false,
+      "originalGatePassed": false,
+      "baselineExitCode": 1,
+      "baselineCandidateRejected": false,
+      "observedExitCode": 1,
+      "observedCandidateRejected": true,
+      "observedFailure": {
+        "code": 0,
+        "domain": "other",
+        "kind": "create",
+        "phase": "initialization",
+        "schema": 1
+      },
+      "errorClass": "RuntimeError",
+      "failedAt": "observed-contract"
+    },
+    {
+      "stage": "finished",
+      "width": 768,
+      "status": "incomplete",
+      "diagnosticComplete": false,
+      "decisionEquivalent": false,
+      "originalGatePassed": false,
+      "baselineExitCode": 0,
+      "baselineCandidateRejected": false,
+      "observedExitCode": 1,
+      "observedCandidateRejected": true,
+      "observedFailure": {
+        "code": 0,
+        "domain": "other",
+        "kind": "create",
+        "phase": "initialization",
+        "schema": 1
+      },
+      "errorClass": "RuntimeError",
+      "failedAt": "observed-contract"
+    }
+  ],
+  "physicalQualification": false,
+  "precisionEnabled": false,
+  "protectedLayoutsDrawn": false,
+  "executionRetryAllowed": false,
+  "diagnosticComplete": false,
+  "originalGatesPassed": false,
+  "baselineBinarySHA256": "14030bd5c39000e86c8365dad707677ab52f6eddadb241efbef1ddb39d5da907",
+  "observerPatchSHA256": "087ef870c9b7d5f9709de108361afd8007b3e8058ecbbf7c1c9d80fdc587a011",
+  "observerBinarySHA256": "2e104d6c86874c6da13d332aa3d64f5d91e83dc94c34cfbca3f61de0c6f00813"
+}
