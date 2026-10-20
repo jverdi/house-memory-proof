@@ -1,21 +1,21 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-19T21:40:27.395Z",
+  "updatedUTC": "2026-10-20T02:13:13.371Z",
   "overall": "in_progress",
-  "validatedApplicationSource": "777520e23ffc6930ce4118be2626c1634f0a045a",
-  "validationBuild": "241.1",
-  "validationRun": 39281579722,
+  "validatedApplicationSource": "389ac9ccde749623f51d3b84397b25f9db742de9",
+  "validationBuild": "246.1",
+  "validationRun": 39329413198,
   "applicationIntegratedToMain": true,
   "completeIntegrationPassed": true,
-  "nativePassed": 193,
+  "nativePassed": 194,
   "interfacePassed": 20,
-  "nativeReaderPhasesPassed": 20,
-  "commandContractsPassed": 60,
+  "nativeReaderPhasesPassed": 21,
+  "commandContractsPassed": 63,
   "processRecoveriesPassed": 3,
   "portableCasesPassed": 50,
   "analyticPickingCasesPassed": 591,
-  "exportValidationReportsPassed": 37,
-  "evidence": "docs/evidence/native-777/summary.json",
+  "exportValidationReportsPassed": 38,
+  "evidence": "docs/evidence/native-389/summary.json",
   "completedContinuation": [
     "Resident displayed-surface double-precision picking",
     "Checked room adjacency and room/shell display priorities",
@@ -90,7 +90,7 @@
     "qualificationResultClaimed": false
   },
   "registeredReconstructionNavigation": {
-    "status": "native_and_readers_passed_full_ui_failed",
+    "status": "complete_integration_passed_bounded_fixture_only",
     "evidence": "docs/evidence/reconstructed-rooms-candidate.md",
     "commandContractsPassed": 63,
     "ciContractsPassed": 47,
@@ -115,7 +115,7 @@
     "correctiveEvidence": "docs/evidence/native-ed5/summary.json"
   },
   "observerFailureDiagnostic": {
-    "status": "running",
+    "status": "completed_failed_aggregate_review_pending",
     "maximumJobs": 1,
     "maximumMinutesPerJob": 40,
     "run": 39329166282,
@@ -125,7 +125,7 @@
     "estimatorOrThresholdChanges": false
   },
   "sliderEndpointFollowup": {
-    "status": "committed_validation_queued",
+    "status": "complete_integration_passed",
     "maximumJobs": 1,
     "maximumMinutesPerJob": 70,
     "change": "Finish one-step-short synthesized slider adjustment with one bounded thumb-to-edge gesture; retain exact endpoint, persistence and reset assertions.",
@@ -133,5 +133,21 @@
     "run": 39329413198,
     "build": "246.1",
     "failedRunScreenRecordingReviewed": true
+  },
+  "requestedPriorityOrder": [
+    5,
+    1,
+    2,
+    3
+  ],
+  "storageUpdateRecovery": {
+    "status": "access_boundary_repair_prepared",
+    "maximumIntegrationJobs": 1,
+    "maximumMinutesPerJob": 70,
+    "expectedNativeChecks": 198,
+    "evidence": "docs/evidence/storage-access-candidate.md",
+    "realProviderMatrixPassed": false,
+    "actualSignedUpdatePassed": false,
+    "actualDeviceRequired": true
   }
 }

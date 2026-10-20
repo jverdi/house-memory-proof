@@ -808,6 +808,87 @@ import simd
                 try savedLineage.write(to:lineage,options:.atomic)
                 return try a.integrity(original)==1 && b.integrity(original)==1 && !ChunkedSnapshots.branches(catalog,folder:destination).incomplete
             }
+            await check("Snapshot account leases reject sign-out, silent identity changes and stale folder generations") {
+                let name="snapshot-lease-test-"+UUID().uuidString
+                guard let defaults=UserDefaults(suiteName:name) else{return false}
+                defer{defaults.removePersistentDomain(forName:name)}
+                defaults.set(true,forKey:SnapshotAccountAccess.cloudKey)
+                do{_=try SnapshotAccountAccess.lease(defaults:defaults,currentIdentity:{nil});return false}catch{}
+                let identity=NSUUID();var current:NSObject?=identity
+                defaults.set(try NSKeyedArchiver.archivedData(withRootObject:identity,requiringSecureCoding:false),forKey:SnapshotAccountAccess.tokenKey)
+                defaults.set(false,forKey:SnapshotAccountAccess.invalidKey)
+                let lease=try SnapshotAccountAccess.lease(defaults:defaults,currentIdentity:{current})
+                try lease.check();current=NSUUID()
+                do{try lease.check();return false}catch{}
+                current=identity
+                do{try lease.check();return false}catch{} // Reselect is required even after the old account returns.
+                defaults.set(false,forKey:SnapshotAccountAccess.invalidKey)
+                let signOut=try SnapshotAccountAccess.lease(defaults:defaults,currentIdentity:{current});current=nil
+                do{try signOut.check();return false}catch{}
+                defaults.set(false,forKey:SnapshotAccountAccess.cloudKey);defaults.set(false,forKey:SnapshotAccountAccess.invalidKey)
+                let local=try SnapshotAccountAccess.lease(defaults:defaults,currentIdentity:{nil});try local.check()
+                defaults.set(defaults.integer(forKey:SnapshotAccountAccess.generationKey)+1,forKey:SnapshotAccountAccess.generationKey)
+                do{try local.check();return false}catch{}
+                return true
+            }
+            await check("Snapshot publication boundary faults preserve source and remove unfinished copies") {
+                let original=Data("Immutable publication source".utf8),source=folder.appendingPathComponent("publication-original")
+                try original.write(to:source,options:.atomic)
+                for fault in 1...3 {
+                    let destinationFolder=folder.appendingPathComponent("publication-fault-\(fault)")
+                    try FileManager.default.createDirectory(at:destinationFolder,withIntermediateDirectories:true)
+                    let destination=destinationFolder.appendingPathComponent("committed-object");var checks=0
+                    do {
+                        try IncrementalSnapshots.publish(source:source,destination:destination,accessCheck:{
+                            checks+=1
+                            if checks==fault {throw NSError(domain:NSCocoaErrorDomain,code:fault==1 ? NSFileWriteOutOfSpaceError:NSFileWriteNoPermissionError)}
+                        });return false
+                    }catch{}
+                    guard checks==fault,try Data(contentsOf:source)==original,
+                      try FileManager.default.contentsOfDirectory(at:destinationFolder,includingPropertiesForKeys:nil).isEmpty else{return false}
+                }
+                return true
+            }
+            await check("Snapshot account loss between chunk, metadata and manifest publication blocks the revision") {
+                let source=try Repository(root:folder.appendingPathComponent("snapshot-access-source"))
+                var h=House.empty("Account boundary fixture")
+                let key=try source.put(Data("Account boundary original".utf8),ext:"jpg")
+                h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)];try source.save(h)
+                for phase in ["chunk-verified","metadata-verified","manifest-verified"] {
+                    var allowed=true
+                    let destination=folder.appendingPathComponent("account-loss-"+phase)
+                    do {
+                        _=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:UUID(),accessCheck:{
+                            if !allowed {throw HouseError.message("Injected account transition")}
+                        },checkpoint:{if $0==phase{allowed=false}});return false
+                    }catch{}
+                    guard !allowed,try IncrementalSnapshots.catalog(folder:destination).isEmpty,try source.integrity(h)==1 else{return false}
+                    let revision=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:UUID())
+                    guard revision.projectID==h.id,try IncrementalSnapshots.catalog(folder:destination).count==1 else{return false}
+                }
+                return true
+            }
+            await check("Snapshot restore access loss at every boundary never activates or overwrites a local project") {
+                let source=try Repository(root:folder.appendingPathComponent("restore-access-source")),destination=folder.appendingPathComponent("restore-access-snapshots")
+                var h=House.empty("Restore access fixture")
+                let key=try source.put(Data("Restore boundary original".utf8),ext:"jpg")
+                h.documentaryPhotos=[DocumentaryPhoto(image:key,roomID:h.rooms[0].id,stageID:h.stages[0].id)];try source.save(h)
+                let legacy=try IncrementalSnapshots.write(house:h,repo:source,folder:destination)
+                let chunked=try ChunkedSnapshots.write(house:h,repo:source,folder:destination,deviceID:UUID())
+                for revision in [legacy,chunked] {
+                    let baseline=try Repository(root:folder.appendingPathComponent("restore-access-baseline-\(revision.version)"));var total=0
+                    let restored=try IncrementalSnapshots.restore(revision,repo:baseline,folder:destination,accessCheck:{total+=1})
+                    guard total>=4,restored.id != h.id,try baseline.integrity(restored)==1 else{return false}
+                    for fault in 1...total {
+                        let target=try Repository(root:folder.appendingPathComponent("restore-access-\(revision.version)-\(fault)"))
+                        let healthy=House.empty("Keep existing project");try target.save(healthy);var checks=0
+                        do{_=try IncrementalSnapshots.restore(revision,repo:target,folder:destination,accessCheck:{checks+=1;if checks==fault{throw CancellationError()}});return false}catch{}
+                        guard checks==fault,try target.all().map({$0.id})==[healthy.id],
+                          try FileManager.default.contentsOfDirectory(at:target.root,includingPropertiesForKeys:nil).allSatisfy({$0.pathExtension != "restore"}) else{return false}
+                    }
+                }
+                return try source.integrity(h)==1
+            }
             await check("Snapshot transfer status never promotes a local readback or a partial upload") {
                 let evidence=mainRepo.root.appendingPathComponent("incremental-v2"),device=UUID()
                 var h=House.empty("Independent chunk handoff")

@@ -70,7 +70,8 @@ enum ChunkedSnapshots {
   static func encode<T:Encodable>(_ value:T)throws->Data {
     let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys];return try encoder.encode(value)
   }
-  static func object(_ bytes:Data,kind:String,extension ext:String,base:URL)throws->String {
+  static func object(_ bytes:Data,kind:String,extension ext:String,base:URL,accessCheck:(()throws->Void)?=nil)throws->String {
+    try accessCheck?()
     let key=IncrementalSnapshots.hash(bytes)+"."+ext,destination=base.appendingPathComponent(kind).appendingPathComponent(key)
     if FileManager.default.fileExists(atPath:destination.path) {
       guard try IncrementalSnapshots.read(destination,limit:max(chunkLimit,bytes.count))==bytes else{throw HouseError.message("An existing snapshot object is incomplete or corrupt. Local originals remain intact.")}
@@ -78,7 +79,7 @@ enum ChunkedSnapshots {
       let temporary=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
       defer{try? FileManager.default.removeItem(at:temporary)}
       try bytes.write(to:temporary,options:.atomic)
-      try IncrementalSnapshots.publish(source:temporary,destination:destination,expected:String(key.prefix(64)))
+      try IncrementalSnapshots.publish(source:temporary,destination:destination,expected:String(key.prefix(64)),accessCheck:accessCheck)
     }
     return key
   }
@@ -111,12 +112,12 @@ enum ChunkedSnapshots {
     guard IncrementalSnapshots.hash(data)==String(key.prefix(64)) else{throw HouseError.message("Snapshot chunk checksum mismatch. Restore was not committed.")}
     return data
   }
-  static func verify(_ m:Manifest,base:URL)throws {
+  static func verify(_ m:Manifest,base:URL,accessCheck:(()throws->Void)?=nil)throws {
     var key:String?,bytes=Data()
     for asset in m.assets {
       var hash=SHA256(),count:UInt64=0
       for slice in asset.slices {
-        try Task.checkCancellation()
+        try accessCheck?();try Task.checkCancellation()
         if key != slice.chunk {bytes=try chunk(slice.chunk,base:base);key=slice.chunk}
         guard slice.offset>=0,slice.length>0,slice.offset<=bytes.count-slice.length else{throw HouseError.message("Snapshot chunk is truncated.")}
         hash.update(data:bytes.subdata(in:slice.offset..<(slice.offset+slice.length)));count+=UInt64(slice.length)
@@ -124,24 +125,26 @@ enum ChunkedSnapshots {
       guard count==asset.bytes,hash.finalize().map({String(format:"%02x",$0)}).joined()==String(asset.key.prefix(64)) else{throw HouseError.message("Snapshot chunks do not reproduce their original.")}
     }
   }
-  static func write(house:House,repo:Repository,folder:URL,deviceID:UUID,checkpoint:((String)throws->Void)?=nil)throws->SnapshotRevision {
+  static func write(house:House,repo:Repository,folder:URL,deviceID:UUID,accessCheck:(()throws->Void)?=nil,checkpoint:((String)throws->Void)?=nil)throws->SnapshotRevision {
     writeLock.lock();defer{writeLock.unlock()}
+    try accessCheck?()
     try house.validate();let base=IncrementalSnapshots.root(folder)
-    for name in ["chunks","manifests","metadata","revisions"] {try FileManager.default.createDirectory(at:base.appendingPathComponent(name),withIntermediateDirectories:true)}
+    for name in ["chunks","manifests","metadata","revisions"] {try accessCheck?();try FileManager.default.createDirectory(at:base.appendingPathComponent(name),withIntermediateDirectories:true)}
     let data=try encode(house)
     guard data.count<=100_000_000 else{throw HouseError.message("Snapshot metadata exceeds its restore budget.")}
     let metadata=IncrementalSnapshots.hash(data)+".json"
     let id=IncrementalSnapshots.revisionID(metadata:"chunks-v2:"+metadata)
     let recordURL=base.appendingPathComponent("revisions").appendingPathComponent(id.uuidString+".json")
     func existing()throws->SnapshotRevision? {
+      try accessCheck?()
       guard FileManager.default.fileExists(atPath:recordURL.path) else{return nil}
       let record=try JSONDecoder().decode(SnapshotRevision.self,from:IncrementalSnapshots.read(recordURL,limit:10_000_000))
       guard record.id==id,record.projectID==house.id,record.name==house.name,record.revision==house.revision,record.metadata==metadata,record.assets==house.assets.sorted() else{throw HouseError.message("Snapshot revision conflicts with its content identity.")}
-      let m=try manifest(record,base:base);try verify(m,base:base)
+      let m=try manifest(record,base:base);try verify(m,base:base,accessCheck:accessCheck)
       guard try IncrementalSnapshots.read(base.appendingPathComponent("metadata").appendingPathComponent(metadata),limit:100_000_000)==data else{throw HouseError.message("Snapshot metadata failed readback.")}
       return record
     }
-    if let result=try existing(){try remember(result,deviceID:deviceID,repo:repo,folder:folder);return result}
+    if let result=try existing(){try accessCheck?();try remember(result,deviceID:deviceID,repo:repo,folder:folder);return result}
     // Reuse whole immutable asset references from one parent. Adding a small
     // original never repacks all the old assets into different chunk hashes.
     let catalog=try IncrementalSnapshots.inspectCatalog(folder:folder)
@@ -162,12 +165,12 @@ enum ChunkedSnapshots {
     var assets:[Asset]=[],buffer=Data(),pending:[(Int,Int,Int)]=[]
     func flush()throws {
       guard !buffer.isEmpty else{return}
-      let key=try object(buffer,kind:"chunks",extension:"chunk",base:base)
+      let key=try object(buffer,kind:"chunks",extension:"chunk",base:base,accessCheck:accessCheck)
       for (asset,offset,length) in pending {assets[asset].slices.append(Slice(chunk:key,offset:offset,length:length))}
       buffer.removeAll(keepingCapacity:true);pending=[];try checkpoint?("chunk-verified")
     }
     for key in house.assets.sorted() {
-      try Task.checkCancellation()
+      try accessCheck?();try Task.checkCancellation()
       guard IncrementalSnapshots.safe(key) else{throw HouseError.message("Invalid original identity.")}
       let source=try repo.assetURL(key),digest=try StreamingArchive.digest(source)
       guard digest.sha==String(key.prefix(64)),digest.size<=512*1024*1024*1024 else{throw HouseError.message("A local original failed snapshot verification.")}
@@ -176,7 +179,7 @@ enum ChunkedSnapshots {
       let input=try FileHandle(forReadingFrom:source);defer{try? input.close()}
       var count:UInt64=0,hash=SHA256()
       while let bytes=try input.read(upToCount:min(StreamingArchive.block,chunkLimit-buffer.count)),!bytes.isEmpty {
-        try Task.checkCancellation();hash.update(data:bytes);count+=UInt64(bytes.count)
+        try accessCheck?();try Task.checkCancellation();hash.update(data:bytes);count+=UInt64(bytes.count)
         pending.append((index,buffer.count,bytes.count));buffer.append(bytes)
         if buffer.count==chunkLimit {try flush()}
       }
@@ -186,18 +189,18 @@ enum ChunkedSnapshots {
     }
     try flush()
     let m=Manifest(projectID:house.id,metadata:metadata,deviceID:deviceID,parentMetadata:parentMetadata,assets:assets)
-    try verify(m,base:base)
-    _=try object(data,kind:"metadata",extension:"json",base:base);try checkpoint?("metadata-verified")
+    try verify(m,base:base,accessCheck:accessCheck)
+    _=try object(data,kind:"metadata",extension:"json",base:base,accessCheck:accessCheck);try checkpoint?("metadata-verified")
     let manifestData=try encode(m)
     guard manifestData.count<=32_000_000 else{throw HouseError.message("Snapshot chunk index exceeds its restore budget.")}
-    let manifestKey=try object(manifestData,kind:"manifests",extension:"json",base:base)
+    let manifestKey=try object(manifestData,kind:"manifests",extension:"json",base:base,accessCheck:accessCheck)
     let revision=SnapshotRevision(version:2,id:id,projectID:house.id,name:house.name,revision:house.revision,metadata:metadata,assets:house.assets.sorted(),chunkManifest:manifestKey)
     let temporary=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString);defer{try? FileManager.default.removeItem(at:temporary)}
     try encode(revision).write(to:temporary,options:.atomic)
     try checkpoint?("manifest-verified")
-    do {try IncrementalSnapshots.publish(source:temporary,destination:recordURL)}
+    do {try IncrementalSnapshots.publish(source:temporary,destination:recordURL,accessCheck:accessCheck)}
     catch {let errorToReturn=error;if let result=try existing(){try remember(result,deviceID:deviceID,repo:repo,folder:folder);return result};throw errorToReturn}
-    try remember(revision,deviceID:deviceID,repo:repo,folder:folder)
+    try accessCheck?();try remember(revision,deviceID:deviceID,repo:repo,folder:folder)
     try checkpoint?("revision-committed");return revision
   }
   struct TransferSummary {
@@ -232,15 +235,17 @@ enum ChunkedSnapshots {
     }
     return result
   }
-  static func restore(_ revision:SnapshotRevision,repo:Repository,folder:URL)throws->House {
+  static func restore(_ revision:SnapshotRevision,repo:Repository,folder:URL,accessCheck:(()throws->Void)?=nil)throws->House {
+    try accessCheck?()
     let base=IncrementalSnapshots.root(folder),m=try manifest(revision,base:base)
+    try accessCheck?()
     let data=try IncrementalSnapshots.read(base.appendingPathComponent("metadata").appendingPathComponent(revision.metadata),limit:100_000_000)
     guard IncrementalSnapshots.hash(data)==String(revision.metadata.prefix(64)) else{throw HouseError.message("Snapshot metadata checksum mismatch.")}
     var house=try JSONDecoder().decode(House.self,from:data);try house.validate()
     guard house.id==revision.projectID,house.revision==revision.revision,house.assets==Set(revision.assets) else{throw HouseError.message("Snapshot metadata and revision disagree.")}
     var cachedKey:String?,cached=Data()
     for asset in m.assets {
-      try Task.checkCancellation()
+      try accessCheck?();try Task.checkCancellation()
       guard repo.freeBytes()>Int64(asset.bytes)+64_000_000 else{throw HouseError.message("Snapshot restore needs more free storage. Local projects remain intact.")}
       let destination=try repo.assetURL(asset.key),temporary=repo.root.appendingPathComponent(UUID().uuidString+".restore")
       defer{try? FileManager.default.removeItem(at:temporary)}
@@ -248,7 +253,7 @@ enum ChunkedSnapshots {
       let output=try FileHandle(forWritingTo:temporary);defer{try? output.close()}
       var hash=SHA256()
       for slice in asset.slices {
-        try Task.checkCancellation()
+        try accessCheck?();try Task.checkCancellation()
         if cachedKey != slice.chunk {cached=try chunk(slice.chunk,base:base);cachedKey=slice.chunk}
         guard slice.offset+slice.length<=cached.count else{throw HouseError.message("Snapshot chunk is truncated.")}
         let bytes=cached.subdata(in:slice.offset..<(slice.offset+slice.length))
@@ -256,11 +261,12 @@ enum ChunkedSnapshots {
       }
       try output.synchronize();try output.close()
       guard hash.finalize().map({String(format:"%02x",$0)}).joined()==String(asset.key.prefix(64)) else{throw HouseError.message("Restored original checksum mismatch.")}
+      try accessCheck?()
       if FileManager.default.fileExists(atPath:destination.path) {
         guard try StreamingArchive.digest(destination).sha==String(asset.key.prefix(64)) else{throw HouseError.message("Existing local original is corrupt; it was preserved for recovery.")}
       } else{try FileManager.default.moveItem(at:temporary,to:destination)}
     }
-    try repo.verifyIFCProperties(house)
+    try accessCheck?();try repo.verifyIFCProperties(house)
     house.id=UUID();house.name += " · restored";house.revision=0;return house
   }
 }

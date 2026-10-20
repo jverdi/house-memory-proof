@@ -11,8 +11,9 @@ enum SnapshotAccountAccess {
   }
   static func selected(_ folder:URL)throws {
     _=observer;let defaults=UserDefaults.standard
-    let cloud=(try? folder.resourceValues(forKeys:[.isUbiquitousItemKey]).isUbiquitousItem)==true
+    let cloud=try folder.resourceValues(forKeys:[.isUbiquitousItemKey]).isUbiquitousItem==true
     let token=FileManager.default.ubiquityIdentityToken
+    guard !cloud || token != nil else{throw HouseError.message("Sign in to iCloud and choose the snapshot folder again. Local originals remain intact.")}
     let bytes:Data?
     if cloud {bytes=try token.map{try NSKeyedArchiver.archivedData(withRootObject:$0,requiringSecureCoding:false)}} else{bytes=nil}
     defaults.set(cloud,forKey:cloudKey);defaults.set(bytes,forKey:tokenKey);defaults.set(false,forKey:invalidKey)
@@ -20,20 +21,29 @@ enum SnapshotAccountAccess {
   }
   struct Lease {
     var generation:Int
+    var defaults:UserDefaults
+    var cloud:Bool
+    var expectedIdentity:NSObject?
+    var currentIdentity:()->NSObject?
     func check()throws {
-      let defaults=UserDefaults.standard
       guard generation==defaults.integer(forKey:generationKey),!defaults.bool(forKey:invalidKey) else{throw HouseError.message("Snapshot folder or iCloud account changed. Choose the folder again; local originals remain intact.")}
+      // Notifications can arrive after a coordinated operation begins. Recheck
+      // identity at each I/O boundary instead of relying on notification timing.
+      if cloud {
+        guard let expectedIdentity,let current=currentIdentity(),expectedIdentity.isEqual(current) else {
+          defaults.set(true,forKey:invalidKey)
+          throw HouseError.message("The iCloud account is unavailable or changed. Choose the snapshot folder again; local originals remain intact.")
+        }
+      }
     }
   }
-  static func lease()throws->Lease {
-    _=observer;let defaults=UserDefaults.standard
-    if defaults.bool(forKey:cloudKey) {
-      let old=try defaults.data(forKey:tokenKey).flatMap{try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData($0) as? NSObject}
-      let current=FileManager.default.ubiquityIdentityToken
-      let same=(old==nil && current==nil) || (old != nil && current != nil && old!.isEqual(current!))
-      if !same {defaults.set(true,forKey:invalidKey)}
-    }
-    let result=Lease(generation:defaults.integer(forKey:generationKey));try result.check();return result
+  static func lease(defaults:UserDefaults = .standard,currentIdentity:@escaping ()->NSObject? = {FileManager.default.ubiquityIdentityToken as? NSObject})throws->Lease {
+    _=observer
+    let cloud=defaults.bool(forKey:cloudKey)
+    let old:NSObject?
+    if cloud {old=try defaults.data(forKey:tokenKey).flatMap{try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData($0) as? NSObject}}else{old=nil}
+    let result=Lease(generation:defaults.integer(forKey:generationKey),defaults:defaults,cloud:cloud,expectedIdentity:old,currentIdentity:currentIdentity)
+    try result.check();return result
   }
   static func validateFolder(_ folder:URL)throws {
     let cloud=(try? folder.resourceValues(forKeys:[.isUbiquitousItemKey]).isUbiquitousItem)==true
@@ -119,9 +129,10 @@ enum SnapshotStorage {
       let device=UserDefaults.standard.string(forKey:deviceKey).flatMap(UUID.init(uuidString:)) ?? UUID()
       UserDefaults.standard.set(device.uuidString,forKey:deviceKey)
       try lease.check()
-      let revision=try ChunkedSnapshots.write(house:house,repo:repo,folder:folder,deviceID:device,checkpoint:{_ in try lease.check()})
+      let revision=try ChunkedSnapshots.write(house:house,repo:repo,folder:folder,deviceID:device,accessCheck:{try lease.check()},checkpoint:{_ in try lease.check()})
       try lease.check()
       let transfer=try ChunkedSnapshots.transfers(revision,folder:folder)
+      try lease.check()
       return "Incremental snapshot saved: \(revision.id.uuidString.prefix(8)). "+transfer.message
     }
     UserDefaults.standard.set(result + " Revision \(house.revision).", forKey: statusKey)
@@ -135,7 +146,7 @@ enum SnapshotStorage {
       guard !stale else{throw HouseError.message("Choose the snapshot folder again to renew its permission.")}
       let access=folder.startAccessingSecurityScopedResource();defer{if access {folder.stopAccessingSecurityScopedResource()}}
       try SnapshotAccountAccess.validateFolder(folder)
-      let result=try operation(folder);try lease.check();return result
+      try lease.check();let result=try operation(folder);try lease.check();return result
     }
   }
   static func automatic(model: AppModel) {
@@ -226,7 +237,10 @@ struct SnapshotSettings: View {
           Button("Restore \(revision.name) · r\(revision.revision) · \(revision.date.formatted())\(branchHeads.contains(revision.id) ? " · branch tip":"")") {
             guard let repo=model.repository else{return}
             model.perform("Verifying and restoring snapshot") {
-              let restored=try await SnapshotService.inFolder{try IncrementalSnapshots.restore(revision,repo:repo,folder:$0)}
+              let restored=try await SnapshotService.inFolder{folder in
+                let lease=try SnapshotAccountAccess.lease()
+                return try IncrementalSnapshots.restore(revision,repo:repo,folder:folder,accessCheck:{try lease.check()})
+              }
               guard model.commit(restored) else{throw HouseError.message("Verified restore could not be committed locally.")};return nil
             }
           }.disabled(model.busy)

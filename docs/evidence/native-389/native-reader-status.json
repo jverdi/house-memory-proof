@@ -1,0 +1,107 @@
+[
+  {
+    "check": "navigation-benchmark-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "reconstructed-navigation-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "reconstructed-rooms-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "drawing-benchmark-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "viewer-runtime-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "capture-runtime-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "ifc-coordinate-contracts",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "ifc-property-contracts",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "ifc-source-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "ifc-property-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "drawing-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "envelope-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "archive-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "command-contracts",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "tour-command",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "reveal-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "tour-result",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "service-tour-command",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "service-tour-reader",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "reconstruction-command",
+    "exitCode": 0,
+    "passed": true
+  },
+  {
+    "check": "reconstruction-result",
+    "exitCode": 0,
+    "passed": true
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "source": "389ac9ccde749623f51d3b84397b25f9db742de9",
+  "build": "246.1",
+  "run": 39329413198,
+  "completeIntegrationPassed": true,
+  "nativePassed": 194,
+  "nativeSeconds": 214.39744358333326,
+  "readerPhasesPassed": 21,
+  "commandContractsPassed": 63,
+  "uiPassed": 20,
+  "uiRunnerExitCode": 0,
+  "processRecoveriesPassed": 3,
+  "portableCasesPassed": 50,
+  "validationReportsPassed": 38,
+  "nativeArtifact": {
+    "id": 12223914947,
+    "sha256": "e1a2526cffd85a94d266347cac1a0755b1f8f32dab41d140e12e9c448a6e2302",
+    "hashVerified": true
+  },
+  "simulatorArtifact": {
+    "id": 12227000134,
+    "sha256": "154ad07a65336965c21f09ba3637b5d816231f5e2a30b9ff89eb8a8a99081451",
+    "hashVerified": true
+  },
+  "testflightUpload": false,
+  "physicalQualification": false,
+  "precisionEnabled": false,
+  "wholeHouseQualified": false
+}

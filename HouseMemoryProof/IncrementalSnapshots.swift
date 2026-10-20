@@ -28,11 +28,12 @@ enum IncrementalSnapshots {
     return UUID(uuidString:[hex[0..<4].joined(),hex[4..<6].joined(),hex[6..<8].joined(),hex[8..<10].joined(),hex[10..<16].joined()].joined(separator:"-"))!
   }
   static func safe(_ key:String)->Bool {key.count<100 && !key.contains("/") && !key.contains("\\") && !key.contains("..") && key.count>=65 && key.prefix(64).allSatisfy{$0.isHexDigit} && key.dropFirst(64).first=="."}
-  static func publish(source:URL,destination:URL,expected:String?=nil)throws {
+  static func publish(source:URL,destination:URL,expected:String?=nil,accessCheck:(()throws->Void)?=nil)throws {
+    try accessCheck?()
     let coordinator=NSFileCoordinator(filePresenter:nil);var coordinationError:NSError?,operationError:Error?
     coordinator.coordinate(writingItemAt:destination,options:[],error:&coordinationError){url in
       let temporary=url.deletingLastPathComponent().appendingPathComponent(UUID().uuidString+".partial")
-      do {try Task.checkCancellation();try FileManager.default.copyItem(at:source,to:temporary);let a=try StreamingArchive.digest(source),b=try StreamingArchive.digest(temporary);guard a.sha==b.sha,expected==nil || b.sha==expected else{throw HouseError.message("Snapshot copy did not verify.")};let handle=try FileHandle(forWritingTo:temporary);try handle.synchronize();try handle.close();try Task.checkCancellation();try FileManager.default.moveItem(at:temporary,to:url)}
+      do {try accessCheck?();try Task.checkCancellation();try FileManager.default.copyItem(at:source,to:temporary);let a=try StreamingArchive.digest(source),b=try StreamingArchive.digest(temporary);guard a.sha==b.sha,expected==nil || b.sha==expected else{throw HouseError.message("Snapshot copy did not verify.")};let handle=try FileHandle(forWritingTo:temporary);try handle.synchronize();try handle.close();try Task.checkCancellation();try accessCheck?();try FileManager.default.moveItem(at:temporary,to:url)}
       catch {try? FileManager.default.removeItem(at:temporary);operationError=error}
     }
     if let coordinationError {throw coordinationError};if let operationError {throw operationError}
@@ -104,19 +105,21 @@ enum IncrementalSnapshots {
     }
     if let coordinationError {throw coordinationError};if let operationError {throw operationError};guard let result else{throw HouseError.message("Snapshot object is unavailable.")};return result
   }
-  static func restore(_ revision:SnapshotRevision,repo:Repository,folder:URL)throws->House {
-    if revision.version==2 {return try ChunkedSnapshots.restore(revision,repo:repo,folder:folder)}
+  static func restore(_ revision:SnapshotRevision,repo:Repository,folder:URL,accessCheck:(()throws->Void)?=nil)throws->House {
+    try accessCheck?()
+    if revision.version==2 {return try ChunkedSnapshots.restore(revision,repo:repo,folder:folder,accessCheck:accessCheck)}
     guard revision.format=="HouseXraySnapshot",revision.version==1,safe(revision.metadata),revision.assets.count<=160000,revision.assets.allSatisfy({safe($0)}) else{throw HouseError.message("Unsupported snapshot revision.")}
     let base=root(folder),data=try read(base.appendingPathComponent("metadata").appendingPathComponent(revision.metadata),limit:100_000_000)
     guard hash(data)==String(revision.metadata.prefix(64)) else{throw HouseError.message("Snapshot metadata checksum mismatch.")}
     var house=try JSONDecoder().decode(House.self,from:data);try house.validate()
     guard house.id==revision.projectID,house.revision==revision.revision,house.assets==Set(revision.assets) else{throw HouseError.message("Snapshot revision and metadata disagree.")}
     for key in house.assets.sorted() {
-      try Task.checkCancellation();let source=base.appendingPathComponent("assets").appendingPathComponent(key)
+      try accessCheck?();try Task.checkCancellation();let source=base.appendingPathComponent("assets").appendingPathComponent(key)
       let destination=try repo.assetURL(key),temporary=repo.root.appendingPathComponent(UUID().uuidString+".restore")
       let coordinator=NSFileCoordinator(filePresenter:nil);var coordinationError:NSError?,operationError:Error?
       coordinator.coordinate(readingItemAt:source,options:[],error:&coordinationError){url in
         do {
+          try accessCheck?()
           let values=try url.resourceValues(forKeys:[.fileSizeKey,.isUbiquitousItemKey,.ubiquitousItemDownloadingStatusKey,.ubiquitousItemHasUnresolvedConflictsKey])
           guard values.ubiquitousItemHasUnresolvedConflicts != true else{throw HouseError.message("Snapshot original has unresolved provider conflicts.")}
           if values.isUbiquitousItem==true && values.ubiquitousItemDownloadingStatus != .current {try FileManager.default.startDownloadingUbiquitousItem(at:url);throw HouseError.message("Snapshot originals are downloading. Retry after Files finishes syncing.")}
@@ -125,13 +128,14 @@ enum IncrementalSnapshots {
           let output=try FileHandle(forWritingTo:temporary);defer{try? output.close()}
           let copied=try StreamingArchive.digest(url,copyTo:output);try output.synchronize();try output.close()
           guard copied.sha==String(key.prefix(64)) else{throw HouseError.message("Snapshot asset checksum mismatch. Restore was not committed.")}
+          try accessCheck?()
           if FileManager.default.fileExists(atPath:destination.path) {guard try StreamingArchive.digest(destination).sha==copied.sha else{throw HouseError.message("Existing local original is corrupt; it was preserved for recovery.")};try FileManager.default.removeItem(at:temporary)}
           else {try FileManager.default.moveItem(at:temporary,to:destination)}
         } catch {try? FileManager.default.removeItem(at:temporary);operationError=error}
       }
       if let coordinationError {throw coordinationError};if let operationError {throw operationError}
     }
-    try repo.verifyIFCProperties(house)
+    try accessCheck?();try repo.verifyIFCProperties(house)
     house.id=UUID();house.name += " · restored";house.revision=0
     return house
   }

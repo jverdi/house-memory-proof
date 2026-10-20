@@ -1,5 +1,13 @@
 # House Xray: current progress
 
+## Current priority checkpoint — 20 October UTC / 19 October New York
+
+Owner priority is **5 → 1 → 2 → 3**: storage/update recovery, localization, whole-house reconstruction/navigation, then representative qualification. Storage access-boundary repair is prepared with four new native tests and one declared integration job of at most 70 minutes. [Scope and remaining actual-provider/device gates](evidence/storage-access-candidate.md). Real iCloud behavior and an actual signed-app update are not marked passed.
+
+**246.1 / 389ac9ccde** now passes complete simulator integration: 194 native checks, 21 reader phases, 63 command contracts, all 20 UI workflows with zero runner exit, three process recoveries, 50 portable cases and 38 validation reports. Native and full evidence artifact hashes are verified. [Current validated checkpoint](evidence/native-389/summary.json). This supersedes the older queued/failed current-state descriptions below; the original failures remain retained. No new TestFlight upload occurred.
+
+The one-job localization failure probe has completed with a failed result, not a qualification pass. Its allowance is consumed; aggregate review is pending while storage remains the priority. No rerun has been started.
+
 Updated 19 October 2026. Work has resumed in a new thread. The approved runbook remains **in progress**. Precision, accepted-release and automatic-renewal gates remain closed.
 
 ## TestFlight delivery
