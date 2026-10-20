@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedUTC": "2026-10-20T02:13:13.371Z",
+  "updatedUTC": "2026-10-20T02:15:35.604Z",
   "overall": "in_progress",
   "validatedApplicationSource": "389ac9ccde749623f51d3b84397b25f9db742de9",
   "validationBuild": "246.1",
@@ -141,13 +141,19 @@
     3
   ],
   "storageUpdateRecovery": {
-    "status": "access_boundary_repair_prepared",
+    "status": "committed_native_integration_running",
     "maximumIntegrationJobs": 1,
     "maximumMinutesPerJob": 70,
     "expectedNativeChecks": 198,
     "evidence": "docs/evidence/storage-access-candidate.md",
     "realProviderMatrixPassed": false,
     "actualSignedUpdatePassed": false,
-    "actualDeviceRequired": true
+    "actualDeviceRequired": true,
+    "source": "8770dd80e23b050ad2e140bd00842481c01ac190",
+    "run": 39357781944,
+    "build": "247.1",
+    "archiveComparisonTool": "docs/evidence/storage-recovery-tools/compare_archives.py",
+    "archiveComparisonContractTestsPassed": 5,
+    "deviceProcedure": "docs/evidence/storage-recovery-tools/README.md"
   }
 }

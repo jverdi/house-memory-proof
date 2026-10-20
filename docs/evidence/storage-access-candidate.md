@@ -10,7 +10,9 @@ The candidate refuses a missing iCloud identity, latches an observed account mis
 
 Four new native checks cover isolated account identity/defaults, injected publication-boundary errors, account loss between chunk/metadata/manifest publication, and every guarded restore boundary for both legacy and chunked snapshots. The quota/permission cases are injected errors, not actual iCloud-account or full-disk tests. No actual account sign-out or quota manipulation is performed.
 
-All 63 command and 47 CI/release contracts pass locally. Declare **one integration job, maximum 70 minutes**, with 198 native checks, 21 independent reader phases and all 20 UI workflows required. Swift compilation and the four new native tests remain pending until the exact-source result is collected. No numeric, recovery or precision gate is relaxed.
+All 63 command and 47 CI/release contracts pass locally. Declare **one integration job, maximum 70 minutes**, with 198 native checks, 21 independent reader phases and all 20 UI workflows required. Source `8770dd80e23b050ad2e140bd00842481c01ac190` is committed; build **247.1 / run 39357781944** is compiling. Swift compilation and the four new native tests remain pending until the exact-source result is collected. No numeric, recovery or precision gate is relaxed.
+
+The read-only [archive comparator and device procedure](storage-recovery-tools/README.md) now have five independent local contracts passing. They verify strict before/after metadata and original-content preservation and separately allow only the deliberate restored-project identity changes. These tests do not claim a signed update or actual provider restore.
 
 ## Real checks still required
 

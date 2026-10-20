@@ -2,6 +2,8 @@
 
 ## Current priority checkpoint — 20 October UTC / 19 October New York
 
+Storage repair source **8770dd80e23b050ad2e140bd00842481c01ac190**, [build 247.1 / run 39357781944](https://github.com/jverdi/house-memory-proof/actions/runs/39357781944), is compiling under its single 70-minute integration budget. Four new native tests bring the required count to 198. A separate read-only before/after archive comparison tool passes five local contracts; [actual-device evidence procedure](evidence/storage-recovery-tools/README.md). Item 5 remains open; no new localization experiment has been started.
+
 Owner priority is **5 → 1 → 2 → 3**: storage/update recovery, localization, whole-house reconstruction/navigation, then representative qualification. Storage access-boundary repair is prepared with four new native tests and one declared integration job of at most 70 minutes. [Scope and remaining actual-provider/device gates](evidence/storage-access-candidate.md). Real iCloud behavior and an actual signed-app update are not marked passed.
 
 **246.1 / 389ac9ccde** now passes complete simulator integration: 194 native checks, 21 reader phases, 63 command contracts, all 20 UI workflows with zero runner exit, three process recoveries, 50 portable cases and 38 validation reports. Native and full evidence artifact hashes are verified. [Current validated checkpoint](evidence/native-389/summary.json). This supersedes the older queued/failed current-state descriptions below; the original failures remain retained. No new TestFlight upload occurred.
